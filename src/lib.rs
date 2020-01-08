@@ -137,14 +137,13 @@ impl Context {
             .iter_mut()
             .zip(self.draw_calls_bindings.iter_mut())
         {
-            unsafe { bindings.vertex_buffers[0].update(ctx, dc.vertices()) };
-            unsafe { bindings.index_buffer.update(ctx, dc.indices()) };
+            bindings.vertex_buffers[0].update(ctx, dc.vertices());
+            bindings.index_buffer.update(ctx, dc.indices());
             bindings.images = vec![dc.texture];
+
             ctx.apply_pipeline(&self.pipeline);
             ctx.apply_bindings(&bindings);
-            unsafe {
-                ctx.apply_uniforms(&shader::Uniforms { projection });
-            }
+            ctx.apply_uniforms(&shader::Uniforms { projection });
             ctx.draw(0, dc.indices_count as i32, 1);
 
             dc.vertices_count = 0;
