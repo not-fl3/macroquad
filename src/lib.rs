@@ -1,6 +1,8 @@
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
+use std::collections::HashSet;
+
 const MAX_VERTICES: usize = 10000;
 const MAX_INDICES: usize = 5000;
 
@@ -50,6 +52,8 @@ struct Context {
     draw_calls: Vec<DrawCall>,
     draw_calls_bindings: Vec<Bindings>,
     draw_calls_count: usize,
+
+    keys_pressed: HashSet<KeyCode>,
 }
 
 impl Context {
@@ -101,6 +105,8 @@ impl Context {
             draw_calls: Vec::with_capacity(200),
             draw_calls_bindings: Vec::with_capacity(200),
             draw_calls_count: 0,
+
+            keys_pressed: HashSet::new(),
         }
     }
 
@@ -201,7 +207,7 @@ fn get_context() -> &'static mut Context {
 }
 
 struct Stage {
-    f: Box<dyn Fn() -> ()>,
+    f: Box<dyn FnMut() -> ()>,
 }
 
 impl EventHandler for Stage {
@@ -210,6 +216,16 @@ impl EventHandler for Stage {
 
         context.screen_width = width;
         context.screen_height = height;
+    }
+
+    fn key_down_event(&mut self, _: &mut QuadContext, keycode: KeyCode, _: KeyMods, _: bool) {
+        let context = get_context();
+        context.keys_pressed.insert(keycode);
+    }
+
+    fn key_up_event(&mut self, _: &mut QuadContext, keycode: KeyCode, _: KeyMods) {
+        let context = get_context();
+        context.keys_pressed.remove(&keycode);
     }
 
     fn update(&mut self, _ctx: &mut QuadContext) {}
@@ -223,20 +239,54 @@ impl EventHandler for Stage {
     }
 }
 
-pub struct Window {}
+pub struct Window {
+    on_init: Option<Box<dyn FnOnce() -> ()>>,
+}
 
 impl Window {
     pub fn init(_label: &str) -> Window {
-        Window {}
+        Window { on_init: None }
     }
 
-    pub fn main_loop(self, f: impl Fn() -> () + 'static) {
+    pub fn on_init(self, f: impl FnOnce() -> ()) -> Self {
+        let closure: Box<dyn FnOnce()> = Box::new(f);
+        let closure: Box<dyn FnOnce() + 'static> = unsafe { std::mem::transmute(closure) };
+
+        Self {
+            on_init: Some(closure),
+            ..self
+        }
+    }
+
+    pub fn main_loop(mut self, f: impl FnMut() -> ()) -> ! {
+        let f = Box::new(f);
+
+        // Allocate `clsoure` on the heap and erase the lifetime bound.
+        // This is safe because we will never leave this function (alive)
+        // The same applies for closure in on_init
+        let closure: Box<dyn FnMut()> = Box::new(f);
+        let closure: Box<dyn FnMut() + 'static> = unsafe { std::mem::transmute(closure) };
+
         miniquad::start(conf::Conf::default(), move |ctx| {
             unsafe { CONTEXT = Some(Context::new(ctx)) };
 
-            Box::new(Stage { f: Box::new(f) })
+            if let Some(on_init) = self.on_init.take() {
+                on_init();
+            }
+
+            Box::new(Stage { f: closure })
         });
+
+        std::process::exit(0)
     }
+}
+
+pub use miniquad::KeyCode;
+
+pub fn is_key_down(key_code: KeyCode) -> bool {
+    let context = get_context();
+
+    context.keys_pressed.contains(&key_code)
 }
 
 #[repr(C)]
