@@ -21,7 +21,7 @@ fn main() {
             set_screen_coordinates(ScreenCoordinates::Fixed(0., SCR_W, SCR_H, 0.));
         })
         .main_loop(|| {
-            clear_background(RED);
+            clear_background(SKYBLUE);
 
             if is_key_down(KeyCode::Right) && platform_x < SCR_W - platform_width / 2. {
                 platform_x += 1.0;
@@ -66,7 +66,7 @@ fn main() {
                         let block_x = i as f32 * block_w + 0.05;
                         let block_y = j as f32 * block_h + 0.05;
 
-                        draw_rectangle(block_x, block_y, block_w - 0.1, block_h - 0.1, BLUE);
+                        draw_rectangle(block_x, block_y, block_w - 0.1, block_h - 0.1, MAROON);
 
                         if ball_x >= block_x
                             && ball_x < block_x + block_w
@@ -80,13 +80,13 @@ fn main() {
                 }
             }
 
-            draw_circle(ball_x, ball_y, 0.1, YELLOW);
+            draw_circle(ball_x, ball_y, 0.15, GREEN);
             draw_rectangle(
                 platform_x - platform_width / 2.,
                 SCR_H - platform_height,
                 platform_width,
                 platform_height,
-                GREEN,
+                DARKBLUE,
             );
         });
 }
