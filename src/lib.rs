@@ -38,6 +38,11 @@ impl DrawCall {
     }
 }
 
+pub enum ScreenCoordinates {
+    Fixed(f32, f32, f32, f32),
+    PixelPerfect,
+}
+
 struct Context {
     clear_color: Color,
 
@@ -53,6 +58,7 @@ struct Context {
     draw_calls_bindings: Vec<Bindings>,
     draw_calls_count: usize,
 
+    screen_coordinates: ScreenCoordinates,
     keys_pressed: HashSet<KeyCode>,
 }
 
@@ -106,6 +112,7 @@ impl Context {
             draw_calls_bindings: Vec::with_capacity(200),
             draw_calls_count: 0,
 
+            screen_coordinates: ScreenCoordinates::PixelPerfect,
             keys_pressed: HashSet::new(),
         }
     }
@@ -143,9 +150,15 @@ impl Context {
             self.clear_color.3,
         ));
 
-        let (width, height) = ctx.screen_size();
-
-        let projection = glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.);
+        let projection = match self.screen_coordinates {
+            ScreenCoordinates::PixelPerfect => {
+                let (width, height) = ctx.screen_size();
+                glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
+            }
+            ScreenCoordinates::Fixed(left, right, bottom, top) => {
+                glam::Mat4::orthographic_rh_gl(left, right, bottom, top, -1., 1.)
+            }
+        };
 
         for (dc, bindings) in self.draw_calls[0..self.draw_calls_count]
             .iter_mut()
@@ -313,6 +326,12 @@ pub fn clear_background(color: Color) {
     let context = get_context();
 
     context.clear(color);
+}
+
+pub fn set_screen_coordinates(screen_coordinates: ScreenCoordinates) {
+    let mut context = get_context();
+
+    context.screen_coordinates = screen_coordinates;
 }
 
 pub fn screen_width() -> f32 {
