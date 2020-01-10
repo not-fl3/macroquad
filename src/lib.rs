@@ -323,6 +323,10 @@ pub const BLUE: Color = Color(0.0, 0.0, 1.0, 1.0);
 pub const BLACK: Color = Color(0.0, 0.0, 0.0, 1.0);
 pub const DARKGRAY: Color = Color(0.8, 0.8, 0.8, 1.0);
 pub const YELLOW: Color = Color(1.0, 1.0, 0.0, 1.0);
+pub const SKYBLUE: Color = Color(0.4, 0.7, 1., 1.);
+pub const DARKBLUE: Color = Color(0., 0.32, 0.67, 1.);
+pub const MAROON: Color = Color(0.7, 0.1, 0.21, 1.);
+pub const DARKGREEN: Color = Color(0., 0.45, 0.17, 1.);
 
 pub fn clear_background(color: Color) {
     let context = get_context();
