@@ -318,8 +318,10 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
 pub struct Color(f32, f32, f32, f32);
 
 pub const RED: Color = Color(1.0, 0.0, 0.0, 1.0);
-pub const DARKGRAY: Color = Color(0.8, 0.8, 0.8, 1.0);
 pub const GREEN: Color = Color(0.0, 1.0, 0.0, 1.0);
+pub const BLUE: Color = Color(0.0, 0.0, 1.0, 1.0);
+pub const BLACK: Color = Color(0.0, 0.0, 0.0, 1.0);
+pub const DARKGRAY: Color = Color(0.8, 0.8, 0.8, 1.0);
 pub const YELLOW: Color = Color(1.0, 1.0, 0.0, 1.0);
 
 pub fn clear_background(color: Color) {
