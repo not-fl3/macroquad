@@ -5,6 +5,6 @@ authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-miniquad = { git = "https://github.com/not-fl3/miniquad/", rev = "3d85abc" }
+miniquad = { git = "https://github.com/not-fl3/miniquad/", rev = "99b978f3" }
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec"] }

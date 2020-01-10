@@ -116,8 +116,16 @@ impl Context {
 
     fn end_frame(&mut self, ctx: &mut QuadContext) {
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
-            let vertex_buffer = Buffer::stream(ctx, BufferType::VertexBuffer, MAX_VERTICES);
-            let index_buffer = Buffer::stream(ctx, BufferType::IndexBuffer, MAX_INDICES);
+            let vertex_buffer = Buffer::stream(
+                ctx,
+                BufferType::VertexBuffer,
+                MAX_VERTICES * std::mem::size_of::<f32>(),
+            );
+            let index_buffer = Buffer::stream(
+                ctx,
+                BufferType::IndexBuffer,
+                MAX_INDICES * std::mem::size_of::<u16>(),
+            );
             let bindings = Bindings {
                 vertex_buffers: vec![vertex_buffer],
                 index_buffer: index_buffer,
@@ -174,7 +182,11 @@ impl Context {
         };
         let previous_dc = previous_dc_ix.and_then(|ix| self.draw_calls.get(ix));
 
-        if previous_dc.map_or(true, |draw_call| draw_call.texture != texture) {
+        if previous_dc.map_or(true, |draw_call| {
+            draw_call.texture != texture
+                || draw_call.vertices_count >= MAX_VERTICES - vertices.len()
+                || draw_call.indices_count >= MAX_INDICES - indices.len()
+        }) {
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(texture));
             }
