@@ -1,6 +1,11 @@
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
+pub use megaui;
+pub use megaui::hash;
+
+pub use glam::Vec2;
+
 use std::collections::HashSet;
 
 pub mod rand;
@@ -79,6 +84,66 @@ struct Context {
 
     screen_coordinates: ScreenCoordinates,
     keys_pressed: HashSet<KeyCode>,
+
+    ui: megaui::Ui,
+}
+
+struct UiRender;
+
+impl megaui::Context for UiRender {
+    fn draw_label<T: Into<megaui::LabelParams>>(
+        &mut self,
+        position: megaui::Vector2,
+        label: &str,
+        params: T,
+    ) {
+        let params = params.into();
+        let color = params.color;
+
+        draw_text(
+            label,
+            position.x,
+            position.y,
+            10.,
+            Color(color.r, color.g, color.b, color.a),
+        );
+    }
+
+    fn draw_rect<S, T>(&mut self, rect: megaui::Rect, stroke: S, fill: T)
+    where
+        S: Into<Option<megaui::Color>>,
+        T: Into<Option<megaui::Color>>,
+    {
+        let stroke = stroke.into();
+        let fill = fill.into();
+
+        if let Some(fill) = fill {
+            draw_rectangle(
+                rect.x,
+                rect.y,
+                rect.w,
+                rect.h,
+                Color(fill.r, fill.g, fill.b, fill.a),
+            );
+        }
+        if let Some(stroke) = stroke {
+            draw_rectangle_lines(
+                rect.x,
+                rect.y,
+                rect.w,
+                rect.h,
+                Color(stroke.r, stroke.g, stroke.b, stroke.a),
+            );
+        }
+    }
+    fn draw_line<T: Into<megaui::Color>>(
+        &mut self,
+        _start: megaui::Vector2,
+        _end: megaui::Vector2,
+        _color: T,
+    ) {
+    }
+    fn clip(&mut self, _rect: Option<megaui::Rect>) {}
 }
 
 impl Context {
@@ -135,6 +200,8 @@ impl Context {
 
             screen_coordinates: ScreenCoordinates::PixelPerfect,
             keys_pressed: HashSet::new(),
+
+            ui: megaui::Ui::new(Default::default()),
         }
     }
 
@@ -145,6 +212,9 @@ impl Context {
 
     fn end_frame(&mut self, ctx: &mut QuadContext) {
         get_context().quad_context = None;
+        self.ui.render(&mut UiRender);
+
+        self.ui.new_frame();
 
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
             let vertex_buffer = Buffer::stream(
@@ -272,6 +342,28 @@ impl EventHandler for Stage {
         }
     }
 
+    fn mouse_motion_event(&mut self, _: &mut QuadContext, x: f32, y: f32, _dx: f32, _dy: f32) {
+        use megaui::InputHandler;
+
+        let context = get_context();
+
+        context.ui.mouse_move((x, y));
+    }
+    fn mouse_wheel_event(&mut self, _ctx: &mut QuadContext, x: f32, y: f32) {}
+    fn mouse_button_down_event(&mut self, _: &mut QuadContext, _: MouseButton, x: f32, y: f32) {
+        use megaui::InputHandler;
+
+        let context = get_context();
+
+        context.ui.mouse_down((x, y));
+    }
+    fn mouse_button_up_event(&mut self, _: &mut QuadContext, _: MouseButton, x: f32, y: f32) {
+        use megaui::InputHandler;
+
+        let context = get_context();
+
+        context.ui.mouse_up((x, y));
+    }
     fn key_down_event(&mut self, _: &mut QuadContext, keycode: KeyCode, _: KeyMods, _: bool) {
         let context = get_context();
         context.keys_pressed.insert(keycode);
@@ -647,6 +739,13 @@ pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
     context.draw_call(&vertices, &indices, texture.texture);
 }
 
+pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, color: Color) {
+    draw_rectangle(x, y, w, 1., color);
+    draw_rectangle(x + w - 1., y + 1., 1., h - 2., color);
+    draw_rectangle(x, y + h - 1., w, 1., color);
+    draw_rectangle(x, y + 1., 1., h - 2., color);
+}
+
 /// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.
 /// Good use example: drawing an image from texture atlas.
 ///
@@ -700,6 +799,22 @@ pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
     }
 
     context.draw_call(&vertices, &indices, context.white_texture);
+}
+
+pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
+    id: megaui::Id,
+    position: glam::Vec2,
+    size: glam::Vec2,
+    f: F,
+) {
+    let context = get_context();
+
+    megaui::widgets::Window::new(
+        id,
+        megaui::Vector2::new(position.x(), position.y()),
+        megaui::Vector2::new(size.x(), size.y()),
+    )
+    .ui(&mut context.ui, f);
 }
 
 mod shader {
