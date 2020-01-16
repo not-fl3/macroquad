@@ -5,6 +5,8 @@ use macroquad::hash;
 fn main() {
     Window::init("BasicShapes").main_loop(|| {
         draw_window(hash!(), Vec2::new(20., 20.), Vec2::new(200., 200.), |ui| {
+            clear_background(RED);
+
             for i in 0..30 {
                 ui.tree_node(hash!(i), &format!("Node {}", i), |ui| {
                     ui.label(None, "TEXT");

@@ -22,6 +22,8 @@ struct DrawCall {
     vertices_count: usize,
     indices_count: usize,
 
+    clip: Option<(i32, i32, i32, i32)>,
+
     texture: Texture,
 }
 
@@ -48,6 +50,7 @@ impl DrawCall {
             indices: [0; MAX_INDICES],
             vertices_count: 0,
             indices_count: 0,
+            clip: None,
             texture,
         }
     }
@@ -82,68 +85,13 @@ struct Context {
     draw_calls_bindings: Vec<Bindings>,
     draw_calls_count: usize,
 
+    clip: Option<(i32, i32, i32, i32)>,
+
     screen_coordinates: ScreenCoordinates,
     keys_pressed: HashSet<KeyCode>,
 
     ui: megaui::Ui,
-}
-
-struct UiRender;
-
-impl megaui::Context for UiRender {
-    fn draw_label<T: Into<megaui::LabelParams>>(
-        &mut self,
-        position: megaui::Vector2,
-        label: &str,
-        params: T,
-    ) {
-        let params = params.into();
-        let color = params.color;
-
-        draw_text(
-            label,
-            position.x,
-            position.y,
-            10.,
-            Color(color.r, color.g, color.b, color.a),
-        );
-    }
-
-    fn draw_rect<S, T>(&mut self, rect: megaui::Rect, stroke: S, fill: T)
-    where
-        S: Into<Option<megaui::Color>>,
-        T: Into<Option<megaui::Color>>,
-    {
-        let stroke = stroke.into();
-        let fill = fill.into();
-
-        if let Some(fill) = fill {
-            draw_rectangle(
-                rect.x,
-                rect.y,
-                rect.w,
-                rect.h,
-                Color(fill.r, fill.g, fill.b, fill.a),
-            );
-        }
-        if let Some(stroke) = stroke {
-            draw_rectangle_lines(
-                rect.x,
-                rect.y,
-                rect.w,
-                rect.h,
-                Color(stroke.r, stroke.g, stroke.b, stroke.a),
-            );
-        }
-    }
-    fn draw_line<T: Into<megaui::Color>>(
-        &mut self,
-        _start: megaui::Vector2,
-        _end: megaui::Vector2,
-        _color: T,
-    ) {
-    }
-    fn clip(&mut self, _rect: Option<megaui::Rect>) {}
+    ui_draw_list: Vec<megaui::DrawCommand>,
 }
 
 impl Context {
@@ -197,11 +145,82 @@ impl Context {
             draw_calls: Vec::with_capacity(200),
             draw_calls_bindings: Vec::with_capacity(200),
             draw_calls_count: 0,
+            clip: None,
 
             screen_coordinates: ScreenCoordinates::PixelPerfect,
             keys_pressed: HashSet::new(),
 
             ui: megaui::Ui::new(Default::default()),
+            ui_draw_list: Vec::with_capacity(10000),
+        }
+    }
+
+    fn draw_ui(&mut self, _: &mut QuadContext) {
+        self.ui_draw_list.clear();
+
+        self.ui.render(&mut self.ui_draw_list);
+        self.ui.new_frame();
+
+        for draw_command in &self.ui_draw_list {
+            use megaui::DrawCommand::*;
+
+            match draw_command {
+                Clip {
+                    rect: Some(megaui::Rect { x, y, w, h }),
+                } => self.clip = Some((*x as i32, *y as i32, *w as i32, *h as i32)),
+                Clip { rect: None } => self.clip = None,
+                DrawLabel {
+                    params,
+                    position,
+                    label,
+                } => {
+                    let color = params.color;
+
+                    draw_text(
+                        label,
+                        position.x,
+                        position.y,
+                        10.,
+                        Color([
+                            (color.r * 255.) as u8,
+                            (color.g * 255.) as u8,
+                            (color.b * 255.) as u8,
+                            (color.a * 255.) as u8,
+                        ]),
+                    );
+                }
+                DrawRect { rect, stroke, fill } => {
+                    if let Some(fill) = fill {
+                        draw_rectangle(
+                            rect.x,
+                            rect.y,
+                            rect.w,
+                            rect.h,
+                            Color([
+                                (fill.r * 255.) as u8,
+                                (fill.g * 255.) as u8,
+                                (fill.b * 255.) as u8,
+                                (fill.a * 255.) as u8,
+                            ]),
+                        );
+                    }
+                    if let Some(stroke) = stroke {
+                        draw_rectangle_lines(
+                            rect.x,
+                            rect.y,
+                            rect.w,
+                            rect.h,
+                            Color([
+                                (stroke.r * 255.) as u8,
+                                (stroke.g * 255.) as u8,
+                                (stroke.b * 255.) as u8,
+                                (stroke.a * 255.) as u8,
+                            ]),
+                        );
+                    }
+                }
+                _ => {}
+            }
         }
     }
 
@@ -212,9 +231,7 @@ impl Context {
 
     fn end_frame(&mut self, ctx: &mut QuadContext) {
         get_context().quad_context = None;
-        self.ui.render(&mut UiRender);
-
-        self.ui.new_frame();
+        self.draw_ui(ctx);
 
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
             let vertex_buffer = Buffer::stream(
@@ -244,9 +261,10 @@ impl Context {
             self.clear_color.0[3] as f32 / 255.0,
         ));
 
+        let (width, height) = ctx.screen_size();
+
         let projection = match self.screen_coordinates {
             ScreenCoordinates::PixelPerfect => {
-                let (width, height) = ctx.screen_size();
                 glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
             }
             ScreenCoordinates::Fixed(left, right, bottom, top) => {
@@ -263,6 +281,11 @@ impl Context {
             bindings.images = vec![dc.texture];
 
             ctx.apply_pipeline(&self.pipeline);
+            if let Some(clip) = dc.clip {
+                ctx.apply_scissor_rect(clip.0, height as i32 - (clip.1 + clip.3), clip.2, clip.3);
+            } else {
+                ctx.apply_scissor_rect(0, 0, width as i32, height as i32);
+            }
             ctx.apply_bindings(&bindings);
             ctx.apply_uniforms(&shader::Uniforms { projection });
             ctx.draw(0, dc.indices_count as i32, 1);
@@ -291,6 +314,7 @@ impl Context {
 
         if previous_dc.map_or(true, |draw_call| {
             draw_call.texture != texture
+                || draw_call.clip != self.clip
                 || draw_call.vertices_count >= MAX_VERTICES - vertices.len()
                 || draw_call.indices_count >= MAX_INDICES - indices.len()
         }) {
@@ -300,6 +324,7 @@ impl Context {
             self.draw_calls[self.draw_calls_count].texture = texture;
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
+            self.draw_calls[self.draw_calls_count].clip = self.clip;
 
             self.draw_calls_count += 1;
         };
@@ -349,7 +374,7 @@ impl EventHandler for Stage {
 
         context.ui.mouse_move((x, y));
     }
-    fn mouse_wheel_event(&mut self, _ctx: &mut QuadContext, x: f32, y: f32) {}
+    fn mouse_wheel_event(&mut self, _: &mut QuadContext, _x: f32, _y: f32) {}
     fn mouse_button_down_event(&mut self, _: &mut QuadContext, _: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
 
@@ -357,6 +382,7 @@ impl EventHandler for Stage {
 
         context.ui.mouse_down((x, y));
     }
+
     fn mouse_button_up_event(&mut self, _: &mut QuadContext, _: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
 
@@ -364,6 +390,7 @@ impl EventHandler for Stage {
 
         context.ui.mouse_up((x, y));
     }
+
     fn key_down_event(&mut self, _: &mut QuadContext, keycode: KeyCode, _: KeyMods, _: bool) {
         let context = get_context();
         context.keys_pressed.insert(keycode);
