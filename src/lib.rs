@@ -11,7 +11,7 @@ const MAX_INDICES: usize = 5000;
 const FONT_TEXTURE_BYTES: &'static [u8] = include_bytes!("font.png");
 
 struct DrawCall {
-    vertices: [f32; MAX_VERTICES],
+    vertices: [Vertex; MAX_VERTICES],
     indices: [u16; MAX_INDICES],
 
     vertices_count: usize,
@@ -20,10 +20,26 @@ struct DrawCall {
     texture: Texture,
 }
 
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+struct Vertex {
+    x: f32,
+    y: f32,
+    u: f32,
+    v: f32,
+    color: Color,
+}
+
+impl Vertex {
+    pub fn new(x: f32, y: f32, u: f32, v: f32, color: Color) -> Vertex {
+        Vertex { x, y, u, v, color }
+    }
+}
+
 impl DrawCall {
     fn new(texture: Texture) -> DrawCall {
         DrawCall {
-            vertices: [0.0; MAX_VERTICES],
+            vertices: [Vertex::new(0., 0., 0., 0., Color([0, 0, 0, 0])); MAX_VERTICES],
             indices: [0; MAX_INDICES],
             vertices_count: 0,
             indices_count: 0,
@@ -31,7 +47,7 @@ impl DrawCall {
         }
     }
 
-    fn vertices(&self) -> &[f32] {
+    fn vertices(&self) -> &[Vertex] {
         &self.vertices[0..self.vertices_count]
     }
 
@@ -46,6 +62,7 @@ pub enum ScreenCoordinates {
 }
 
 struct Context {
+    quad_context: Option<&'static mut QuadContext>,
     clear_color: Color,
 
     screen_width: f32,
@@ -74,7 +91,7 @@ impl Context {
             &[
                 VertexAttribute::new("position", VertexFormat::Float2),
                 VertexAttribute::new("texcoord", VertexFormat::Float2),
-                VertexAttribute::new("color0", VertexFormat::Float4),
+                VertexAttribute::new("color0", VertexFormat::Byte4),
             ],
             shader,
             PipelineParams {
@@ -96,12 +113,14 @@ impl Context {
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        let font_texture = Texture::from_rgba8(width, height, &bytes);
+        let font_texture = Texture::from_rgba8(ctx, width, height, &bytes);
 
-        let white_texture = Texture::from_rgba8(1, 1, &[255, 255, 255, 255]);
+        let white_texture = Texture::from_rgba8(ctx, 1, 1, &[255, 255, 255, 255]);
 
         Context {
-            clear_color: Color(0., 0., 0., 1.),
+            quad_context: None,
+
+            clear_color: Color([0, 0, 0, 255]),
             pipeline,
 
             screen_width,
@@ -119,11 +138,14 @@ impl Context {
         }
     }
 
-    fn begin_frame(&mut self, _ctx: &mut QuadContext) {
+    fn begin_frame(&mut self, ctx: &mut QuadContext) {
         self.draw_calls_count = 0;
+        get_context().quad_context = unsafe { std::mem::transmute(Some(ctx)) };
     }
 
     fn end_frame(&mut self, ctx: &mut QuadContext) {
+        get_context().quad_context = None;
+
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
             let vertex_buffer = Buffer::stream(
                 ctx,
@@ -146,10 +168,10 @@ impl Context {
         assert_eq!(self.draw_calls_bindings.len(), self.draw_calls.len());
 
         ctx.begin_default_pass(PassAction::clear_color(
-            self.clear_color.0,
-            self.clear_color.1,
-            self.clear_color.2,
-            self.clear_color.3,
+            self.clear_color.0[0] as f32 / 255.0,
+            self.clear_color.0[1] as f32 / 255.0,
+            self.clear_color.0[2] as f32 / 255.0,
+            self.clear_color.0[3] as f32 / 255.0,
         ));
 
         let projection = match self.screen_coordinates {
@@ -189,7 +211,7 @@ impl Context {
         self.draw_calls_count = 0;
     }
 
-    fn draw_call(&mut self, vertices: &[f32], indices: &[u16], texture: Texture) {
+    fn draw_call(&mut self, vertices: &[Vertex], indices: &[u16], texture: Texture) {
         let previous_dc_ix = if self.draw_calls_count == 0 {
             None
         } else {
@@ -219,7 +241,7 @@ impl Context {
         }
 
         for i in 0..indices.len() {
-            dc.indices[dc.indices_count + i] = indices[i] + dc.vertices_count as u16 / (2 + 2 + 4);
+            dc.indices[dc.indices_count + i] = indices[i] + dc.vertices_count as u16;
         }
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();
@@ -234,15 +256,20 @@ fn get_context() -> &'static mut Context {
 }
 
 struct Stage {
-    f: Box<dyn FnMut() -> ()>,
+    main_loop: Box<dyn FnMut() -> ()>,
+    on_resize: Option<Box<dyn FnMut(f32, f32) -> ()>>,
 }
 
 impl EventHandler for Stage {
-    fn resize_event(&mut self, _ctx: &mut QuadContext, width: f32, height: f32) {
-        let context = get_context();
+    fn resize_event(&mut self, ctx: &mut QuadContext, width: f32, height: f32) {
+        get_context().screen_width = width;
+        get_context().screen_height = height;
 
-        context.screen_width = width;
-        context.screen_height = height;
+        if let Some(on_resize) = self.on_resize.as_mut() {
+            get_context().quad_context = unsafe { std::mem::transmute(Some(ctx)) };
+            on_resize(width, height);
+            get_context().quad_context = None;
+        }
     }
 
     fn key_down_event(&mut self, _: &mut QuadContext, keycode: KeyCode, _: KeyMods, _: bool) {
@@ -260,7 +287,7 @@ impl EventHandler for Stage {
     fn draw(&mut self, ctx: &mut QuadContext) {
         get_context().begin_frame(ctx);
 
-        (self.f)();
+        (self.main_loop)();
 
         get_context().end_frame(ctx);
     }
@@ -268,11 +295,15 @@ impl EventHandler for Stage {
 
 pub struct Window {
     on_init: Option<Box<dyn FnOnce() -> ()>>,
+    on_resize: Option<Box<dyn FnMut(f32, f32) -> ()>>,
 }
 
 impl Window {
-    pub fn init(_label: &str) -> Window {
-        Window { on_init: None }
+    pub fn new(_label: &str) -> Window {
+        Window {
+            on_init: None,
+            on_resize: None,
+        }
     }
 
     pub fn on_init(self, f: impl FnOnce() -> ()) -> Self {
@@ -281,6 +312,16 @@ impl Window {
 
         Self {
             on_init: Some(closure),
+            ..self
+        }
+    }
+
+    pub fn on_resize(self, f: impl FnMut(f32, f32) -> ()) -> Self {
+        let closure: Box<dyn FnMut(f32, f32)> = Box::new(f);
+        let closure: Box<dyn FnMut(f32, f32) + 'static> = unsafe { std::mem::transmute(closure) };
+
+        Self {
+            on_resize: Some(closure),
             ..self
         }
     }
@@ -324,18 +365,34 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
 }
 
 #[repr(C)]
-pub struct Color(f32, f32, f32, f32);
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Color([u8; 4]);
 
-pub const RED: Color = Color(1.0, 0.0, 0.0, 1.0);
-pub const GREEN: Color = Color(0.0, 1.0, 0.0, 1.0);
-pub const BLUE: Color = Color(0.0, 0.0, 1.0, 1.0);
-pub const BLACK: Color = Color(0.0, 0.0, 0.0, 1.0);
-pub const DARKGRAY: Color = Color(0.8, 0.8, 0.8, 1.0);
-pub const YELLOW: Color = Color(1.0, 1.0, 0.0, 1.0);
-pub const SKYBLUE: Color = Color(0.4, 0.7, 1., 1.);
-pub const DARKBLUE: Color = Color(0., 0.32, 0.67, 1.);
-pub const MAROON: Color = Color(0.7, 0.1, 0.21, 1.);
-pub const DARKGREEN: Color = Color(0., 0.45, 0.17, 1.);
+pub const LIGHTGRAY: Color = Color([200, 200, 200, 255]);
+pub const GRAY: Color = Color([130, 130, 130, 255]);
+pub const DARKGRAY: Color = Color([80, 80, 80, 255]);
+pub const YELLOW: Color = Color([253, 249, 0, 255]);
+pub const GOLD: Color = Color([255, 203, 0, 255]);
+pub const ORANGE: Color = Color([255, 161, 0, 255]);
+pub const PINK: Color = Color([255, 109, 194, 255]);
+pub const RED: Color = Color([230, 41, 55, 255]);
+pub const MAROON: Color = Color([190, 33, 55, 255]);
+pub const GREEN: Color = Color([0, 228, 48, 255]);
+pub const LIME: Color = Color([0, 158, 47, 255]);
+pub const DARKGREEN: Color = Color([0, 117, 44, 255]);
+pub const SKYBLUE: Color = Color([102, 191, 255, 255]);
+pub const BLUE: Color = Color([0, 121, 241, 255]);
+pub const DARKBLUE: Color = Color([0, 82, 172, 255]);
+pub const PURPLE: Color = Color([200, 122, 255, 255]);
+pub const VIOLET: Color = Color([135, 60, 190, 255]);
+pub const DARKPURPLE: Color = Color([112, 31, 126, 255]);
+pub const BEIGE: Color = Color([211, 176, 131, 255]);
+pub const BROWN: Color = Color([127, 106, 79, 255]);
+pub const DARKBROWN: Color = Color([76, 63, 47, 255]);
+pub const WHITE: Color = Color([255, 255, 255, 255]);
+pub const BLACK: Color = Color([0, 0, 0, 255]);
+pub const BLANK: Color = Color([0, 0, 0, 0]);
+pub const MAGENTA: Color = Color([255, 0, 255, 255]);
 
 pub fn clear_background(color: Color) {
     let context = get_context();
@@ -361,10 +418,168 @@ pub fn screen_height() -> f32 {
     context.screen_height
 }
 
+pub enum FileSource<'a> {
+    FsPath(String),
+    Bytes(std::borrow::Cow<'a, [u8]>),
+}
+impl From<&'static str> for FileSource<'static> {
+    fn from(path: &'static str) -> FileSource {
+        FileSource::FsPath(path.to_owned())
+    }
+}
+
+impl<'a> From<&'a [u8]> for FileSource<'a> {
+    fn from(bytes: &'a [u8]) -> FileSource<'a> {
+        FileSource::Bytes(std::borrow::Cow::from(bytes))
+    }
+}
+
+/// Texture, data stored in GPU memory
+#[derive(Clone, Copy, Debug)]
+pub struct Texture2D {
+    texture: miniquad::Texture,
+}
+
+impl Texture2D {
+    pub fn empty() -> Texture2D {
+        Texture2D {
+            texture: miniquad::Texture::empty(),
+        }
+    }
+
+    pub fn update(&mut self, image: &Image) {
+        assert_eq!(self.texture.width, image.width as u32);
+        assert_eq!(self.texture.height, image.height as u32);
+
+        let context = get_context();
+        let quad_ctx = context.quad_context.as_mut().unwrap();
+        self.texture.update(quad_ctx, &image.bytes);
+    }
+}
+
+/// Load texture of any type supported by `image-rs`. Actually, just a PNG right now.
+///
+/// This may be used with bytes array:
+/// `let texture = load_texture(include_bytes!("../test.png"));`
+/// or with a path. Be careful, the path should be eithre a global path or a path relative to executable
+/// `let texture = load_texture("../test.png");`
+pub fn load_texture<'a>(source: impl Into<FileSource<'a>>) -> Texture2D {
+    load_texture_with_format(source, None)
+}
+
+/// Same as `load_texture` but consider data in file as a TGA. `image-rs` cant automatically deduce TGA as a filetype.
+pub fn load_tga_texture<'a>(source: impl Into<FileSource<'a>>) -> Texture2D {
+    load_texture_with_format(source, Some(image::ImageFormat::TGA))
+}
+
+/// Image, data stored in CPU memory
+pub struct Image {
+    bytes: Vec<u8>,
+    width: u16,
+    height: u16,
+}
+
+impl Image {
+    pub fn empty() -> Image {
+        Image {
+            width: 0,
+            height: 0,
+            bytes: vec![],
+        }
+    }
+
+    pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
+        let mut bytes = vec![0; width as usize * height as usize * 4];
+        for i in 0..width as usize * height as usize {
+            for c in 0..4 {
+                bytes[i * 4 + c] = color.0[c];
+            }
+        }
+        Image {
+            width,
+            height,
+            bytes,
+        }
+    }
+
+    pub fn update(&mut self, bytes: &[Color]) {
+        assert!(self.width as usize * self.height as usize == bytes.len());
+
+        for i in 0..bytes.len() {
+            self.bytes[i * 4] = bytes[i].0[0];
+            self.bytes[i * 4 + 1] = bytes[i].0[1];
+            self.bytes[i * 4 + 2] = bytes[i].0[2];
+            self.bytes[i * 4 + 3] = bytes[i].0[3];
+        }
+    }
+    pub fn width(&self) -> usize {
+        self.width as usize
+    }
+
+    pub fn height(&self) -> usize {
+        self.height as usize
+    }
+
+    pub fn get_image_data(&mut self) -> &mut [Color] {
+        use std::slice;
+
+        unsafe {
+            slice::from_raw_parts_mut(
+                self.bytes.as_mut_ptr() as *mut Color,
+                self.width as usize * self.height as usize,
+            )
+        }
+    }
+}
+
+pub fn load_texture_from_image(image: &Image) -> Texture2D {
+    load_texture_from_rgba8(image.width, image.height, &image.bytes)
+}
+
+fn load_texture_with_format<'a>(
+    source: impl Into<FileSource<'a>>,
+    format: Option<image::ImageFormat>,
+) -> Texture2D {
+    let source = source.into();
+
+    let bytes = match source {
+        FileSource::Bytes(bytes) => bytes,
+        _ => unimplemented!(),
+    };
+    let img = if let Some(fmt) = format {
+        image::load_from_memory_with_format(&bytes, fmt)
+            .unwrap_or_else(|e| panic!(e))
+            .to_rgba()
+    } else {
+        image::load_from_memory(&bytes)
+            .unwrap_or_else(|e| panic!(e))
+            .to_rgba()
+    };
+
+    let width = img.width() as u16;
+    let height = img.height() as u16;
+    let bytes = img.into_raw();
+
+    load_texture_from_rgba8(width, height, &bytes)
+}
+
+fn load_texture_from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
+    let context = get_context();
+
+    let texture = miniquad::Texture::from_rgba8(
+        context.quad_context.as_mut().unwrap(),
+        width,
+        height,
+        &bytes,
+    );
+
+    Texture2D { texture }
+}
+
 pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     let context = get_context();
 
-    let mut vertices = Vec::<f32>::new();
+    let mut vertices = Vec::<Vertex>::new();
     let mut indices = Vec::<u16>::new();
     for (n, ch) in text.chars().enumerate() {
         let ix = ch as u32;
@@ -376,10 +591,10 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
 
         #[rustfmt::skip]
         let letter = [
-            x + 0.0 + n as f32 * font_size, y, sx, sy, color.0, color.1, color.2, color.3,
-            x + font_size + n as f32 * font_size, y, sx + sw, sy, color.0, color.1, color.2, color.3,
-            x + font_size + n as f32 * font_size, y + font_size, sx + sw, sy + sh, color.0, color.1, color.2, color.3,
-            x + 0.0 + n as f32 * font_size, y + font_size, sx, sy + sh, color.0, color.1, color.2, color.3,
+            Vertex::new(x + 0.0 + n as f32 * font_size, y, sx, sy, color),
+            Vertex::new(x + font_size + n as f32 * font_size, y, sx + sw, sy, color),
+            Vertex::new(x + font_size + n as f32 * font_size, y + font_size, sx + sw, sy + sh, color),
+            Vertex::new(x + 0.0 + n as f32 * font_size, y + font_size, sx, sy + sh, color),
         ];
         vertices.extend(letter.iter());
         let n = n as u16;
@@ -405,14 +620,32 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 
     #[rustfmt::skip]
     let vertices = [
-        x    , y    , 0.0, 1.0, color.0, color.1, color.2, color.3,
-        x + w, y    , 1.0, 0.0, color.0, color.1, color.2, color.3,
-        x + w, y + h, 1.0, 1.0, color.0, color.1, color.2, color.3,
-        x    , y + h, 0.0, 1.0, color.0, color.1, color.2, color.3,
+        Vertex::new(x    , y    , 0.0, 1.0, color),
+        Vertex::new(x + w, y    , 1.0, 0.0, color),
+        Vertex::new(x + w, y + h, 1.0, 1.0, color),
+        Vertex::new(x    , y + h, 0.0, 0.0, color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
     context.draw_call(&vertices, &indices, context.white_texture);
+}
+
+pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
+    let context = get_context();
+
+    let w = texture.texture.width as f32;
+    let h = texture.texture.height as f32;
+
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(x    , y    , 0.0, 0.0, color),
+        Vertex::new(x + w, y    , 1.0, 0.0, color),
+        Vertex::new(x + w, y + h, 1.0, 1.0, color),
+        Vertex::new(x    , y + h, 0.0, 1.0, color),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    context.draw_call(&vertices, &indices, texture.texture);
 }
 
 pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
@@ -420,18 +653,17 @@ pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
 
     let context = get_context();
 
-    let mut vertices = Vec::<f32>::new();
+    let mut vertices = Vec::<Vertex>::new();
     let mut indices = Vec::<u16>::new();
 
-    vertices.extend_from_slice(&[x, y, 0., 0.0, color.0, color.1, color.2, color.3]);
+    vertices.push(Vertex::new(x, y, 0., 0.0, color));
     for i in 0..NUM_DIVISIONS + 1 {
         let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
         let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
 
-        #[rustfmt::skip]
-        let vertex = [x + r * rx, y + r * ry, rx, ry, color.0, color.1, color.2, color.3];
+        let vertex = Vertex::new(x + r * rx, y + r * ry, rx, ry, color);
 
-        vertices.extend_from_slice(&vertex);
+        vertices.push(vertex);
 
         if i != NUM_DIVISIONS {
             indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
@@ -457,7 +689,7 @@ mod shader {
     void main() {
         gl_Position = Projection * vec4(position, 0, 1);
         gl_Position.z = 0.;
-        color = color0;
+        color = color0 / 255.0;
         uv = texcoord;
     }"#;
 

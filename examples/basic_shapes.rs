@@ -1,7 +1,7 @@
 use macroquad::*;
 
 fn main() {
-    Window::init("BasicShapes").main_loop(|| {
+    Window::new("BasicShapes").main_loop(|| {
         clear_background(RED);
 
         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);

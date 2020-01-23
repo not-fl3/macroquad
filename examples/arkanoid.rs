@@ -16,7 +16,7 @@ fn main() {
     let platform_width = 5.;
     let platform_height = 0.2;
 
-    Window::init("Input")
+    Window::new("Input")
         .on_init(|| {
             set_screen_coordinates(ScreenCoordinates::Fixed(0., SCR_W, SCR_H, 0.));
         })
