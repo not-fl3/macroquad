@@ -555,7 +555,6 @@ fn load_texture_with_format<'a>(
             .unwrap_or_else(|e| panic!(e))
             .to_rgba()
     };
-
     let width = img.width() as u16;
     let height = img.height() as u16;
     let bytes = img.into_raw();
@@ -642,6 +641,36 @@ pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
         Vertex::new(x + w, y    , 1.0, 0.0, color),
         Vertex::new(x + w, y + h, 1.0, 1.0, color),
         Vertex::new(x    , y + h, 0.0, 1.0, color),
+        ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    context.draw_call(&vertices, &indices, texture.texture);
+}
+
+/// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.
+/// Good use example: drawing an image from texture atlas.
+///
+/// TODO: maybe introduce Rect type?
+pub fn draw_texture_rec(
+    texture: Texture2D,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    sx: f32,
+    sy: f32,
+    sw: f32,
+    sh: f32,
+    color: Color,
+) {
+    let context = get_context();
+
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(x    , y    , sx     , sy     , color),
+        Vertex::new(x + w, y    , sx + sw, sy     , color),
+        Vertex::new(x + w, y + h, sx + sw, sy + sh, color),
+        Vertex::new(x    , y + h, sx     , sy + sh, color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
