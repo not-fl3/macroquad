@@ -3,6 +3,8 @@ use miniquad::*;
 
 use std::collections::HashSet;
 
+pub mod rand;
+
 const MAX_VERTICES: usize = 10000;
 const MAX_INDICES: usize = 5000;
 
