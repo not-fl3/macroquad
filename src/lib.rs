@@ -291,17 +291,24 @@ impl Window {
         // The same applies for closure in on_init
         let closure: Box<dyn FnMut()> = Box::new(f);
         let closure: Box<dyn FnMut() + 'static> = unsafe { std::mem::transmute(closure) };
-
         miniquad::start(conf::Conf::default(), move |ctx| {
             unsafe { CONTEXT = Some(Context::new(ctx)) };
 
             if let Some(on_init) = self.on_init.take() {
+                get_context().quad_context = unsafe { std::mem::transmute(Some(ctx)) };
                 on_init();
+                get_context().quad_context = None;
             }
 
-            Box::new(Stage { f: closure })
+            Box::new(Stage {
+                main_loop: closure,
+                on_resize: self.on_resize,
+            })
         });
 
+        // unfortunately this will panic on wasm, but there is no other way to
+        // preserve "main"'s stack and ensure that nothing will be executed after "main_loop"
+        // Looking for other solution.
         std::process::exit(0)
     }
 }
