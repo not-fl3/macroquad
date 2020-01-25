@@ -89,6 +89,9 @@ struct Context {
 
     screen_coordinates: ScreenCoordinates,
     keys_pressed: HashSet<KeyCode>,
+    mouse_pressed: HashSet<MouseButton>,
+    mouse_position: Vec2,
+    mouse_wheel: f32,
 
     ui: megaui::Ui,
     ui_draw_list: Vec<megaui::DrawCommand>,
@@ -149,6 +152,9 @@ impl Context {
 
             screen_coordinates: ScreenCoordinates::PixelPerfect,
             keys_pressed: HashSet::new(),
+            mouse_pressed: HashSet::new(),
+            mouse_position: Vec2::new(0., 0.),
+            mouse_wheel: 0.,
 
             ui: megaui::Ui::new(Default::default()),
             ui_draw_list: Vec::with_capacity(10000),
@@ -297,6 +303,8 @@ impl Context {
         ctx.end_render_pass();
 
         ctx.commit_frame();
+
+        get_context().mouse_wheel = 0.;
     }
 
     fn clear(&mut self, color: Color) {
@@ -372,21 +380,29 @@ impl EventHandler for Stage {
 
         let context = get_context();
 
+        context.mouse_position = Vec2::new(x, y);
         context.ui.mouse_move((x, y));
     }
-    fn mouse_wheel_event(&mut self, _: &mut QuadContext, _x: f32, _y: f32) {}
-    fn mouse_button_down_event(&mut self, _: &mut QuadContext, _: MouseButton, x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, _: &mut QuadContext, _x: f32, y: f32) {
+        let context = get_context();
+
+        context.mouse_wheel = y;
+    }
+    fn mouse_button_down_event(&mut self, _: &mut QuadContext, btn: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
 
         let context = get_context();
 
+        context.mouse_pressed.insert(btn);
         context.ui.mouse_down((x, y));
     }
 
-    fn mouse_button_up_event(&mut self, _: &mut QuadContext, _: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(&mut self, _: &mut QuadContext, btn: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
 
         let context = get_context();
+
+        context.mouse_pressed.remove(&btn);
 
         context.ui.mouse_up((x, y));
     }
@@ -475,12 +491,30 @@ impl Window {
     }
 }
 
-pub use miniquad::KeyCode;
+pub use miniquad::{KeyCode, MouseButton};
+
+pub fn mouse_position() -> (f32, f32) {
+    let context = get_context();
+
+    (context.mouse_position.x(), context.mouse_position.y())
+}
+
+pub fn mouse_wheel() -> f32 {
+    let context = get_context();
+
+    context.mouse_wheel
+}
 
 pub fn is_key_down(key_code: KeyCode) -> bool {
     let context = get_context();
 
     context.keys_pressed.contains(&key_code)
+}
+
+pub fn is_mouse_button_down(btn: MouseButton) -> bool {
+    let context = get_context();
+
+    context.mouse_pressed.contains(&btn)
 }
 
 #[repr(C)]

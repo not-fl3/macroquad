@@ -3,7 +3,7 @@ use macroquad::*;
 use macroquad::hash;
 
 fn main() {
-    Window::init("BasicShapes").main_loop(|| {
+    Window::init("TestWindow").main_loop(|| {
         draw_window(hash!(), Vec2::new(20., 20.), Vec2::new(200., 200.), |ui| {
             clear_background(RED);
 
