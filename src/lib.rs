@@ -7,6 +7,8 @@ pub use megaui::hash;
 pub use glam::Vec2;
 
 use std::collections::HashSet;
+use std::future::Future;
+use std::pin::Pin;
 
 pub mod rand;
 
@@ -14,6 +16,10 @@ const MAX_VERTICES: usize = 10000;
 const MAX_INDICES: usize = 5000;
 
 const FONT_TEXTURE_BYTES: &'static [u8] = include_bytes!("font.png");
+
+mod exec;
+
+pub use exec::*;
 
 struct DrawCall {
     vertices: [Vertex; MAX_VERTICES],
@@ -91,7 +97,7 @@ struct Context {
     keys_pressed: HashSet<KeyCode>,
     mouse_pressed: HashSet<MouseButton>,
     mouse_position: Vec2,
-    mouse_wheel: f32,
+    mouse_wheel: Vec2,
 
     ui: megaui::Ui,
     ui_draw_list: Vec<megaui::DrawCommand>,
@@ -154,7 +160,7 @@ impl Context {
             keys_pressed: HashSet::new(),
             mouse_pressed: HashSet::new(),
             mouse_position: Vec2::new(0., 0.),
-            mouse_wheel: 0.,
+            mouse_wheel: Vec2::new(0., 0.),
 
             ui: megaui::Ui::new(Default::default()),
             ui_draw_list: Vec::with_capacity(10000),
@@ -304,7 +310,7 @@ impl Context {
 
         ctx.commit_frame();
 
-        get_context().mouse_wheel = 0.;
+        get_context().mouse_wheel = Vec2::new(0., 0.);
     }
 
     fn clear(&mut self, color: Color) {
@@ -359,20 +365,13 @@ fn get_context() -> &'static mut Context {
 }
 
 struct Stage {
-    main_loop: Box<dyn FnMut() -> ()>,
-    on_resize: Option<Box<dyn FnMut(f32, f32) -> ()>>,
+    future: Pin<Box<dyn Future<Output = ()>>>,
 }
 
 impl EventHandler for Stage {
-    fn resize_event(&mut self, ctx: &mut QuadContext, width: f32, height: f32) {
+    fn resize_event(&mut self, _: &mut QuadContext, width: f32, height: f32) {
         get_context().screen_width = width;
         get_context().screen_height = height;
-
-        if let Some(on_resize) = self.on_resize.as_mut() {
-            get_context().quad_context = unsafe { std::mem::transmute(Some(ctx)) };
-            on_resize(width, height);
-            get_context().quad_context = None;
-        }
     }
 
     fn mouse_motion_event(&mut self, _: &mut QuadContext, x: f32, y: f32, _dx: f32, _dy: f32) {
@@ -383,10 +382,11 @@ impl EventHandler for Stage {
         context.mouse_position = Vec2::new(x, y);
         context.ui.mouse_move((x, y));
     }
-    fn mouse_wheel_event(&mut self, _: &mut QuadContext, _x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, _: &mut QuadContext, x: f32, y: f32) {
         let context = get_context();
 
-        context.mouse_wheel = y;
+        context.mouse_wheel.set_x(x);
+        context.mouse_wheel.set_y(y);
     }
     fn mouse_button_down_event(&mut self, _: &mut QuadContext, btn: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
@@ -422,73 +422,33 @@ impl EventHandler for Stage {
     fn draw(&mut self, ctx: &mut QuadContext) {
         get_context().begin_frame(ctx);
 
-        (self.main_loop)();
+        exec::resume(&mut self.future);
 
         get_context().end_frame(ctx);
     }
 }
 
-pub struct Window {
-    on_init: Option<Box<dyn FnOnce() -> ()>>,
-    on_resize: Option<Box<dyn FnMut(f32, f32) -> ()>>,
-}
+pub struct Window {}
 
 impl Window {
-    pub fn new(_label: &str) -> Window {
-        Window {
-            on_init: None,
-            on_resize: None,
-        }
-    }
+    pub fn new(_label: &str, future: impl Future<Output = ()> + 'static) -> ! {
+        miniquad::start(conf::Conf::default(), |ctx| {
+            let mut future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
 
-    pub fn on_init(self, f: impl FnOnce() -> ()) -> Self {
-        let closure: Box<dyn FnOnce()> = Box::new(f);
-        let closure: Box<dyn FnOnce() + 'static> = unsafe { std::mem::transmute(closure) };
-
-        Self {
-            on_init: Some(closure),
-            ..self
-        }
-    }
-
-    pub fn on_resize(self, f: impl FnMut(f32, f32) -> ()) -> Self {
-        let closure: Box<dyn FnMut(f32, f32)> = Box::new(f);
-        let closure: Box<dyn FnMut(f32, f32) + 'static> = unsafe { std::mem::transmute(closure) };
-
-        Self {
-            on_resize: Some(closure),
-            ..self
-        }
-    }
-
-    pub fn main_loop(mut self, f: impl FnMut() -> ()) -> ! {
-        let f = Box::new(f);
-
-        // Allocate `clsoure` on the heap and erase the lifetime bound.
-        // This is safe because we will never leave this function (alive)
-        // The same applies for closure in on_init
-        let closure: Box<dyn FnMut()> = Box::new(f);
-        let closure: Box<dyn FnMut() + 'static> = unsafe { std::mem::transmute(closure) };
-        miniquad::start(conf::Conf::default(), move |ctx| {
             unsafe { CONTEXT = Some(Context::new(ctx)) };
 
-            if let Some(on_init) = self.on_init.take() {
-                get_context().quad_context = unsafe { std::mem::transmute(Some(ctx)) };
-                on_init();
-                get_context().quad_context = None;
-            }
+            exec::resume(&mut future);
 
-            Box::new(Stage {
-                main_loop: closure,
-                on_resize: self.on_resize,
-            })
+            Box::new(Stage { future })
         });
 
-        // unfortunately this will panic on wasm, but there is no other way to
-        // preserve "main"'s stack and ensure that nothing will be executed after "main_loop"
-        // Looking for other solution.
-        std::process::exit(0)
+        // what is good for winit is good for macroquad!
+        panic!("NOT A PANIC");
     }
+}
+
+pub fn next_frame() -> FrameFuture {
+    FrameFuture
 }
 
 pub use miniquad::{KeyCode, MouseButton};
@@ -499,10 +459,10 @@ pub fn mouse_position() -> (f32, f32) {
     (context.mouse_position.x(), context.mouse_position.y())
 }
 
-pub fn mouse_wheel() -> f32 {
+pub fn mouse_wheel() -> (f32, f32) {
     let context = get_context();
 
-    context.mouse_wheel
+    (context.mouse_wheel.x(), context.mouse_wheel.y())
 }
 
 pub fn is_key_down(key_code: KeyCode) -> bool {

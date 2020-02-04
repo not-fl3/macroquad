@@ -10,8 +10,9 @@ fn main() {
             let (mouse_x, mouse_y) = mouse_position();
             ui.label(None, &format!("Mouse position: {} {}", mouse_x, mouse_y));
 
-            let mouse_wheel = mouse_wheel();
-            ui.label(None, &format!("Mouse wheel: {}", mouse_wheel));
+            let (mouse_wheel_x, mouse_wheel_y) = mouse_wheel();
+            ui.label(None, &format!("Mouse wheel x: {}", mouse_wheel_x));
+            ui.label(None, &format!("Mouse wheel y: {}", mouse_wheel_y));
 
             widgets::Group::new(hash!(), Vector2::new(200., 90.))
                 .position(Vector2::new(240., 0.))
