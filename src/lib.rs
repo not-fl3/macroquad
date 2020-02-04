@@ -364,9 +364,9 @@ fn get_context() -> &'static mut Context {
     unsafe { CONTEXT.as_mut().unwrap() }
 }
 
-struct Stage {
-    future: Pin<Box<dyn Future<Output = ()>>>,
-}
+static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
+
+struct Stage {}
 
 impl EventHandler for Stage {
     fn resize_event(&mut self, _: &mut QuadContext, width: f32, height: f32) {
@@ -422,7 +422,7 @@ impl EventHandler for Stage {
     fn draw(&mut self, ctx: &mut QuadContext) {
         get_context().begin_frame(ctx);
 
-        exec::resume(&mut self.future);
+        exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
 
         get_context().end_frame(ctx);
     }
@@ -431,19 +431,17 @@ impl EventHandler for Stage {
 pub struct Window {}
 
 impl Window {
-    pub fn new(_label: &str, future: impl Future<Output = ()> + 'static) -> ! {
+    pub fn new(_label: &str, future: impl Future<Output = ()> + 'static) {
         miniquad::start(conf::Conf::default(), |ctx| {
-            let mut future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
-
+            unsafe {
+                MAIN_FUTURE = Some(Box::pin(future));
+            }
             unsafe { CONTEXT = Some(Context::new(ctx)) };
 
-            exec::resume(&mut future);
+            exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
 
-            Box::new(Stage { future })
+            Box::new(Stage {})
         });
-
-        // what is good for winit is good for macroquad!
-        panic!("NOT A PANIC");
     }
 }
 
