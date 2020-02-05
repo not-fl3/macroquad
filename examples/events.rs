@@ -1,10 +1,10 @@
-use macroquad::*;
+use macroquad::megaui::{widgets, Vector2};
+use macroquad::{
+    draw_window, hash, is_key_down, is_mouse_button_down, mouse_position, mouse_wheel, next_frame,
+    MouseButton, Vec2,
+};
 
-use macroquad::hash;
-
-use megaui::{widgets, Vector2};
-
-#[macroquad_main("Events")]
+#[macroquad::main("Events")]
 async fn main() {
     loop {
         draw_window(hash!(), Vec2::new(20., 20.), Vec2::new(450., 200.), |ui| {

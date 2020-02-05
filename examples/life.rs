@@ -1,6 +1,9 @@
-use macroquad::*;
+use macroquad::{
+    clear_background, draw_texture, load_texture_from_image, next_frame, rand, screen_height,
+    screen_width, set_screen_coordinates, Image, ScreenCoordinates, BLACK, WHITE,
+};
 
-#[macroquad_main("Life")]
+#[macroquad::main("Life")]
 async fn main() {
     let w = screen_width() as usize;
     let h = screen_height() as usize;

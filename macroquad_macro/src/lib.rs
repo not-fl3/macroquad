@@ -2,7 +2,7 @@ extern crate proc_macro;
 use proc_macro::{Ident, TokenStream, TokenTree};
 
 #[proc_macro_attribute]
-pub fn macroquad_main(_attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn main(_attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut modified = TokenStream::new();
     let mut source = item.into_iter();
 

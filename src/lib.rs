@@ -19,7 +19,7 @@ const FONT_TEXTURE_BYTES: &'static [u8] = include_bytes!("font.png");
 
 pub mod exec;
 
-pub use macroquad_macro::macroquad_main;
+pub use macroquad_macro::main;
 
 struct DrawCall {
     vertices: [Vertex; MAX_VERTICES],

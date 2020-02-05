@@ -1,6 +1,9 @@
-use macroquad::*;
+use macroquad::{
+    self as mq, clear_background, draw_circle, draw_rectangle, draw_text, is_key_down, next_frame,
+    set_screen_coordinates, KeyCode, ScreenCoordinates,
+};
 
-#[macroquad_main("Arkanoid")]
+#[macroquad::main("Arkanoid")]
 async fn main() {
     const BLOCKS_W: usize = 10;
     const BLOCKS_H: usize = 10;
@@ -20,7 +23,7 @@ async fn main() {
     set_screen_coordinates(ScreenCoordinates::Fixed(0., SCR_W, SCR_H, 0.));
 
     loop {
-        clear_background(SKYBLUE);
+        clear_background(mq::SKYBLUE);
 
         if is_key_down(KeyCode::Right) && platform_x < SCR_W - platform_width / 2. {
             platform_x += 1.0;
@@ -33,7 +36,7 @@ async fn main() {
             ball_x += dx;
             ball_y += dy;
         } else {
-            draw_text("Press space to start", 5., 10., 0.5, BLACK);
+            draw_text("Press space to start", 5., 10., 0.5, mq::BLACK);
 
             ball_x = platform_x;
             ball_y = SCR_H - 0.5;
@@ -65,8 +68,7 @@ async fn main() {
                     let block_x = i as f32 * block_w + 0.05;
                     let block_y = j as f32 * block_h + 0.05;
 
-                    draw_rectangle(block_x, block_y, block_w - 0.1, block_h - 0.1, MAROON);
-
+                    draw_rectangle(block_x, block_y, block_w - 0.1, block_h - 0.1, mq::DARKBLUE);
                     if ball_x >= block_x
                         && ball_x < block_x + block_w
                         && ball_y >= block_y
@@ -79,13 +81,13 @@ async fn main() {
             }
         }
 
-        draw_circle(ball_x, ball_y, 0.15, GREEN);
+        draw_circle(ball_x, ball_y, 0.2, mq::RED);
         draw_rectangle(
             platform_x - platform_width / 2.,
             SCR_H - platform_height,
             platform_width,
             platform_height,
-            DARKBLUE,
+            mq::DARKPURPLE,
         );
 
         next_frame().await
