@@ -1,10 +1,7 @@
 use macroquad::*;
 
-fn main() {
-    Window::new("Input", amain());
-}
-
-async fn amain() {
+#[macroquad_main("Arkanoid")]
+async fn main() {
     const BLOCKS_W: usize = 10;
     const BLOCKS_H: usize = 10;
     const SCR_W: f32 = 20.0;

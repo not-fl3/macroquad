@@ -10,3 +10,5 @@ miniquad = "0.2.17"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { git = "https://github.com/not-fl3/megaui/", branch = "macroquad_experimantal" }
+
+macroquad_macro = { path = "macroquad_macro" }

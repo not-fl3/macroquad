@@ -1,0 +1,10 @@
+[package]
+name = "macroquad_macro"
+version = "0.1.0"
+authors = ["not-fl3 <not.fl3@gmail.com>"]
+edition = "2018"
+
+[lib]
+proc-macro = true
+
+[dependencies]

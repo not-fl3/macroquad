@@ -17,9 +17,9 @@ const MAX_INDICES: usize = 5000;
 
 const FONT_TEXTURE_BYTES: &'static [u8] = include_bytes!("font.png");
 
-mod exec;
+pub mod exec;
 
-pub use exec::*;
+pub use macroquad_macro::macroquad_main;
 
 struct DrawCall {
     vertices: [Vertex; MAX_VERTICES],
@@ -243,6 +243,7 @@ impl Context {
 
     fn end_frame(&mut self, ctx: &mut QuadContext) {
         get_context().quad_context = None;
+
         self.draw_ui(ctx);
 
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
@@ -438,15 +439,17 @@ impl Window {
             }
             unsafe { CONTEXT = Some(Context::new(ctx)) };
 
+            get_context().begin_frame(ctx);
             exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
+            get_context().end_frame(ctx);
 
             Box::new(Stage {})
         });
     }
 }
 
-pub fn next_frame() -> FrameFuture {
-    FrameFuture
+pub fn next_frame() -> exec::FrameFuture {
+    exec::FrameFuture
 }
 
 pub use miniquad::{KeyCode, MouseButton};
