@@ -1,42 +1,49 @@
 extern crate proc_macro;
-use proc_macro::TokenStream;
+use proc_macro::{Ident, TokenStream, TokenTree};
 
 #[proc_macro_attribute]
 pub fn macroquad_main(_attr: TokenStream, item: TokenStream) -> TokenStream {
-    let mut main = item.to_string();
+    let mut modified = TokenStream::new();
+    let mut source = item.into_iter();
 
-    // remove leading spaces
-    main = main.trim_start().to_string();
+    if let TokenTree::Ident(ident) = source.next().unwrap() {
+        assert_eq!(format!("{}", ident), "async");
 
-    if main.starts_with("async") == false {
-        panic!("#[macroquad_main] should be only used on async functions");
-    }
-    main = main["async".len()..].to_string();
-
-    // remove spaces between "async" and "fn"
-    main = main.trim_start().to_string();
-
-    if main.starts_with("fn") == false {
-        panic!("#[macroquad_main] should be only used on async functions");
-    }
-    main = main["fn".len()..].to_string();
-
-    // remove spaces between "fn" and "main"
-    main = main.trim_start().to_string();
-    if main.starts_with("main") == false {
-        panic!("#[macroquad_main] should be only used only on main");
+        modified.extend(std::iter::once(TokenTree::Ident(ident)));
+    } else {
+        panic!("[macroquad::main] is allowed only for async functions");
     }
 
-    format!(
+    if let TokenTree::Ident(ident) = source.next().unwrap() {
+        assert_eq!(format!("{}", ident), "fn");
+
+        modified.extend(std::iter::once(TokenTree::Ident(ident)));
+    } else {
+        panic!("[macroquad::main] is allowed only for functions");
+    }
+
+    if let TokenTree::Ident(ident) = source.next().unwrap() {
+        assert_eq!(format!("{}", ident), "main");
+
+        modified.extend(std::iter::once(TokenTree::Ident(Ident::new(
+            "amain",
+            ident.span(),
+        ))));
+    } else {
+        panic!("[macroquad::main] expecting main function");
+    }
+    modified.extend(source);
+
+    let mut prelude: TokenStream = format!(
         "
     fn main() {{
-        macroquad::Window::new(\"Macroquad!\", amain());
+        macroquad::Window::new(\"MACROQUAD\", amain());
     }}
-
-        async fn a{}
-    ",
-        main
+    "
     )
     .parse()
-    .unwrap()
+    .unwrap();
+    prelude.extend(modified);
+
+    prelude
 }
