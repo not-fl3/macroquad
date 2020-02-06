@@ -3,8 +3,11 @@ use macroquad::{
     screen_width, set_screen_coordinates, Image, ScreenCoordinates, BLACK, WHITE,
 };
 
-#[macroquad::main("Life")]
-async fn main() {
+fn main() {
+    Window::new("name", amain());
+}
+
+async fn amain() {
     let w = screen_width() as usize;
     let h = screen_height() as usize;
 
