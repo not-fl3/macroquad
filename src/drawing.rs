@@ -168,7 +168,7 @@ impl DrawContext {
             let vertex_buffer = Buffer::stream(
                 ctx,
                 BufferType::VertexBuffer,
-                MAX_VERTICES * std::mem::size_of::<f32>(),
+                MAX_VERTICES * std::mem::size_of::<Vertex>(),
             );
             let index_buffer = Buffer::stream(
                 ctx,
