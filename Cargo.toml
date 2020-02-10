@@ -4,8 +4,12 @@ version = "0.1.0"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 
+[features]
+default = ["log-impl"]
+log-impl = ["miniquad/log-impl"]
+
 [dependencies]
-miniquad = "0.2.22"
+miniquad = "0.2.29"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { git = "https://github.com/not-fl3/megaui/", branch = "macroquad_experimantal" }

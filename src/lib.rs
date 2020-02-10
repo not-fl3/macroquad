@@ -18,8 +18,11 @@ pub mod exec;
 pub use drawing::*;
 pub use macroquad_macro::main;
 
+#[cfg(feature = "log-impl")]
+pub use miniquad::{debug, info, log, warn};
+
 struct Context {
-    quad_context: Option<&'static mut QuadContext>,
+    quad_context: QuadContext,
 
     screen_width: f32,
     screen_height: f32,
@@ -33,12 +36,10 @@ struct Context {
 }
 
 impl Context {
-    fn new(ctx: &mut QuadContext) -> Context {
+    fn new(mut ctx: QuadContext) -> Context {
         let (screen_width, screen_height) = ctx.screen_size();
 
         Context {
-            quad_context: None,
-
             screen_width,
             screen_height,
 
@@ -47,21 +48,22 @@ impl Context {
             mouse_position: Vec2::new(0., 0.),
             mouse_wheel: Vec2::new(0., 0.),
 
-            draw_context: DrawContext::new(ctx),
+            draw_context: DrawContext::new(&mut ctx),
+
+            quad_context: ctx,
         }
     }
 
-    fn begin_frame(&mut self, ctx: &mut QuadContext) {
+    fn begin_frame(&mut self) {
         self.draw_context.begin_frame();
-        get_context().quad_context = unsafe { std::mem::transmute(Some(ctx)) };
     }
 
-    fn end_frame(&mut self, ctx: &mut QuadContext) {
-        self.draw_context.draw_ui(ctx);
+    fn end_frame(&mut self) {
+        self.draw_context.draw_ui(&mut self.quad_context);
 
-        self.draw_context.end_frame(ctx);
+        self.draw_context.end_frame(&mut self.quad_context);
 
-        ctx.commit_frame();
+        self.quad_context.commit_frame();
 
         get_context().mouse_wheel = Vec2::new(0., 0.);
     }
@@ -81,13 +83,13 @@ static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
 struct Stage {}
 
-impl EventHandler for Stage {
-    fn resize_event(&mut self, _: &mut QuadContext, width: f32, height: f32) {
+impl EventHandlerFree for Stage {
+    fn resize_event(&mut self, width: f32, height: f32) {
         get_context().screen_width = width;
         get_context().screen_height = height;
     }
 
-    fn mouse_motion_event(&mut self, _: &mut QuadContext, x: f32, y: f32, _dx: f32, _dy: f32) {
+    fn mouse_motion_event(&mut self, x: f32, y: f32, _dx: f32, _dy: f32) {
         use megaui::InputHandler;
 
         let context = get_context();
@@ -95,13 +97,13 @@ impl EventHandler for Stage {
         context.mouse_position = Vec2::new(x, y);
         context.draw_context.ui.mouse_move((x, y));
     }
-    fn mouse_wheel_event(&mut self, _: &mut QuadContext, x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();
 
         context.mouse_wheel.set_x(x);
         context.mouse_wheel.set_y(y);
     }
-    fn mouse_button_down_event(&mut self, _: &mut QuadContext, btn: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
 
         let context = get_context();
@@ -110,7 +112,7 @@ impl EventHandler for Stage {
         context.draw_context.ui.mouse_down((x, y));
     }
 
-    fn mouse_button_up_event(&mut self, _: &mut QuadContext, btn: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
 
         let context = get_context();
@@ -120,24 +122,24 @@ impl EventHandler for Stage {
         context.draw_context.ui.mouse_up((x, y));
     }
 
-    fn key_down_event(&mut self, _: &mut QuadContext, keycode: KeyCode, _: KeyMods, _: bool) {
+    fn key_down_event(&mut self, keycode: KeyCode, _: KeyMods, _: bool) {
         let context = get_context();
         context.keys_pressed.insert(keycode);
     }
 
-    fn key_up_event(&mut self, _: &mut QuadContext, keycode: KeyCode, _: KeyMods) {
+    fn key_up_event(&mut self, keycode: KeyCode, _: KeyMods) {
         let context = get_context();
         context.keys_pressed.remove(&keycode);
     }
 
-    fn update(&mut self, _ctx: &mut QuadContext) {}
+    fn update(&mut self) {}
 
-    fn draw(&mut self, ctx: &mut QuadContext) {
-        get_context().begin_frame(ctx);
+    fn draw(&mut self) {
+        get_context().begin_frame();
 
         exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
 
-        get_context().end_frame(ctx);
+        get_context().end_frame();
     }
 }
 
@@ -150,12 +152,9 @@ impl Window {
                 MAIN_FUTURE = Some(Box::pin(future));
             }
             unsafe { CONTEXT = Some(Context::new(ctx)) };
-
-            get_context().begin_frame(ctx);
             exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
-            get_context().end_frame(ctx);
 
-            Box::new(Stage {})
+            UserData::free(Stage {})
         });
     }
 }

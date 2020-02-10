@@ -354,8 +354,7 @@ impl Texture2D {
         assert_eq!(self.texture.height, image.height as u32);
 
         let context = &mut get_context();
-        let quad_ctx = context.quad_context.as_mut().unwrap_or_else(|| panic!());
-        self.texture.update(quad_ctx, &image.bytes);
+        self.texture.update(&mut context.quad_context, &image.bytes);
     }
 
     pub fn width(&self) -> f32 {
@@ -390,12 +389,7 @@ pub(crate) fn load_texture_file_with_format<'a>(
 pub(crate) fn load_texture_from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
     let context = get_context();
 
-    let texture = miniquad::Texture::from_rgba8(
-        context.quad_context.as_mut().unwrap_or_else(|| panic!()),
-        width,
-        height,
-        &bytes,
-    );
+    let texture = miniquad::Texture::from_rgba8(&mut context.quad_context, width, height, &bytes);
 
     Texture2D { texture }
 }
