@@ -1,8 +1,10 @@
+//! All graphics primitives and ui available in macroquad
+//! This is nice self consistent module, maybe move it to separate crate?
+
 use miniquad::*;
 
-use crate::get_context;
-
 const FONT_TEXTURE_BYTES: &'static [u8] = include_bytes!("font.png");
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Color(pub [u8; 4]);
@@ -92,7 +94,6 @@ pub enum ScreenCoordinates {
 pub struct DrawContext {
     pipeline: Pipeline,
 
-    clear_color: Color,
     draw_calls: Vec<DrawCall>,
     draw_calls_bindings: Vec<Bindings>,
     draw_calls_count: usize,
@@ -101,7 +102,7 @@ pub struct DrawContext {
     white_texture: Texture,
     font_texture: Texture,
     pub(crate) screen_coordinates: ScreenCoordinates,
-    pub(crate) ui: megaui::Ui,
+    pub ui: megaui::Ui,
     ui_draw_list: Vec<megaui::DrawCommand>,
 }
 
@@ -140,7 +141,6 @@ impl DrawContext {
 
         DrawContext {
             pipeline,
-            clear_color: BLACK,
             clip: None,
             screen_coordinates: ScreenCoordinates::PixelPerfect,
             draw_calls: Vec::with_capacity(200),
@@ -154,16 +154,13 @@ impl DrawContext {
         }
     }
 
-    pub fn clear(&mut self, color: Color) {
-        self.clear_color = color;
+    pub fn clear(&mut self) {
         self.draw_calls_count = 0;
     }
 
-    pub fn begin_frame(&mut self) {
-        self.draw_calls_count = 0;
-    }
+    pub fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
+        self.draw_ui(ctx);
 
-    pub fn end_frame(&mut self, ctx: &mut miniquad::Context) {
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
             let vertex_buffer = Buffer::stream(
                 ctx,
@@ -185,12 +182,7 @@ impl DrawContext {
         }
         assert_eq!(self.draw_calls_bindings.len(), self.draw_calls.len());
 
-        ctx.begin_default_pass(PassAction::clear_color(
-            self.clear_color.0[0] as f32 / 255.0,
-            self.clear_color.0[1] as f32 / 255.0,
-            self.clear_color.0[2] as f32 / 255.0,
-            self.clear_color.0[3] as f32 / 255.0,
-        ));
+        ctx.begin_default_pass(PassAction::Nothing);
 
         let (width, height) = ctx.screen_size();
 
@@ -226,6 +218,8 @@ impl DrawContext {
         }
 
         ctx.end_render_pass();
+
+        self.draw_calls_count = 0;
     }
 
     fn draw_call(&mut self, vertices: &[Vertex], indices: &[u16], texture: Texture) {
@@ -272,7 +266,11 @@ impl DrawContext {
         self.ui.render(&mut self.ui_draw_list);
         self.ui.new_frame();
 
-        for draw_command in &self.ui_draw_list {
+        let mut ui_draw_list = vec![];
+
+        std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+
+        for draw_command in &ui_draw_list {
             use megaui::DrawCommand::*;
 
             match draw_command {
@@ -287,7 +285,7 @@ impl DrawContext {
                 } => {
                     let color = params.color;
 
-                    draw_text(
+                    self.draw_text(
                         label,
                         position.x,
                         position.y,
@@ -302,7 +300,7 @@ impl DrawContext {
                 }
                 DrawRect { rect, stroke, fill } => {
                     if let Some(fill) = fill {
-                        draw_rectangle(
+                        self.draw_rectangle(
                             rect.x,
                             rect.y,
                             rect.w,
@@ -316,7 +314,7 @@ impl DrawContext {
                         );
                     }
                     if let Some(stroke) = stroke {
-                        draw_rectangle_lines(
+                        self.draw_rectangle_lines(
                             rect.x,
                             rect.y,
                             rect.w,
@@ -333,6 +331,148 @@ impl DrawContext {
                 _ => {}
             }
         }
+
+        std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+    }
+
+    pub fn draw_text(&mut self, text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+        let mut vertices = Vec::<Vertex>::new();
+        let mut indices = Vec::<u16>::new();
+        for (n, ch) in text.chars().enumerate() {
+            let ix = ch as u32;
+
+            let sx = ((ix % 16) as f32) / 16.0;
+            let sy = ((ix / 16) as f32) / 16.0;
+            let sw = 1.0 / 16.0;
+            let sh = 1.0 / 16.0;
+
+            #[rustfmt::skip]
+            let letter = [
+                Vertex::new(x + 0.0 + n as f32 * font_size, y, sx, sy, color),
+                Vertex::new(x + font_size + n as f32 * font_size, y, sx + sw, sy, color),
+                Vertex::new(x + font_size + n as f32 * font_size, y + font_size, sx + sw, sy + sh, color),
+                Vertex::new(x + 0.0 + n as f32 * font_size, y + font_size, sx, sy + sh, color),
+            ];
+            vertices.extend(letter.iter());
+            let n = n as u16;
+            indices.extend(
+                [
+                    n * 4 + 0,
+                    n * 4 + 1,
+                    n * 4 + 2,
+                    n * 4 + 0,
+                    n * 4 + 2,
+                    n * 4 + 3,
+                ]
+                .iter()
+                .map(|x| *x),
+            );
+        }
+
+        self.draw_call(&vertices, &indices, self.font_texture);
+    }
+
+    pub fn draw_rectangle(&mut self, x: f32, y: f32, w: f32, h: f32, color: Color) {
+        #[rustfmt::skip]
+        let vertices = [
+            Vertex::new(x    , y    , 0.0, 1.0, color),
+            Vertex::new(x + w, y    , 1.0, 0.0, color),
+            Vertex::new(x + w, y + h, 1.0, 1.0, color),
+            Vertex::new(x    , y + h, 0.0, 0.0, color),
+        ];
+        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+        self.draw_call(&vertices, &indices, self.white_texture);
+    }
+
+    pub fn draw_texture(&mut self, texture: Texture2D, x: f32, y: f32, color: Color) {
+        let w = texture.texture.width as f32;
+        let h = texture.texture.height as f32;
+
+        #[rustfmt::skip]
+        let vertices = [
+            Vertex::new(x    , y    , 0.0, 0.0, color),
+            Vertex::new(x + w, y    , 1.0, 0.0, color),
+            Vertex::new(x + w, y + h, 1.0, 1.0, color),
+            Vertex::new(x    , y + h, 0.0, 1.0, color),
+        ];
+        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+        self.draw_call(&vertices, &indices, texture.texture);
+    }
+
+    pub fn draw_rectangle_lines(&mut self, x: f32, y: f32, w: f32, h: f32, color: Color) {
+        self.draw_rectangle(x, y, w, 1., color);
+        self.draw_rectangle(x + w - 1., y + 1., 1., h - 2., color);
+        self.draw_rectangle(x, y + h - 1., w, 1., color);
+        self.draw_rectangle(x, y + 1., 1., h - 2., color);
+    }
+
+    /// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.
+    /// Good use example: drawing an image from texture atlas.
+    ///
+    /// TODO: maybe introduce Rect type?
+    pub fn draw_texture_rec(
+        &mut self,
+        texture: Texture2D,
+        x: f32,
+        y: f32,
+        w: f32,
+        h: f32,
+        sx: f32,
+        sy: f32,
+        sw: f32,
+        sh: f32,
+        color: Color,
+    ) {
+        #[rustfmt::skip]
+        let vertices = [
+            Vertex::new(x    , y    , sx     , sy     , color),
+            Vertex::new(x + w, y    , sx + sw, sy     , color),
+            Vertex::new(x + w, y + h, sx + sw, sy + sh, color),
+            Vertex::new(x    , y + h, sx     , sy + sh, color),
+        ];
+        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+        self.draw_call(&vertices, &indices, texture.texture);
+    }
+
+    pub fn draw_circle(&mut self, x: f32, y: f32, r: f32, color: Color) {
+        const NUM_DIVISIONS: u32 = 20;
+
+        let mut vertices = Vec::<Vertex>::new();
+        let mut indices = Vec::<u16>::new();
+
+        vertices.push(Vertex::new(x, y, 0., 0.0, color));
+        for i in 0..NUM_DIVISIONS + 1 {
+            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
+            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
+
+            let vertex = Vertex::new(x + r * rx, y + r * ry, rx, ry, color);
+
+            vertices.push(vertex);
+
+            if i != NUM_DIVISIONS {
+                indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
+            }
+        }
+
+        self.draw_call(&vertices, &indices, self.white_texture);
+    }
+
+    pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
+        &mut self,
+        id: megaui::Id,
+        position: glam::Vec2,
+        size: glam::Vec2,
+        f: F,
+    ) {
+        megaui::widgets::Window::new(
+            id,
+            megaui::Vector2::new(position.x(), position.y()),
+            megaui::Vector2::new(size.x(), size.y()),
+        )
+        .ui(&mut self.ui, f);
     }
 }
 
@@ -349,12 +489,11 @@ impl Texture2D {
         }
     }
 
-    pub fn update(&mut self, image: &Image) {
+    pub fn update(&mut self, ctx: &mut miniquad::Context, image: &Image) {
         assert_eq!(self.texture.width, image.width as u32);
         assert_eq!(self.texture.height, image.height as u32);
 
-        let context = &mut get_context();
-        self.texture.update(&mut context.quad_context, &image.bytes);
+        self.texture.update(ctx, &image.bytes);
     }
 
     pub fn width(&self) -> f32 {
@@ -364,34 +503,38 @@ impl Texture2D {
     pub fn height(&self) -> f32 {
         self.texture.height as f32
     }
-}
 
-pub(crate) fn load_texture_file_with_format<'a>(
-    bytes: &[u8],
-    format: Option<image::ImageFormat>,
-) -> Texture2D {
-    let img = if let Some(fmt) = format {
-        image::load_from_memory_with_format(&bytes, fmt)
-            .unwrap_or_else(|e| panic!(e))
-            .to_rgba()
-    } else {
-        image::load_from_memory(&bytes)
-            .unwrap_or_else(|e| panic!(e))
-            .to_rgba()
-    };
-    let width = img.width() as u16;
-    let height = img.height() as u16;
-    let bytes = img.into_raw();
+    pub fn from_file_with_format<'a>(
+        ctx: &mut miniquad::Context,
+        bytes: &[u8],
+        format: Option<image::ImageFormat>,
+    ) -> Texture2D {
+        let img = if let Some(fmt) = format {
+            image::load_from_memory_with_format(&bytes, fmt)
+                .unwrap_or_else(|e| panic!(e))
+                .to_rgba()
+        } else {
+            image::load_from_memory(&bytes)
+                .unwrap_or_else(|e| panic!(e))
+                .to_rgba()
+        };
+        let width = img.width() as u16;
+        let height = img.height() as u16;
+        let bytes = img.into_raw();
 
-    load_texture_from_rgba8(width, height, &bytes)
-}
+        Self::from_rgba8(ctx, width, height, &bytes)
+    }
 
-pub(crate) fn load_texture_from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
-    let context = get_context();
+    pub fn from_rgba8(
+        ctx: &mut miniquad::Context,
+        width: u16,
+        height: u16,
+        bytes: &[u8],
+    ) -> Texture2D {
+        let texture = miniquad::Texture::from_rgba8(ctx, width, height, &bytes);
 
-    let texture = miniquad::Texture::from_rgba8(&mut context.quad_context, width, height, &bytes);
-
-    Texture2D { texture }
+        Texture2D { texture }
+    }
 }
 
 /// Image, data stored in CPU memory
@@ -452,156 +595,6 @@ impl Image {
             )
         }
     }
-}
-
-pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
-    let context = &mut get_context().draw_context;
-
-    let mut vertices = Vec::<Vertex>::new();
-    let mut indices = Vec::<u16>::new();
-    for (n, ch) in text.chars().enumerate() {
-        let ix = ch as u32;
-
-        let sx = ((ix % 16) as f32) / 16.0;
-        let sy = ((ix / 16) as f32) / 16.0;
-        let sw = 1.0 / 16.0;
-        let sh = 1.0 / 16.0;
-
-        #[rustfmt::skip]
-        let letter = [
-            Vertex::new(x + 0.0 + n as f32 * font_size, y, sx, sy, color),
-            Vertex::new(x + font_size + n as f32 * font_size, y, sx + sw, sy, color),
-            Vertex::new(x + font_size + n as f32 * font_size, y + font_size, sx + sw, sy + sh, color),
-            Vertex::new(x + 0.0 + n as f32 * font_size, y + font_size, sx, sy + sh, color),
-        ];
-        vertices.extend(letter.iter());
-        let n = n as u16;
-        indices.extend(
-            [
-                n * 4 + 0,
-                n * 4 + 1,
-                n * 4 + 2,
-                n * 4 + 0,
-                n * 4 + 2,
-                n * 4 + 3,
-            ]
-            .iter()
-            .map(|x| *x),
-        );
-    }
-
-    context.draw_call(&vertices, &indices, context.font_texture);
-}
-
-pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
-    let context = &mut get_context().draw_context;
-
-    #[rustfmt::skip]
-    let vertices = [
-        Vertex::new(x    , y    , 0.0, 1.0, color),
-        Vertex::new(x + w, y    , 1.0, 0.0, color),
-        Vertex::new(x + w, y + h, 1.0, 1.0, color),
-        Vertex::new(x    , y + h, 0.0, 0.0, color),
-    ];
-    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
-
-    context.draw_call(&vertices, &indices, context.white_texture);
-}
-
-pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
-    let context = &mut get_context().draw_context;
-
-    let w = texture.texture.width as f32;
-    let h = texture.texture.height as f32;
-
-    #[rustfmt::skip]
-    let vertices = [
-        Vertex::new(x    , y    , 0.0, 0.0, color),
-        Vertex::new(x + w, y    , 1.0, 0.0, color),
-        Vertex::new(x + w, y + h, 1.0, 1.0, color),
-        Vertex::new(x    , y + h, 0.0, 1.0, color),
-        ];
-    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
-
-    context.draw_call(&vertices, &indices, texture.texture);
-}
-
-pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, color: Color) {
-    draw_rectangle(x, y, w, 1., color);
-    draw_rectangle(x + w - 1., y + 1., 1., h - 2., color);
-    draw_rectangle(x, y + h - 1., w, 1., color);
-    draw_rectangle(x, y + 1., 1., h - 2., color);
-}
-
-/// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.
-/// Good use example: drawing an image from texture atlas.
-///
-/// TODO: maybe introduce Rect type?
-pub fn draw_texture_rec(
-    texture: Texture2D,
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
-    sx: f32,
-    sy: f32,
-    sw: f32,
-    sh: f32,
-    color: Color,
-) {
-    let context = &mut get_context().draw_context;
-
-    #[rustfmt::skip]
-    let vertices = [
-        Vertex::new(x    , y    , sx     , sy     , color),
-        Vertex::new(x + w, y    , sx + sw, sy     , color),
-        Vertex::new(x + w, y + h, sx + sw, sy + sh, color),
-        Vertex::new(x    , y + h, sx     , sy + sh, color),
-    ];
-    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
-
-    context.draw_call(&vertices, &indices, texture.texture);
-}
-
-pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
-    const NUM_DIVISIONS: u32 = 20;
-
-    let context = &mut get_context().draw_context;
-
-    let mut vertices = Vec::<Vertex>::new();
-    let mut indices = Vec::<u16>::new();
-
-    vertices.push(Vertex::new(x, y, 0., 0.0, color));
-    for i in 0..NUM_DIVISIONS + 1 {
-        let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
-        let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
-
-        let vertex = Vertex::new(x + r * rx, y + r * ry, rx, ry, color);
-
-        vertices.push(vertex);
-
-        if i != NUM_DIVISIONS {
-            indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
-        }
-    }
-
-    context.draw_call(&vertices, &indices, context.white_texture);
-}
-
-pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
-    id: megaui::Id,
-    position: glam::Vec2,
-    size: glam::Vec2,
-    f: F,
-) {
-    let context = &mut get_context().draw_context;
-
-    megaui::widgets::Window::new(
-        id,
-        megaui::Vector2::new(position.x(), position.y()),
-        megaui::Vector2::new(size.x(), size.y()),
-    )
-    .ui(&mut context.ui, f);
 }
 
 mod shader {

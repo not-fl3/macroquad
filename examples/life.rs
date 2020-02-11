@@ -1,13 +1,10 @@
 use macroquad::{
     clear_background, draw_texture, load_texture_from_image, next_frame, rand, screen_height,
-    screen_width, set_screen_coordinates, Image, ScreenCoordinates, BLACK, WHITE,
+    screen_width, set_screen_coordinates, update_texture, Image, ScreenCoordinates, BLACK, WHITE,
 };
 
-fn main() {
-    Window::new("name", amain());
-}
-
-async fn amain() {
+#[macroquad::main("Life")]
+async fn main() {
     let w = screen_width() as usize;
     let h = screen_height() as usize;
 
@@ -23,7 +20,7 @@ async fn amain() {
             }
         }
     }
-    let mut texture = load_texture_from_image(&image);
+    let texture = load_texture_from_image(&image);
 
     loop {
         clear_background(WHITE);
@@ -75,7 +72,8 @@ async fn amain() {
         }
 
         image.update(&buffer);
-        texture.update(&image);
+
+        update_texture(texture, &image);
 
         draw_texture(texture, 0., 0., WHITE);
 

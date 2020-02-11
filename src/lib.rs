@@ -12,7 +12,7 @@ use std::pin::Pin;
 
 pub mod rand;
 
-mod drawing;
+pub mod drawing;
 pub mod exec;
 
 pub use drawing::*;
@@ -54,14 +54,9 @@ impl Context {
         }
     }
 
-    fn begin_frame(&mut self) {
-        self.draw_context.begin_frame();
-    }
-
     fn end_frame(&mut self) {
-        self.draw_context.draw_ui(&mut self.quad_context);
-
-        self.draw_context.end_frame(&mut self.quad_context);
+        self.draw_context
+            .perform_render_passes(&mut self.quad_context);
 
         self.quad_context.commit_frame();
 
@@ -69,7 +64,17 @@ impl Context {
     }
 
     fn clear(&mut self, color: Color) {
-        self.draw_context.clear(color);
+        self.quad_context.clear(
+            Some((
+                color.0[0] as f32 / 255.0,
+                color.0[1] as f32 / 255.0,
+                color.0[2] as f32 / 255.0,
+                color.0[3] as f32 / 255.0,
+            )),
+            None,
+            None,
+        );
+        self.draw_context.clear();
     }
 }
 
@@ -135,8 +140,6 @@ impl EventHandlerFree for Stage {
     fn update(&mut self) {}
 
     fn draw(&mut self) {
-        get_context().begin_frame();
-
         exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
 
         get_context().end_frame();
@@ -226,13 +229,85 @@ pub fn load_texture<'a>(path: &str) -> exec::TextureLoadingFuture {
 
         miniquad::fs::load_file(&path, move |bytes| {
             let bytes = bytes.unwrap_or_else(|_| panic!("Not such texture: {}", path0));
-            *texture.borrow_mut() = Some(load_texture_file_with_format(&bytes[..], None));
+            let context = &mut get_context().quad_context;
+
+            *texture.borrow_mut() =
+                Some(Texture2D::from_file_with_format(context, &bytes[..], None));
+            unimplemented!()
         });
     }
 
     exec::TextureLoadingFuture { texture }
 }
 
+/// Upload image data to GPU texture
+pub fn update_texture(mut texture: Texture2D, image: &Image) {
+    let context = &mut get_context().quad_context;
+
+    texture.update(context, image);
+}
+
 pub fn load_texture_from_image(image: &Image) -> Texture2D {
-    load_texture_from_rgba8(image.width, image.height, &image.bytes)
+    let context = &mut get_context().quad_context;
+
+    Texture2D::from_rgba8(context, image.width, image.height, &image.bytes)
+}
+
+pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+    let context = &mut get_context().draw_context;
+
+    context.draw_text(text, x, y, font_size, color);
+}
+
+pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
+    let context = &mut get_context().draw_context;
+
+    context.draw_rectangle(x, y, w, h, color);
+}
+
+pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
+    let context = &mut get_context().draw_context;
+
+    context.draw_texture(texture, x, y, color);
+}
+
+pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, color: Color) {
+    let context = &mut get_context().draw_context;
+
+    context.draw_rectangle_lines(x, y, w, h, color);
+}
+
+/// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.
+/// Good use example: drawing an image from texture atlas.
+///
+/// TODO: maybe introduce Rect type?
+pub fn draw_texture_rec(
+    texture: Texture2D,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    sx: f32,
+    sy: f32,
+    sw: f32,
+    sh: f32,
+    color: Color,
+) {
+    let context = &mut get_context().draw_context;
+    context.draw_texture_rec(texture, x, y, w, h, sx, sy, sw, sh, color);
+}
+
+pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
+    let context = &mut get_context().draw_context;
+    context.draw_circle(x, y, r, color);
+}
+
+pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
+    id: megaui::Id,
+    position: glam::Vec2,
+    size: glam::Vec2,
+    f: F,
+) {
+    let context = &mut get_context().draw_context;
+    context.draw_window(id, position, size, f);
 }

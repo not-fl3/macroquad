@@ -1,6 +1,6 @@
 use macroquad::*;
 
-#[macroquad_main("InputKeys")]
+#[macroquad::main("InputKeys")]
 async fn main() {
     let mut x = screen_width() / 2.0;
     let mut y = screen_height() / 2.0;
