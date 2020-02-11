@@ -3,6 +3,12 @@ name = "macroquad"
 version = "0.1.0"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+homepage = "https://github.com/not-fl3/macroquad"
+repository = "https://github.com/not-fl3/macroquad"
+description = """
+Simple and easy to use graphics library
+"""
 
 [features]
 default = ["log-impl"]
@@ -14,4 +20,4 @@ glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { git = "https://github.com/not-fl3/megaui/", branch = "macroquad_experimantal" }
 
-macroquad_macro = { path = "macroquad_macro" }
+macroquad_macro = { version = "0.1", path = "macroquad_macro" }
