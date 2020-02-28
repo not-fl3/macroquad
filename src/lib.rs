@@ -94,7 +94,7 @@ impl EventHandlerFree for Stage {
         get_context().screen_height = height;
     }
 
-    fn mouse_motion_event(&mut self, x: f32, y: f32, _dx: f32, _dy: f32) {
+    fn mouse_motion_event(&mut self, x: f32, y: f32) {
         use megaui::InputHandler;
 
         let context = get_context();
