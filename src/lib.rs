@@ -15,8 +15,14 @@ pub mod rand;
 pub mod drawing;
 pub mod exec;
 
+mod time;
+
+pub use time::*;
+
 pub use drawing::*;
 pub use macroquad_macro::main;
+
+pub use quad_gl::{QuadGl, Vertex};
 
 #[cfg(feature = "log-impl")]
 pub use miniquad::{debug, info, log, warn};
@@ -33,6 +39,8 @@ struct Context {
     mouse_wheel: Vec2,
 
     draw_context: DrawContext,
+
+    start_time: f64,
 }
 
 impl Context {
@@ -51,6 +59,8 @@ impl Context {
             draw_context: DrawContext::new(&mut ctx),
 
             quad_context: ctx,
+
+            start_time: miniquad::date::now(),
         }
     }
 
@@ -74,7 +84,9 @@ impl Context {
             None,
             None,
         );
-        self.draw_context.clear();
+        self.draw_context.gl.reset();
+        self.draw_context
+            .update_projection_matrix(&mut self.quad_context);
     }
 }
 
@@ -216,7 +228,7 @@ pub fn screen_height() -> f32 {
     context.screen_height
 }
 
-pub fn load_texture<'a>(path: &str) -> exec::TextureLoadingFuture {
+pub fn load_texture(path: &str) -> exec::TextureLoadingFuture {
     use std::cell::RefCell;
     use std::rc::Rc;
 
@@ -233,7 +245,6 @@ pub fn load_texture<'a>(path: &str) -> exec::TextureLoadingFuture {
 
             *texture.borrow_mut() =
                 Some(Texture2D::from_file_with_format(context, &bytes[..], None));
-            unimplemented!()
         });
     }
 
@@ -275,6 +286,12 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
     context.draw_rectangle_lines(x, y, w, h, color);
+}
+
+pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
+    let context = &mut get_context().draw_context;
+
+    &mut context.gl
 }
 
 /// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.

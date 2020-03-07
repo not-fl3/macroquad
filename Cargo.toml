@@ -15,7 +15,8 @@ default = ["log-impl"]
 log-impl = ["miniquad/log-impl"]
 
 [dependencies]
-miniquad = "=0.2.32"
+miniquad = "=0.2.35"
+quad-gl = { git = "https://github.com/not-fl3/quad-gl" }
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { git = "https://github.com/not-fl3/megaui/", branch = "macroquad_experimantal" }
