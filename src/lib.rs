@@ -207,6 +207,16 @@ pub fn is_mouse_button_down(btn: MouseButton) -> bool {
 pub fn clear_background(color: Color) {
     let context = get_context();
 
+    context
+        .quad_context
+        .begin_default_pass(PassAction::clear_color(
+            color.0[0] as f32 / 255.,
+            color.0[1] as f32 / 255.,
+            color.0[2] as f32 / 255.,
+            color.0[3] as f32 / 255.,
+        ));
+    context.quad_context.end_render_pass();
+
     context.clear(color);
 }
 

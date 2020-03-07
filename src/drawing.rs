@@ -41,7 +41,7 @@ impl DrawContext {
         draw_context
     }
 
-    pub fn draw_ui(&mut self, _: &mut miniquad::Context) {
+    fn draw_ui(&mut self, _: &mut miniquad::Context) {
         self.ui_draw_list.clear();
 
         self.ui.render(&mut self.ui_draw_list);
@@ -264,6 +264,7 @@ impl DrawContext {
     }
 
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
+        self.draw_ui(ctx);
         self.gl.draw(ctx);
     }
 
