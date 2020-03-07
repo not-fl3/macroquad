@@ -14,7 +14,7 @@
 
 * Same code for all supported platforms, no platform dependent defines required 
 * Efficient 2D rendering with automatic geometry batching
-* Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old notebook)
+* Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old laptop)
 * Immidiate mode UI library included
 * Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples)
 
