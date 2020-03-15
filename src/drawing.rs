@@ -224,6 +224,31 @@ impl DrawContext {
         self.gl.geometry(&vertices, &indices);
     }
 
+    pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+        let nx = -dy; // https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
+        let ny = dx;
+
+        let tlen = (nx * nx + ny * ny).sqrt() / (thickness * 0.5);
+        if tlen < std::f32::EPSILON {
+            return;
+        }
+        let tx = nx / tlen;
+        let ty = ny / tlen;
+
+        self.gl.texture(None);
+        self.gl.geometry(
+            &[
+                Vertex::new(x1 + tx, y1 + ty, 0., 0., 0., color),
+                Vertex::new(x1 - tx, y1 - ty, 0., 0., 0., color),
+                Vertex::new(x2 + tx, y2 + ty, 0., 0., 0., color),
+                Vertex::new(x2 - tx, y2 - ty, 0., 0., 0., color),
+            ],
+            &[0, 1, 2, 2, 1, 3],
+        );
+    }
+
     pub fn draw_circle(&mut self, x: f32, y: f32, r: f32, color: Color) {
         const NUM_DIVISIONS: u32 = 20;
 

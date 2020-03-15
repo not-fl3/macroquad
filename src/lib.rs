@@ -329,6 +329,11 @@ pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
     context.draw_circle(x, y, r, color);
 }
 
+pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
+    let context = &mut get_context().draw_context;
+    context.draw_line(x1, y1, x2, y2, thickness, color);
+}
+
 pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
     id: megaui::Id,
     position: glam::Vec2,
