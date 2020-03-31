@@ -139,9 +139,31 @@ impl EventHandlerFree for Stage {
         context.draw_context.ui.mouse_up((x, y));
     }
 
+    fn char_event(&mut self, character: char, _keymods: KeyMods, _repeat: bool) {
+        use megaui::InputHandler;
+
+        let context = get_context();
+        context.draw_context.ui.char_event(character);
+    }
+
     fn key_down_event(&mut self, keycode: KeyCode, _: KeyMods, _: bool) {
+        use megaui::InputHandler;
+
         let context = get_context();
         context.keys_pressed.insert(keycode);
+
+        match keycode {
+            KeyCode::Up => context.draw_context.ui.key_down(megaui::KeyCode::Up),
+            KeyCode::Down => context.draw_context.ui.key_down(megaui::KeyCode::Down),
+            KeyCode::Right => context.draw_context.ui.key_down(megaui::KeyCode::Right),
+            KeyCode::Left => context.draw_context.ui.key_down(megaui::KeyCode::Left),
+            KeyCode::Home => context.draw_context.ui.key_down(megaui::KeyCode::Home),
+            KeyCode::End => context.draw_context.ui.key_down(megaui::KeyCode::End),
+            KeyCode::Delete => context.draw_context.ui.key_down(megaui::KeyCode::Delete),
+            KeyCode::Backspace => context.draw_context.ui.key_down(megaui::KeyCode::Backspace),
+            KeyCode::Enter => context.draw_context.ui.key_down(megaui::KeyCode::Enter),
+            _ => {}
+        }
     }
 
     fn key_up_event(&mut self, keycode: KeyCode, _: KeyMods) {
@@ -296,6 +318,79 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
     context.draw_rectangle_lines(x, y, w, h, color);
+}
+
+pub fn draw_hexagon(
+    x: f32,
+    y: f32,
+    size: f32,
+    border: f32,
+    border_color: Color,
+    fill_color: Color,
+) {
+    let context = &mut get_context().draw_context;
+
+    const NUM_DIVISIONS: u32 = 6;
+
+    let mut vertices = Vec::<Vertex>::new();
+    let mut indices = Vec::<u16>::new();
+
+    vertices.push(Vertex::new(x, y, 0., 0., 0., fill_color));
+    let mut n = 0;
+    for i in 0..NUM_DIVISIONS {
+        let d = std::f32::consts::PI / 2.;
+        // internal vertices
+        {
+            let r = size - border;
+            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
+            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
+            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, fill_color);
+            vertices.push(vertex);
+
+            let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
+            let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
+            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, fill_color);
+            vertices.push(vertex);
+
+            indices.extend_from_slice(&[0, n + 1, n + 2]);
+        }
+
+        // duplicate internal vertices with border_color
+        {
+            let r = size - border;
+            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
+            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
+            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
+            vertices.push(vertex);
+
+            let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
+            let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
+            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
+            vertices.push(vertex);
+        }
+
+        // external border
+        {
+            let r = size;
+            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
+            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
+            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
+            vertices.push(vertex);
+
+            let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
+            let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
+            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
+            vertices.push(vertex);
+        }
+
+        indices.extend_from_slice(&[n + 5, n + 3, n + 4]);
+        indices.extend_from_slice(&[n + 5, n + 4, n + 6]);
+
+        n += 6;
+    }
+
+    context.gl.texture(None);
+    context.gl.geometry(&vertices, &indices);
 }
 
 pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {

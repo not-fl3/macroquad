@@ -16,10 +16,11 @@ default = ["log-impl"]
 log-impl = ["miniquad/log-impl"]
 
 [dependencies]
-miniquad = "=0.2.35"
+miniquad = "=0.2.53"
 quad-gl = "0.1"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = "0.1"
 
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
+
