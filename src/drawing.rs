@@ -213,10 +213,10 @@ impl DrawContext {
     ) {
         #[rustfmt::skip]
         let vertices = [
-            Vertex::new(x    , y    , 0., sx     , sy     , color),
-            Vertex::new(x + w, y    , 0., sx + sw, sy     , color),
-            Vertex::new(x + w, y + h, 0., sx + sw, sy + sh, color),
-            Vertex::new(x    , y + h, 0., sx     , sy + sh, color),
+            Vertex::new(x    , y    , 0.,  sx       /texture.width(),  sy      /texture.height(), color),
+            Vertex::new(x + w, y    , 0., (sx + sw)/texture.width() ,  sy      /texture.height(), color),
+            Vertex::new(x + w, y + h, 0., (sx + sw)/texture.width() , (sy + sh)/texture.height(), color),
+            Vertex::new(x    , y + h, 0.,  sx       /texture.width(), (sy + sh)/texture.height(), color),
         ];
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
