@@ -7,7 +7,7 @@ use macroquad::{
 #[macroquad::main("Events")]
 async fn main() {
     loop {
-        draw_window(hash!(), Vec2::new(20., 20.), Vec2::new(450., 200.), |ui| {
+        draw_window(hash!(), Vec2::new(20., 20.), Vec2::new(450., 200.), None, |ui| {
             let (mouse_x, mouse_y) = mouse_position();
             ui.label(None, &format!("Mouse position: {} {}", mouse_x, mouse_y));
 

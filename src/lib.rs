@@ -226,6 +226,15 @@ pub fn is_mouse_button_down(btn: MouseButton) -> bool {
     context.mouse_pressed.contains(&btn)
 }
 
+pub fn mouse_over_ui() -> bool {
+    let context = get_context();
+
+    context.draw_context.ui.is_mouse_over(megaui::Vector2::new(
+        context.mouse_position.x(),
+        context.mouse_position.y(),
+    ))
+}
+
 pub fn clear_background(color: Color) {
     let context = get_context();
 
@@ -429,12 +438,39 @@ pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Colo
     context.draw_line(x1, y1, x2, y2, thickness, color);
 }
 
+pub struct WindowParams {
+    pub movable: bool,
+    pub close_button: bool,
+}
+impl Default for WindowParams {
+    fn default() -> WindowParams {
+        WindowParams {
+            movable: true,
+            close_button: false,
+        }
+    }
+}
+
+pub fn set_ui_style(style: megaui::Style) {
+    get_context().draw_context.ui.set_style(style);
+}
+
 pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
     id: megaui::Id,
     position: glam::Vec2,
     size: glam::Vec2,
+    params: impl Into<Option<WindowParams>>,
     f: F,
-) {
+) -> bool {
     let context = &mut get_context().draw_context;
-    context.draw_window(id, position, size, f);
+    let params = params.into();
+
+    megaui::widgets::Window::new(
+        id,
+        megaui::Vector2::new(position.x(), position.y()),
+        megaui::Vector2::new(size.x(), size.y()),
+    )
+    .movable(params.as_ref().map_or(true, |params| params.movable))
+    .close_button(params.as_ref().map_or(false, |params| params.movable))
+    .ui(&mut context.ui, f)
 }

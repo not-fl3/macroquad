@@ -12,10 +12,10 @@ async fn main() {
             hash!(),
             glam::vec2(70., 50.),
             glam::vec2(300., 300.),
+            None,
             |ui| {
                 ui.editbox(
                     hash!(),
-                    megaui::Vector2::new(5., 0.),
                     megaui::Vector2::new(280., 280.),
                     &mut text1,
                 );
@@ -25,10 +25,10 @@ async fn main() {
             hash!(),
             glam::vec2(300., 340.),
             glam::vec2(300., 300.),
+            None,
             |ui| {
                 ui.editbox(
                     hash!(),
-                    megaui::Vector2::new(5., 0.),
                     megaui::Vector2::new(280., 280.),
                     &mut text2,
                 );

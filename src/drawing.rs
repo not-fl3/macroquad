@@ -32,7 +32,7 @@ impl DrawContext {
             screen_coordinates: ScreenCoordinates::PixelPerfect,
             gl: QuadGl::new(ctx),
             font_texture,
-            ui: megaui::Ui::new(Default::default()),
+            ui: megaui::Ui::new(),
             ui_draw_list: Vec::with_capacity(10000),
         };
 
@@ -271,21 +271,6 @@ impl DrawContext {
 
         self.gl.texture(None);
         self.gl.geometry(&vertices, &indices);
-    }
-
-    pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
-        &mut self,
-        id: megaui::Id,
-        position: glam::Vec2,
-        size: glam::Vec2,
-        f: F,
-    ) {
-        megaui::widgets::Window::new(
-            id,
-            megaui::Vector2::new(position.x(), position.y()),
-            megaui::Vector2::new(size.x(), size.y()),
-        )
-        .ui(&mut self.ui, f);
     }
 
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
