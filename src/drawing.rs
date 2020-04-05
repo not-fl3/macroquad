@@ -32,7 +32,7 @@ impl DrawContext {
             screen_coordinates: ScreenCoordinates::PixelPerfect,
             gl: QuadGl::new(ctx),
             font_texture,
-            ui: megaui::Ui::new(Default::default()),
+            ui: megaui::Ui::new(),
             ui_draw_list: Vec::with_capacity(10000),
         };
 
