@@ -439,12 +439,14 @@ pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Colo
 }
 
 pub struct WindowParams {
+    pub label: String,
     pub movable: bool,
     pub close_button: bool,
 }
 impl Default for WindowParams {
     fn default() -> WindowParams {
         WindowParams {
+            label: "".to_string(),
             movable: true,
             close_button: false,
         }
@@ -470,6 +472,7 @@ pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
         megaui::Vector2::new(position.x(), position.y()),
         megaui::Vector2::new(size.x(), size.y()),
     )
+    .label(params.as_ref().map_or("", |params| &params.label))
     .movable(params.as_ref().map_or(true, |params| params.movable))
     .close_button(params.as_ref().map_or(false, |params| params.movable))
     .ui(&mut context.ui, f)
