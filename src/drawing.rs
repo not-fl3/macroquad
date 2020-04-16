@@ -2,8 +2,6 @@ use quad_gl::{QuadGl, Vertex};
 
 pub use quad_gl::{colors::*, Color, Image, Texture2D};
 
-const FONT_TEXTURE_BYTES: &'static [u8] = include_bytes!("font.png");
-
 pub enum ScreenCoordinates {
     Fixed(f32, f32, f32, f32),
     PixelPerfect,
@@ -14,25 +12,24 @@ pub struct DrawContext {
     pub(crate) gl: QuadGl,
     pub(crate) screen_coordinates: ScreenCoordinates,
     pub ui: megaui::Ui,
-    ui_draw_list: Vec<megaui::DrawCommand>,
+    ui_draw_list: Vec<megaui::DrawList>,
 }
 
 impl DrawContext {
     pub fn new(ctx: &mut miniquad::Context) -> DrawContext {
-        let img = image::load_from_memory(FONT_TEXTURE_BYTES)
-            .unwrap_or_else(|e| panic!(e))
-            .to_rgba();
-        let width = img.width() as u16;
-        let height = img.height() as u16;
-        let bytes = img.into_raw();
-
-        let font_texture = Texture2D::from_rgba8(ctx, width, height, &bytes);
-
+        let ui = megaui::Ui::new();
+        let texture_data = &ui.font_atlas.texture;
+        let font_texture = Texture2D::from_rgba8(
+            ctx,
+            texture_data.width as u16,
+            texture_data.height as u16,
+            &texture_data.data,
+        );
         let mut draw_context = DrawContext {
             screen_coordinates: ScreenCoordinates::PixelPerfect,
             gl: QuadGl::new(ctx),
             font_texture,
-            ui: megaui::Ui::new(),
+            ui,
             ui_draw_list: Vec::with_capacity(10000),
         };
 
@@ -50,70 +47,18 @@ impl DrawContext {
         let mut ui_draw_list = vec![];
 
         std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+        self.gl.texture(Some(self.font_texture));
 
         for draw_command in &ui_draw_list {
-            use megaui::DrawCommand::*;
-
-            match draw_command {
-                Clip {
-                    rect: Some(megaui::Rect { x, y, w, h }),
-                } => self
-                    .gl
-                    .scissor(Some((*x as i32, *y as i32, *w as i32, *h as i32))),
-                Clip { rect: None } => self.gl.scissor(None),
-                DrawLabel {
-                    params,
-                    position,
-                    label,
-                } => {
-                    let color = params.color;
-
-                    self.draw_text(
-                        label,
-                        position.x,
-                        position.y,
-                        10.,
-                        Color([
-                            (color.r * 255.) as u8,
-                            (color.g * 255.) as u8,
-                            (color.b * 255.) as u8,
-                            (color.a * 255.) as u8,
-                        ]),
-                    );
-                }
-                DrawRect { rect, stroke, fill } => {
-                    if let Some(fill) = fill {
-                        self.draw_rectangle(
-                            rect.x,
-                            rect.y,
-                            rect.w,
-                            rect.h,
-                            Color([
-                                (fill.r * 255.) as u8,
-                                (fill.g * 255.) as u8,
-                                (fill.b * 255.) as u8,
-                                (fill.a * 255.) as u8,
-                            ]),
-                        );
-                    }
-                    if let Some(stroke) = stroke {
-                        self.draw_rectangle_lines(
-                            rect.x,
-                            rect.y,
-                            rect.w,
-                            rect.h,
-                            Color([
-                                (stroke.r * 255.) as u8,
-                                (stroke.g * 255.) as u8,
-                                (stroke.b * 255.) as u8,
-                                (stroke.a * 255.) as u8,
-                            ]),
-                        );
-                    }
-                }
-                _ => {}
-            }
+            self.gl.scissor(
+                draw_command
+                    .clipping_zone
+                    .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
+            );
+            self.gl
+                .geometry(&draw_command.vertices, &draw_command.indices);
         }
+        self.gl.texture(None);
 
         std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
     }

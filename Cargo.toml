@@ -17,10 +17,10 @@ log-impl = ["miniquad/log-impl"]
 
 [dependencies]
 miniquad = "=0.2.53"
-quad-gl = "0.1"
+quad-gl = "=0.1.1"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
-megaui = "0.1"
+megaui = "0.2"
 
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
 

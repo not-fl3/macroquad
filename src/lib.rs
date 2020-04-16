@@ -115,10 +115,14 @@ impl EventHandlerFree for Stage {
         context.draw_context.ui.mouse_move((x, y));
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
+        use megaui::InputHandler;
+
         let context = get_context();
 
         context.mouse_wheel.set_x(x);
         context.mouse_wheel.set_y(y);
+
+        context.draw_context.ui.mouse_wheel(x, -y);
     }
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         use megaui::InputHandler;
@@ -474,6 +478,6 @@ pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
     )
     .label(params.as_ref().map_or("", |params| &params.label))
     .movable(params.as_ref().map_or(true, |params| params.movable))
-    .close_button(params.as_ref().map_or(false, |params| params.movable))
+    .close_button(params.as_ref().map_or(false, |params| params.close_button))
     .ui(&mut context.ui, f)
 }
