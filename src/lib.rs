@@ -386,15 +386,117 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 }
 
 pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
-    let context = &mut get_context().draw_context;
-
-    context.draw_texture(texture, x, y, color);
+    draw_texture_ex(texture, x, y, color, Default::default());
 }
 
-pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, color: Color) {
+pub struct Rect {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+impl Rect {
+    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Rect {
+        Rect { x, y, w, h }
+    }
+}
+
+pub struct DrawTextureParams {
+    pub dest_size: Option<Vec2>,
+
+    /// Part of texture to draw. If None - draw the whole texture.
+    /// Good use example: drawing an image from texture atlas.
+    /// Is None by default
+    pub source: Option<Rect>,
+
+    /// Rotation in degrees
+    pub rotation: f32,
+}
+
+impl Default for DrawTextureParams {
+    fn default() -> DrawTextureParams {
+        DrawTextureParams {
+            dest_size: None,
+            source: None,
+            rotation: 0.,
+        }
+    }
+}
+
+pub fn draw_texture_ex(
+    texture: Texture2D,
+    x: f32,
+    y: f32,
+    color: Color,
+    params: DrawTextureParams,
+) {
     let context = &mut get_context().draw_context;
 
-    context.draw_rectangle_lines(x, y, w, h, color);
+    let Rect {
+        x: sx,
+        y: sy,
+        w: sw,
+        h: sh,
+    } = params.source.unwrap_or(Rect {
+        x: 0.,
+        y: 0.,
+        w: texture.width(),
+        h: texture.height(),
+    });
+
+    let (w, h) = params
+        .dest_size
+        .map_or((texture.width(), texture.height()), |dst| {
+            (dst.x(), dst.y())
+        });
+
+    let m = vec2(x + w / 2., y + h / 2.);
+    let p = [
+        vec2(-w / 2., -h / 2.),
+        vec2(w / 2., -h / 2.),
+        vec2(w / 2., h / 2.),
+        vec2(-w / 2., h / 2.),
+    ];
+    let r = params.rotation;
+    let p = [
+        vec2(
+            p[0].x() * r.cos() - p[0].y() * r.sin(),
+            p[0].x() * r.sin() + p[0].y() * r.cos(),
+        ) + m,
+        vec2(
+            p[1].x() * r.cos() - p[1].y() * r.sin(),
+            p[1].x() * r.sin() + p[1].y() * r.cos(),
+        ) + m,
+        vec2(
+            p[2].x() * r.cos() - p[2].y() * r.sin(),
+            p[2].x() * r.sin() + p[2].y() * r.cos(),
+        ) + m,
+        vec2(
+            p[3].x() * r.cos() - p[3].y() * r.sin(),
+            p[3].x() * r.sin() + p[3].y() * r.cos(),
+        ) + m,
+    ];
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(p[0].x(), p[0].y(), 0.,  sx      /texture.width(),  sy      /texture.height(), color),
+        Vertex::new(p[1].x(), p[1].y(), 0., (sx + sw)/texture.width(),  sy      /texture.height(), color),
+        Vertex::new(p[2].x(), p[2].y(), 0., (sx + sw)/texture.width(), (sy + sh)/texture.height(), color),
+        Vertex::new(p[3].x(), p[3].y(), 0.,  sx      /texture.width(), (sy + sh)/texture.height(), color),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    context.gl.texture(Some(texture));
+    context.gl.geometry(&vertices, &indices);
+}
+
+pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
+    let t = thickness / 2.;
+
+    draw_rectangle(x, y, w, t, color);
+    draw_rectangle(x + w - t, y + t, t, h - t, color);
+    draw_rectangle(x, y + h - t, w, t, color);
+    draw_rectangle(x, y + t, t, h - t, color);
 }
 
 pub fn draw_hexagon(
@@ -476,10 +578,7 @@ pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
     &mut context.gl
 }
 
-/// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.
-/// Good use example: drawing an image from texture atlas.
-///
-/// TODO: maybe introduce Rect type?
+#[deprecated(since = "0.3.0", note = "Use draw_texture_ex instead")]
 pub fn draw_texture_rec(
     texture: Texture2D,
     x: f32,
@@ -492,13 +591,66 @@ pub fn draw_texture_rec(
     sh: f32,
     color: Color,
 ) {
-    let context = &mut get_context().draw_context;
-    context.draw_texture_rec(texture, x, y, w, h, sx, sy, sw, sh, color);
+    draw_texture_ex(
+        texture,
+        x,
+        y,
+        color,
+        DrawTextureParams {
+            dest_size: Some(vec2(w, h)),
+            source: Some(Rect {
+                x: sx,
+                y: sy,
+                w: sw,
+                h: sh,
+            }),
+            ..Default::default()
+        },
+    );
 }
 
 pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
     let context = &mut get_context().draw_context;
-    context.draw_circle(x, y, r, color);
+
+    const NUM_DIVISIONS: u32 = 200;
+
+    let mut vertices = Vec::<Vertex>::new();
+    let mut indices = Vec::<u16>::new();
+
+    vertices.push(Vertex::new(x, y, 0., 0., 0., color));
+    for i in 0..NUM_DIVISIONS + 1 {
+        let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
+        let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
+
+        let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, color);
+
+        vertices.push(vertex);
+
+        if i != NUM_DIVISIONS {
+            indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
+        }
+    }
+
+    context.gl.texture(None);
+    context.gl.geometry(&vertices, &indices);
+}
+
+pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
+    const NUM_DIVISIONS: u32 = 200;
+
+    for i in 0..NUM_DIVISIONS {
+        let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
+        let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
+
+        let p0 = vec2(x + r * rx, y + r * ry);
+
+        let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
+        let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
+
+        let p1 = vec2(x + r * rx, y + r * ry);
+
+        draw_line(p0.x(), p0.y(), p1.x(), p1.y(), thickness, color);
+    }
 }
 
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {

@@ -74,60 +74,6 @@ impl DrawContext {
         self.gl.geometry(&vertices, &indices);
     }
 
-    pub fn draw_texture(&mut self, texture: Texture2D, x: f32, y: f32, color: Color) {
-        let w = texture.width();
-        let h = texture.height();
-
-        #[rustfmt::skip]
-        let vertices = [
-            Vertex::new(x    , y    , 0., 0.0, 0.0, color),
-            Vertex::new(x + w, y    , 0., 1.0, 0.0, color),
-            Vertex::new(x + w, y + h, 0., 1.0, 1.0, color),
-            Vertex::new(x    , y + h, 0., 0.0, 1.0, color),
-        ];
-        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
-
-        self.gl.texture(Some(texture));
-        self.gl.geometry(&vertices, &indices);
-    }
-
-    pub fn draw_rectangle_lines(&mut self, x: f32, y: f32, w: f32, h: f32, color: Color) {
-        self.draw_rectangle(x, y, w, 1., color);
-        self.draw_rectangle(x + w - 1., y + 1., 1., h - 2., color);
-        self.draw_rectangle(x, y + h - 1., w, 1., color);
-        self.draw_rectangle(x, y + 1., 1., h - 2., color);
-    }
-
-    /// Draw texture to x y w h position on the screen, using sx sy sw sh as a texture coordinates.
-    /// Good use example: drawing an image from texture atlas.
-    ///
-    /// TODO: maybe introduce Rect type?
-    pub fn draw_texture_rec(
-        &mut self,
-        texture: Texture2D,
-        x: f32,
-        y: f32,
-        w: f32,
-        h: f32,
-        sx: f32,
-        sy: f32,
-        sw: f32,
-        sh: f32,
-        color: Color,
-    ) {
-        #[rustfmt::skip]
-        let vertices = [
-            Vertex::new(x    , y    , 0.,  sx      /texture.width(),  sy      /texture.height(), color),
-            Vertex::new(x + w, y    , 0., (sx + sw)/texture.width(),  sy      /texture.height(), color),
-            Vertex::new(x + w, y + h, 0., (sx + sw)/texture.width(), (sy + sh)/texture.height(), color),
-            Vertex::new(x    , y + h, 0.,  sx      /texture.width(), (sy + sh)/texture.height(), color),
-        ];
-        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
-
-        self.gl.texture(Some(texture));
-        self.gl.geometry(&vertices, &indices);
-    }
-
     pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
         let dx = x2 - x1;
         let dy = y2 - y1;
@@ -151,30 +97,6 @@ impl DrawContext {
             ],
             &[0, 1, 2, 2, 1, 3],
         );
-    }
-
-    pub fn draw_circle(&mut self, x: f32, y: f32, r: f32, color: Color) {
-        const NUM_DIVISIONS: u32 = 20;
-
-        let mut vertices = Vec::<Vertex>::new();
-        let mut indices = Vec::<u16>::new();
-
-        vertices.push(Vertex::new(x, y, 0., 0., 0., color));
-        for i in 0..NUM_DIVISIONS + 1 {
-            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
-            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
-
-            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, color);
-
-            vertices.push(vertex);
-
-            if i != NUM_DIVISIONS {
-                indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
-            }
-        }
-
-        self.gl.texture(None);
-        self.gl.geometry(&vertices, &indices);
     }
 
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
