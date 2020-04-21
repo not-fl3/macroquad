@@ -44,6 +44,8 @@ struct Context {
     draw_context: DrawContext,
 
     start_time: f64,
+    last_frame_time: f64,
+    frame_time: f64,
 }
 
 impl Context {
@@ -64,6 +66,8 @@ impl Context {
             quad_context: ctx,
 
             start_time: miniquad::date::now(),
+            last_frame_time: miniquad::date::now(),
+            frame_time: 1. / 60.,
         }
     }
 
@@ -184,6 +188,9 @@ impl EventHandlerFree for Stage {
         exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
 
         get_context().end_frame();
+
+        get_context().frame_time = date::now() - get_context().last_frame_time;
+        get_context().last_frame_time = date::now();
     }
 }
 
