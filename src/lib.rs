@@ -198,15 +198,21 @@ pub struct Window {}
 
 impl Window {
     pub fn new(_label: &str, future: impl Future<Output = ()> + 'static) {
-        miniquad::start(conf::Conf::default(), |ctx| {
-            unsafe {
-                MAIN_FUTURE = Some(Box::pin(future));
-            }
-            unsafe { CONTEXT = Some(Context::new(ctx)) };
-            exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
+        miniquad::start(
+            conf::Conf {
+                sample_count: 4,
+                ..Default::default()
+            },
+            |ctx| {
+                unsafe {
+                    MAIN_FUTURE = Some(Box::pin(future));
+                }
+                unsafe { CONTEXT = Some(Context::new(ctx)) };
+                exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
 
-            UserData::free(Stage {})
-        });
+                UserData::free(Stage {})
+            },
+        );
     }
 }
 
@@ -326,6 +332,12 @@ pub fn load_texture(path: &str) -> exec::TextureLoadingFuture {
     }
 
     exec::TextureLoadingFuture { texture }
+}
+
+pub fn set_texture_filter(texture: Texture2D, filter_mode: FilterMode) {
+    let context = &mut get_context().quad_context;
+
+    texture.set_filter(context, filter_mode);
 }
 
 /// Upload image data to GPU texture
