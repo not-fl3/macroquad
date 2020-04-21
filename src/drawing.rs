@@ -1,16 +1,13 @@
 use quad_gl::{QuadGl, Vertex};
 
-pub use quad_gl::{colors::*, Color, Image, Texture2D};
+pub use quad_gl::{colors::*, Color, FilterMode, Image, Texture2D};
 
-pub enum ScreenCoordinates {
-    Fixed(f32, f32, f32, f32),
-    PixelPerfect,
-}
+use crate::Camera2D;
 
 pub struct DrawContext {
     pub(crate) font_texture: Texture2D,
     pub(crate) gl: QuadGl,
-    pub(crate) screen_coordinates: ScreenCoordinates,
+    pub(crate) camera_2d: Option<Camera2D>,
     pub ui: megaui::Ui,
     ui_draw_list: Vec<megaui::DrawList>,
 }
@@ -26,7 +23,7 @@ impl DrawContext {
             &texture_data.data,
         );
         let mut draw_context = DrawContext {
-            screen_coordinates: ScreenCoordinates::PixelPerfect,
+            camera_2d: None,
             gl: QuadGl::new(ctx),
             font_texture,
             ui,
@@ -188,14 +185,11 @@ impl DrawContext {
     pub fn update_projection_matrix(&mut self, ctx: &mut miniquad::Context) {
         let (width, height) = ctx.screen_size();
 
-        let projection = match self.screen_coordinates {
-            ScreenCoordinates::PixelPerfect => {
-                glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
-            }
-            ScreenCoordinates::Fixed(left, right, bottom, top) => {
-                glam::Mat4::orthographic_rh_gl(left, right, bottom, top, -1., 1.)
-            }
-        };
+        let mut projection = glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.);
+
+        if let Some(ref camera) = self.camera_2d {
+            projection = camera.matrix();
+        }
 
         self.gl.set_projection_matrix(projection);
     }

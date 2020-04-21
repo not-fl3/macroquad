@@ -4,7 +4,7 @@ use miniquad::*;
 pub use megaui;
 pub use megaui::hash;
 
-pub use glam::Vec2;
+pub use glam::{vec2, Vec2};
 
 use std::collections::HashSet;
 use std::future::Future;
@@ -15,7 +15,10 @@ pub mod rand;
 pub mod drawing;
 pub mod exec;
 
+mod camera;
 mod time;
+
+pub use camera::Camera2D;
 
 pub use time::*;
 
@@ -255,10 +258,32 @@ pub fn clear_background(color: Color) {
     context.clear(color);
 }
 
-pub fn set_screen_coordinates(screen_coordinates: ScreenCoordinates) {
-    let mut context = get_context();
+pub fn begin_mode_2d(camera: Camera2D) {
+    let context = get_context();
 
-    context.draw_context.screen_coordinates = screen_coordinates;
+    assert!(
+        context.draw_context.camera_2d.is_none(),
+        "2d drawing mode already in progress"
+    );
+
+    context.draw_context.camera_2d = Some(camera);
+    context
+        .draw_context
+        .update_projection_matrix(&mut context.quad_context);
+}
+
+pub fn end_mode_2d() {
+    let context = get_context();
+
+    assert!(
+        context.draw_context.camera_2d.is_some(),
+        "Not in 2D rendering mode"
+    );
+
+    context.draw_context.camera_2d = None;
+    context
+        .draw_context
+        .update_projection_matrix(&mut context.quad_context);
 }
 
 pub fn screen_width() -> f32 {
