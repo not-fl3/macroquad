@@ -8,7 +8,7 @@ pub enum ScreenCoordinates {
 }
 
 pub struct DrawContext {
-    font_texture: Texture2D,
+    pub(crate) font_texture: Texture2D,
     pub(crate) gl: QuadGl,
     pub(crate) screen_coordinates: ScreenCoordinates,
     pub ui: megaui::Ui,
@@ -61,44 +61,6 @@ impl DrawContext {
         self.gl.texture(None);
 
         std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-    }
-
-    pub fn draw_text(&mut self, text: &str, x: f32, y: f32, font_size: f32, color: Color) {
-        let mut vertices = Vec::<Vertex>::new();
-        let mut indices = Vec::<u16>::new();
-        for (n, ch) in text.chars().enumerate() {
-            let ix = ch as u32;
-
-            let sx = ((ix % 16) as f32) / 16.0;
-            let sy = ((ix / 16) as f32) / 16.0;
-            let sw = 1.0 / 16.0;
-            let sh = 1.0 / 16.0;
-
-            #[rustfmt::skip]
-            let letter = [
-                Vertex::new(x + 0.0 + n as f32 * font_size, y, 0., sx, sy, color),
-                Vertex::new(x + font_size + n as f32 * font_size, y, 0., sx + sw, sy, color),
-                Vertex::new(x + font_size + n as f32 * font_size, y + font_size, 0., sx + sw, sy + sh, color),
-                Vertex::new(x + 0.0 + n as f32 * font_size, y + font_size, 0., sx, sy + sh, color),
-            ];
-            vertices.extend(letter.iter());
-            let n = n as u16;
-            indices.extend(
-                [
-                    n * 4 + 0,
-                    n * 4 + 1,
-                    n * 4 + 2,
-                    n * 4 + 0,
-                    n * 4 + 2,
-                    n * 4 + 3,
-                ]
-                .iter()
-                .map(|x| *x),
-            );
-        }
-
-        self.gl.texture(Some(self.font_texture));
-        self.gl.geometry(&vertices, &indices);
     }
 
     pub fn draw_rectangle(&mut self, x: f32, y: f32, w: f32, h: f32, color: Color) {

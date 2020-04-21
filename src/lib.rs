@@ -312,7 +312,46 @@ pub fn load_texture_from_image(image: &Image) -> Texture2D {
 pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
-    context.draw_text(text, x, y, font_size, color);
+    let atlas = context.ui.font_atlas.clone();
+
+    let mut total_width = 0.;
+    for character in text.chars() {
+        if let Some(font_data) = atlas.character_infos.get(&character) {
+            let font_data = font_data.scale(font_size);
+
+            total_width += font_data.left_padding;
+
+            let left_coord = total_width;
+            let top_coord = atlas.font_size as f32 - font_data.height_over_line;
+
+            total_width += font_data.size.0 + font_data.right_padding;
+
+            let dest = Rect::new(
+                left_coord + x,
+                top_coord + y - 5.,
+                font_data.size.0,
+                font_data.size.1,
+            );
+
+            let source = Rect::new(
+                font_data.tex_coords.0 * context.font_texture.width(),
+                font_data.tex_coords.1 * context.font_texture.height(),
+                font_data.tex_size.0 * context.font_texture.width(),
+                font_data.tex_size.1 * context.font_texture.height(),
+            );
+            draw_texture_ex(
+                context.font_texture,
+                dest.x,
+                dest.y,
+                color,
+                DrawTextureParams {
+                    dest_size: Some(vec2(dest.w, dest.h)),
+                    source: Some(source),
+                    ..Default::default()
+                },
+            );
+        }
+    }
 }
 
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
