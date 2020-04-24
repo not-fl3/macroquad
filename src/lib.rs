@@ -197,10 +197,11 @@ impl EventHandlerFree for Stage {
 pub struct Window {}
 
 impl Window {
-    pub fn new(_label: &str, future: impl Future<Output = ()> + 'static) {
+    pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
         miniquad::start(
             conf::Conf {
                 sample_count: 4,
+                window_title: label.to_string(),
                 ..Default::default()
             },
             |ctx| {
