@@ -1,14 +1,12 @@
 use macroquad::{
     clear_background, draw_texture, load_texture_from_image, next_frame, rand, screen_height,
-    screen_width, set_screen_coordinates, update_texture, Image, ScreenCoordinates, BLACK, WHITE,
+    screen_width, update_texture, Image, BLACK, WHITE,
 };
 
 #[macroquad::main("Life")]
 async fn main() {
     let w = screen_width() as usize;
     let h = screen_height() as usize;
-
-    set_screen_coordinates(ScreenCoordinates::Fixed(0., w as f32, h as f32, 0.));
 
     let mut buffer = vec![WHITE; w * h];
     let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);

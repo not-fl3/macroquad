@@ -28,14 +28,20 @@ fn tree(gl: &mut QuadGl, time: f64, deep: u32, angle: f32, tall: f32) {
 
 #[macroquad::main("Tree")]
 async fn main() {
-    set_screen_coordinates(ScreenCoordinates::Fixed(-1., 1., -0.2, 1.4));
+    let camera = Camera2D {
+        zoom: vec2(1., 1.),
+        target: vec2(0.0, 0.5),
+        ..Default::default()
+    };
 
     loop {
         clear_background(GREEN);
 
+        begin_mode_2d(camera);
         draw_circle(0., 0., 0.03, RED);
 
         tree(unsafe { get_internal_gl() }, get_time(), 0, 1., 0.3);
+        end_mode_2d();
 
         next_frame().await
     }
