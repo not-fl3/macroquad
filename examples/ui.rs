@@ -102,8 +102,11 @@ impl Data {
 async fn main() {
     let mut data = Data::new();
 
+    let mut data0 = String::new();
+    let mut data1 = String::new();
+
+    let mut text0 = String::new();
     let mut text1 = String::new();
-    let mut text2 = String::new();
 
     loop {
         clear_background(WHITE);
@@ -119,7 +122,7 @@ async fn main() {
             },
             |ui| {
                 for i in 0..30 {
-                    Group::new(hash!("shop", i), Vector2::new(290., 80.)).ui(ui, |ui| {
+                    Group::new(hash!("shop", i), Vector2::new(300., 80.)).ui(ui, |ui| {
                         ui.label(Vector2::new(10., 10.), &format!("Item N {}", i));
                         ui.label(Vector2::new(260., 40.), "10/10");
                         ui.label(Vector2::new(200., 63.), &format!("{} kr", 800));
@@ -155,27 +158,44 @@ async fn main() {
             glam::vec2(470., 50.),
             glam::vec2(300., 300.),
             WindowParams {
-                label: "Editbox 1".to_string(),
+                label: "Megaui Showcase Window".to_string(),
                 ..Default::default()
             },
             |ui| {
-                ui.label(None, "This is editbox!");
-                ui.editbox(hash!(), megaui::Vector2::new(280., 265.), &mut text1);
-            },
-        );
-        draw_window(
-            hash!(),
-            glam::vec2(600., 340.),
-            glam::vec2(300., 300.),
-            WindowParams {
-                label: "Editbox 2".to_string(),
-                ..Default::default()
-            },
-            |ui| {
-                ui.editbox(hash!(), megaui::Vector2::new(280., 280.), &mut text2);
-            },
-        );
+                ui.tree_node(hash!(), "input", |ui| {
+                    ui.label(None, "Some random text");
+                    if ui.button(None, "click me") {
+                        println!("hi");
+                    }
 
+                    ui.separator();
+
+                    ui.label(None, "Some other random text");
+                    if ui.button(None, "other button") {
+                        println!("hi2");
+                    }
+
+                    ui.separator();
+
+                    ui.input_field(hash!(), "<- input text 1", &mut data0);
+                    ui.input_field(hash!(), "<- input text 2", &mut data1);
+                    ui.label(
+                        None,
+                        &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
+                    );
+
+                    ui.separator();
+                });
+                ui.tree_node(hash!(), "editbox 1", |ui| {
+                    ui.label(None, "This is editbox!");
+                    ui.editbox(hash!(), megaui::Vector2::new(285., 165.), &mut text0);
+                });
+                ui.tree_node(hash!(), "editbox 2", |ui| {
+                    ui.label(None, "This is editbox!");
+                    ui.editbox(hash!(), megaui::Vector2::new(285., 165.), &mut text1);
+                });
+            },
+        );
         next_frame().await;
     }
 }
