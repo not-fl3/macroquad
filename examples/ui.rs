@@ -108,6 +108,8 @@ async fn main() {
     let mut text0 = String::new();
     let mut text1 = String::new();
 
+    let mut number0 = 0.;
+    let mut number1 = 0.;
     loop {
         clear_background(WHITE);
 
@@ -185,6 +187,10 @@ async fn main() {
                     );
 
                     ui.separator();
+                });
+                ui.tree_node(hash!(), "sliders", |ui| {
+                    ui.slider(hash!(), "[-10 .. 10]", -10f32..10f32, &mut number0);
+                    ui.slider(hash!(), "[0 .. 100]", 0f32..100f32, &mut number1);
                 });
                 ui.tree_node(hash!(), "editbox 1", |ui| {
                     ui.label(None, "This is editbox!");
