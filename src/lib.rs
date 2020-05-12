@@ -157,22 +157,22 @@ impl EventHandlerFree for Stage {
         context.draw_context.ui.char_event(character);
     }
 
-    fn key_down_event(&mut self, keycode: KeyCode, _: KeyMods, _: bool) {
+    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, _: bool) {
         use megaui::InputHandler;
 
         let context = get_context();
         context.keys_pressed.insert(keycode);
 
         match keycode {
-            KeyCode::Up => context.draw_context.ui.key_down(megaui::KeyCode::Up),
-            KeyCode::Down => context.draw_context.ui.key_down(megaui::KeyCode::Down),
-            KeyCode::Right => context.draw_context.ui.key_down(megaui::KeyCode::Right),
-            KeyCode::Left => context.draw_context.ui.key_down(megaui::KeyCode::Left),
-            KeyCode::Home => context.draw_context.ui.key_down(megaui::KeyCode::Home),
-            KeyCode::End => context.draw_context.ui.key_down(megaui::KeyCode::End),
-            KeyCode::Delete => context.draw_context.ui.key_down(megaui::KeyCode::Delete),
-            KeyCode::Backspace => context.draw_context.ui.key_down(megaui::KeyCode::Backspace),
-            KeyCode::Enter => context.draw_context.ui.key_down(megaui::KeyCode::Enter),
+            KeyCode::Up => context.draw_context.ui.key_down(megaui::KeyCode::Up, modifiers.shift),
+            KeyCode::Down => context.draw_context.ui.key_down(megaui::KeyCode::Down, modifiers.shift),
+            KeyCode::Right => context.draw_context.ui.key_down(megaui::KeyCode::Right, modifiers.shift),
+            KeyCode::Left => context.draw_context.ui.key_down(megaui::KeyCode::Left, modifiers.shift),
+            KeyCode::Home => context.draw_context.ui.key_down(megaui::KeyCode::Home, modifiers.shift),
+            KeyCode::End => context.draw_context.ui.key_down(megaui::KeyCode::End, modifiers.shift),
+            KeyCode::Delete => context.draw_context.ui.key_down(megaui::KeyCode::Delete, modifiers.shift),
+            KeyCode::Backspace => context.draw_context.ui.key_down(megaui::KeyCode::Backspace, modifiers.shift),
+            KeyCode::Enter => context.draw_context.ui.key_down(megaui::KeyCode::Enter, modifiers.shift),
             _ => {}
         }
     }

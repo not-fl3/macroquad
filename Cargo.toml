@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.2.0-alpha.0"
+version = "0.2.0-alpha.1"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -20,7 +20,7 @@ miniquad = "=0.2.55"
 quad-gl = "=0.1.3"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
-megaui = "0.2"
+megaui = { path = "../megaui", version = "0.2" }
 
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
 
