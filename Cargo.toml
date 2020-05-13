@@ -20,7 +20,7 @@ miniquad = "=0.2.55"
 quad-gl = "=0.1.3"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
-megaui = { path = "../megaui", version = "0.2" }
+megaui = { path = "../megaui", version = "=0.2.5" }
 
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
 
