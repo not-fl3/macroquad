@@ -185,7 +185,16 @@ impl EventHandlerFree for Stage {
     fn update(&mut self) {}
 
     fn draw(&mut self) {
-        exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
+        if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+            if exec::resume(future) {
+                unsafe {
+                    MAIN_FUTURE = None;
+                }
+		info!("macroquad is done, quiting");
+                get_context().quad_context.quit();
+                return;
+            }
+        }
 
         get_context().end_frame();
 
@@ -209,7 +218,11 @@ impl Window {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
                 unsafe { CONTEXT = Some(Context::new(ctx)) };
-                exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() });
+                if exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() }) {
+                    unsafe {
+                        MAIN_FUTURE = None;
+                    }
+                }
 
                 UserData::free(Stage {})
             },

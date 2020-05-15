@@ -48,8 +48,10 @@ impl Future for TextureLoadingFuture {
     }
 }
 
-pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) {
+/// returns true if future is done
+pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
     let mut futures_context = ExecState::RunOnce;
     let futures_context_ref: &mut _ = unsafe { std::mem::transmute(&mut futures_context) };
-    let _ = future.as_mut().poll(futures_context_ref);
+
+    matches!(future.as_mut().poll(futures_context_ref), Poll::Ready(_))
 }
