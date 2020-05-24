@@ -127,8 +127,8 @@ async fn main() {
                     Group::new(hash!("shop", i), Vector2::new(300., 80.)).ui(ui, |ui| {
                         ui.label(Vector2::new(10., 10.), &format!("Item N {}", i));
                         ui.label(Vector2::new(260., 40.), "10/10");
-                        ui.label(Vector2::new(200., 63.), &format!("{} kr", 800));
-                        if ui.button(Vector2::new(255., 60.), "buy") {
+                        ui.label(Vector2::new(200., 58.), &format!("{} kr", 800));
+                        if ui.button(Vector2::new(260., 55.), "buy") {
                             data.inventory.push(format!("Item {}", i));
                         }
                     });

@@ -1,13 +1,15 @@
+//! this is legacy and going to disappear soon
+
 use quad_gl::{QuadGl, Vertex};
 
-pub use quad_gl::{colors::*, Color, FilterMode, Image, Texture2D};
+pub use quad_gl::{colors::*, Color, FilterMode, Image, Texture2D, DrawMode};
 
-use crate::Camera2D;
+use glam::Mat4;
 
 pub struct DrawContext {
     pub(crate) font_texture: Texture2D,
     pub(crate) gl: QuadGl,
-    pub(crate) camera_2d: Option<Camera2D>,
+    pub(crate) camera_matrix: Option<Mat4>,
     pub ui: megaui::Ui,
     ui_draw_list: Vec<megaui::DrawList>,
 }
@@ -23,7 +25,7 @@ impl DrawContext {
             &texture_data.data,
         );
         let mut draw_context = DrawContext {
-            camera_2d: None,
+            camera_matrix: None,
             gl: QuadGl::new(ctx),
             font_texture,
             ui,
@@ -52,6 +54,7 @@ impl DrawContext {
                     .clipping_zone
                     .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
             );
+	    self.gl.draw_mode(DrawMode::Triangles);
             self.gl
                 .geometry(&draw_command.vertices, &draw_command.indices);
         }
@@ -71,6 +74,7 @@ impl DrawContext {
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
         self.gl.texture(None);
+	self.gl.draw_mode(DrawMode::Triangles);
         self.gl.geometry(&vertices, &indices);
     }
 
@@ -88,6 +92,7 @@ impl DrawContext {
         let ty = ny / tlen;
 
         self.gl.texture(None);
+	self.gl.draw_mode(DrawMode::Triangles);
         self.gl.geometry(
             &[
                 Vertex::new(x1 + tx, y1 + ty, 0., 0., 0., color),
@@ -109,8 +114,8 @@ impl DrawContext {
 
         let mut projection = glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.);
 
-        if let Some(ref camera) = self.camera_2d {
-            projection = camera.matrix();
+        if let Some(matrix) = self.camera_matrix {
+            projection = matrix;
         }
 
         self.gl.set_projection_matrix(projection);

@@ -1,5 +1,7 @@
 use macroquad::*;
 
+use macroquad::draw_line;
+
 #[macroquad::main("BasicShapes")]
 async fn main() {
     loop {

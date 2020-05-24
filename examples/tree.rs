@@ -34,14 +34,12 @@ async fn main() {
         ..Default::default()
     };
 
+    set_camera(camera);
     loop {
         clear_background(GREEN);
 
-        begin_mode_2d(camera);
         draw_circle(0., 0., 0.03, RED);
-
         tree(unsafe { get_internal_gl() }, get_time(), 0, 1., 0.3);
-        end_mode_2d();
 
         next_frame().await
     }
