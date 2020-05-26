@@ -1,6 +1,4 @@
-use macroquad::{
-    self as mq, *
-};
+use macroquad::{self as mq, *};
 
 #[macroquad::main("Arkanoid")]
 async fn main() {
@@ -19,6 +17,15 @@ async fn main() {
     let platform_width = 5.;
     let platform_height = 0.2;
 
+    // build camera with following coordinate system:
+    // (0., 0)     .... (SCR_W, 0.)
+    // (0., SCR_H) .... (SCR_W, SCR_H)
+    set_camera(Camera2D {
+        zoom: vec2(1. / SCR_W * 2., -1. / SCR_H * 2.),
+        target: vec2(SCR_W / 2., SCR_H / 2.),
+        ..Default::default()
+    });
+
     loop {
         clear_background(mq::SKYBLUE);
 
@@ -33,7 +40,13 @@ async fn main() {
             ball_x += dx;
             ball_y += dy;
         } else {
-            draw_text("Press space to start", screen_width() / 2. - 140., screen_height() / 2., 30., mq::BLACK);
+            draw_text(
+                "Press space to start",
+                screen_width() / 2. - 140.,
+                screen_height() / 2.,
+                30.,
+                mq::BLACK,
+            );
 
             ball_x = platform_x;
             ball_y = SCR_H - 0.5;
@@ -56,15 +69,6 @@ async fn main() {
             dy = -dy.abs();
             stick = true;
         }
-
-        // build camera with following coordinate system:
-        // (0., 0)     .... (SCR_W, 0.)
-        // (0., SCR_H) .... (SCR_W, SCR_H)
-        begin_mode_2d(Camera2D {
-            zoom: vec2(1. / SCR_W * 2., -1. / SCR_H * 2.),
-            target: vec2(SCR_W / 2., SCR_H / 2.),
-            ..Default::default()
-        });
 
         for j in 0..BLOCKS_H {
             for i in 0..BLOCKS_W {
@@ -95,8 +99,6 @@ async fn main() {
             platform_height,
             mq::DARKPURPLE,
         );
-
-        end_mode_2d();
 
         next_frame().await
     }
