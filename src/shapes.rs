@@ -6,7 +6,7 @@ use crate::{
 };
 
 use glam::vec2;
-use quad_gl::{Vertex, DrawMode};
+use quad_gl::{DrawMode, Vertex};
 
 pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     let context = &mut get_context().draw_context;

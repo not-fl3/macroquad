@@ -2,7 +2,7 @@
 
 use quad_gl::{QuadGl, Vertex};
 
-pub use quad_gl::{colors::*, Color, FilterMode, Image, Texture2D, DrawMode};
+pub use quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
 
 use glam::Mat4;
 
@@ -16,7 +16,9 @@ pub struct DrawContext {
 
 impl DrawContext {
     pub fn new(ctx: &mut miniquad::Context) -> DrawContext {
-        let ui = megaui::Ui::new();
+        let mut ui = megaui::Ui::new();
+        ui.set_clipboard_object(crate::ui::ClipboardObject);
+
         let texture_data = &ui.font_atlas.texture;
         let font_texture = Texture2D::from_rgba8(
             ctx,
@@ -54,7 +56,7 @@ impl DrawContext {
                     .clipping_zone
                     .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
             );
-	    self.gl.draw_mode(DrawMode::Triangles);
+            self.gl.draw_mode(DrawMode::Triangles);
             self.gl
                 .geometry(&draw_command.vertices, &draw_command.indices);
         }
@@ -74,7 +76,7 @@ impl DrawContext {
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
         self.gl.texture(None);
-	self.gl.draw_mode(DrawMode::Triangles);
+        self.gl.draw_mode(DrawMode::Triangles);
         self.gl.geometry(&vertices, &indices);
     }
 
@@ -92,7 +94,7 @@ impl DrawContext {
         let ty = ny / tlen;
 
         self.gl.texture(None);
-	self.gl.draw_mode(DrawMode::Triangles);
+        self.gl.draw_mode(DrawMode::Triangles);
         self.gl.geometry(
             &[
                 Vertex::new(x1 + tx, y1 + ty, 0., 0., 0., color),

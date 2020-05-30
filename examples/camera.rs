@@ -17,7 +17,7 @@ async fn main() {
 
         // Back to screen space, render some text
 
-	set_default_camera();
+        set_default_camera();
         draw_text("HELLO", 30.0, 200.0, 30.0, BLACK);
 
         next_frame().await

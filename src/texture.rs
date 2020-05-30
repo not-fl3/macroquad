@@ -1,7 +1,7 @@
 use crate::{exec, get_context, types::Rect};
 
-use quad_gl::{Texture2D, Vertex, FilterMode, Color, DrawMode};
 use glam::{vec2, Vec2};
+use quad_gl::{Color, DrawMode, FilterMode, Texture2D, Vertex};
 
 pub use quad_gl::Image;
 

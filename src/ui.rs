@@ -1,10 +1,27 @@
 use crate::get_context;
 
+pub struct ClipboardObject;
+
+impl megaui::ClipboardObject for ClipboardObject {
+    fn get(&self) -> Option<String> {
+        let context = get_context();
+
+        miniquad::clipboard::get(&mut context.quad_context)
+    }
+
+    fn set(&mut self, data: &str) {
+        let context = get_context();
+
+        miniquad::clipboard::set(&mut context.quad_context, data)
+    }
+}
+
 pub struct WindowParams {
     pub label: String,
     pub movable: bool,
     pub close_button: bool,
 }
+
 impl Default for WindowParams {
     fn default() -> WindowParams {
         WindowParams {
