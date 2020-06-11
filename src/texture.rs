@@ -1,9 +1,9 @@
 use crate::{exec, get_context, types::Rect};
 
 use glam::{vec2, Vec2};
-use quad_gl::{Color, DrawMode, FilterMode, Texture2D, Vertex};
+use quad_gl::{Color, DrawMode, FilterMode, Vertex};
 
-pub use quad_gl::Image;
+pub use quad_gl::{Image, Texture2D};
 
 pub fn load_texture(path: &str) -> exec::TextureLoadingFuture {
     use std::cell::RefCell;
