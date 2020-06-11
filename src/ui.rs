@@ -20,6 +20,7 @@ pub struct WindowParams {
     pub label: String,
     pub movable: bool,
     pub close_button: bool,
+    pub titlebar: bool,
 }
 
 impl Default for WindowParams {
@@ -28,6 +29,7 @@ impl Default for WindowParams {
             label: "".to_string(),
             movable: true,
             close_button: false,
+            titlebar: true,
         }
     }
 }
@@ -52,6 +54,7 @@ pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
         megaui::Vector2::new(size.x(), size.y()),
     )
     .label(params.as_ref().map_or("", |params| &params.label))
+    .titlebar(params.as_ref().map_or(true, |params| params.titlebar))
     .movable(params.as_ref().map_or(true, |params| params.movable))
     .close_button(params.as_ref().map_or(false, |params| params.close_button))
     .ui(&mut context.ui, f)

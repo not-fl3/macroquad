@@ -202,6 +202,20 @@ async fn main() {
                 });
             },
         );
+
+        draw_window(
+            hash!(),
+            glam::vec2(10., 10.),
+            glam::vec2(50., 20.),
+            WindowParams {
+                titlebar: false,
+                ..Default::default()
+            },
+            |ui| {
+                ui.label(None, "Hello!");
+            },
+        );
+
         next_frame().await;
     }
 }
