@@ -2,20 +2,24 @@ use macroquad::{self as mq, *};
 use std::collections::LinkedList;
 use std::process::exit;
 
-const SQUARES:i16 = 16;
+const SQUARES: i16 = 16;
 
 type Point = (i16, i16);
 
-struct Snake{
+struct Snake {
     head: Point,
     body: LinkedList<Point>,
-    dir: Point
+    dir: Point,
 }
 
 #[macroquad::main("Snake")]
 async fn main() {
-    let mut snake = Snake{head: (0,0), dir: (1, 0), body: LinkedList::new()};
-    let mut fruit:Point = (rand::gen_range(0, SQUARES), rand::gen_range(0, SQUARES));
+    let mut snake = Snake {
+        head: (0, 0),
+        dir: (1, 0),
+        body: LinkedList::new(),
+    };
+    let mut fruit: Point = (rand::gen_range(0, SQUARES), rand::gen_range(0, SQUARES));
     let mut score = 0;
     let mut speed = 0.3;
     let mut last_update = get_time();
@@ -48,7 +52,11 @@ async fn main() {
                 } else {
                     snake.body.pop_back();
                 }
-                if snake.head.0 < 0 || snake.head.1 < 0 || snake.head.0 >= SQUARES || snake.head.1 >= SQUARES {
+                if snake.head.0 < 0
+                    || snake.head.1 < 0
+                    || snake.head.0 >= SQUARES
+                    || snake.head.1 >= SQUARES
+                {
                     game_over = true;
                 }
                 for (x, y) in &snake.body {
@@ -58,8 +66,7 @@ async fn main() {
                 }
             }
         }
-        if !game_over{
-
+        if !game_over {
             clear_background(mq::LIGHTGRAY);
 
             let game_size = screen_width().min(screen_height());
@@ -67,50 +74,83 @@ async fn main() {
             let offset_y = (screen_height() - game_size) / 2. + 10.;
             let sq_size = (screen_height() - offset_y * 2.) / SQUARES as f32;
 
-            draw_rectangle(offset_x, offset_y, game_size - 20., game_size -20., WHITE);
+            draw_rectangle(offset_x, offset_y, game_size - 20., game_size - 20., WHITE);
 
             for i in 1..SQUARES {
-                draw_line(offset_x,
-                          offset_y + sq_size * i as f32,
-                          screen_width() - offset_x,
-                          offset_y + sq_size * i as f32, 2., LIGHTGRAY);
+                draw_line(
+                    offset_x,
+                    offset_y + sq_size * i as f32,
+                    screen_width() - offset_x,
+                    offset_y + sq_size * i as f32,
+                    2.,
+                    LIGHTGRAY,
+                );
             }
 
             for i in 1..SQUARES {
-                draw_line(offset_x + sq_size * i as f32,
-                          offset_y,
-                          offset_x + sq_size * i as f32,
-                          screen_height() - offset_y, 2., LIGHTGRAY);
+                draw_line(
+                    offset_x + sq_size * i as f32,
+                    offset_y,
+                    offset_x + sq_size * i as f32,
+                    screen_height() - offset_y,
+                    2.,
+                    LIGHTGRAY,
+                );
             }
 
-            draw_rectangle(offset_x + snake.head.0 as f32 * sq_size,
-                           offset_y + snake.head.1 as f32 * sq_size,
-                           sq_size, sq_size, DARKGREEN);
+            draw_rectangle(
+                offset_x + snake.head.0 as f32 * sq_size,
+                offset_y + snake.head.1 as f32 * sq_size,
+                sq_size,
+                sq_size,
+                DARKGREEN,
+            );
 
             for (x, y) in &snake.body {
-                draw_rectangle(offset_x + *x as f32 * sq_size,
-                               offset_y + *y as f32 * sq_size,
-                               sq_size, sq_size, LIME);
+                draw_rectangle(
+                    offset_x + *x as f32 * sq_size,
+                    offset_y + *y as f32 * sq_size,
+                    sq_size,
+                    sq_size,
+                    LIME,
+                );
             }
 
-            draw_rectangle(offset_x + fruit.0 as f32 * sq_size,
+            draw_rectangle(
+                offset_x + fruit.0 as f32 * sq_size,
                 offset_y + fruit.1 as f32 * sq_size,
-                sq_size, sq_size, GOLD);
+                sq_size,
+                sq_size,
+                GOLD,
+            );
 
-            draw_text(format!("SCORE: {}", score).as_str(), 10., 10., 20., DARKGRAY);
-        }else{
+            draw_text(
+                format!("SCORE: {}", score).as_str(),
+                10.,
+                10.,
+                20.,
+                DARKGRAY,
+            );
+        } else {
             clear_background(mq::WHITE);
             let text = "Game Over. Press [enter] to play again.";
             let font_size = 30.;
             let text_size = measure_text(text, font_size);
 
-            draw_text(text, screen_width()/2. - text_size.0/2. ,
-                      screen_height()/2. - text_size.1/2.,
-                      font_size, DARKGRAY);
+            draw_text(
+                text,
+                screen_width() / 2. - text_size.0 / 2.,
+                screen_height() / 2. - text_size.1 / 2.,
+                font_size,
+                DARKGRAY,
+            );
 
-
-            if is_key_down(KeyCode::Enter){
-                snake = Snake{head: (0,0), dir: (1,0), body: LinkedList::new()};
+            if is_key_down(KeyCode::Enter) {
+                snake = Snake {
+                    head: (0, 0),
+                    dir: (1, 0),
+                    body: LinkedList::new(),
+                };
                 fruit = (rand::gen_range(0, SQUARES), rand::gen_range(0, SQUARES));
                 score = 0;
                 speed = 0.3;

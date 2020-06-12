@@ -53,7 +53,7 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     }
 }
 
-pub fn measure_text(text: &str, font_size: f32) -> (f32, f32){
+pub fn measure_text(text: &str, font_size: f32) -> (f32, f32) {
     let context = &mut get_context().draw_context;
 
     let atlas = context.ui.font_atlas.clone();
