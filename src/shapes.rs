@@ -53,6 +53,24 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     }
 }
 
+pub fn measure_text(text: &str, font_size: f32) -> (f32, f32){
+    let context = &mut get_context().draw_context;
+
+    let atlas = context.ui.font_atlas.clone();
+
+    let mut width = 0.;
+    let mut height: f32 = 0.;
+
+    for character in text.chars() {
+        if let Some(font_data) = atlas.character_infos.get(&character) {
+            let font_data = font_data.scale(font_size);
+            width += font_data.left_padding + font_data.size.0 + font_data.right_padding;
+            height = height.max(font_data.size.1);
+        }
+    }
+    return (width, height);
+}
+
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
