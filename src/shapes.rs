@@ -107,6 +107,20 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     draw_rectangle(x, y + t, t, h - t, color);
 }
 
+pub fn draw_hexagon(
+    x: f32,
+    y: f32,
+    size: f32,
+    border: f32,
+    border_color: Color,
+    fill_color: Color,
+) {
+    draw_poly(x, y, 6, size, 0., fill_color);
+    if border > 0. {
+        draw_poly_lines(x, y, 6, size, 0., border, border_color);
+    }
+}
+
 pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
