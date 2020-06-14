@@ -5,7 +5,7 @@ use crate::{
     types::{Color, Rect},
 };
 
-use glam::vec2;
+use glam::{vec2, Vec2};
 use quad_gl::{DrawMode, Vertex};
 
 pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
@@ -71,6 +71,27 @@ pub fn measure_text(text: &str, font_size: f32) -> (f32, f32) {
     return (width, height);
 }
 
+pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
+    let context = &mut get_context().draw_context;
+
+    let mut vertices = Vec::<Vertex>::new();
+
+    vertices.push(Vertex::new(v1.x(), v1.y(), 0., 0., 0., color));
+    vertices.push(Vertex::new(v2.x(), v2.y(), 0., 0., 0., color));
+    vertices.push(Vertex::new(v3.x(), v3.y(), 0., 0., 0., color));
+    let indices: [u16; 3] = [0, 1, 2];
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
+}
+
+pub fn draw_triangle_lines(v1: Vec2, v2: Vec2, v3: Vec2, thickness: f32, color: Color) {
+    draw_line(v1.x(), v1.y(), v2.x(), v2.y(), thickness, color);
+    draw_line(v2.x(), v2.y(), v3.x(), v3.y(), thickness, color);
+    draw_line(v3.x(), v3.y(), v1.x(), v1.y(), thickness, color);
+}
+
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
@@ -86,98 +107,23 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     draw_rectangle(x, y + t, t, h - t, color);
 }
 
-pub fn draw_hexagon(
-    x: f32,
-    y: f32,
-    size: f32,
-    border: f32,
-    border_color: Color,
-    fill_color: Color,
-) {
+pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color) {
     let context = &mut get_context().draw_context;
-
-    const NUM_DIVISIONS: u32 = 6;
 
     let mut vertices = Vec::<Vertex>::new();
     let mut indices = Vec::<u16>::new();
 
-    vertices.push(Vertex::new(x, y, 0., 0., 0., fill_color));
-    let mut n = 0;
-    for i in 0..NUM_DIVISIONS {
-        let d = std::f32::consts::PI / 2.;
-        // internal vertices
-        {
-            let r = size - border;
-            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
-            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
-            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, fill_color);
-            vertices.push(vertex);
-
-            let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
-            let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
-            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, fill_color);
-            vertices.push(vertex);
-
-            indices.extend_from_slice(&[0, n + 1, n + 2]);
-        }
-
-        // duplicate internal vertices with border_color
-        {
-            let r = size - border;
-            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
-            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
-            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
-            vertices.push(vertex);
-
-            let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
-            let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
-            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
-            vertices.push(vertex);
-        }
-
-        // external border
-        {
-            let r = size;
-            let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
-            let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
-            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
-            vertices.push(vertex);
-
-            let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).cos();
-            let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2. - d).sin();
-            let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, border_color);
-            vertices.push(vertex);
-        }
-
-        indices.extend_from_slice(&[n + 5, n + 3, n + 4]);
-        indices.extend_from_slice(&[n + 5, n + 4, n + 6]);
-
-        n += 6;
-    }
-
-    context.gl.texture(None);
-    context.gl.draw_mode(DrawMode::Triangles);
-    context.gl.geometry(&vertices, &indices);
-}
-
-pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
-    let context = &mut get_context().draw_context;
-
-    const NUM_DIVISIONS: u32 = 200;
-
-    let mut vertices = Vec::<Vertex>::new();
-    let mut indices = Vec::<u16>::new();
-
+    let rot = rotation.to_radians();
     vertices.push(Vertex::new(x, y, 0., 0., 0., color));
-    for i in 0..NUM_DIVISIONS + 1 {
-        let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
-        let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
+    for i in 0..sides + 1 {
+        let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).cos();
+        let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).sin();
 
-        let vertex = Vertex::new(x + r * rx, y + r * ry, 0., rx, ry, color);
+        let vertex = Vertex::new(x + radius * rx, y + radius * ry, 0., rx, ry, color);
 
         vertices.push(vertex);
 
-        if i != NUM_DIVISIONS {
+        if i != sides {
             indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
         }
     }
@@ -187,22 +133,38 @@ pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
     context.gl.geometry(&vertices, &indices);
 }
 
-pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
-    const NUM_DIVISIONS: u32 = 200;
+pub fn draw_poly_lines(
+    x: f32,
+    y: f32,
+    sides: u8,
+    radius: f32,
+    rotation: f32,
+    thickness: f32,
+    color: Color,
+) {
+    let rot = rotation.to_radians();
 
-    for i in 0..NUM_DIVISIONS {
-        let rx = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
-        let ry = (i as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
+    for i in 0..sides {
+        let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).cos();
+        let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).sin();
 
-        let p0 = vec2(x + r * rx, y + r * ry);
+        let p0 = vec2(x + radius * rx, y + radius * ry);
 
-        let rx = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).cos();
-        let ry = ((i + 1) as f32 / NUM_DIVISIONS as f32 * std::f32::consts::PI * 2.).sin();
+        let rx = ((i + 1) as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).cos();
+        let ry = ((i + 1) as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).sin();
 
-        let p1 = vec2(x + r * rx, y + r * ry);
+        let p1 = vec2(x + radius * rx, y + radius * ry);
 
         draw_line(p0.x(), p0.y(), p1.x(), p1.y(), thickness, color);
     }
+}
+
+pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
+    draw_poly(x, y, 200, r, 0., color);
+}
+
+pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
+    draw_poly_lines(x, y, 200, r, 0., thickness, color);
 }
 
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
