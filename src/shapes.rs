@@ -112,12 +112,18 @@ pub fn draw_hexagon(
     y: f32,
     size: f32,
     border: f32,
+    vertical: bool,
     border_color: Color,
     fill_color: Color,
 ) {
-    draw_poly(x, y, 6, size, 0., fill_color);
+    let rotation = if vertical {
+        90.
+    } else {
+        0.
+    };
+    draw_poly(x, y, 6, size, rotation, fill_color);
     if border > 0. {
-        draw_poly_lines(x, y, 6, size, 0., border, border_color);
+        draw_poly_lines(x, y, 6, size, rotation, border, border_color);
     }
 }
 

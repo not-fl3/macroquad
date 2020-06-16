@@ -15,10 +15,20 @@ impl Slot {
     }
 }
 
+pub enum FittingCommand {
+    /// Remove item from this slot
+    Unfit { target_slot: u64 },
+    /// Fit item from inventory to slot
+    Fit { target_slot: u64, item: String },
+    /// Move item from one slot to another
+    Refit { target_slot: u64, origin_slot: u64 },
+}
+
 pub struct Data {
     inventory: Vec<String>,
     item_dragging: bool,
     slots: Vec<(&'static str, Slot)>,
+    fit_command: Option<FittingCommand>,
 }
 impl Data {
     pub fn new() -> Data {
@@ -34,30 +44,46 @@ impl Data {
                 ("\"2\"", Slot::new(hash!())),
                 ("\"3\"", Slot::new(hash!())),
             ],
+            fit_command: None,
         }
     }
 
     fn slots(&mut self, ui: &mut Ui) {
         let item_dragging = &mut self.item_dragging;
 
-        for (label, item) in self.slots.iter_mut() {
-            Group::new(hash!("grp", item.id, &label), Vector2::new(210., 55.)).ui(ui, |ui| {
-                let drag = Group::new(item.id, Vector2::new(50., 50.))
-                    .draggable(true)
+        let fit_command = &mut self.fit_command;
+        for (label, slot) in self.slots.iter_mut() {
+            Group::new(hash!("grp", slot.id, &label), Vector2::new(210., 55.)).ui(ui, |ui| {
+                let drag = Group::new(slot.id, Vector2::new(50., 50.))
+                    // slot without item is not draggable
+                    .draggable(slot.item.is_some())
+                    // but could be a target of drag
+                    .hoverable(*item_dragging)
+                    // and is highlighted with other color when some item is dragging
                     .highlight(*item_dragging)
                     .ui(ui, |ui| {
-                        if let Some(ref item) = item.item {
+                        if let Some(ref item) = slot.item {
                             ui.label(Vector2::new(5., 10.), &item);
                         }
                     });
 
                 match drag {
-                    Drag::Dropped(_, id) => {
-                        if id.map_or(true, |id| id != item.id) {
-                            item.item = None;
-                        }
-                        *item_dragging = false;
+                    // there is some item in this slot and it was dragged to another slot
+                    Drag::Dropped(_, Some(id)) if slot.item.is_some() => {
+                        *fit_command = Some(FittingCommand::Refit {
+                            target_slot: id,
+                            origin_slot: slot.id,
+                        });
                     }
+                    // there is some item in this slot and it was dragged out - unfit it
+                    Drag::Dropped(_, None) if slot.item.is_some() => {
+                        *fit_command = Some(FittingCommand::Unfit {
+                            target_slot: slot.id,
+                        });
+                    }
+                    // there is no item in this slot
+                    // this is impossible - slots without items are non-draggable
+                    Drag::Dropped(_, _) => unreachable!(),
                     Drag::Dragging => {
                         *item_dragging = true;
                     }
@@ -79,14 +105,13 @@ impl Data {
 
             match drag {
                 Drag::Dropped(_, Some(id)) => {
-                    for slot in self.slots.iter_mut() {
-                        if slot.1.id == id {
-                            slot.1.item = Some(item.to_string());
-                        }
-                    }
+                    self.fit_command = Some(FittingCommand::Fit {
+                        target_slot: id,
+                        item: item.clone(),
+                    });
                     *item_dragging = false;
                 }
-                Drag::Dropped { .. } => {
+                Drag::Dropped(_, _) => {
                     *item_dragging = false;
                 }
                 Drag::Dragging => {
@@ -94,6 +119,16 @@ impl Data {
                 }
                 _ => {}
             }
+        }
+    }
+
+    fn set_item(&mut self, id: u64, item: Option<String>) {
+        if let Some(slot) = self
+            .slots
+            .iter_mut()
+            .find(|(_, slot)| slot.id == id)
+        {
+            slot.1.item = item;
         }
     }
 }
@@ -215,6 +250,31 @@ async fn main() {
                 ui.label(None, "Hello!");
             },
         );
+
+        match data.fit_command.take() {
+            Some(FittingCommand::Unfit { target_slot }) =>                 data.set_item(target_slot, None),
+            Some(FittingCommand::Fit { target_slot, item }) => {
+                data.set_item(target_slot, Some(item));
+            }
+            Some(FittingCommand::Refit {
+                target_slot,
+                origin_slot,
+            }) => {
+                let origin_item = data.slots
+                    .iter()
+                    .find_map(|(_, slot)| {
+                        if slot.id == origin_slot {
+                            Some(slot.item.clone())
+                        } else {
+                            None
+                        }
+                    })
+                    .flatten();
+                data.set_item(target_slot, origin_item);
+                data.set_item(origin_slot, None);
+            },
+            None => {}
+        };
 
         next_frame().await;
     }
