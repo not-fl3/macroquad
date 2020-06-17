@@ -7,7 +7,9 @@ pub fn set_target_fps(_fps: f32) {
 
 /// Returns current FPS
 pub fn get_fps() -> i32 {
-    unimplemented!()
+    let context = get_context();
+
+    (1. / context.frame_time) as i32
 }
 
 /// Returns time in seconds for last frame drawn
