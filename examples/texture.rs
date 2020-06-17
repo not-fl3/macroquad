@@ -4,8 +4,6 @@ use macroquad::*;
 async fn main() {
     let texture: Texture2D = load_texture("ferris.png").await;
 
-    debug!("hello");
-
     loop {
         clear_background(RED);
         draw_texture(
