@@ -42,9 +42,9 @@ async fn main() {
         } else {
             draw_text(
                 "Press space to start",
-                screen_width() / 2. - 140.,
-                screen_height() / 2.,
-                30.,
+                SCR_W / 2. - 5.,
+                SCR_H / 2.,
+                1.,
                 mq::BLACK,
             );
 

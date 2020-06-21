@@ -21,13 +21,13 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
             total_width += font_data.left_padding;
 
             let left_coord = total_width;
-            let top_coord = atlas.font_size as f32 - font_data.height_over_line;
+            let top_coord = font_size as f32 - font_data.height_over_line;
 
             total_width += font_data.size.0 + font_data.right_padding;
 
             let dest = Rect::new(
                 left_coord + x,
-                top_coord + y - 5.,
+                top_coord + y,
                 font_data.size.0,
                 font_data.size.1,
             );
