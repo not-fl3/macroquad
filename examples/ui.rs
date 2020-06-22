@@ -84,7 +84,8 @@ impl Data {
                     // there is no item in this slot
                     // this is impossible - slots without items are non-draggable
                     Drag::Dropped(_, _) => unreachable!(),
-                    Drag::Dragging => {
+                    Drag::Dragging(pos, id) => {
+                        debug!("slots: pos: {:?}, id {:?}", pos, id);
                         *item_dragging = true;
                     }
                     Drag::No => {}
@@ -114,7 +115,8 @@ impl Data {
                 Drag::Dropped(_, _) => {
                     *item_dragging = false;
                 }
-                Drag::Dragging => {
+                Drag::Dragging(pos, id) => {
+                    debug!("inventory: pos: {:?}, id {:?}", pos, id);
                     *item_dragging = true;
                 }
                 _ => {}
