@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
