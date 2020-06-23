@@ -239,6 +239,27 @@ async fn main() {
                 });
             },
         );
+        
+        // An example of using Groups to aid layout.
+        use crate::megaui::Layout;
+        draw_window(
+            hash!(),
+            glam::vec2(100., 100.),
+            glam::vec2(300., 200.),
+            WindowParams {
+                label: "Grid of groups".to_string(),
+                ..Default::default()
+            },
+            |ui| {
+                for i in 0..15 {
+                    Group::new(hash!(i), Vector2::new(50.,50.))
+                        .layout(if i % 5 == 0 { Layout::Vertical } else { Layout::Horizontal })
+                        .ui(ui, |_|{
+                            // content goes here.
+                        });
+                }
+            },
+        );
 
         draw_window(
             hash!(),
@@ -249,7 +270,7 @@ async fn main() {
                 ..Default::default()
             },
             |ui| {
-                ui.label(None, "Hello!");
+                ui.label(None, "This window has no titlebar.");
             },
         );
 
