@@ -252,7 +252,7 @@ async fn main() {
             },
             |ui| {
                 for i in 0..15 {
-                    Group::new(hash!(i), Vector2::new(50.,50.))
+                    Group::new(hash!("Grid of groups", i), Vector2::new(50.,50.))
                         .layout(if i % 5 == 0 { Layout::Vertical } else { Layout::Horizontal })
                         .ui(ui, |_|{
                             // content goes here.
