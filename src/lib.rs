@@ -60,6 +60,8 @@ struct Context {
 }
 
 impl Context {
+    const DEFAULT_BG_COLOR: Color = BLACK;
+
     fn new(mut ctx: QuadContext) -> Context {
         let (screen_width, screen_height) = ctx.screen_size();
 
@@ -83,13 +85,20 @@ impl Context {
         }
     }
 
+    fn begin_frame(&mut self) {
+        self.clear(Self::DEFAULT_BG_COLOR);
+        self.draw_context
+            .update_projection_matrix(&mut self.quad_context);
+    }
+
     fn end_frame(&mut self) {
         self.draw_context
             .perform_render_passes(&mut self.quad_context);
 
         self.quad_context.commit_frame();
 
-        get_context().mouse_wheel = Vec2::new(0., 0.);
+        self.mouse_wheel = Vec2::new(0., 0.);
+        self.keys_pressed.clear();
     }
 
     fn clear(&mut self, color: Color) {
@@ -304,12 +313,6 @@ impl Window {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
                 unsafe { CONTEXT = Some(Context::new(ctx)) };
-                if exec::resume(unsafe { MAIN_FUTURE.as_mut().unwrap() }) {
-                    unsafe {
-                        MAIN_FUTURE = None;
-                    }
-                }
-
                 UserData::free(Stage {})
             },
         );
