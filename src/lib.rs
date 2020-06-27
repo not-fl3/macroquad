@@ -46,6 +46,7 @@ struct Context {
     screen_width: f32,
     screen_height: f32,
 
+    keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
     mouse_pressed: HashSet<MouseButton>,
     mouse_position: Vec2,
@@ -66,6 +67,7 @@ impl Context {
             screen_width,
             screen_height,
 
+            keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
             mouse_pressed: HashSet::new(),
             mouse_position: Vec2::new(0., 0.),
@@ -170,11 +172,14 @@ impl EventHandlerFree for Stage {
             .char_event(character, modifiers.shift, modifiers.ctrl);
     }
 
-    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, _: bool) {
+    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
         use megaui::InputHandler;
 
         let context = get_context();
-        context.keys_pressed.insert(keycode);
+        context.keys_down.insert(keycode);
+        if repeat == false {
+            context.keys_pressed.insert(keycode);
+        }
 
         match keycode {
             KeyCode::Up => context.draw_context.ui.key_down(
@@ -258,13 +263,15 @@ impl EventHandlerFree for Stage {
 
     fn key_up_event(&mut self, keycode: KeyCode, _: KeyMods) {
         let context = get_context();
-        context.keys_pressed.remove(&keycode);
+        context.keys_down.remove(&keycode);
     }
 
     fn update(&mut self) {}
 
     fn draw(&mut self) {
         if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+            get_context().begin_frame();
+
             if exec::resume(future) {
                 unsafe {
                     MAIN_FUTURE = None;
@@ -327,10 +334,18 @@ pub fn mouse_wheel() -> (f32, f32) {
     (context.mouse_wheel.x(), context.mouse_wheel.y())
 }
 
-pub fn is_key_down(key_code: KeyCode) -> bool {
+/// Detect if the key has been pressed once
+pub fn is_key_pressed(key_code: KeyCode) -> bool {
     let context = get_context();
 
     context.keys_pressed.contains(&key_code)
+}
+
+/// Detect if the key is being pressed
+pub fn is_key_down(key_code: KeyCode) -> bool {
+    let context = get_context();
+
+    context.keys_down.contains(&key_code)
 }
 
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
