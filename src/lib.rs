@@ -4,22 +4,24 @@ use miniquad::*;
 pub use megaui;
 pub use megaui::hash;
 
-pub use glam::{vec2, Vec2};
+pub use glam::{self, vec2, Vec2};
 
 use std::collections::HashSet;
 use std::future::Future;
 use std::pin::Pin;
 
-pub mod drawing;
-pub mod exec;
-
 mod camera;
+mod drawing;
+mod exec;
 mod models;
 mod shapes;
 mod texture;
 mod time;
 mod types;
 mod ui;
+
+pub mod coroutines;
+pub mod storage;
 
 pub use camera::{Camera, Camera2D, Camera3D, Projection};
 
@@ -54,6 +56,7 @@ struct Context {
     mouse_wheel: Vec2,
 
     draw_context: DrawContext,
+    coroutines_context: coroutines::CoroutinesContext,
 
     start_time: f64,
     last_frame_time: f64,
@@ -79,6 +82,7 @@ impl Context {
             draw_context: DrawContext::new(&mut ctx),
 
             quad_context: ctx,
+            coroutines_context: coroutines::CoroutinesContext::new(),
 
             start_time: miniquad::date::now(),
             last_frame_time: miniquad::date::now(),
@@ -294,6 +298,7 @@ impl EventHandlerFree for Stage {
                 get_context().quad_context.quit();
                 return;
             }
+            get_context().coroutines_context.update();
         }
 
         get_context().end_frame();
