@@ -16,7 +16,7 @@ default = ["log-impl"]
 log-impl = ["miniquad/log-impl"]
 
 [dependencies]
-miniquad = { version = "=0.3.0-alpha.10" }
+miniquad = { version = "=0.3.0-alpha.11" }
 quad-gl = { version = "=0.2.2" }
 quad-rand = "0.1"
 glam = {version = "0.8", features = ["scalar-math"] }
