@@ -32,12 +32,12 @@ pub use types::*;
 pub use ui::*;
 
 pub use drawing::FilterMode;
-pub use miniquad::{Comparison, PipelineParams};
+pub use miniquad::{conf::Conf, Comparison, PipelineParams};
 pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
 
 #[cfg(feature = "log-impl")]
-pub use miniquad::{debug, info, log, warn, error};
+pub use miniquad::{debug, error, info, log, warn};
 
 use drawing::DrawContext;
 
@@ -303,11 +303,21 @@ pub struct Window {}
 
 impl Window {
     pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
-        miniquad::start(
+        Window::from_config(
             conf::Conf {
                 sample_count: 4,
                 window_title: label.to_string(),
                 ..Default::default()
+            },
+            future,
+        );
+    }
+
+    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
+        miniquad::start(
+            conf::Conf {
+                sample_count: 4,
+                ..config
             },
             |ctx| {
                 unsafe {

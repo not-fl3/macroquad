@@ -4,7 +4,15 @@ use macroquad::megaui::widgets::{Label, TreeNode};
 
 use glam::vec3;
 
-#[macroquad::main("Shadertoy")]
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Shadertoy".to_string(),
+        fullscreen: true,
+        ..Default::default()
+    }
+}
+
+#[macroquad::main(window_conf)]
 async fn main() {
     let ferris = load_texture("rust.png").await;
 
