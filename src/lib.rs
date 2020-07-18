@@ -31,7 +31,7 @@ pub use time::*;
 pub use types::*;
 pub use ui::*;
 
-pub use miniquad::{Comparison, PipelineParams};
+pub use miniquad::{Comparison, conf::Conf, PipelineParams};
 pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
 
@@ -302,11 +302,21 @@ pub struct Window {}
 
 impl Window {
     pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
-        miniquad::start(
+        Window::from_config(
             conf::Conf {
                 sample_count: 4,
                 window_title: label.to_string(),
                 ..Default::default()
+            },
+            future,
+        );
+    }
+
+    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
+        miniquad::start(
+            conf::Conf {
+                sample_count: 4,
+                ..config
             },
             |ctx| {
                 unsafe {
