@@ -74,7 +74,7 @@ pub fn measure_text(text: &str, font_size: f32) -> (f32, f32) {
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     let context = &mut get_context().draw_context;
 
-    let mut vertices = Vec::<Vertex>::new();
+    let mut vertices = Vec::<Vertex>::with_capacity(3);
 
     vertices.push(Vertex::new(v1.x(), v1.y(), 0., 0., 0., color));
     vertices.push(Vertex::new(v2.x(), v2.y(), 0., 0., 0., color));
@@ -130,8 +130,8 @@ pub fn draw_hexagon(
 pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
-    let mut vertices = Vec::<Vertex>::new();
-    let mut indices = Vec::<u16>::new();
+    let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
+    let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
 
     let rot = rotation.to_radians();
     vertices.push(Vertex::new(x, y, 0., 0., 0., color));

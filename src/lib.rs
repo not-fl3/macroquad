@@ -236,6 +236,11 @@ impl EventHandlerFree for Stage {
                 modifiers.shift,
                 modifiers.ctrl,
             ),
+            KeyCode::Tab => context.draw_context.ui.key_down(
+                megaui::KeyCode::Tab,
+                modifiers.shift,
+                modifiers.ctrl,
+            ),
             KeyCode::Z => context.draw_context.ui.key_down(
                 megaui::KeyCode::Z,
                 modifiers.shift,
@@ -285,7 +290,6 @@ impl EventHandlerFree for Stage {
                 unsafe {
                     MAIN_FUTURE = None;
                 }
-                info!("macroquad is done");
                 get_context().quad_context.quit();
                 return;
             }
@@ -359,6 +363,14 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
     let context = get_context();
 
     context.keys_down.contains(&key_code)
+}
+
+pub fn get_down_keys(buffer: &mut HashSet<KeyCode>) -> &HashSet<KeyCode> {
+    let context = get_context();
+
+    buffer.clear();
+    buffer.extend(&context.keys_down);
+    buffer
 }
 
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
