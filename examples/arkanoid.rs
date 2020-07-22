@@ -100,6 +100,7 @@ async fn main() {
                 }
             }
         }
+
         draw_circle(ball_x, ball_y, 0.2, mq::RED);
         draw_rectangle(
             platform_x - platform_width / 2.,
