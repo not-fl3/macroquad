@@ -10,8 +10,8 @@ async fn main() {
     let mut blocks: [[bool; BLOCKS_W]; BLOCKS_H] = [[true; BLOCKS_W]; BLOCKS_H];
     let mut ball_x = 12.;
     let mut ball_y = 7.;
-    let mut dx = 0.15;
-    let mut dy = -0.15;
+    let mut dx = 3.5;
+    let mut dy = -3.5;
     let mut platform_x = 10.;
     let mut stick = true;
     let platform_width = 5.;
@@ -29,16 +29,18 @@ async fn main() {
     loop {
         clear_background(mq::SKYBLUE);
 
+        let delta = get_frame_time();
+
         if is_key_down(KeyCode::Right) && platform_x < SCR_W - platform_width / 2. {
-            platform_x += 1.0;
+            platform_x += 3.0 * delta;
         }
         if is_key_down(KeyCode::Left) && platform_x > platform_width / 2. {
-            platform_x -= 1.0;
+            platform_x -= 3.0 * delta;
         }
 
         if stick == false {
-            ball_x += dx;
-            ball_y += dy;
+            ball_x += dx * delta;
+            ball_y += dy * delta;
         } else {
             draw_text(
                 "Press space to start",
