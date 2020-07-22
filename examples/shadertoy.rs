@@ -95,7 +95,7 @@ async fn main() {
                     .ui(ui, |ui| {
                         if ui.editbox(
                             hash!(),
-                            (440., 200.).into(),
+                            megaui::Vector2::new(440., 200.),
                             &mut fragment_shader,
                         ) {
                             need_update = true;
@@ -104,7 +104,7 @@ async fn main() {
                 ui.tree_node(hash!(), "Vertex shader", |ui| {
                     if ui.editbox(
                         hash!(),
-                        (440., 300.).into(),
+                        megaui::Vector2::new(440., 200.),
                         &mut vertex_shader,
                     ) {
                         need_update = true;
