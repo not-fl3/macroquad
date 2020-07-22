@@ -44,9 +44,9 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut prelude: TokenStream = format!(
         "
     fn main() {{
-        macroquad::Window::{}({}, amain());
+        macroquad::Window::{method}({ident}, amain());
     }}
-    ", method, ident
+    ", method=method, ident=ident
     )
     .parse()
     .unwrap();
