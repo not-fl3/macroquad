@@ -6,7 +6,6 @@ async fn main() {
     const BLOCKS_H: usize = 10;
     const SCR_W: f32 = 20.0;
     const SCR_H: f32 = 20.0;
-    const TICK_DURATION: f32 = 1. / 60.;
 
     let mut blocks: [[bool; BLOCKS_W]; BLOCKS_H] = [[true; BLOCKS_W]; BLOCKS_H];
     let mut ball_x = 12.;
@@ -15,7 +14,6 @@ async fn main() {
     let mut dy = -3.5;
     let mut platform_x = 10.;
     let mut stick = true;
-    let mut delta = 0.0;
     let platform_width = 5.;
     let platform_height = 0.2;
 
@@ -31,7 +29,7 @@ async fn main() {
     loop {
         clear_background(mq::SKYBLUE);
 
-        delta += get_frame_time();
+        let delta = get_frame_time();
 
         if is_key_down(KeyCode::Right) && platform_x < SCR_W - platform_width / 2. {
             platform_x += 3.0 * delta;
@@ -58,27 +56,20 @@ async fn main() {
             stick = !is_key_down(KeyCode::Space);
         }
 
-        // update as many times as is needed to update once every tick duration,
-        // such that the framerate (and consequently, difficulty of the game)
-        // does not rely on one's monitor refresh rate or whether or not vsync is enabled.
-        let updates = (delta / TICK_DURATION) as i32;
-        delta = delta - (updates as f32 * TICK_DURATION) as f32;
-        for _ in 0..updates {
-            if ball_x <= 0. || ball_x > SCR_W {
-                dx *= -1.;
-            }
-            if ball_y <= 0.
-                || (ball_y > SCR_H - platform_height - 0.15 / 2.
-                    && ball_x >= platform_x - platform_width / 2.
-                    && ball_x <= platform_x + platform_width / 2.)
-            {
-                dy *= -1.;
-            }
-            if ball_y >= SCR_H {
-                ball_y = 10.;
-                dy = -dy.abs();
-                stick = true;
-            }
+        if ball_x <= 0. || ball_x > SCR_W {
+            dx *= -1.;
+        }
+        if ball_y <= 0.
+            || (ball_y > SCR_H - platform_height - 0.15 / 2.
+                && ball_x >= platform_x - platform_width / 2.
+                && ball_x <= platform_x + platform_width / 2.)
+        {
+            dy *= -1.;
+        }
+        if ball_y >= SCR_H {
+            ball_y = 10.;
+            dy = -dy.abs();
+            stick = true;
         }
 
         for j in 0..BLOCKS_H {
