@@ -19,15 +19,7 @@ fn draw_cross(x: f32, y: f32, color: Color) {
     draw_line(x, y - size, x, y + size, thickness, color);
 }
 
-fn window_conf() -> Conf {
-    Conf {
-        window_title: "Camera".to_string(),
-        fullscreen: true,
-        ..Default::default()
-    }
-}
-
-#[macroquad::main(window_conf)]
+#[macroquad::main("Camera")]
 async fn main() {
     let mut down_keys: HashSet<KeyCode> = HashSet::new();
 

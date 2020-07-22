@@ -34,19 +34,12 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     }
     modified.extend(source);
 
-    let (method, ident) = match attr.into_iter().next() {
-        Some(TokenTree::Ident(ident)) => ("from_config", format!("{}()", ident)),
-        Some(TokenTree::Literal(literal)) => ("new", literal.to_string()),
-        Some(wrong_ident) => panic!("Wrong argument: {:?}. Place function returned `Conf`", wrong_ident),
-        None => panic!("No argument! Place function returned `Conf`"),
-    };
-
     let mut prelude: TokenStream = format!(
         "
     fn main() {{
-        macroquad::Window::{}({}, amain());
+        macroquad::Window::new({}, amain());
     }}
-    ", method, ident
+    ", attr.to_string()
     )
     .parse()
     .unwrap();
