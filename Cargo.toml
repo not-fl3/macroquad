@@ -23,6 +23,3 @@ glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { version = "=0.2.11" }
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
-
-[patch.crates-io]
-megaui = { git = "https://github.com/zotho/megaui.git" }
