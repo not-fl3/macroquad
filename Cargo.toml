@@ -17,7 +17,7 @@ log-impl = ["miniquad/log-impl"]
 
 [dependencies]
 miniquad = { version = "=0.3.0-alpha.11" }
-quad-gl = { version = "=0.2.2" }
+quad-gl = { version = "=0.2.3" }
 quad-rand = "0.1"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }

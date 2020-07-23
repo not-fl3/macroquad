@@ -31,6 +31,7 @@ pub use time::*;
 pub use types::*;
 pub use ui::*;
 
+pub use drawing::FilterMode;
 pub use miniquad::{Comparison, PipelineParams};
 pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
@@ -369,23 +370,36 @@ pub fn mouse_over_ui() -> bool {
 pub fn clear_background(color: Color) {
     let context = get_context();
 
-    context
-        .quad_context
-        .begin_default_pass(PassAction::clear_color(
-            color.0[0] as f32 / 255.,
-            color.0[1] as f32 / 255.,
-            color.0[2] as f32 / 255.,
-            color.0[3] as f32 / 255.,
-        ));
+    // all drawcalls are batched
+    // and batching is not clear-friendly
+    // so as a workaround we do immediate render pass with clear color
+    let clear = PassAction::clear_color(
+        color.0[0] as f32 / 255.,
+        color.0[1] as f32 / 255.,
+        color.0[2] as f32 / 255.,
+        color.0[3] as f32 / 255.,
+    );
+    if let Some(current_pass) = context.draw_context.current_pass {
+        context.quad_context.begin_pass(current_pass, clear);
+    } else {
+        context.quad_context.begin_default_pass(clear);
+    }
     context.quad_context.end_render_pass();
 
-    context.clear(color);
+    context.draw_context.gl.clear_draw_calls();
 }
 
 /// Set active 2D or 3D camera
 pub fn set_camera<T: Camera>(camera: T) {
     let context = get_context();
 
+    // flush previous camera draw calls
+    context
+        .draw_context
+        .perform_render_passes(&mut context.quad_context);
+
+    context.draw_context.current_pass = camera.render_pass();
+    context.draw_context.gl.render_pass(camera.render_pass());
     context.draw_context.gl.depth_test(true);
     context.draw_context.camera_matrix = Some(camera.matrix());
     context
@@ -397,6 +411,13 @@ pub fn set_camera<T: Camera>(camera: T) {
 pub fn set_default_camera() {
     let context = get_context();
 
+    // flush previous camera draw calls
+    context
+        .draw_context
+        .perform_render_passes(&mut context.quad_context);
+
+    context.draw_context.current_pass = None;
+    context.draw_context.gl.render_pass(None);
     context.draw_context.gl.depth_test(false);
     context.draw_context.camera_matrix = None;
     context

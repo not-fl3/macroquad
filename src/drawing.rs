@@ -10,6 +10,7 @@ pub struct DrawContext {
     pub(crate) font_texture: Texture2D,
     pub(crate) gl: QuadGl,
     pub(crate) camera_matrix: Option<Mat4>,
+    pub(crate) current_pass: Option<miniquad::RenderPass>,
     pub ui: megaui::Ui,
     ui_draw_list: Vec<megaui::DrawList>,
 }
@@ -32,6 +33,7 @@ impl DrawContext {
             font_texture,
             ui,
             ui_draw_list: Vec::with_capacity(10000),
+            current_pass: None
         };
 
         draw_context.update_projection_matrix(ctx);
