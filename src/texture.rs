@@ -71,6 +71,9 @@ pub struct DrawTextureParams {
 
     /// Rotation in radians
     pub rotation: f32,
+
+    /// Rotation around this point
+    pub pivot: Option<Vec2>,
 }
 
 impl Default for DrawTextureParams {
@@ -79,6 +82,7 @@ impl Default for DrawTextureParams {
             dest_size: None,
             source: None,
             rotation: 0.,
+            pivot: None,
         }
     }
 }
@@ -114,12 +118,13 @@ pub fn draw_texture_ex(
             (dst.x(), dst.y())
         });
 
-    let m = vec2(x + w / 2., y + h / 2.);
+    let pivot = params.pivot.unwrap_or(vec2(x + w / 2., y + h / 2.));
+    let m = pivot;
     let p = [
-        vec2(-w / 2., -h / 2.),
-        vec2(w / 2., -h / 2.),
-        vec2(w / 2., h / 2.),
-        vec2(-w / 2., h / 2.),
+        vec2(x, y) - pivot,
+        vec2(x + w, y) - pivot,
+        vec2(x + w, y + h) - pivot,
+        vec2(x, y + h) - pivot,
     ];
     let r = params.rotation;
     let p = [
