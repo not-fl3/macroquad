@@ -80,7 +80,7 @@ pub struct DrawTextureParams {
     /// Is None by default
     pub source: Option<Rect>,
 
-    /// Rotation in degrees
+    /// Rotation in radians
     pub rotation: f32,
 }
 
