@@ -2,7 +2,7 @@ use macroquad::*;
 
 fn window_conf() -> Conf {
     Conf {
-        window_title: "Window Conf".to_string(),
+        window_title: "Window Conf".to_owned(),
         fullscreen: true,
         ..Default::default()
     }
