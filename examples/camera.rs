@@ -1,14 +1,6 @@
 use macroquad::*;
 
-fn window_conf() -> Conf {
-    Conf {
-        window_title: "Camera".to_string(),
-        fullscreen: true,
-        ..Default::default()
-    }
-}
-
-#[macroquad::main(window_conf)]
+#[macroquad::main("Camera")]
 async fn main() {
     loop {
         clear_background(RED);
