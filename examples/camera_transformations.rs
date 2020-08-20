@@ -14,7 +14,7 @@ fn angle_lerp(a0: f32, a1: f32, t: f32) -> f32 {
 
 fn draw_cross(x: f32, y: f32, color: Color) {
     let size = 0.1;
-    let thickness= 0.005;
+    let thickness = 0.005;
     draw_line(x - size, y, x + size, y, thickness, color);
     draw_line(x, y - size, x, y + size, thickness, color);
 }
@@ -42,7 +42,7 @@ async fn main() {
                 KeyCode::Down => offset.1 -= 0.1,
                 #[cfg(not(target_arch = "wasm32"))]
                 KeyCode::Q | KeyCode::Escape => break 'main,
-                _ => ()
+                _ => (),
             }
         }
 
@@ -50,7 +50,13 @@ async fn main() {
             (_x, y) if y != 0.0 => {
                 // Normalise mouse wheel values is browser (chromium: 53, firefox: 3)
                 #[cfg(target_arch = "wasm32")]
-                let y = if y < 0.0 {-1.0} else if y > 0.0 {1.0} else {0.0};
+                let y = if y < 0.0 {
+                    -1.0
+                } else if y > 0.0 {
+                    1.0
+                } else {
+                    0.0
+                };
                 if is_key_down(KeyCode::LeftControl) {
                     zoom *= 1.1f32.powf(y);
                 } else {
@@ -61,8 +67,8 @@ async fn main() {
                         angle => angle,
                     }
                 }
-            },
-            _ => ()
+            }
+            _ => (),
         }
 
         smooth_rotation = angle_lerp(smooth_rotation, rotation, 0.1);
