@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use macroquad::*;
 
 fn short_angle_dist(a0: f32, a1: f32) -> f32 {
@@ -21,29 +19,40 @@ fn draw_cross(x: f32, y: f32, color: Color) {
 
 #[macroquad::main("Camera")]
 async fn main() {
-    let mut down_keys: HashSet<KeyCode> = HashSet::new();
-
     let mut target = (0., 0.);
     let mut zoom = 1.0;
     let mut rotation = 0.0;
     let mut smooth_rotation: f32 = 0.0;
     let mut offset = (0., 0.);
 
-    'main: loop {
-        for &key in get_down_keys(&mut down_keys).iter() {
-            match key {
-                KeyCode::W => target.1 -= 0.1,
-                KeyCode::S => target.1 += 0.1,
-                KeyCode::A => target.0 += 0.1,
-                KeyCode::D => target.0 -= 0.1,
-                KeyCode::Left => offset.0 -= 0.1,
-                KeyCode::Right => offset.0 += 0.1,
-                KeyCode::Up => offset.1 += 0.1,
-                KeyCode::Down => offset.1 -= 0.1,
-                #[cfg(not(target_arch = "wasm32"))]
-                KeyCode::Q | KeyCode::Escape => break 'main,
-                _ => (),
-            }
+    loop {
+        if is_key_down(KeyCode::W) {
+            target.1 -= 0.1;
+        }
+        if is_key_down(KeyCode::S) {
+            target.1 += 0.1;
+        }
+        if is_key_down(KeyCode::A) {
+            target.0 += 0.1;
+        }
+        if is_key_down(KeyCode::D) {
+            target.0 -= 0.1;
+        }
+        if is_key_down(KeyCode::Left) {
+            offset.0 -= 0.1;
+        }
+        if is_key_down(KeyCode::Right) {
+            offset.0 += 0.1;
+        }
+        if is_key_down(KeyCode::Up) {
+            offset.1 += 0.1;
+        }
+        if is_key_down(KeyCode::Down) {
+            offset.1 -= 0.1;
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        if is_key_down(KeyCode::Q) | is_key_down(KeyCode::Escape) {
+            break;
         }
 
         match mouse_wheel() {
