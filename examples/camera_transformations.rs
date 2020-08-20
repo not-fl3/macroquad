@@ -101,6 +101,7 @@ async fn main() {
             rotation: smooth_rotation,
             zoom: vec2(zoom, zoom * screen_width() / screen_height()),
             offset: vec2(offset.0, offset.1),
+            ..Default::default()
         });
 
         // Render some primitives in camera space
