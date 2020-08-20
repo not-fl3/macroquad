@@ -6,7 +6,7 @@ use glam::vec3;
 
 #[macroquad::main("Shadertoy")]
 async fn main() {
-    let ferris = load_texture("rust.png").await;
+    let ferris = load_texture("examples/rust.png").await;
 
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
     let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
@@ -34,6 +34,10 @@ async fn main() {
     };
 
     loop {
+        if is_key_down(KeyCode::Escape) {
+            break;
+        }
+
         clear_background(WHITE);
 
         set_camera(camera);
@@ -61,6 +65,8 @@ async fn main() {
                 ..Default::default()
             },
             |ui| {
+                let mut need_update = false;
+
                 ui.label(None, "Camera: ");
                 ui.same_line();
                 if ui.button(None, "Ortho") {
@@ -87,21 +93,25 @@ async fn main() {
                 TreeNode::new(hash!(), "Fragment shader")
                     .init_unfolded()
                     .ui(ui, |ui| {
-                        ui.editbox(
+                        if ui.editbox(
                             hash!(),
                             megaui::Vector2::new(440., 200.),
                             &mut fragment_shader,
-                        );
+                        ) {
+                            need_update = true;
+                        };
                     });
                 ui.tree_node(hash!(), "Vertex shader", |ui| {
-                    ui.editbox(
+                    if ui.editbox(
                         hash!(),
                         megaui::Vector2::new(440., 300.),
                         &mut vertex_shader,
-                    );
+                    ) {
+                        need_update = true;
+                    };
                 });
 
-                if ui.button(None, "Update") {
+                if ui.button(None, "Update") || need_update {
                     match gl_make_pipeline(&vertex_shader, &fragment_shader, pipeline_params) {
                         Ok(new_pipeline) => {
                             pipeline = new_pipeline;

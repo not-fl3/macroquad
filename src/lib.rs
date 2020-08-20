@@ -237,6 +237,11 @@ impl EventHandlerFree for Stage {
                 modifiers.shift,
                 modifiers.ctrl,
             ),
+            KeyCode::Tab => context.draw_context.ui.key_down(
+                megaui::KeyCode::Tab,
+                modifiers.shift,
+                modifiers.ctrl,
+            ),
             KeyCode::Z => context.draw_context.ui.key_down(
                 megaui::KeyCode::Z,
                 modifiers.shift,
@@ -286,7 +291,6 @@ impl EventHandlerFree for Stage {
                 unsafe {
                     MAIN_FUTURE = None;
                 }
-                info!("macroquad is done");
                 get_context().quad_context.quit();
                 return;
             }
