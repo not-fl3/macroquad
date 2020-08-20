@@ -1,12 +1,13 @@
 //! Module for conveting 2D and 3D camera descriptions into matrices
 //! and some helpers like WorkdToCamera/CameraToWorld etc
 
-use crate::{screen_height, screen_width};
+use crate::{screen_height, screen_width, RenderTarget};
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 
 pub trait Camera {
     fn matrix(&self) -> Mat4;
     fn depth_enabled(&self) -> bool;
+    fn render_pass(&self) -> Option<miniquad::RenderPass>;
 }
 
 #[derive(Clone, Copy)]
@@ -19,6 +20,10 @@ pub struct Camera2D {
     pub target: Vec2,
     /// Displacement from target
     pub offset: Vec2,
+
+    /// If "render_target" is set - camera will render to texture
+    /// otherwise to the screen
+    pub render_target: Option<RenderTarget>
 }
 
 impl Default for Camera2D {
@@ -28,6 +33,8 @@ impl Default for Camera2D {
             offset: vec2(0., 0.),
             target: vec2(0., 0.),
             rotation: 0.,
+
+            render_target: None
         }
     }
 }
@@ -61,6 +68,10 @@ impl Camera for Camera2D {
     fn depth_enabled(&self) -> bool {
         false
     }
+
+    fn render_pass(&self) -> Option<miniquad::RenderPass> {
+        self.render_target.map(|rt| rt.render_pass)
+    }
 }
 
 impl Camera2D {
@@ -79,6 +90,7 @@ impl Camera2D {
 
         vec2(transform.x(), transform.y())
     }
+
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -144,4 +156,9 @@ impl Camera for Camera3D {
     fn depth_enabled(&self) -> bool {
         true
     }
+
+    fn render_pass(&self) -> Option<miniquad::RenderPass> {
+        unimplemented!()
+    }
+
 }

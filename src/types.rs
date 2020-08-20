@@ -1,5 +1,6 @@
 pub use quad_gl::Color;
 
+#[derive(Clone, Copy, Debug)]
 pub struct Rect {
     pub x: f32,
     pub y: f32,

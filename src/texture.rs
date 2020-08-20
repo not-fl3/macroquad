@@ -47,6 +47,31 @@ pub fn load_texture_from_image(image: &Image) -> Texture2D {
     Texture2D::from_rgba8(context, image.width, image.height, &image.bytes)
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct RenderTarget {
+    pub texture: Texture2D,
+    pub render_pass: miniquad::RenderPass
+}
+
+pub fn render_target(width: u32, height: u32) -> RenderTarget {
+    let context = &mut get_context().quad_context;
+
+    let texture = miniquad::Texture::new_render_texture(context, miniquad::TextureParams {
+        width,
+        height,
+        ..Default::default()
+    });
+
+    let render_pass = miniquad::RenderPass::new(context, texture, None);
+
+    let texture = Texture2D::from_miniquad_texture(texture);
+
+    RenderTarget {
+        texture,
+        render_pass
+    }
+}
+
 pub struct DrawTextureParams {
     pub dest_size: Option<Vec2>,
 
@@ -55,7 +80,7 @@ pub struct DrawTextureParams {
     /// Is None by default
     pub source: Option<Rect>,
 
-    /// Rotation in degrees
+    /// Rotation in radians
     pub rotation: f32,
 }
 
