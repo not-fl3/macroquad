@@ -17,7 +17,7 @@ pub fn load_texture(path: &str) -> exec::TextureLoadingFuture {
         let path0 = path.clone();
 
         miniquad::fs::load_file(&path, move |bytes| {
-            let bytes = bytes.unwrap_or_else(|_| panic!("Not such texture: {}", path0));
+            let bytes = bytes.unwrap_or_else(|_| panic!("No such texture: {}", path0));
             let context = &mut get_context().quad_context;
 
             *texture.borrow_mut() =
