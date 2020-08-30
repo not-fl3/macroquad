@@ -25,7 +25,7 @@
 <details>
 <summary>tips</summary>
 Adding the following snippet to your Cargo.toml ensures that all dependencies compile in release even in debug mode. In macroquad, this has the effect of making images load several times faster and your applications much more performant, while keeping compile times miraculously low.
-```toml
+```
 [profile.dev.package.'*']
 opt-level = 3
 ```
