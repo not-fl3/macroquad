@@ -1,31 +1,17 @@
-use crate::{exec, get_context, types::Rect};
+use crate::{get_context, load_file, types::Rect};
 
 use glam::{vec2, Vec2};
 use quad_gl::{Color, DrawMode, FilterMode, Vertex};
 
 pub use quad_gl::{Image, Texture2D};
 
-pub fn load_texture(path: &str) -> exec::TextureLoadingFuture {
-    use std::cell::RefCell;
-    use std::rc::Rc;
+pub async fn load_texture(path: &str) -> Texture2D {
+    let bytes = load_file(path)
+        .await
+        .unwrap_or_else(|e| panic!("Error loading texture: {}", e));
+    let context = &mut get_context().quad_context;
 
-    let texture = Rc::new(RefCell::new(None));
-    let path = path.to_owned();
-
-    {
-        let texture = texture.clone();
-        let path0 = path.clone();
-
-        miniquad::fs::load_file(&path, move |bytes| {
-            let bytes = bytes.unwrap_or_else(|_| panic!("No such texture: {}", path0));
-            let context = &mut get_context().quad_context;
-
-            *texture.borrow_mut() =
-                Some(Texture2D::from_file_with_format(context, &bytes[..], None));
-        });
-    }
-
-    exec::TextureLoadingFuture { texture }
+    Texture2D::from_file_with_format(context, &bytes[..], None)
 }
 
 pub fn set_texture_filter(texture: Texture2D, filter_mode: FilterMode) {
@@ -50,17 +36,20 @@ pub fn load_texture_from_image(image: &Image) -> Texture2D {
 #[derive(Clone, Copy, Debug)]
 pub struct RenderTarget {
     pub texture: Texture2D,
-    pub render_pass: miniquad::RenderPass
+    pub render_pass: miniquad::RenderPass,
 }
 
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     let context = &mut get_context().quad_context;
 
-    let texture = miniquad::Texture::new_render_texture(context, miniquad::TextureParams {
-        width,
-        height,
-        ..Default::default()
-    });
+    let texture = miniquad::Texture::new_render_texture(
+        context,
+        miniquad::TextureParams {
+            width,
+            height,
+            ..Default::default()
+        },
+    );
 
     let render_pass = miniquad::RenderPass::new(context, texture, None);
 
@@ -68,7 +57,7 @@ pub fn render_target(width: u32, height: u32) -> RenderTarget {
 
     RenderTarget {
         texture,
-        render_pass
+        render_pass,
     }
 }
 

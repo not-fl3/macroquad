@@ -1,3 +1,4 @@
+use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -26,22 +27,42 @@ impl Future for FrameFuture {
     }
 }
 
-pub struct TextureLoadingFuture {
-    pub texture: std::rc::Rc<std::cell::RefCell<Option<crate::drawing::Texture2D>>>,
+#[derive(Debug)]
+pub struct FileError {
+    pub kind: miniquad::fs::Error,
+    pub path: String,
 }
-impl Unpin for TextureLoadingFuture {}
+type FileResult<T> = Result<T, FileError>;
+impl std::error::Error for FileError {}
+impl fmt::Display for FileError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Couldn't load file {}: {}", self.path, self.kind)
+    }
+}
+impl FileError {
+    pub fn new(kind: miniquad::fs::Error, path: &str) -> Self {
+        Self {
+            kind,
+            path: path.to_string(),
+        }
+    }
+}
 
-impl Future for TextureLoadingFuture {
-    type Output = crate::drawing::Texture2D;
+pub struct FileLoadingFuture {
+    pub contents: std::rc::Rc<std::cell::RefCell<Option<FileResult<Vec<u8>>>>>,
+}
+impl Unpin for FileLoadingFuture {}
+impl Future for FileLoadingFuture {
+    type Output = FileResult<Vec<u8>>;
 
     fn poll(self: Pin<&mut Self>, context: &mut Context) -> Poll<Self::Output> {
         let context: &mut ExecState = unsafe { std::mem::transmute(context) };
 
         if *context == ExecState::Waiting {
             Poll::Pending
-        } else if let Some(texture) = self.texture.borrow_mut().take() {
+        } else if let Some(contents) = self.contents.borrow_mut().take() {
             *context = ExecState::Waiting;
-            Poll::Ready(texture)
+            Poll::Ready(contents)
         } else {
             Poll::Pending
         }
