@@ -11,8 +11,44 @@ Simple and easy to use graphics library
 """
 readme="README.md"
 
+[[example]]
+name = "3d"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "asteroids"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "camera"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "arkanoid"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "camera_transformations"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "snake"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "basic_shapes"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "input_keys"
+required-features = [ "megaui" ] # note: only for draw_text
+
+[[example]]
+name = "ui"
+required-features = [ "megaui" ] # note: NOT for draw_text
+
 [features]
-default = ["log-impl"]
+default = ["log-impl", "megaui"]
 log-impl = ["miniquad/log-impl"]
 
 [dependencies]
@@ -21,5 +57,5 @@ quad-gl = { version = "=0.2.3" }
 quad-rand = "0.1"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
-megaui = { version = "=0.2.12" }
+megaui = { version = "=0.2.12", optional = true }
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }

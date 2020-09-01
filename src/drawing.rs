@@ -6,17 +6,16 @@ pub use quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
 
 use glam::Mat4;
 
-pub struct DrawContext {
-    pub(crate) font_texture: Texture2D,
-    pub(crate) gl: QuadGl,
-    pub(crate) camera_matrix: Option<Mat4>,
-    pub(crate) current_pass: Option<miniquad::RenderPass>,
-    pub ui: megaui::Ui,
+#[cfg(feature="megaui")]
+pub struct UiDrawContext {
     ui_draw_list: Vec<megaui::DrawList>,
+    pub(crate) ui: megaui::Ui,
+    pub(crate) font_texture: Texture2D,
 }
 
-impl DrawContext {
-    pub fn new(ctx: &mut miniquad::Context) -> DrawContext {
+#[cfg(feature="megaui")]
+impl UiDrawContext {
+    fn new(ctx: &mut miniquad::Context) -> Self {
         let mut ui = megaui::Ui::new();
         ui.set_clipboard_object(crate::ui::ClipboardObject);
 
@@ -27,13 +26,52 @@ impl DrawContext {
             texture_data.height as u16,
             &texture_data.data,
         );
-        let mut draw_context = DrawContext {
-            camera_matrix: None,
-            gl: QuadGl::new(ctx),
+
+        Self {
             font_texture,
             ui,
-            ui_draw_list: Vec::with_capacity(10000),
-            current_pass: None
+            ui_draw_list: Vec::with_capacity(10_000),
+        }
+    }
+
+    fn draw(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context) {
+        self.ui_draw_list.clear();
+
+        self.ui.render(&mut self.ui_draw_list);
+        self.ui.new_frame();
+
+        gl.texture(Some(self.font_texture));
+
+        for draw_command in self.ui_draw_list.drain(..) {
+            gl.scissor(
+                draw_command
+                    .clipping_zone
+                    .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
+            );
+            gl.draw_mode(DrawMode::Triangles);
+            gl
+                .geometry(&draw_command.vertices, &draw_command.indices);
+        }
+        gl.texture(None);
+    }
+}
+
+pub struct DrawContext {
+    pub(crate) gl: QuadGl,
+    pub(crate) camera_matrix: Option<Mat4>,
+    pub(crate) current_pass: Option<miniquad::RenderPass>,
+    #[cfg(feature="megaui")]
+    pub(crate) ui_ctx: UiDrawContext,
+}
+
+impl DrawContext {
+    pub fn new(ctx: &mut miniquad::Context) -> DrawContext {
+        let mut draw_context = DrawContext {
+            gl: QuadGl::new(ctx),
+            camera_matrix: None,
+            current_pass: None,
+            #[cfg(feature="megaui")]
+            ui_ctx: UiDrawContext::new(ctx),
         };
 
         draw_context.update_projection_matrix(ctx);
@@ -41,30 +79,14 @@ impl DrawContext {
         draw_context
     }
 
-    fn draw_ui(&mut self, _: &mut miniquad::Context) {
-        self.ui_draw_list.clear();
+    #[cfg(feature="megaui")]
+    pub(crate) fn ui(&self) -> &megaui::Ui {
+        &self.ui_ctx.ui
+    }
 
-        self.ui.render(&mut self.ui_draw_list);
-        self.ui.new_frame();
-
-        let mut ui_draw_list = vec![];
-
-        std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-        self.gl.texture(Some(self.font_texture));
-
-        for draw_command in &ui_draw_list {
-            self.gl.scissor(
-                draw_command
-                    .clipping_zone
-                    .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
-            );
-            self.gl.draw_mode(DrawMode::Triangles);
-            self.gl
-                .geometry(&draw_command.vertices, &draw_command.indices);
-        }
-        self.gl.texture(None);
-
-        std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+    #[cfg(feature="megaui")]
+    pub(crate) fn ui_mut(&mut self) -> &mut megaui::Ui {
+        &mut self.ui_ctx.ui
     }
 
     pub fn draw_rectangle(&mut self, x: f32, y: f32, w: f32, h: f32, color: Color) {
@@ -109,7 +131,8 @@ impl DrawContext {
     }
 
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
-        self.draw_ui(ctx);
+        #[cfg(feature="megaui")]
+        self.ui_ctx.draw(&mut self.gl, ctx);
         self.gl.draw(ctx);
     }
 

@@ -8,10 +8,11 @@ use crate::{
 use glam::{vec2, Vec2};
 use quad_gl::{DrawMode, Vertex};
 
+#[cfg(feature="megaui")]
 pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
-    let atlas = context.ui.font_atlas.clone();
+    let atlas = context.ui().font_atlas.clone();
 
     let mut total_width = 0.;
     for character in text.chars() {
@@ -33,13 +34,13 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
             );
 
             let source = Rect::new(
-                font_data.tex_coords.0 * context.font_texture.width(),
-                font_data.tex_coords.1 * context.font_texture.height(),
-                font_data.tex_size.0 * context.font_texture.width(),
-                font_data.tex_size.1 * context.font_texture.height(),
+                font_data.tex_coords.0 * context.ui_ctx.font_texture.width(),
+                font_data.tex_coords.1 * context.ui_ctx.font_texture.height(),
+                font_data.tex_size.0 * context.ui_ctx.font_texture.width(),
+                font_data.tex_size.1 * context.ui_ctx.font_texture.height(),
             );
             crate::texture::draw_texture_ex(
-                context.font_texture,
+                context.ui_ctx.font_texture,
                 dest.x,
                 dest.y,
                 color,
@@ -53,10 +54,11 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     }
 }
 
+#[cfg(feature="megaui")]
 pub fn measure_text(text: &str, font_size: f32) -> (f32, f32) {
     let context = &mut get_context().draw_context;
 
-    let atlas = context.ui.font_atlas.clone();
+    let atlas = context.ui().font_atlas.clone();
 
     let mut width = 0.;
     let mut height: f32 = 0.;

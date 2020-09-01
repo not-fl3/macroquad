@@ -35,7 +35,7 @@ impl Default for WindowParams {
 }
 
 pub fn set_ui_style(style: megaui::Style) {
-    get_context().draw_context.ui.set_style(style);
+    get_context().draw_context.ui_mut().set_style(style);
 }
 
 pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
@@ -57,5 +57,5 @@ pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
     .titlebar(params.as_ref().map_or(true, |params| params.titlebar))
     .movable(params.as_ref().map_or(true, |params| params.movable))
     .close_button(params.as_ref().map_or(false, |params| params.close_button))
-    .ui(&mut context.ui, f)
+    .ui(context.ui_mut(), f)
 }

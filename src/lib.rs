@@ -1,7 +1,9 @@
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
+#[cfg(feature="megaui")]
 pub use megaui;
+#[cfg(feature="megaui")]
 pub use megaui::hash;
 
 pub use glam::{vec2, Vec2};
@@ -19,6 +21,7 @@ mod shapes;
 mod texture;
 mod time;
 mod types;
+#[cfg(feature="megaui")]
 mod ui;
 
 pub use camera::{Camera, Camera2D, Camera3D, Projection};
@@ -29,6 +32,7 @@ pub use shapes::*;
 pub use texture::*;
 pub use time::*;
 pub use types::*;
+#[cfg(feature="megaui")]
 pub use ui::*;
 
 pub use drawing::FilterMode;
@@ -136,143 +140,98 @@ impl EventHandlerFree for Stage {
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        use megaui::InputHandler;
-
         let context = get_context();
 
         context.mouse_position = Vec2::new(x, y);
-        context.draw_context.ui.mouse_move((x, y));
+
+        #[cfg(feature="megaui")]
+        use megaui::InputHandler;
+        #[cfg(feature="megaui")]
+        context.draw_context.ui_mut().mouse_move((x, y));
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
-        use megaui::InputHandler;
-
         let context = get_context();
 
         context.mouse_wheel.set_x(x);
         context.mouse_wheel.set_y(y);
 
-        context.draw_context.ui.mouse_wheel(x, -y);
+        #[cfg(feature="megaui")]
+        use megaui::InputHandler;
+        #[cfg(feature="megaui")]
+        context.draw_context.ui_mut().mouse_wheel(x, -y);
     }
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        use megaui::InputHandler;
-
         let context = get_context();
 
         context.mouse_pressed.insert(btn);
-        context.draw_context.ui.mouse_down((x, y));
+
+        #[cfg(feature="megaui")]
+        use megaui::InputHandler;
+        #[cfg(feature="megaui")]
+        context.draw_context.ui_mut().mouse_down((x, y));
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        use megaui::InputHandler;
-
         let context = get_context();
 
         context.mouse_pressed.remove(&btn);
 
-        context.draw_context.ui.mouse_up((x, y));
+        #[cfg(feature="megaui")]
+        use megaui::InputHandler;
+        #[cfg(feature="megaui")]
+        context.draw_context.ui_mut().mouse_up((x, y));
     }
 
+    #[cfg(feature="megaui")]
     fn char_event(&mut self, character: char, modifiers: KeyMods, _repeat: bool) {
         use megaui::InputHandler;
 
         let context = get_context();
         context
             .draw_context
-            .ui
+            .ui_mut()
             .char_event(character, modifiers.shift, modifiers.ctrl);
     }
 
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
-        use megaui::InputHandler;
-
         let context = get_context();
         context.keys_down.insert(keycode);
         if repeat == false {
             context.keys_pressed.insert(keycode);
         }
 
-        match keycode {
-            KeyCode::Up => context.draw_context.ui.key_down(
-                megaui::KeyCode::Up,
+        #[cfg(feature="megaui")]
+        fn convert_keycode(keycode: KeyCode) -> Option<megaui::KeyCode> {
+            Some(match keycode {
+                KeyCode::Up => megaui::KeyCode::Up,
+                KeyCode::Down => megaui::KeyCode::Down,
+                KeyCode::Right => megaui::KeyCode::Right,
+                KeyCode::Left => megaui::KeyCode::Left,
+                KeyCode::Home => megaui::KeyCode::Home,
+                KeyCode::End => megaui::KeyCode::End,
+                KeyCode::Delete => megaui::KeyCode::Delete,
+                KeyCode::Backspace => megaui::KeyCode::Backspace,
+                KeyCode::Enter => megaui::KeyCode::Enter,
+                KeyCode::Tab => megaui::KeyCode::Tab,
+                KeyCode::Z => megaui::KeyCode::Z,
+                KeyCode::Y => megaui::KeyCode::Y,
+                KeyCode::C => megaui::KeyCode::C,
+                KeyCode::X => megaui::KeyCode::X,
+                KeyCode::V => megaui::KeyCode::V,
+                KeyCode::A => megaui::KeyCode::A,
+                _ => return None
+            })
+        }
+
+        #[cfg(feature="megaui")]
+        if let Some(keycode) = convert_keycode(keycode) {
+            use megaui::InputHandler;
+
+            context.draw_context.ui_mut().key_down(
+                keycode,
                 modifiers.shift,
                 modifiers.ctrl,
-            ),
-            KeyCode::Down => context.draw_context.ui.key_down(
-                megaui::KeyCode::Down,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Right => context.draw_context.ui.key_down(
-                megaui::KeyCode::Right,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Left => context.draw_context.ui.key_down(
-                megaui::KeyCode::Left,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Home => context.draw_context.ui.key_down(
-                megaui::KeyCode::Home,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::End => context.draw_context.ui.key_down(
-                megaui::KeyCode::End,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Delete => context.draw_context.ui.key_down(
-                megaui::KeyCode::Delete,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Backspace => context.draw_context.ui.key_down(
-                megaui::KeyCode::Backspace,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Enter => context.draw_context.ui.key_down(
-                megaui::KeyCode::Enter,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Tab => context.draw_context.ui.key_down(
-                megaui::KeyCode::Tab,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Z => context.draw_context.ui.key_down(
-                megaui::KeyCode::Z,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Y => context.draw_context.ui.key_down(
-                megaui::KeyCode::Y,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::C => context.draw_context.ui.key_down(
-                megaui::KeyCode::C,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::X => context.draw_context.ui.key_down(
-                megaui::KeyCode::X,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::V => context.draw_context.ui.key_down(
-                megaui::KeyCode::V,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::A => context.draw_context.ui.key_down(
-                megaui::KeyCode::A,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            _ => {}
+            )
         }
     }
 
@@ -372,10 +331,11 @@ pub fn is_mouse_button_down(btn: MouseButton) -> bool {
     context.mouse_pressed.contains(&btn)
 }
 
+#[cfg(feature="megaui")]
 pub fn mouse_over_ui() -> bool {
     let context = get_context();
 
-    context.draw_context.ui.is_mouse_over(megaui::Vector2::new(
+    context.draw_context.ui().is_mouse_over(megaui::Vector2::new(
         context.mouse_position.x(),
         context.mouse_position.y(),
     ))
