@@ -6,16 +6,43 @@ pub use quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
 
 use glam::Mat4;
 
+pub trait DrawableUi: miniquad::EventHandlerFree {
+    type Ui;
+    type UiRet;
+
+    fn draw(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context);
+    fn ui(&mut self, _f: impl FnOnce(Self::Ui) -> Self::UiRet) {}
+}
+
+#[cfg(not(any(feature="megaui", feature="custom-ui")))]
+pub(crate) type UiDrawContext = DummyUiDrawContext;
 #[cfg(feature="megaui")]
-pub struct UiDrawContext {
+pub(crate) type UiDrawContext = MegauiDrawContext;
+#[cfg(feature="custom-ui")]
+pub(crate) type UiDrawContext = Box<dyn DrawableUi>;
+
+#[cfg(not(any(feature="megaui", feature="custom-ui")))]
+pub struct DummyUiDrawContext;
+#[cfg(not(any(feature="megaui", feature="custom-ui")))]
+impl miniquad::EventHandlerFree for DummyUiDrawContext {
+    fn draw(&mut self) {}
+    fn update(&mut self) {}
+}
+#[cfg(not(any(feature="megaui", feature="custom-ui")))]
+impl DrawableUi for DummyUiDrawContext {
+    fn draw(&mut self, _: &mut QuadGl, _: &mut miniquad::Context) {}
+}
+
+#[cfg(feature="megaui")]
+pub struct MegauiDrawContext {
     ui_draw_list: Vec<megaui::DrawList>,
     pub(crate) ui: megaui::Ui,
     pub(crate) font_texture: Texture2D,
 }
 
 #[cfg(feature="megaui")]
-impl UiDrawContext {
-    fn new(ctx: &mut miniquad::Context) -> Self {
+impl MegauiDrawContext {
+    pub fn new(ctx: &mut miniquad::Context) -> Self {
         let mut ui = megaui::Ui::new();
         ui.set_clipboard_object(crate::ui::ClipboardObject);
 
@@ -33,7 +60,10 @@ impl UiDrawContext {
             ui_draw_list: Vec::with_capacity(10_000),
         }
     }
+}
 
+#[cfg(feature="megaui")]
+impl DrawableUi for MegauiDrawContext {
     fn draw(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context) {
         self.ui_draw_list.clear();
 
@@ -60,18 +90,16 @@ pub struct DrawContext {
     pub(crate) gl: QuadGl,
     pub(crate) camera_matrix: Option<Mat4>,
     pub(crate) current_pass: Option<miniquad::RenderPass>,
-    #[cfg(feature="megaui")]
     pub(crate) ui_ctx: UiDrawContext,
 }
 
 impl DrawContext {
-    pub fn new(ctx: &mut miniquad::Context) -> DrawContext {
+    pub fn new(ctx: &mut miniquad::Context, ui_ctx: UiDrawContext) -> DrawContext {
         let mut draw_context = DrawContext {
             gl: QuadGl::new(ctx),
             camera_matrix: None,
             current_pass: None,
-            #[cfg(feature="megaui")]
-            ui_ctx: UiDrawContext::new(ctx),
+            ui_ctx,
         };
 
         draw_context.update_projection_matrix(ctx);

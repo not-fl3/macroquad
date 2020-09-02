@@ -67,7 +67,7 @@ struct Context {
 impl Context {
     const DEFAULT_BG_COLOR: Color = BLACK;
 
-    fn new(mut ctx: QuadContext) -> Context {
+    fn new(mut ctx: QuadContext, ui: drawing::UiDrawContext) -> Context {
         let (screen_width, screen_height) = ctx.screen_size();
 
         Context {
@@ -80,7 +80,7 @@ impl Context {
             mouse_position: Vec2::new(0., 0.),
             mouse_wheel: Vec2::new(0., 0.),
 
-            draw_context: DrawContext::new(&mut ctx),
+            draw_context: DrawContext::new(&mut ctx, ui),
 
             quad_context: ctx,
 
@@ -135,62 +135,35 @@ struct Stage {}
 
 impl EventHandlerFree for Stage {
     fn resize_event(&mut self, width: f32, height: f32) {
-        get_context().screen_width = width;
-        get_context().screen_height = height;
+        let context = get_context();
+        context.screen_width = width;
+        context.screen_height = height;
+
+        context.draw_context.ui_ctx.resize_event(width, height);
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        let context = get_context();
-
-        context.mouse_position = Vec2::new(x, y);
-
-        #[cfg(feature="megaui")]
-        use megaui::InputHandler;
-        #[cfg(feature="megaui")]
-        context.draw_context.ui_mut().mouse_move((x, y));
+        get_context().mouse_position = Vec2::new(x, y);
+        get_context().draw_context.ui_ctx.mouse_motion_event(x, y);
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();
-
         context.mouse_wheel.set_x(x);
         context.mouse_wheel.set_y(y);
 
-        #[cfg(feature="megaui")]
-        use megaui::InputHandler;
-        #[cfg(feature="megaui")]
-        context.draw_context.ui_mut().mouse_wheel(x, -y);
+        context.draw_context.ui_ctx.mouse_wheel_event(x, y);
     }
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
-
-        context.mouse_pressed.insert(btn);
-
-        #[cfg(feature="megaui")]
-        use megaui::InputHandler;
-        #[cfg(feature="megaui")]
-        context.draw_context.ui_mut().mouse_down((x, y));
+        get_context().mouse_pressed.insert(btn);
+        get_context().draw_context.ui_ctx.mouse_button_down_event(btn, x, y);
     }
-
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
-
-        context.mouse_pressed.remove(&btn);
-
-        #[cfg(feature="megaui")]
-        use megaui::InputHandler;
-        #[cfg(feature="megaui")]
-        context.draw_context.ui_mut().mouse_up((x, y));
+        get_context().mouse_pressed.remove(&btn);
+        get_context().draw_context.ui_ctx.mouse_button_up_event(btn, x, y);
     }
 
-    #[cfg(feature="megaui")]
-    fn char_event(&mut self, character: char, modifiers: KeyMods, _repeat: bool) {
-        use megaui::InputHandler;
-
-        let context = get_context();
-        context
-            .draw_context
-            .ui_mut()
-            .char_event(character, modifiers.shift, modifiers.ctrl);
+    fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
+        get_context().draw_context.ui_ctx.char_event(character, modifiers, repeat);
     }
 
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
@@ -200,44 +173,17 @@ impl EventHandlerFree for Stage {
             context.keys_pressed.insert(keycode);
         }
 
-        #[cfg(feature="megaui")]
-        fn convert_keycode(keycode: KeyCode) -> Option<megaui::KeyCode> {
-            Some(match keycode {
-                KeyCode::Up => megaui::KeyCode::Up,
-                KeyCode::Down => megaui::KeyCode::Down,
-                KeyCode::Right => megaui::KeyCode::Right,
-                KeyCode::Left => megaui::KeyCode::Left,
-                KeyCode::Home => megaui::KeyCode::Home,
-                KeyCode::End => megaui::KeyCode::End,
-                KeyCode::Delete => megaui::KeyCode::Delete,
-                KeyCode::Backspace => megaui::KeyCode::Backspace,
-                KeyCode::Enter => megaui::KeyCode::Enter,
-                KeyCode::Tab => megaui::KeyCode::Tab,
-                KeyCode::Z => megaui::KeyCode::Z,
-                KeyCode::Y => megaui::KeyCode::Y,
-                KeyCode::C => megaui::KeyCode::C,
-                KeyCode::X => megaui::KeyCode::X,
-                KeyCode::V => megaui::KeyCode::V,
-                KeyCode::A => megaui::KeyCode::A,
-                _ => return None
-            })
-        }
-
-        #[cfg(feature="megaui")]
-        if let Some(keycode) = convert_keycode(keycode) {
-            use megaui::InputHandler;
-
-            context.draw_context.ui_mut().key_down(
-                keycode,
-                modifiers.shift,
-                modifiers.ctrl,
-            )
-        }
+        context.draw_context.ui_ctx.key_down_event(keycode, modifiers, repeat);
     }
-
-    fn key_up_event(&mut self, keycode: KeyCode, _: KeyMods) {
+    fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
         let context = get_context();
         context.keys_down.remove(&keycode);
+
+        context.draw_context.ui_ctx.key_up_event(keycode, modifiers);
+    }
+
+    fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
+        get_context().draw_context.ui_ctx.touch_event(phase, id, x, y);
     }
 
     fn update(&mut self) {}
@@ -264,6 +210,49 @@ impl EventHandlerFree for Stage {
 
 pub struct Window {}
 
+#[cfg(feature = "custom-ui")]
+pub struct MacroConfig {
+    make_ui: Box<dyn FnOnce(&mut miniquad::Context) -> drawing::UiDrawContext>,
+    conf: conf::Conf,
+}
+impl MacroConfig {
+    fn new(
+        conf: conf::Conf,
+        make_ui: impl FnOnce(&mut miniquad::Context) -> drawing::UiDrawContext + 'static,
+    ) -> Self {
+        Self {
+            conf,
+            make_ui: Box::new(make_ui)
+        }
+    }
+}
+
+#[cfg(feature = "custom-ui")]
+impl Window {
+    pub fn from_config(
+        config: MacroConfig,
+        future: impl Future<Output = ()> + 'static
+    ) {
+        let MacroConfig { conf, make_ui } = config;
+
+        miniquad::start(
+            conf::Conf {
+                sample_count: 4,
+                ..conf
+            },
+            |mut ctx| {
+                unsafe {
+                    MAIN_FUTURE = Some(Box::pin(future));
+                }
+                let ui = make_ui(&mut ctx);
+                unsafe { CONTEXT = Some(Context::new(ctx, ui)) };
+                UserData::free(Stage {})
+            },
+        );
+    }
+}
+
+#[cfg(not(feature = "custom-ui"))]
 impl Window {
     pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
         Window::from_config(
@@ -276,17 +265,26 @@ impl Window {
         );
     }
 
-    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
+    pub fn from_config(
+        config: conf::Conf,
+        future: impl Future<Output = ()> + 'static
+    ) {
         miniquad::start(
             conf::Conf {
                 sample_count: 4,
                 ..config
             },
-            |ctx| {
+            |mut ctx| {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
-                unsafe { CONTEXT = Some(Context::new(ctx)) };
+
+                #[cfg(feature = "megaui")]
+                let ui = drawing::MegauiDrawContext::new(&mut ctx);
+                #[cfg(not(feature = "megaui"))]
+                let ui = drawing::DummyUiDrawContext;
+
+                unsafe { CONTEXT = Some(Context::new(ctx, ui)) };
                 UserData::free(Stage {})
             },
         );
