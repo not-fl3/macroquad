@@ -49,6 +49,7 @@ struct Context {
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
+    typed_characters: String,
     mouse_pressed: HashSet<MouseButton>,
     mouse_position: Vec2,
     mouse_wheel: Vec2,
@@ -73,6 +74,7 @@ impl Context {
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
             mouse_pressed: HashSet::new(),
+            typed_characters: String::new(),
             mouse_position: Vec2::new(0., 0.),
             mouse_wheel: Vec2::new(0., 0.),
 
@@ -176,6 +178,7 @@ impl EventHandlerFree for Stage {
         use megaui::InputHandler;
 
         let context = get_context();
+        context.typed_characters.push(character);
         context
             .draw_context
             .ui
@@ -191,88 +194,30 @@ impl EventHandlerFree for Stage {
             context.keys_pressed.insert(keycode);
         }
 
-        match keycode {
-            KeyCode::Up => context.draw_context.ui.key_down(
-                megaui::KeyCode::Up,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Down => context.draw_context.ui.key_down(
-                megaui::KeyCode::Down,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Right => context.draw_context.ui.key_down(
-                megaui::KeyCode::Right,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Left => context.draw_context.ui.key_down(
-                megaui::KeyCode::Left,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Home => context.draw_context.ui.key_down(
-                megaui::KeyCode::Home,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::End => context.draw_context.ui.key_down(
-                megaui::KeyCode::End,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Delete => context.draw_context.ui.key_down(
-                megaui::KeyCode::Delete,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Backspace => context.draw_context.ui.key_down(
-                megaui::KeyCode::Backspace,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Enter => context.draw_context.ui.key_down(
-                megaui::KeyCode::Enter,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Tab => context.draw_context.ui.key_down(
-                megaui::KeyCode::Tab,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Z => context.draw_context.ui.key_down(
-                megaui::KeyCode::Z,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Y => context.draw_context.ui.key_down(
-                megaui::KeyCode::Y,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::C => context.draw_context.ui.key_down(
-                megaui::KeyCode::C,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::X => context.draw_context.ui.key_down(
-                megaui::KeyCode::X,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::V => context.draw_context.ui.key_down(
-                megaui::KeyCode::V,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::A => context.draw_context.ui.key_down(
-                megaui::KeyCode::A,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            _ => {}
+        fn convert_keycode(keycode: KeyCode) -> Option<megaui::KeyCode> {
+            Some(match keycode {
+                KeyCode::Up => megaui::KeyCode::Up,
+                KeyCode::Down => megaui::KeyCode::Down,
+                KeyCode::Right => megaui::KeyCode::Right,
+                KeyCode::Left => megaui::KeyCode::Left,
+                KeyCode::Home => megaui::KeyCode::Home,
+                KeyCode::End => megaui::KeyCode::End,
+                KeyCode::Delete => megaui::KeyCode::Delete,
+                KeyCode::Backspace => megaui::KeyCode::Backspace,
+                KeyCode::Enter => megaui::KeyCode::Enter,
+                KeyCode::Tab => megaui::KeyCode::Tab,
+                KeyCode::Z => megaui::KeyCode::Z,
+                KeyCode::Y => megaui::KeyCode::Y,
+                KeyCode::C => megaui::KeyCode::C,
+                KeyCode::X => megaui::KeyCode::X,
+                KeyCode::V => megaui::KeyCode::V,
+                KeyCode::A => megaui::KeyCode::A,
+                _ => return None,
+            })
+        }
+
+        if let Some(key) = convert_keycode(keycode) {
+            context.draw_context.ui.key_down(key, modifiers.shift, modifiers.ctrl);
         }
     }
 
@@ -300,6 +245,8 @@ impl EventHandlerFree for Stage {
 
         get_context().frame_time = date::now() - get_context().last_frame_time;
         get_context().last_frame_time = date::now();
+
+        get_context().typed_characters.clear();
     }
 }
 
@@ -364,6 +311,13 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
     let context = get_context();
 
     context.keys_down.contains(&key_code)
+}
+
+/// The characters typed this frame.
+///
+/// Clears after every call to next_frame().await
+pub fn typed_characters() -> String {
+    get_context().typed_characters.drain(..).collect()
 }
 
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
@@ -455,6 +409,10 @@ pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
     let context = &mut get_context().draw_context;
 
     &mut context.gl
+}
+
+pub unsafe fn get_internal_mq<'a>() -> &'a mut QuadContext {
+    &mut get_context().quad_context
 }
 
 pub fn gl_make_pipeline(
