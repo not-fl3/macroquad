@@ -1,3 +1,9 @@
+//! The way to emulate multitasking with macroquad's `.await`.
+//! Usefull for organizing state machines, animation cutscenes and other stuff that require
+//! some evaluation over time.
+//! 
+//! Unfortunately right now it is only partially safe. Functions that may violate rust safety guarantees are markes as unsafe though. Use them with extra care, additional contracts not checked by the type system are specified in each of those function documentation. 
+
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -86,6 +92,7 @@ pub fn wait_seconds(time: f32) -> TimerDelayFuture {
     }
 }
 
+/// Special built-in coroutines for modifying values over time.
 pub mod tweens {
     use std::future::Future;
     use std::pin::Pin;
