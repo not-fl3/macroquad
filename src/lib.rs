@@ -39,7 +39,7 @@ pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
 
 #[cfg(feature = "log-impl")]
-pub use miniquad::{debug, error, info, log, warn};
+pub use miniquad::{debug, error, info, warn};
 
 use drawing::DrawContext;
 
