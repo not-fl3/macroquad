@@ -6,12 +6,10 @@ pub use quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
 
 use glam::Mat4;
 
-pub trait DrawableUi: miniquad::EventHandlerFree {
-    type Ui;
-    type UiRet;
-
-    fn draw(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context);
-    fn ui(&mut self, _f: impl FnOnce(Self::Ui) -> Self::UiRet) {}
+pub trait DrawableUi: std::any::Any + miniquad::EventHandlerFree {
+    fn draw_ui(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context);
+    #[cfg(feature="custom-ui")]
+    fn any_mut(&mut self) -> &mut dyn std::any::Any;
 }
 
 #[cfg(not(any(feature="megaui", feature="custom-ui")))]
@@ -30,7 +28,7 @@ impl miniquad::EventHandlerFree for DummyUiDrawContext {
 }
 #[cfg(not(any(feature="megaui", feature="custom-ui")))]
 impl DrawableUi for DummyUiDrawContext {
-    fn draw(&mut self, _: &mut QuadGl, _: &mut miniquad::Context) {}
+    fn draw_ui(&mut self, _: &mut QuadGl, _: &mut miniquad::Context) {}
 }
 
 #[cfg(feature="megaui")]
@@ -64,7 +62,7 @@ impl MegauiDrawContext {
 
 #[cfg(feature="megaui")]
 impl DrawableUi for MegauiDrawContext {
-    fn draw(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context) {
+    fn draw_ui(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context) {
         self.ui_draw_list.clear();
 
         self.ui.render(&mut self.ui_draw_list);
@@ -159,8 +157,7 @@ impl DrawContext {
     }
 
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
-        #[cfg(feature="megaui")]
-        self.ui_ctx.draw(&mut self.gl, ctx);
+        self.ui_ctx.draw_ui(&mut self.gl, ctx);
         self.gl.draw(ctx);
     }
 

@@ -60,7 +60,3 @@ glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { version = "=0.2.12", optional = true }
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
-
-[dev-dependencies]
-emigui-miniquad = { git = "https://github.com/cedric-h/emigui-miniquad.git", features = [ "macroquad-plugin" ] }
-egui = "0.1.3"

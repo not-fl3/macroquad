@@ -208,15 +208,13 @@ impl EventHandlerFree for Stage {
     }
 }
 
-pub struct Window {}
-
-#[cfg(feature = "custom-ui")]
 pub struct MacroConfig {
     make_ui: Box<dyn FnOnce(&mut miniquad::Context) -> drawing::UiDrawContext>,
     conf: conf::Conf,
 }
+
 impl MacroConfig {
-    fn new(
+    pub fn new(
         conf: conf::Conf,
         make_ui: impl FnOnce(&mut miniquad::Context) -> drawing::UiDrawContext + 'static,
     ) -> Self {
@@ -227,13 +225,27 @@ impl MacroConfig {
     }
 }
 
-#[cfg(feature = "custom-ui")]
+#[cfg(not(feature = "custom-ui"))]
+impl From<conf::Conf> for MacroConfig {
+    #[cfg(feature = "megaui")]
+    fn from(conf: conf::Conf) -> MacroConfig {
+        MacroConfig::new(conf, |ctx| drawing::MegauiDrawContext::new(ctx))
+    }
+
+    #[cfg(not(feature = "megaui"))]
+    fn from(conf: conf::Conf) -> MacroConfig {
+        MacroConfig::new(conf, |_| drawing::DummyUiDrawContext)
+    }
+}
+
+pub struct Window {}
+
 impl Window {
     pub fn from_config(
-        config: MacroConfig,
+        config: impl Into<MacroConfig>,
         future: impl Future<Output = ()> + 'static
     ) {
-        let MacroConfig { conf, make_ui } = config;
+        let MacroConfig { conf, make_ui } = config.into();
 
         miniquad::start(
             conf::Conf {
@@ -250,10 +262,8 @@ impl Window {
             },
         );
     }
-}
 
-#[cfg(not(feature = "custom-ui"))]
-impl Window {
+    #[cfg(not(feature = "custom-ui"))]
     pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
         Window::from_config(
             conf::Conf {
@@ -262,31 +272,6 @@ impl Window {
                 ..Default::default()
             },
             future,
-        );
-    }
-
-    pub fn from_config(
-        config: conf::Conf,
-        future: impl Future<Output = ()> + 'static
-    ) {
-        miniquad::start(
-            conf::Conf {
-                sample_count: 4,
-                ..config
-            },
-            |mut ctx| {
-                unsafe {
-                    MAIN_FUTURE = Some(Box::pin(future));
-                }
-
-                #[cfg(feature = "megaui")]
-                let ui = drawing::MegauiDrawContext::new(&mut ctx);
-                #[cfg(not(feature = "megaui"))]
-                let ui = drawing::DummyUiDrawContext;
-
-                unsafe { CONTEXT = Some(Context::new(ctx, ui)) };
-                UserData::free(Stage {})
-            },
         );
     }
 }
@@ -407,6 +392,13 @@ pub fn screen_height() -> f32 {
     let context = get_context();
 
     context.screen_height
+}
+
+#[cfg(feature="custom-ui")]
+pub fn custom_ui<T: drawing::DrawableUi, F: FnOnce(&mut QuadContext, &mut T)>(f: F) {
+    let Context { draw_context, quad_context, .. } = get_context();
+    let ui_any = draw_context.ui_ctx.any_mut();
+    f(quad_context, &mut ui_any.downcast_mut().expect("invalid custom_ui type"))
 }
 
 pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
