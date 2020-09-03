@@ -208,55 +208,74 @@ impl EventHandlerFree for Stage {
     }
 }
 
-pub struct MacroConfig {
-    make_ui: Box<dyn FnOnce(&mut miniquad::Context) -> drawing::UiDrawContext>,
+pub struct MacroConfig<T: drawing::DrawableUi> {
     conf: conf::Conf,
+    phantom: std::marker::PhantomData<T>
 }
 
-impl MacroConfig {
-    pub fn new(
-        conf: conf::Conf,
-        make_ui: impl FnOnce(&mut miniquad::Context) -> drawing::UiDrawContext + 'static,
-    ) -> Self {
+impl<T: drawing::DrawableUi> MacroConfig<T> {
+    pub fn new(conf: conf::Conf) -> Self {
         Self {
             conf,
-            make_ui: Box::new(make_ui)
+            phantom: std::marker::PhantomData
         }
+    }
+
+    fn new_ui(&self, ctx: &mut QuadContext) -> T {
+        T::new(ctx)
     }
 }
 
 #[cfg(not(feature = "custom-ui"))]
-impl From<conf::Conf> for MacroConfig {
-    #[cfg(feature = "megaui")]
-    fn from(conf: conf::Conf) -> MacroConfig {
-        MacroConfig::new(conf, |ctx| drawing::MegauiDrawContext::new(ctx))
-    }
-
-    #[cfg(not(feature = "megaui"))]
-    fn from(conf: conf::Conf) -> MacroConfig {
-        MacroConfig::new(conf, |_| drawing::DummyUiDrawContext)
+impl From<conf::Conf> for MacroConfig<drawing::UiDrawContext> {
+    fn from(conf: conf::Conf) -> Self {
+        MacroConfig::new(conf)
     }
 }
 
 pub struct Window {}
 
 impl Window {
-    pub fn from_config(
-        config: impl Into<MacroConfig>,
+    #[cfg(feature = "custom-ui")]
+    pub fn from_config<T: drawing::DrawableUi>(
+        config: impl Into<MacroConfig<T>>,
         future: impl Future<Output = ()> + 'static
     ) {
-        let MacroConfig { conf, make_ui } = config.into();
+        let mut config = config.into();
 
         miniquad::start(
             conf::Conf {
                 sample_count: 4,
-                ..conf
+                ..std::mem::take(&mut config.conf)
             },
-            |mut ctx| {
+            move |mut ctx| {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
-                let ui = make_ui(&mut ctx);
+                let ui = Box::new(config.new_ui(&mut ctx));
+                unsafe { CONTEXT = Some(Context::new(ctx, ui)) };
+                UserData::free(Stage {})
+            },
+        );
+    }
+
+    #[cfg(not(feature = "custom-ui"))]
+    pub fn from_config(
+        config: impl Into<MacroConfig<drawing::UiDrawContext>>,
+        future: impl Future<Output = ()> + 'static
+    ) {
+        let mut config = config.into();
+
+        miniquad::start(
+            conf::Conf {
+                sample_count: 4,
+                ..std::mem::take(&mut config.conf)
+            },
+            move |mut ctx| {
+                unsafe {
+                    MAIN_FUTURE = Some(Box::pin(future));
+                }
+                let ui = config.new_ui(&mut ctx);
                 unsafe { CONTEXT = Some(Context::new(ctx, ui)) };
                 UserData::free(Stage {})
             },

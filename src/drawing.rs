@@ -8,6 +8,8 @@ use glam::Mat4;
 
 pub trait DrawableUi: std::any::Any + miniquad::EventHandlerFree {
     fn draw_ui(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context);
+    fn new(ctx: &mut miniquad::Context) -> Self where Self: Sized;
+
     #[cfg(feature="custom-ui")]
     fn any_mut(&mut self) -> &mut dyn std::any::Any;
 }
@@ -29,6 +31,9 @@ impl miniquad::EventHandlerFree for DummyUiDrawContext {
 #[cfg(not(any(feature="megaui", feature="custom-ui")))]
 impl DrawableUi for DummyUiDrawContext {
     fn draw_ui(&mut self, _: &mut QuadGl, _: &mut miniquad::Context) {}
+    fn new(_: &mut miniquad::Context) -> Self {
+        Self
+    }
 }
 
 #[cfg(feature="megaui")]
@@ -39,8 +44,8 @@ pub struct MegauiDrawContext {
 }
 
 #[cfg(feature="megaui")]
-impl MegauiDrawContext {
-    pub fn new(ctx: &mut miniquad::Context) -> Self {
+impl DrawableUi for MegauiDrawContext {
+    fn new(ctx: &mut miniquad::Context) -> Self {
         let mut ui = megaui::Ui::new();
         ui.set_clipboard_object(crate::ui::ClipboardObject);
 
@@ -58,10 +63,7 @@ impl MegauiDrawContext {
             ui_draw_list: Vec::with_capacity(10_000),
         }
     }
-}
 
-#[cfg(feature="megaui")]
-impl DrawableUi for MegauiDrawContext {
     fn draw_ui(&mut self, gl: &mut QuadGl, _: &mut miniquad::Context) {
         self.ui_draw_list.clear();
 
