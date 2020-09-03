@@ -4,15 +4,7 @@ use std::task::{Context, Poll};
 
 use crate::get_context;
 
-#[derive(Debug, PartialEq)]
-enum ExecState {
-    RunOnce,
-    Waiting,
-}
-
-pub(crate) struct FutureContext {
-    state: ExecState,
-}
+pub(crate) struct FutureContext;
 
 pub(crate) struct CoroutinesContext {
     futures: Vec<Option<(Pin<Box<dyn Future<Output = ()>>>, FutureContext)>>,
@@ -49,9 +41,7 @@ pub unsafe fn start_coroutine(future: impl Future<Output = ()>) -> Coroutine {
 
     context.futures.push(Some((
         boxed_future,
-        FutureContext {
-            state: ExecState::RunOnce,
-        },
+        FutureContext,
     )));
 
     Coroutine {
