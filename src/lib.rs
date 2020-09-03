@@ -21,7 +21,7 @@ mod types;
 mod ui;
 
 pub mod coroutines;
-pub mod storage;
+pub mod collections;
 
 pub use camera::{Camera, Camera2D, Camera3D, Projection};
 
@@ -37,6 +37,7 @@ pub use drawing::FilterMode;
 pub use miniquad::{conf::Conf, Comparison, PipelineParams};
 pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
+pub use collections::*;
 
 #[cfg(feature = "log-impl")]
 pub use miniquad::{debug, error, info, warn};
