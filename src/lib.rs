@@ -316,8 +316,8 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
 /// The characters typed this frame.
 ///
 /// Clears after every call to next_frame().await
-pub fn typed_characters() -> String {
-    get_context().typed_characters.drain(..).collect()
+pub fn typed_characters<'a>() -> &'a str {
+    &get_context().typed_characters
 }
 
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
@@ -413,6 +413,11 @@ pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
 
 pub unsafe fn get_internal_mq<'a>() -> &'a mut QuadContext {
     &mut get_context().quad_context
+}
+
+/// Submit some code to be called after Macroquad finishes rendering a frame
+pub fn hook_post_render(f: impl FnMut(&mut QuadContext) + 'static) {
+    get_context().draw_context.post_render_hooks.push(Box::new(f))
 }
 
 pub fn gl_make_pipeline(
