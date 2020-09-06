@@ -95,7 +95,18 @@ pub fn draw_triangle_lines(v1: Vec2, v2: Vec2, v3: Vec2, thickness: f32, color: 
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
     let context = &mut get_context().draw_context;
 
-    context.draw_rectangle(x, y, w, h, color);
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(x    , y    , 0., 0.0, 1.0, color),
+        Vertex::new(x + w, y    , 0., 1.0, 0.0, color),
+        Vertex::new(x + w, y + h, 0., 1.0, 1.0, color),
+        Vertex::new(x    , y + h, 0., 0.0, 0.0, color),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
 }
 
 pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
@@ -116,11 +127,7 @@ pub fn draw_hexagon(
     border_color: Color,
     fill_color: Color,
 ) {
-    let rotation = if vertical {
-        90.
-    } else {
-        0.
-    };
+    let rotation = if vertical { 90. } else { 0. };
     draw_poly(x, y, 6, size, rotation, fill_color);
     if border > 0. {
         draw_poly_lines(x, y, 6, size, rotation, border, border_color);
@@ -189,5 +196,30 @@ pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
 
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
     let context = &mut get_context().draw_context;
-    context.draw_line(x1, y1, x2, y2, thickness, color);
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+
+    // https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
+
+    let nx = -dy;
+    let ny = dx;
+
+    let tlen = (nx * nx + ny * ny).sqrt() / (thickness * 0.5);
+    if tlen < std::f32::EPSILON {
+        return;
+    }
+    let tx = nx / tlen;
+    let ty = ny / tlen;
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(
+        &[
+            Vertex::new(x1 + tx, y1 + ty, 0., 0., 0., color),
+            Vertex::new(x1 - tx, y1 - ty, 0., 0., 0., color),
+            Vertex::new(x2 + tx, y2 + ty, 0., 0., 0., color),
+            Vertex::new(x2 - tx, y2 - ty, 0., 0., 0., color),
+        ],
+        &[0, 1, 2, 2, 1, 3],
+    );
 }

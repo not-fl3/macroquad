@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.2.9"
+version = "0.3.0-alpha.0"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -15,9 +15,12 @@ readme="README.md"
 default = ["log-impl"]
 log-impl = ["miniquad/log-impl"]
 
+[package.metadata.docs.rs]
+all-features = true
+
 [dependencies]
-miniquad = { version = "=0.3.0-alpha.11" }
-quad-gl = { version = "=0.2.3" }
+miniquad = { version = "=0.3.0-alpha.13" }
+quad-gl = { version = "=0.2.4" }
 quad-rand = "0.1"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }

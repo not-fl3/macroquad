@@ -420,7 +420,7 @@ pub fn set_camera<T: Camera>(camera: T) {
 
     context.draw_context.current_pass = camera.render_pass();
     context.draw_context.gl.render_pass(camera.render_pass());
-    context.draw_context.gl.depth_test(true);
+    context.draw_context.gl.depth_test(camera.depth_enabled());
     context.draw_context.camera_matrix = Some(camera.matrix());
     context
         .draw_context
