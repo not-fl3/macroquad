@@ -1,7 +1,7 @@
 //! Module for conveting 2D and 3D camera descriptions into matrices
 //! and some helpers like WorkdToCamera/CameraToWorld etc
 
-use crate::{screen_height, screen_width, RenderTarget};
+use crate::{screen_height, screen_width, Rect, RenderTarget};
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 
 pub trait Camera {
@@ -23,7 +23,23 @@ pub struct Camera2D {
 
     /// If "render_target" is set - camera will render to texture
     /// otherwise to the screen
-    pub render_target: Option<RenderTarget>
+    pub render_target: Option<RenderTarget>,
+}
+
+impl Camera2D {
+    /// Will make camera space equals given rect
+    pub fn from_display_rect(rect: Rect) -> Camera2D {
+        let target = vec2(rect.x + rect.w / 2., rect.y + rect.h / 2.);
+
+        Camera2D {
+            target,
+            zoom: vec2(1. / rect.w * 2., 1. / rect.h * 2.),
+            offset: vec2(0., 0.),
+            rotation: 0.,
+
+            render_target: None,
+        }
+    }
 }
 
 impl Default for Camera2D {
@@ -34,7 +50,7 @@ impl Default for Camera2D {
             target: vec2(0., 0.),
             rotation: 0.,
 
-            render_target: None
+            render_target: None,
         }
     }
 }
@@ -90,7 +106,6 @@ impl Camera2D {
 
         vec2(transform.x(), transform.y())
     }
-
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -160,5 +175,4 @@ impl Camera for Camera3D {
     fn render_pass(&self) -> Option<miniquad::RenderPass> {
         unimplemented!()
     }
-
 }
