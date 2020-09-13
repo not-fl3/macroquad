@@ -1,6 +1,6 @@
 //! this is legacy and going to disappear soon
 
-use quad_gl::{QuadGl, Vertex};
+use quad_gl::QuadGl;
 
 pub use quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
 
@@ -33,7 +33,7 @@ impl DrawContext {
             font_texture,
             ui,
             ui_draw_list: Vec::with_capacity(10000),
-            current_pass: None
+            current_pass: None,
         };
 
         draw_context.update_projection_matrix(ctx);
@@ -66,7 +66,6 @@ impl DrawContext {
 
         std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
     }
-
 
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
         self.draw_ui(ctx);
