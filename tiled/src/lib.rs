@@ -7,6 +7,7 @@ use std::collections::HashMap;
 mod error;
 mod tiled;
 
+#[derive(Debug)]
 pub enum Object {
     Rect {
         world_x: f32,
@@ -23,13 +24,17 @@ pub enum Object {
     },
 }
 
+#[derive(Debug)]
 pub struct Tile {
     /// id in the tileset
     pub id: u32,
     /// Each tile belongs to one tileset
     pub tileset: String,
+    /// "type" from tiled
+    pub attrs: String,
 }
 
+#[derive(Debug)]
 pub struct Layer {
     pub objects: Vec<Object>,
     pub width: u32,
@@ -37,6 +42,7 @@ pub struct Layer {
     pub data: Vec<Option<Tile>>,
 }
 
+#[derive(Debug)]
 pub struct TileSet {
     pub texture: Texture2D,
 
@@ -58,48 +64,114 @@ impl TileSet {
     }
 }
 
+#[derive(Debug)]
 pub struct Map {
     pub layers: HashMap<String, Layer>,
     pub tilesets: HashMap<String, TileSet>,
-    pub camera: Vec2,
 
     /// Deserialized json as is
     pub raw_tiled_map: tiled::Map,
 }
 
 impl Map {
-    pub fn spr(&self, tileset: &str, sprite: u32, pos: Vec2, flip_x: bool, flip_y: bool) {
+    pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
         let tileset = &self.tilesets[tileset];
         let spr_rect = tileset.sprite_rect(sprite);
 
         draw_texture_ex(
             tileset.texture,
-            pos.x() / 8. * 0.04 - self.camera.x() / 8. * 0.04,
-            pos.y() / 8. * 0.04 - self.camera.y() / 8. * 0.04,
+            dest.x,
+            dest.y,
             WHITE,
             DrawTextureParams {
-                dest_size: Some(vec2(0.04, 0.04)),
+                dest_size: Some(vec2(dest.w, dest.h)),
                 source: Some(Rect::new(spr_rect.x, spr_rect.y, spr_rect.w, spr_rect.h)),
                 ..Default::default()
             },
         );
     }
 
-    pub fn draw_tiles(&self, layer: &str) {
+    pub fn draw_tiles(&self, layer: &str, dest: Rect, source: Rect) {
         let layer = &self.layers[layer];
 
-        for y in 0..layer.height {
-            for x in 0..layer.width {
+        let spr_width = dest.w / (source.w + 1.);
+        let spr_height = dest.h / (source.h + 1.);
+
+        for y in source.y as u32..source.y as u32 + source.h as u32 + 1 {
+            for x in source.x as u32..source.x as u32 + source.w as u32 + 1 {
+                let pos = vec2(
+                    (x - source.x as u32) as f32 / (source.w + 1.) * dest.w + dest.x,
+                    (y - source.y as u32) as f32 / (source.h + 1.) * dest.h + dest.y,
+                );
+
                 if let Some(tile) = &layer.data[(y * layer.width + x) as usize] {
                     self.spr(
                         &tile.tileset,
                         tile.id,
-                        vec2(x as f32 * 8., y as f32 * 8.),
-                        false,
-                        false,
+                        Rect::new(pos.x(), pos.y(), spr_width, spr_height),
                     );
                 }
             }
+        }
+    }
+
+    pub fn tiles(&self, layer: &str, rect: Rect) -> TilesIterator {
+        TilesIterator::new(&self.layers[layer], rect)
+    }
+
+    pub fn get_tile(&self, layer: &str, x: u32, y: u32) -> &Option<Tile> {
+        let layer = &self.layers[layer];
+
+        if x >= layer.width || y >= layer.height {
+            return &None;
+        }
+
+        &layer.data[(y * layer.width + x) as usize]
+    }
+}
+
+pub struct TilesIterator<'a> {
+    rect: Rect,
+    current: (u32, u32),
+    layer: &'a Layer,
+}
+
+impl<'a> TilesIterator<'a> {
+    fn new(layer: &'a Layer, rect: Rect) -> Self {
+        let current = (rect.x as u32, rect.y as u32);
+
+        TilesIterator {
+            layer,
+            rect,
+            current,
+        }
+    }
+}
+
+impl<'a> Iterator for TilesIterator<'a> {
+    type Item = (u32, u32, &'a Option<Tile>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let next_x;
+        let next_y;
+
+        if self.current.0 + 1 >= self.rect.x as u32 + self.rect.w as u32 {
+            next_x = self.rect.x as u32;
+            next_y = self.current.1 + 1;
+        } else {
+            next_x = self.current.0 + 1;
+            next_y = self.current.1;
+        }
+        self.current = (next_x, next_y);
+
+        if next_y > self.rect.y as u32 + self.rect.h as u32 {
+            None
+        } else {
+            Some((
+                next_x,
+                next_y,
+                &self.layer.data[(next_y * self.layer.width + next_x) as usize],
+            ))
         }
     }
 }
@@ -164,6 +236,7 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
                 tile >= tileset.firstgid && tile < tileset.firstgid + tileset.tilecount
             })
         };
+
         layers.insert(
             layer.name.clone(),
             Layer {
@@ -174,9 +247,19 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
                     .data
                     .iter()
                     .map(|tile| {
-                        find_tileset(*tile).map(|tileset| Tile {
-                            id: *tile - tileset.firstgid,
-                            tileset: tileset.name.clone(),
+                        find_tileset(*tile).map(|tileset| {
+                            let attrs = tileset
+                                .tiles
+                                .iter()
+                                .find(|t| t.id as u32 == *tile - tileset.firstgid)
+                                .and_then(|tile| tile.ty.clone())
+                                .unwrap_or("".to_owned());
+
+                            Tile {
+                                id: *tile - tileset.firstgid,
+                                tileset: tileset.name.clone(),
+                                attrs,
+                            }
                         })
                     })
                     .collect::<Vec<_>>(),
@@ -187,7 +270,6 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
     Ok(Map {
         layers,
         tilesets,
-        camera: Vec2::new(0., 0.),
         raw_tiled_map: map,
     })
 }
