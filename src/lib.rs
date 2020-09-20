@@ -101,6 +101,8 @@ impl Context {
         self.draw_context
             .perform_render_passes(&mut self.quad_context);
 
+        self.draw_context.ui.new_frame();
+
         self.quad_context.commit_frame();
 
         self.mouse_wheel = Vec2::new(0., 0.);

@@ -45,8 +45,6 @@ impl DrawContext {
         self.ui_draw_list.clear();
 
         self.ui.render(&mut self.ui_draw_list);
-        self.ui.new_frame();
-
         let mut ui_draw_list = vec![];
 
         std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
