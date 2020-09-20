@@ -1,0 +1,16 @@
+[package]
+name = "megaui"
+version = "0.2.12"
+authors = ["fl3 <not.fl3@gmail.com>"]
+edition = "2018"
+license = "MIT/Apache-2.0"
+homepage = "https://github.com/not-fl3/megaui"
+repository = "https://github.com/not-fl3/megaui"
+description = """
+Simple, zero-depdenencies, immediate mode UI library
+"""
+
+[dependencies]
+miniquad_text_rusttype = { version = "0.1", default-features = false }
+#miniquad_text_rusttype = { path = "../miniquad_text_rusttype", version = "0.1", default-features = true }
+
