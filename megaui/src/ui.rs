@@ -535,6 +535,10 @@ impl Ui {
     pub fn new_frame(&mut self) {
         self.frame += 1;
 
+        self.drag_hovered_previous_frame = self.drag_hovered;
+        self.drag_hovered = None;
+        self.input.reset();
+
         for (_, window) in &mut self.windows {
             window.draw_commands.clear();
             window.cursor.reset();
@@ -557,8 +561,6 @@ impl Ui {
 
             self.render_window(window, self.input.mouse_position - orig, draw_list);
         }
-
-        self.end_frame();
     }
 
     fn render_window(&self, window: &Window, offset: Vector2, draw_list: &mut Vec<DrawList>) {
@@ -572,12 +574,6 @@ impl Ui {
                 self.render_window(child_window, offset, draw_list);
             }
         }
-    }
-
-    pub fn end_frame(&mut self) {
-        self.drag_hovered_previous_frame = self.drag_hovered;
-        self.drag_hovered = None;
-        self.input.reset();
     }
 
     pub fn focus_window(&mut self, id: Id) {
