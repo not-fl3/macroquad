@@ -20,7 +20,7 @@ all-features = true
 
 [dependencies]
 miniquad = { version = "=0.3.0-alpha.13" }
-quad-gl = { version = "=0.2.4" }
+quad-gl = { version = "=0.2.4", path = "./quad-gl" }
 quad-rand = "0.1"
 glam = {version = "0.8", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
