@@ -1,0 +1,14 @@
+[package]
+authors = ["not-fl3 <not.fl3@gmail.com>"]
+description = "Statefull immediate mode rendering libarary on top of miniquad.\nInspired by opengl1, rlgl and sokol-gl.\n"
+edition = "2018"
+homepage = "https://github.com/not-fl3/quad-gl"
+license = "MIT/Apache-2.0"
+name = "quad-gl"
+repository = "https://github.com/not-fl3/quad-gl"
+version = "0.2.4"
+
+[dependencies]
+miniquad = { version = "0.3.0-alpha" }
+glam = {version = "0.8", features = ["scalar-math"] }
+image = { version = "0.22", default-features = false, features = ["png_codec"] }
