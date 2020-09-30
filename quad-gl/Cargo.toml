@@ -10,5 +10,5 @@ version = "0.2.4"
 
 [dependencies]
 miniquad = { version = "0.3.0-alpha" }
-glam = {version = "0.8", features = ["scalar-math"] }
+glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec"] }
