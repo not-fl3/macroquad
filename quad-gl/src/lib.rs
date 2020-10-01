@@ -4,6 +4,8 @@ pub use colors::*;
 
 pub use miniquad::{FilterMode, ShaderError};
 
+const UNIFORMS_ARRAY_SIZE: usize = 512;
+
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Color(pub [u8; 4]);
@@ -203,10 +205,12 @@ mod snapshoter_shader {
         gl_FragColor = texture2D(Texture, uv);
     }"#;
 
-    pub const META: ShaderMeta = ShaderMeta {
-        images: &["Texture"],
-        uniforms: UniformBlockLayout { uniforms: &[] },
-    };
+    pub fn meta() -> ShaderMeta {
+        ShaderMeta {
+            images: vec!["Texture".to_string()],
+            uniforms: UniformBlockLayout { uniforms: vec![] },
+        }
+    }
 
     #[repr(C)]
     #[derive(Debug)]
@@ -219,7 +223,7 @@ impl MagicSnapshoter {
             ctx,
             snapshoter_shader::VERTEX,
             snapshoter_shader::FRAGMENT,
-            snapshoter_shader::META,
+            snapshoter_shader::meta(),
         )
         .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
@@ -249,7 +253,7 @@ impl MagicSnapshoter {
         let bindings = Bindings {
             vertex_buffers: vec![vertex_buffer],
             index_buffer,
-            images: vec![None],
+            images: vec![Texture::empty()],
         };
 
         MagicSnapshoter {
@@ -277,7 +281,11 @@ impl MagicSnapshoter {
                 self.pass = Some(RenderPass::new(ctx, color_img, None));
             }
 
-            self.bindings.images[0] = Some(texture);
+            if self.bindings.images.len() == 0 {
+                self.bindings.images.push(texture);
+            } else {
+                self.bindings.images[0] = texture;
+            }
             ctx.begin_pass(
                 self.pass.unwrap(),
                 PassAction::clear_color(1.0, 0.0, 1.0, 1.),
@@ -302,7 +310,21 @@ impl MagicSnapshoter {
                 ))
             }
 
-            self.screen_texture.unwrap().read_framebuffer()
+            let texture = self.screen_texture.unwrap();
+            let (internal_format, _, _) = texture.format.into();
+            unsafe {
+                gl::glBindTexture(gl::GL_TEXTURE_2D, texture.gl_internal_id());
+                gl::glCopyTexImage2D(
+                    gl::GL_TEXTURE_2D,
+                    0,
+                    internal_format,
+                    0,
+                    0,
+                    texture.width as _,
+                    texture.height as _,
+                    0,
+                );
+            }
         }
     }
 }
@@ -326,12 +348,19 @@ impl GlState {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
+struct Uniform {
+    name: String,
+    uniform_type: UniformType,
+    byte_offset: usize,
+}
+
+#[derive(Clone)]
 struct PipelineExt {
     pipeline: miniquad::Pipeline,
     wants_screen_texture: bool,
-    uniforms: Vec<(String, UniformType)>,
-    uniforms_data: Vec<u8>
+    uniforms: Vec<Uniform>,
+    uniforms_data: [u8; UNIFORMS_ARRAY_SIZE],
 }
 
 struct PipelinesStorage {
@@ -347,7 +376,7 @@ impl PipelinesStorage {
     const LINES_DEPTH_PIPELINE: GlPipeline = GlPipeline(3);
 
     fn new(ctx: &mut miniquad::Context) -> PipelinesStorage {
-        let shader = Shader::new(ctx, shader::VERTEX, shader::FRAGMENT, shader::META)
+        let shader = Shader::new(ctx, shader::VERTEX, shader::FRAGMENT, shader::meta())
             .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
         let params = PipelineParams {
@@ -372,7 +401,7 @@ impl PipelinesStorage {
                 ..params
             },
             false,
-            vec![]
+            vec![],
         );
         assert_eq!(triangles_pipeline, Self::TRIANGLES_PIPELINE);
 
@@ -384,7 +413,7 @@ impl PipelinesStorage {
                 ..params
             },
             false,
-            vec![]
+            vec![],
         );
         assert_eq!(lines_pipeline, Self::LINES_PIPELINE);
 
@@ -398,7 +427,7 @@ impl PipelinesStorage {
                 ..params
             },
             false,
-            vec![]
+            vec![],
         );
         assert_eq!(triangles_depth_pipeline, Self::TRIANGLES_DEPTH_PIPELINE);
 
@@ -412,7 +441,7 @@ impl PipelinesStorage {
                 ..params
             },
             false,
-            vec![]
+            vec![],
         );
         assert_eq!(lines_depth_pipeline, Self::LINES_DEPTH_PIPELINE);
 
@@ -425,7 +454,7 @@ impl PipelinesStorage {
         shader: Shader,
         params: PipelineParams,
         wants_screen_texture: bool,
-        uniforms: Vec<(String, UniformType)>
+        uniforms: Vec<(String, UniformType)>,
     ) -> GlPipeline {
         let pipeline = Pipeline::with_params(
             ctx,
@@ -441,11 +470,32 @@ impl PipelinesStorage {
 
         let id = self.pipelines_amount;
 
+        let uniforms = uniforms
+            .iter()
+            .scan(0, |offset, uniform| {
+                let uniform_byte_size = uniform.1.size();
+                if *offset + uniform_byte_size > UNIFORMS_ARRAY_SIZE {
+                    warn!(
+                        "Material exceeds maximum uniforms amount, uniforms after {} skipped",
+                        uniform.0
+                    );
+                    return None;
+                }
+                let uniform = Uniform {
+                    name: uniform.0.clone(),
+                    uniform_type: uniform.1,
+                    byte_offset: *offset,
+                };
+                *offset += uniform_byte_size;
+
+                Some(uniform)
+            })
+            .collect();
         self.pipelines[id] = Some(PipelineExt {
             pipeline,
             wants_screen_texture,
             uniforms,
-            uniforms_data: vec![]
+            uniforms_data: [0; UNIFORMS_ARRAY_SIZE],
         });
         self.pipelines_amount += 1;
 
@@ -468,7 +518,6 @@ impl PipelinesStorage {
     fn get_quad_pipeline_mut(&mut self, pip: GlPipeline) -> &mut PipelineExt {
         self.pipelines[pip.0].as_mut().unwrap()
     }
-
 }
 
 pub struct QuadGl {
@@ -514,16 +563,15 @@ impl QuadGl {
         vertex_shader: &str,
         fragment_shader: &str,
         params: PipelineParams,
-        uniforms: Vec<(String, UniformType)>
+        uniforms: Vec<(String, UniformType)>,
     ) -> Result<GlPipeline, ShaderError> {
-        let mut shader_meta_ok: ShaderMetaOK = shader::META.into();
+        let mut shader_meta_ok: ShaderMeta = shader::meta();
 
         for uniform in &uniforms {
-            shader_meta_ok.uniforms.push(UniformDescOK {
-                name: uniform.0.clone(),
-                uniform_type: uniform.1,
-                array_count: 1
-            });
+            shader_meta_ok
+                .uniforms
+                .uniforms
+                .push(UniformDesc::new(&uniform.0, uniform.1));
         }
 
         let shader = Shader::new(ctx, vertex_shader, fragment_shader, shader_meta_ok)?;
@@ -564,7 +612,7 @@ impl QuadGl {
             let bindings = Bindings {
                 vertex_buffers: vec![vertex_buffer],
                 index_buffer,
-                images: vec![],
+                images: vec![Texture::empty(), Texture::empty()],
             };
 
             self.draw_calls_bindings.push(bindings);
@@ -601,7 +649,13 @@ impl QuadGl {
 
             bindings.vertex_buffers[0].update(ctx, dc.vertices());
             bindings.index_buffer.update(ctx, dc.indices());
-            bindings.images = vec![Some(dc.texture), self.state.snapshoter.screen_texture];
+
+            bindings.images[0] = dc.texture;
+            bindings.images[1] = self
+                .state
+                .snapshoter
+                .screen_texture
+                .unwrap_or_else(|| Texture::empty());
 
             ctx.apply_pipeline(&pipeline.pipeline);
             if let Some(clip) = dc.clip {
@@ -611,16 +665,11 @@ impl QuadGl {
             }
             ctx.apply_bindings(&bindings);
 
-            let mut data = [0; 100];
-
-            for (i, c) in pipeline.uniforms_data.iter().enumerate() {
-                data[i] = *c;
-            }
             ctx.apply_uniforms(&shader::Uniforms {
                 projection: dc.projection,
                 model: dc.model,
                 time,
-                data
+                data: pipeline.uniforms_data.clone(),
             });
             ctx.draw(0, dc.indices_count as i32, 1);
 
@@ -730,15 +779,47 @@ impl QuadGl {
         dc.texture = self.state.texture;
     }
 
-    pub fn set_uniform<T: std::fmt::Debug>(&mut self, pipeline: GlPipeline, name: &str, uniform: T) {
+    pub fn set_uniform<T>(&mut self, pipeline: GlPipeline, name: &str, uniform: T) {
         let pipeline = self.pipelines.get_quad_pipeline_mut(pipeline);
 
-        let data: [u8; 8] = unsafe { std::mem::transmute_copy(&uniform) };
-
-        pipeline.uniforms_data.resize(8, 0);
-        for i in 0..8 {
-            pipeline.uniforms_data[i] = data[i];
+        let uniform_meta = pipeline.uniforms.iter().find(
+            |Uniform {
+                 name: uniform_name, ..
+             }| uniform_name == name,
+        );
+        if uniform_meta.is_none() {
+            warn!("Trying to set non-existing uniform: {}", name);
+            return;
         }
+        let uniform_meta = uniform_meta.unwrap();
+        let uniform_format = uniform_meta.uniform_type;
+        let uniform_byte_size = uniform_format.size();
+        let uniform_byte_offset = uniform_meta.byte_offset;
+
+        if std::mem::size_of::<T>() != uniform_byte_size {
+            warn!(
+                "Trying to set uniform {} sized {} bytes value of {} bytes",
+                name,
+                std::mem::size_of::<T>(),
+                uniform_byte_size
+            );
+            return;
+        }
+        macro_rules! transmute_uniform {
+            ($uniform_size:expr, $byte_offset:expr, $n:expr) => {
+                if $uniform_size == $n {
+                    let data: [u8; $n] = unsafe { std::mem::transmute_copy(&uniform) };
+                    for i in 0..$uniform_size {
+                        pipeline.uniforms_data[$byte_offset + i] = data[i];
+                    }
+                }
+            };
+        }
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 4);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 8);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 12);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 16);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 64);
     }
 }
 
@@ -873,6 +954,7 @@ impl Image {
 
 mod shader {
     use miniquad::{ShaderMeta, UniformBlockLayout, UniformDesc, UniformType};
+    use super::UNIFORMS_ARRAY_SIZE;
 
     pub const VERTEX: &str = r#"#version 100
     attribute vec3 position;
@@ -901,16 +983,18 @@ mod shader {
         gl_FragColor = color * texture2D(Texture, uv) ;
     }"#;
 
-    pub const META: ShaderMeta = ShaderMeta {
-        images: &["Texture", "_ScreenTexture"],
-        uniforms: UniformBlockLayout {
-            uniforms: &[
-                UniformDesc::new("Projection", UniformType::Mat4),
-                UniformDesc::new("Model", UniformType::Mat4),
-                UniformDesc::new("_Time", UniformType::Float4),
-            ],
-        },
-    };
+    pub fn meta() -> ShaderMeta {
+        ShaderMeta {
+            images: vec!["Texture".to_string(), "_ScreenTexture".to_string()],
+            uniforms: UniformBlockLayout {
+                uniforms: vec![
+                    UniformDesc::new("Projection", UniformType::Mat4),
+                    UniformDesc::new("Model", UniformType::Mat4),
+                    UniformDesc::new("_Time", UniformType::Float4),
+                ],
+            },
+        }
+    }
 
     #[repr(C)]
     pub struct Uniforms {
@@ -918,6 +1002,6 @@ mod shader {
         pub model: glam::Mat4,
         pub time: glam::Vec4,
 
-        pub data: [u8; 100]
+        pub data: [u8; UNIFORMS_ARRAY_SIZE],
     }
 }

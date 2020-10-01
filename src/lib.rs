@@ -16,12 +16,13 @@ mod exec;
 mod models;
 mod shapes;
 mod texture;
+mod material;
 mod time;
 mod types;
 mod ui;
 
-pub mod coroutines;
 pub mod collections;
+pub mod coroutines;
 
 pub use camera::{Camera, Camera2D, Camera3D, Projection};
 
@@ -29,15 +30,16 @@ pub use macroquad_macro::main;
 pub use models::*;
 pub use shapes::*;
 pub use texture::*;
+pub use material::*;
 pub use time::*;
 pub use types::*;
 pub use ui::*;
 
+pub use collections::*;
 pub use drawing::FilterMode;
 pub use miniquad::{conf::Conf, Comparison, PipelineParams, UniformType};
 pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
-pub use collections::*;
 
 #[cfg(feature = "log-impl")]
 pub use miniquad::{debug, error, info, warn};
@@ -465,41 +467,6 @@ pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
     &mut context.gl
 }
 
-pub fn gl_make_pipeline(
-    vertex_shader: &str,
-    fragment_shader: &str,
-    params: PipelineParams,
-    uniforms: Vec<(String, UniformType)>
-) -> Result<GlPipeline, ShaderError> {
-    let context = &mut get_context();
-
-    context.draw_context.gl.make_pipeline(
-        &mut context.quad_context,
-        vertex_shader,
-        fragment_shader,
-        params,
-        uniforms
-    )
-}
-
-pub fn gl_use_pipeline(pipeline: GlPipeline) {
-    let context = &mut get_context().draw_context;
-
-    context.gl.pipeline(Some(pipeline));
-}
-
-pub fn gl_use_default_pipeline() {
-    let context = &mut get_context().draw_context;
-
-    context.gl.pipeline(None);
-}
-
-pub fn gl_set_uniform<T: std::fmt::Debug>(pipeline: GlPipeline, name: &str, uniform: T){
-    let context = &mut get_context().draw_context;
-
-    context.gl.set_uniform(pipeline, name, uniform);
-}
-
 pub fn load_file(path: &str) -> exec::FileLoadingFuture {
     use std::cell::RefCell;
     use std::rc::Rc;
@@ -512,7 +479,8 @@ pub fn load_file(path: &str) -> exec::FileLoadingFuture {
         let err_path = path.clone();
 
         miniquad::fs::load_file(&path, move |bytes| {
-            *contents.borrow_mut() = Some(bytes.map_err(|kind| exec::FileError::new(kind, &err_path)));
+            *contents.borrow_mut() =
+                Some(bytes.map_err(|kind| exec::FileError::new(kind, &err_path)));
         });
     }
 

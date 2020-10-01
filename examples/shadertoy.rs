@@ -16,7 +16,15 @@ async fn main() {
         depth_test: Comparison::LessOrEqual,
         ..Default::default()
     };
-    let mut pipeline = gl_make_pipeline(&vertex_shader, &fragment_shader, pipeline_params).unwrap();
+    let mut material = load_material(
+        &vertex_shader,
+        &fragment_shader,
+        MaterialParams {
+            pipeline_params,
+            ..Default::default()
+        },
+    )
+    .unwrap();
     let mut error: Option<String> = None;
 
     enum Mesh {
@@ -44,13 +52,13 @@ async fn main() {
 
         draw_grid(20, 1.);
 
-        gl_use_pipeline(pipeline);
+        gl_use_material(material);
         match mesh {
             Mesh::Plane => draw_plane(vec3(0., 2., 0.), vec2(5., 5.), ferris, WHITE),
             Mesh::Sphere => draw_sphere(vec3(0., 6., 0.), 5., ferris, WHITE),
             Mesh::Cube => draw_cube(vec3(0., 5., 0.), vec3(10., 10., 10.), ferris, WHITE),
         }
-        gl_use_default_pipeline();
+        gl_use_default_material();
 
         // Back to screen space, render some text
 
@@ -112,9 +120,16 @@ async fn main() {
                 });
 
                 if ui.button(None, "Update") || need_update {
-                    match gl_make_pipeline(&vertex_shader, &fragment_shader, pipeline_params) {
-                        Ok(new_pipeline) => {
-                            pipeline = new_pipeline;
+                    match load_material(
+                        &vertex_shader,
+                        &fragment_shader,
+                        MaterialParams {
+                            pipeline_params,
+                            ..Default::default()
+                        },
+                    ) {
+                        Ok(new_material) => {
+                            material = new_material;
                             error = None;
                         }
                         Err(err) => {

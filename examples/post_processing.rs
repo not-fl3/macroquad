@@ -4,7 +4,7 @@ use macroquad::*;
 async fn main() {
     let render_target = render_target(320, 150);
     set_texture_filter(render_target.texture, FilterMode::Nearest);
-    let pipeline = gl_make_pipeline(CRT_VERTEX_SHADER, CRT_FRAGMENT_SHADER, Default::default()).unwrap();
+    let material = load_material(CRT_VERTEX_SHADER, CRT_FRAGMENT_SHADER, Default::default()).unwrap();
 
     loop {
         // drawing to the texture
@@ -27,7 +27,7 @@ async fn main() {
         set_default_camera();
 
         clear_background(RED);
-        gl_use_pipeline(pipeline);
+        gl_use_material(material);
         draw_texture_ex(
             render_target.texture,
             0.,
@@ -38,7 +38,7 @@ async fn main() {
                 ..Default::default()
             },
         );
-        gl_use_default_pipeline();
+        gl_use_default_material();
 
         next_frame().await;
     }
