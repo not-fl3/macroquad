@@ -15,6 +15,7 @@ pub fn get_fps() -> i32 {
 /// Returns time in seconds for last frame drawn
 pub fn get_frame_time() -> f32 {
     let context = get_context();
+
     context.frame_time as f32
 }
 

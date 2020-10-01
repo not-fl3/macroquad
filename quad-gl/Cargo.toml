@@ -9,6 +9,7 @@ repository = "https://github.com/not-fl3/quad-gl"
 version = "0.2.4"
 
 [dependencies]
-miniquad = { version = "0.3.0-alpha" }
+#miniquad = { version = "0.3.0-alpha" }
+miniquad = { path = "../../miniquad" }
 glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec"] }

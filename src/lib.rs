@@ -34,7 +34,7 @@ pub use types::*;
 pub use ui::*;
 
 pub use drawing::FilterMode;
-pub use miniquad::{conf::Conf, Comparison, PipelineParams};
+pub use miniquad::{conf::Conf, Comparison, PipelineParams, UniformType};
 pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
 pub use collections::*;
@@ -466,17 +466,19 @@ pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
 }
 
 pub fn gl_make_pipeline(
-    fragment_shader: &str,
     vertex_shader: &str,
+    fragment_shader: &str,
     params: PipelineParams,
+    uniforms: Vec<(String, UniformType)>
 ) -> Result<GlPipeline, ShaderError> {
     let context = &mut get_context();
 
     context.draw_context.gl.make_pipeline(
         &mut context.quad_context,
-        fragment_shader,
         vertex_shader,
+        fragment_shader,
         params,
+        uniforms
     )
 }
 
@@ -490,6 +492,12 @@ pub fn gl_use_default_pipeline() {
     let context = &mut get_context().draw_context;
 
     context.gl.pipeline(None);
+}
+
+pub fn gl_set_uniform<T: std::fmt::Debug>(pipeline: GlPipeline, name: &str, uniform: T){
+    let context = &mut get_context().draw_context;
+
+    context.gl.set_uniform(pipeline, name, uniform);
 }
 
 pub fn load_file(path: &str) -> exec::FileLoadingFuture {

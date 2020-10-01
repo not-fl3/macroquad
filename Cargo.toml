@@ -19,7 +19,8 @@ log-impl = ["miniquad/log-impl"]
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.3.0-alpha.13" }
+#miniquad = { version = "=0.3.0-alpha.13" }
+miniquad = { path = "../miniquad" }
 quad-gl = { version = "=0.2.4", path = "./quad-gl" }
 quad-rand = "0.1"
 glam = {version = "0.9", features = ["scalar-math"] }
