@@ -148,30 +148,26 @@ async fn main() {
 }
 
 const DEFAULT_FRAGMENT_SHADER: &'static str = "#version 100
-varying lowp vec4 color;
 varying lowp vec2 uv;
     
 uniform sampler2D Texture;
 
 void main() {
-    gl_FragColor = color * texture2D(Texture, uv);
+    gl_FragColor = texture2D(Texture, uv);
 }
 ";
 
 const DEFAULT_VERTEX_SHADER: &'static str = "#version 100
 attribute vec3 position;
 attribute vec2 texcoord;
-attribute vec4 color0;
 
 varying lowp vec2 uv;
-varying lowp vec4 color;
 
 uniform mat4 Model;
 uniform mat4 Projection;
 
 void main() {
     gl_Position = Projection * Model * vec4(position, 1);
-    color = color0 / 255.0;
     uv = texcoord;
 }
 ";
