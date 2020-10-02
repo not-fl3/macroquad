@@ -130,6 +130,10 @@ pub struct Camera3D {
     pub aspect: Option<f32>,
     /// Camera projection type, perspective or orthographics
     pub projection: Projection,
+
+    /// If "render_target" is set - camera will render to texture
+    /// otherwise to the screen
+    pub render_target: Option<RenderTarget>,
 }
 
 impl Default for Camera3D {
@@ -141,6 +145,7 @@ impl Default for Camera3D {
             up: vec3(0., 0., 1.),
             fovy: 45.,
             projection: Projection::Perspective,
+            render_target: None
         }
     }
 }
@@ -173,6 +178,6 @@ impl Camera for Camera3D {
     }
 
     fn render_pass(&self) -> Option<miniquad::RenderPass> {
-        unimplemented!()
+        self.render_target.map(|rt| rt.render_pass)
     }
 }
