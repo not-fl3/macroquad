@@ -1,5 +1,7 @@
 //! this is legacy and going to disappear soon
 
+use std::collections::HashMap;
+
 use quad_gl::QuadGl;
 
 pub use quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
@@ -12,6 +14,8 @@ pub struct DrawContext {
     pub(crate) camera_matrix: Option<Mat4>,
     pub(crate) current_pass: Option<miniquad::RenderPass>,
     pub ui: megaui::Ui,
+
+    megaui_textures: HashMap<u32, Texture2D>,
     ui_draw_list: Vec<megaui::DrawList>,
 }
 
@@ -32,6 +36,7 @@ impl DrawContext {
             gl: QuadGl::new(ctx),
             font_texture,
             ui,
+            megaui_textures: HashMap::new(),
             ui_draw_list: Vec::with_capacity(10000),
             current_pass: None,
         };
@@ -39,6 +44,10 @@ impl DrawContext {
         draw_context.update_projection_matrix(ctx);
 
         draw_context
+    }
+
+    pub(crate) fn set_megaui_texture(&mut self, id: u32, texture: Texture2D) {
+        self.megaui_textures.insert(id, texture);
     }
 
     fn draw_ui(&mut self, _: &mut miniquad::Context) {
@@ -51,6 +60,11 @@ impl DrawContext {
         self.gl.texture(Some(self.font_texture));
 
         for draw_command in &ui_draw_list {
+            if let Some(texture) = draw_command.texture {
+                self.gl.texture(Some(self.megaui_textures[&texture]));
+            } else {
+                self.gl.texture(Some(self.font_texture));
+            }
             self.gl.scissor(
                 draw_command
                     .clipping_zone

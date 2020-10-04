@@ -36,11 +36,10 @@ impl Texture {
             .window
             .cursor
             .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
-        context.window.draw_commands.draw_raw_texture(
-            self.texture,
-            pos,
-            Vector2::new(self.w, self.h),
-        );
+        context
+            .window
+            .draw_commands
+            .draw_raw_texture(Rect::new(pos.x, pos.y, self.w, self.h), self.texture);
 
         let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
         let hovered = rect.contains(context.input.mouse_position);

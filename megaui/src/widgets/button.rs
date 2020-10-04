@@ -69,7 +69,7 @@ impl<'a> Button<'a> {
             Some(context.global_style.text(context.focused)),
         );
 
-        context.focused && hovered && context.input.click_up
+        context.focused && hovered && context.input.click_up()
     }
 }
 

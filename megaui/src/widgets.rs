@@ -1,4 +1,5 @@
 mod button;
+mod combobox;
 mod editbox;
 mod group;
 mod input_field;
@@ -11,6 +12,7 @@ mod tree_node;
 mod window;
 
 pub use button::Button;
+pub use combobox::ComboBox;
 pub use editbox::Editbox;
 pub use group::Group;
 pub use input_field::InputField;

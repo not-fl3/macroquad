@@ -295,7 +295,7 @@ impl<'a> Editbox<'a> {
             state.cursor = text.len() as u32;
         }
 
-        let input_focused = context.window.input_focused(self.id);
+        let input_focused = context.window.input_focused(self.id) && context.focused;
 
         // reset selection state when lost focus
         if context.focused == false || input_focused == false {

@@ -11,7 +11,6 @@ pub struct Window {
     size: Vector2,
     close_button: bool,
     enabled: bool,
-    force_focus: bool,
     movable: bool,
     titlebar: bool,
     label: Option<String>,
@@ -25,7 +24,6 @@ impl Window {
             size,
             close_button: false,
             enabled: true,
-            force_focus: false,
             movable: true,
             titlebar: true,
             label: None,
@@ -58,20 +56,14 @@ impl Window {
         Window { enabled, ..self }
     }
 
-    pub fn force_focus(self, force_focus: bool) -> Window {
-        Window {
-            force_focus,
-            ..self
-        }
-    }
-
     pub fn ui<F: FnOnce(&mut Ui)>(self, ui: &mut Ui, f: F) -> bool {
         let title_height = if self.titlebar {
             ui.style.title_height
         } else {
             0.
         };
-        let mut context = ui.begin_window(
+
+        let context = ui.begin_window(
             self.id,
             None,
             self.position,
@@ -79,6 +71,14 @@ impl Window {
             title_height,
             self.movable,
         );
+
+        // TODO: this will make each new window focused(appeared on the top) always
+        // consider adding some configuration to be able to spawn background windows
+        if context.window.was_active == false {
+            ui.focus_window(self.id);
+        }
+
+        let mut context = ui.get_active_window_context();
 
         self.draw_window_frame(&mut context);
         if self.close_button && self.draw_close_button(&mut context) {

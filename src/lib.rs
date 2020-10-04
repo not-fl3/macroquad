@@ -4,7 +4,7 @@ use miniquad::*;
 pub use megaui;
 pub use megaui::hash;
 
-pub use glam::{self, vec2, Vec2};
+pub use glam::{self, vec2, vec3, Vec2, Vec3};
 
 use std::collections::HashSet;
 use std::future::Future;

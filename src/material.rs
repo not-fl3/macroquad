@@ -12,6 +12,12 @@ impl Material {
 
         context.gl.set_uniform(self.pipeline, name, uniform);
     }
+
+    pub fn delete(&mut self) {
+        let context = &mut get_context().draw_context;
+
+        context.gl.delete_pipeline(self.pipeline);
+    }
 }
 
 pub struct MaterialParams {
