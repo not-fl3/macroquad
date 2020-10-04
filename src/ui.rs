@@ -1,4 +1,6 @@
 
+use quad_gl::Texture2D;
+
 use crate::get_context;
 
 pub struct ClipboardObject;
@@ -37,6 +39,12 @@ impl Default for WindowParams {
 
 pub fn set_ui_style(style: megaui::Style) {
     get_context().draw_context.ui.set_style(style);
+}
+
+pub fn set_megaui_texture(id: u32, texture: Texture2D) {
+    let context = &mut get_context().draw_context;
+
+    context.set_megaui_texture(id, texture);
 }
 
 pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(

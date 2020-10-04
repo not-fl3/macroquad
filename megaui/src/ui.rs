@@ -1,6 +1,6 @@
 use crate::{
-    draw_command::CommandsList, draw_list::DrawList, types::Rect, types::Vector2, Id, InputHandler,
-    Style,
+    canvas::DrawCanvas, draw_command::CommandsList, draw_list::DrawList, types::Rect,
+    types::Vector2, Id, InputHandler, Style,
 };
 
 use miniquad_text_rusttype::FontAtlas;
@@ -18,8 +18,12 @@ pub(crate) struct Window {
     pub id: Id,
     pub parent: Option<Id>,
     pub visible: bool,
-    pub was_active: bool,
+    // active is set to true when the begin_window is called on this window
+    // and is going to be set to false at the end of each frame
     pub active: bool,
+    // was the window "active" during the last frame
+    // the way to find out wich windows should be rendered after end of the frame and during next frame, before begin_window of the next frame will be called on each window
+    pub was_active: bool,
     pub title_height: f32,
     pub position: Vector2,
     pub size: Vector2,
@@ -107,8 +111,8 @@ impl Window {
         )
     }
 
-    pub fn same_line(&mut self) {
-        self.cursor.next_same_line = true;
+    pub fn same_line(&mut self, x: f32) {
+        self.cursor.next_same_line = Some(x);
     }
 }
 
@@ -132,6 +136,9 @@ pub struct Ui {
 
     moving: Option<(Id, Vector2)>,
     windows: HashMap<Id, Window>,
+    // special window that is always rendered on top of anything
+    // TODO: maybe make modal windows stack instead
+    modal: Option<Window>,
     windows_focus_order: Vec<Id>,
 
     storage_u32: HashMap<Id, u32>,
@@ -284,6 +291,18 @@ impl InputHandler for Ui {
         self.input.click_down = true;
         self.input.mouse_position = position;
 
+        if let Some(ref window) = self.modal {
+            let rect = Rect::new(
+                window.position.x,
+                window.position.y,
+                window.size.x,
+                window.size.y,
+            );
+            if window.was_active && rect.contains(position) {
+                return;
+            }
+        }
+
         for (n, window) in self.windows_focus_order.iter().enumerate() {
             let window = &self.windows[window];
 
@@ -372,6 +391,7 @@ impl Ui {
             frame: 0,
             moving: None,
             windows: HashMap::default(),
+            modal: None,
             windows_focus_order: vec![],
             dragging: None,
             active_window: None,
@@ -460,6 +480,45 @@ impl Ui {
         }
     }
 
+    pub(crate) fn begin_modal(
+        &mut self,
+        id: Id,
+        position: Vector2,
+        size: Vector2,
+    ) -> WindowContext {
+        let font_atlas = self.font_atlas.clone();
+
+        let window = self.modal.get_or_insert_with(|| {
+            Window::new(id, None, position, size, 0.0, 0.0, false, font_atlas)
+        });
+
+        window.size = size;
+        window.want_close = false;
+        window.active = true;
+        window.draw_commands.clipping_zone =
+            Some(Rect::new(position.x, position.y, size.x, size.y));
+        window.set_position(position);
+
+        WindowContext {
+            focused: true,
+            window,
+            input: &mut self.input,
+            global_style: &self.style,
+            dragging: &mut self.dragging,
+            drag_hovered: &mut self.drag_hovered,
+            drag_hovered_previous_frame: &mut self.drag_hovered_previous_frame,
+            storage_u32: &mut self.storage_u32,
+            storage_any: &mut self.storage_any,
+            clipboard_selection: &mut self.clipboard_selection,
+            clipboard: &mut *self.clipboard,
+        }
+    }
+
+    pub(crate) fn end_modal(&mut self) {
+        // do nothing
+        // modal window will end itself while its the only modal window
+    }
+
     pub(crate) fn end_window(&mut self) {
         self.active_window = self.child_window_stack.pop();
     }
@@ -520,7 +579,7 @@ impl Ui {
         if let Some(focused_window) = self
             .windows_focus_order
             .iter()
-            .find(|window| self.windows[window].was_active)
+            .find(|window| self.windows[window].was_active || self.windows[window].active)
         {
             if id == *focused_window {
                 return true;
@@ -546,6 +605,16 @@ impl Ui {
             window.active = false;
             window.childs.clear();
         }
+
+        for window in &mut self.modal {
+            window.draw_commands.clear();
+            window.cursor.reset();
+            window.was_active = window.active;
+            window.active = false;
+            window.childs.clear();
+
+            self.input.modal_active = window.was_active;
+        }
     }
 
     pub fn render(&mut self, draw_list: &mut Vec<DrawList>) {
@@ -553,6 +622,11 @@ impl Ui {
             let window = &self.windows[window];
             if window.was_active {
                 self.render_window(window, Vector2::new(0., 0.), draw_list);
+            }
+        }
+        if let Some(modal) = self.modal.as_ref() {
+            if modal.was_active {
+                self.render_window(modal, Vector2::new(0., 0.), draw_list);
             }
         }
 
@@ -589,8 +663,14 @@ impl Ui {
         }
     }
 
-    pub fn same_line(&mut self) {
+    pub fn same_line(&mut self, x: f32) {
         let context = self.get_active_window_context();
-        context.window.same_line();
+        context.window.same_line(x);
+    }
+
+    pub fn canvas(&mut self) -> DrawCanvas {
+        let context = self.get_active_window_context();
+
+        DrawCanvas { context }
     }
 }

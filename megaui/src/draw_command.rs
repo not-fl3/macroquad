@@ -4,6 +4,9 @@ use miniquad_text_rusttype::FontAtlas;
 
 use std::rc::Rc;
 
+trait Wtf: std::any::Any + Clone {
+}
+
 #[derive(Debug, Clone)]
 pub(crate) enum DrawCommand {
     DrawCharacter {
@@ -16,14 +19,19 @@ pub(crate) enum DrawCommand {
         stroke: Option<Color>,
         fill: Option<Color>,
     },
+    DrawTriangle {
+        p0: Vector2,
+        p1: Vector2,
+        p2: Vector2,
+        color: Color,
+    },
     DrawLine {
         start: Vector2,
         end: Vector2,
         color: Color,
     },
     DrawRawTexture {
-        position: Vector2,
-        size: Vector2,
+        rect: Rect,
         texture: u32,
     },
     Clip {
@@ -44,12 +52,10 @@ impl DrawCommand {
                 color,
             },
             DrawCommand::DrawRawTexture {
-                position,
-                size,
+                rect,
                 texture,
             } => DrawCommand::DrawRawTexture {
-                position: position + offset,
-                size,
+                rect: rect.offset(offset),
                 texture,
             },
             DrawCommand::DrawRect { rect, stroke, fill } => DrawCommand::DrawRect {
@@ -60,6 +66,12 @@ impl DrawCommand {
             DrawCommand::DrawLine { start, end, color } => DrawCommand::DrawLine {
                 start: start + offset,
                 end: end + offset,
+                color,
+            },
+            DrawCommand::DrawTriangle { p0, p1, p2, color } => DrawCommand::DrawTriangle {
+                p0: p0 + offset,
+                p1: p1 + offset,
+                p2: p2 + offset,
                 color,
             },
             DrawCommand::Clip { rect } => DrawCommand::Clip {
@@ -108,18 +120,14 @@ impl CommandsList {
     }
 
     pub fn label_size(&self, label: &str, multiline: Option<f32>) -> Vector2 {
-	let width = label.split('\n').fold(0.0f32, |max_width, line| {
-            max_width.max(
-                line.chars()
-                    .map(|c| self.character_advance(c))
-                    .sum::<f32>(),
-            )
+        let width = label.split('\n').fold(0.0f32, |max_width, line| {
+            max_width.max(line.chars().map(|c| self.character_advance(c)).sum::<f32>())
         });
-	let height = multiline.map_or(14., |line_height| {
-                line_height * label.split('\n').count() as f32
+        let height = multiline.map_or(14., |line_height| {
+            line_height * label.split('\n').count() as f32
         });
 
-	Vector2::new(width, height)
+        Vector2::new(width, height)
     }
 
     /// If character is in font atlas - will return x advance from position to potential next character position
@@ -185,16 +193,15 @@ impl CommandsList {
         }
     }
 
-    pub fn draw_raw_texture(&mut self, texture: u32, position: Vector2, size: Vector2) {
+    pub fn draw_raw_texture(&mut self, rect: Rect, texture: u32) {
         if self.clipping_zone.map_or(false, |clip| {
-            !clip.overlaps(&Rect::new(position.x, position.y, size.x, size.y))
+            !clip.overlaps(&rect)
         }) {
             return;
         }
 
         self.add_command(DrawCommand::DrawRawTexture {
-            position,
-            size,
+            rect,
             texture,
         })
     }
@@ -215,6 +222,24 @@ impl CommandsList {
             rect,
             stroke: stroke.into(),
             fill: fill.into(),
+        })
+    }
+
+    pub fn draw_triangle<T>(&mut self, p0: Vector2, p1: Vector2, p2: Vector2, color: T)
+    where
+        T: Into<Color>,
+    {
+        if self.clipping_zone.map_or(false, |clip| {
+            !clip.contains(p0) && !clip.contains(p1) && !clip.contains(p2)
+        }) {
+            return;
+        }
+
+        self.add_command(DrawCommand::DrawTriangle {
+            p0,
+            p1,
+            p2,
+            color: color.into(),
         })
     }
 

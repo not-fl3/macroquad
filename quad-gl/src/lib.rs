@@ -22,6 +22,37 @@ impl Into<[f32; 4]> for Color {
 }
 
 impl Color {
+    #[rustfmt::skip]
+    pub fn from_hsl(h: f32, s: f32, l: f32) -> Color {
+        let r;
+        let g;
+        let b;
+
+        if s == 0.0 {  r = l; g = l; b = l; }
+        else {
+            fn hue_to_rgb(p: f32, q: f32, mut t: f32) -> f32 {
+                if t < 0.0 { t += 1.0 }
+                if t > 1.0 { t -= 1.0 }
+                if t < 1.0 / 6.0 { return p + (q - p) * 6.0 * t; }
+                if t < 1.0 / 2.0 { return q; }
+                if t < 2.0 / 3.0 { return p + (q - p) * (2.0 / 3.0 - t) * 6.0; }
+                return p;
+            }
+
+            let q = if l < 0.5 {
+                l * (1.0 + s)
+            } else {
+                l + s - l * s
+            };
+            let p = 2.0 * l - q;
+            r = hue_to_rgb(p, q, h + 1.0 / 3.0);
+            g = hue_to_rgb(p, q, h);
+            b = hue_to_rgb(p, q, h - 1.0 / 3.0);
+        }
+
+        Color::new(r, g, b, 1.0)
+    }
+
     pub fn new(r: f32, g: f32, b: f32, a: f32) -> Color {
         Color([
             (r.min(1.).max(0.) * 255.) as u8,
@@ -29,6 +60,22 @@ impl Color {
             (b.min(1.).max(0.) * 255.) as u8,
             (a.min(1.).max(0.) * 255.) as u8,
         ])
+    }
+
+    pub fn r(&self) -> f32 {
+        self.0[0] as f32 / 255.0
+    }
+
+    pub fn g(&self) -> f32 {
+        self.0[1] as f32 / 255.0
+    }
+
+    pub fn b(&self) -> f32 {
+        self.0[2] as f32 / 255.0
+    }
+
+    pub fn a(&self) -> f32 {
+        self.0[3] as f32 / 255.0
     }
 }
 
@@ -468,7 +515,11 @@ impl PipelinesStorage {
             params,
         );
 
-        let id = self.pipelines_amount;
+        let id = self
+            .pipelines
+            .iter()
+            .position(|p| p.is_none())
+            .unwrap_or_else(|| panic!("Pipelines amount exceeded"));
 
         let uniforms = uniforms
             .iter()
@@ -517,6 +568,10 @@ impl PipelinesStorage {
 
     fn get_quad_pipeline_mut(&mut self, pip: GlPipeline) -> &mut PipelineExt {
         self.pipelines[pip.0].as_mut().unwrap()
+    }
+
+    fn delete_pipeline(&mut self, pip: GlPipeline) {
+        self.pipelines[pip.0] = None;
     }
 }
 
@@ -779,6 +834,10 @@ impl QuadGl {
         dc.texture = self.state.texture;
     }
 
+    pub fn delete_pipeline(&mut self, pipeline: GlPipeline) {
+        self.pipelines.delete_pipeline(pipeline);
+    }
+
     pub fn set_uniform<T>(&mut self, pipeline: GlPipeline, name: &str, uniform: T) {
         let pipeline = self.pipelines.get_quad_pipeline_mut(pipeline);
 
@@ -940,7 +999,18 @@ impl Image {
         self.height as usize
     }
 
-    pub fn get_image_data(&mut self) -> &mut [Color] {
+    pub fn get_image_data(&self) -> &[Color] {
+        use std::slice;
+
+        unsafe {
+            slice::from_raw_parts(
+                self.bytes.as_ptr() as *const Color,
+                self.width as usize * self.height as usize,
+            )
+        }
+    }
+
+    pub fn get_image_data_mut(&mut self) -> &mut [Color] {
         use std::slice;
 
         unsafe {
@@ -950,11 +1020,15 @@ impl Image {
             )
         }
     }
+
+    pub fn get_pixel(&self, x: u32, y: u32) -> Color {
+        self.get_image_data()[(y * self.width as u32 + x) as usize]
+    }
 }
 
 mod shader {
-    use miniquad::{ShaderMeta, UniformBlockLayout, UniformDesc, UniformType};
     use super::UNIFORMS_ARRAY_SIZE;
+    use miniquad::{ShaderMeta, UniformBlockLayout, UniformDesc, UniformType};
 
     pub const VERTEX: &str = r#"#version 100
     attribute vec3 position;

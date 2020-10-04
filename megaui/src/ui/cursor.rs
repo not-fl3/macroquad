@@ -42,14 +42,14 @@ pub struct Cursor {
     pub scroll: Scroll,
     pub area: Rect,
     pub margin: f32,
-    pub next_same_line: bool,
+    pub next_same_line: Option<f32>,
     pub max_row_y: f32,
 }
 
 impl Cursor {
     pub fn new(area: Rect, margin: f32) -> Cursor {
         Cursor {
-            margin: margin,
+            margin,
             x: margin,
             y: margin,
             ident: 0.,
@@ -65,7 +65,7 @@ impl Cursor {
                 initial_scroll: Vector2::new(0., 0.),
             },
             area,
-	    next_same_line: false,
+	    next_same_line: None,
 	    max_row_y: 0.
         }
     }
@@ -82,8 +82,11 @@ impl Cursor {
     pub fn fit(&mut self, size: Vector2, mut layout: Layout) -> Vector2 {
         let res;
 
-	if self.next_same_line {
-	    self.next_same_line = false;
+	if let Some(x) = self.next_same_line {
+	    self.next_same_line = None;
+            if x != 0.0 {
+                self.x = x;
+            }
 	    layout = Layout::Horizontal;
 	}
         match layout {

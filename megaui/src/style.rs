@@ -53,6 +53,15 @@ pub struct Style {
 
     pub selection_background_focused: Color,
     pub selection_background_inactive: Color,
+
+    pub combobox_background_selected: Color,
+    pub combobox_background_hovered: Color,
+    pub combobox_background_inactive: Color,
+
+    pub combobox_border_selected: Color,
+    pub combobox_border_hovered: Color,
+    pub combobox_border_inactive: Color,
+
 }
 
 impl Default for Style {
@@ -100,6 +109,14 @@ impl Default for Style {
 
 	    selection_background_focused: Color::from_rgba(100, 100, 100, 100),
 	    selection_background_inactive: Color::from_rgba(100, 100, 100, 36),
+
+            combobox_background_selected: Color::from_rgba(220, 220, 220, 255),
+            combobox_background_hovered: Color::from_rgba(150, 150, 150, 255),
+            combobox_background_inactive: Color::from_rgba(230, 230, 230, 255),
+
+            combobox_border_selected: Color::from_rgba(180, 180, 180, 255),
+            combobox_border_hovered: Color::from_rgba(150, 150, 150, 255),
+            combobox_border_inactive: Color::from_rgba(255, 255, 255, 0),
         }
     }
 }
@@ -170,6 +187,26 @@ impl Style {
             }
         } else {
             self.button_background_inactive
+        }
+    }
+
+    pub fn combobox_variant_background(&self, hovered: bool, selected: bool) -> Color {
+        if selected {
+            self.combobox_background_selected
+        } else if hovered {
+            self.combobox_background_hovered
+        } else {
+            self.combobox_background_inactive
+        }
+    }
+
+    pub fn combobox_variant_border(&self, hovered: bool, selected: bool) -> Color {
+        if selected {
+            self.combobox_border_selected
+        } else if hovered {
+            self.combobox_border_selected
+        } else {
+            self.combobox_border_inactive
         }
     }
 

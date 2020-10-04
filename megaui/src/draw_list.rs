@@ -1,5 +1,6 @@
 use crate::draw_command::DrawCommand;
 use crate::types::{Color, Rect};
+use crate::Vector2;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
@@ -109,6 +110,20 @@ impl DrawList {
             .extend(indices.iter().map(|i| i + indices_offset));
     }
 
+    fn draw_triangle(&mut self, p0: Vector2, p1: Vector2, p2: Vector2, color: Color) {
+        let vertices = [
+            Vertex::new(p0.x, p0.y, 0.0, 0.0, color),
+            Vertex::new(p1.x, p1.y, 0.0, 0.0, color),
+            Vertex::new(p2.x, p2.y, 0.0, 0.0, color),
+        ];
+        let indices: [u16; 3] = [0, 1, 2];
+
+        let indices_offset = self.vertices.len() as u16;
+        self.vertices.extend_from_slice(&vertices[..]);
+        self.indices
+            .extend(indices.iter().map(|i| i + indices_offset));
+    }
+
     pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
         let dx = x2 - x1;
         let dy = y2 - y1;
@@ -154,12 +169,16 @@ fn get_active_draw_list<'a, 'b>(
         }
         DrawCommand::DrawRawTexture { texture, .. } => {
             if last.texture != Some(*texture) {
-                draw_lists.push(DrawList::new());
+                draw_lists.push(DrawList {
+                    texture: Some(*texture),
+                    ..DrawList::new()
+                });
             }
         }
         DrawCommand::DrawCharacter { .. }
         | DrawCommand::DrawLine { .. }
-        | DrawCommand::DrawRect { .. } => {
+        | DrawCommand::DrawRect { .. }
+        | DrawCommand::DrawTriangle { .. } => {
             if last.texture != None {
                 draw_lists.push(DrawList::new());
             }
@@ -193,6 +212,15 @@ pub(crate) fn render_command(draw_lists: &mut Vec<DrawList>, command: DrawComman
         } => {
             active_draw_list.draw_rectangle(dest, source, color);
         }
-        _ => {}
+        DrawCommand::DrawRawTexture { rect, .. } => {
+            active_draw_list.draw_rectangle(
+                rect,
+                Rect::new(0., 0., 1., 1.),
+                Color::new(1., 1., 1., 1.),
+            );
+        }
+        DrawCommand::DrawTriangle { p0, p1, p2, color } => {
+            active_draw_list.draw_triangle(p0, p1, p2, color);
+        }
     }
 }

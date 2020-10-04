@@ -4,6 +4,7 @@ mod input_handler;
 mod style;
 mod types;
 mod ui;
+mod canvas;
 
 pub mod widgets;
 
