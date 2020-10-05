@@ -1,4 +1,4 @@
-//! 2D shapes rendering
+//! 2D shapes rendering.
 
 use crate::{
     get_context,

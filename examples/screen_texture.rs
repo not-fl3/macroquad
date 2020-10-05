@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 #[macroquad::main("Texture")]
 async fn main() {

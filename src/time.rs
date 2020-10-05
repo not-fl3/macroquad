@@ -1,3 +1,5 @@
+//! Cross platform system time access and FPS counters.
+
 use crate::get_context;
 
 /// Set target FPS (maximum)

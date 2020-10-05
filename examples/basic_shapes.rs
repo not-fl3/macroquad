@@ -1,6 +1,4 @@
-use macroquad::*;
-
-use macroquad::draw_line;
+use macroquad::prelude::*;
 
 #[macroquad::main("BasicShapes")]
 async fn main() {

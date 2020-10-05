@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 fn short_angle_dist(a0: f32, a1: f32) -> f32 {
     let max = 360.0;

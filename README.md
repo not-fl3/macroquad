@@ -13,6 +13,7 @@
 * PC: Windows/Linux/MacOs
 * HTML5
 * Android
+* IOS
 
 ## Features
 

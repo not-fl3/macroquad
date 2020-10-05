@@ -1,6 +1,6 @@
 use nanoserde::DeJson;
 
-use macroquad::*;
+use macroquad::prelude::*;
 
 use std::collections::HashMap;
 

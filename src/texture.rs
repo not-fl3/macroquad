@@ -1,9 +1,11 @@
-use crate::{get_context, load_file, types::Rect};
+//! Loading and rendering textures. Also render textures, per-pixel image manipluations.
+
+use crate::{get_context, file::load_file, types::Rect};
 
 use glam::{vec2, Vec2};
-use quad_gl::{Color, DrawMode, FilterMode, Vertex};
+use quad_gl::{Color, DrawMode, Vertex};
 
-pub use quad_gl::{Image, Texture2D};
+pub use quad_gl::{Image, Texture2D, FilterMode};
 
 pub async fn load_texture(path: &str) -> Texture2D {
     let bytes = load_file(path)

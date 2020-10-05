@@ -1,6 +1,6 @@
-use macroquad::{self as mq, *};
+use macroquad::prelude::*;
+
 use std::collections::LinkedList;
-use std::process::exit;
 
 const SQUARES: i16 = 16;
 
@@ -26,10 +26,6 @@ async fn main() {
     let mut game_over = false;
 
     loop {
-        if is_key_down(KeyCode::Escape) {
-            exit(0);
-        }
-
         if !game_over {
             if is_key_down(KeyCode::Right) {
                 snake.dir = (1, 0);
@@ -67,7 +63,7 @@ async fn main() {
             }
         }
         if !game_over {
-            clear_background(mq::LIGHTGRAY);
+            clear_background(LIGHTGRAY);
 
             let game_size = screen_width().min(screen_height());
             let offset_x = (screen_width() - game_size) / 2. + 10.;
@@ -132,7 +128,7 @@ async fn main() {
                 DARKGRAY,
             );
         } else {
-            clear_background(mq::WHITE);
+            clear_background(WHITE);
             let text = "Game Over. Press [enter] to play again.";
             let font_size = 30.;
             let text_size = measure_text(text, font_size);

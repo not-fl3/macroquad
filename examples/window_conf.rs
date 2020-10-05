@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 fn window_conf() -> Conf {
     Conf {

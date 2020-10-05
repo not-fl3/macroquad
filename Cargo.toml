@@ -19,10 +19,10 @@ log-impl = ["miniquad/log-impl"]
 all-features = true
 
 [dependencies]
-miniquad = { git = "https://github.com/not-fl3/miniquad.git", branch = "unstable" }
-quad-gl = { version = "=0.2.4", path = "./quad-gl" }
+miniquad = "0.3.0-alpha.15"
+quad-gl = { version = "=0.2.5", path = "./quad-gl" }
 quad-rand = "0.1"
 glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
-megaui = { version = "=0.2.12", path = "./megaui" }
+megaui = { version = "=0.2.13", path = "./megaui" }
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }

@@ -1,5 +1,4 @@
-//! 3D shapes and models, loading 3d models from files, drawing
-//! some 3D primitives
+//! 3D shapes and models, loading 3d models from files, drawing 3D primitives.
 
 use crate::{get_context, types::Color};
 

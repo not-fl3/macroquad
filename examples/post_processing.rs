@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 #[macroquad::main("Post processing")]
 async fn main() {

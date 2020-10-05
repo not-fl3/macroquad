@@ -1,7 +1,4 @@
-use macroquad::{
-    clear_background, draw_texture, load_texture_from_image, next_frame, rand, screen_height,
-    screen_width, update_texture, Image, BLACK, WHITE,
-};
+use macroquad::prelude::*;
 
 #[macroquad::main("Life")]
 async fn main() {
@@ -10,7 +7,7 @@ async fn main() {
 
     let mut buffer = vec![WHITE; w * h];
     let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
-    let image_data = image.get_image_data();
+    let image_data = image.get_image_data_mut();
     for y in 0..h {
         for x in 0..w {
             if rand::gen_range(0, 5) == 0 {

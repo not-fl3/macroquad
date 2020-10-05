@@ -526,7 +526,7 @@ impl PipelinesStorage {
             .scan(0, |offset, uniform| {
                 let uniform_byte_size = uniform.1.size();
                 if *offset + uniform_byte_size > UNIFORMS_ARRAY_SIZE {
-                    warn!(
+                    println!(
                         "Material exceeds maximum uniforms amount, uniforms after {} skipped",
                         uniform.0
                     );
@@ -847,7 +847,7 @@ impl QuadGl {
              }| uniform_name == name,
         );
         if uniform_meta.is_none() {
-            warn!("Trying to set non-existing uniform: {}", name);
+            println!("Trying to set non-existing uniform: {}", name);
             return;
         }
         let uniform_meta = uniform_meta.unwrap();
@@ -856,7 +856,7 @@ impl QuadGl {
         let uniform_byte_offset = uniform_meta.byte_offset;
 
         if std::mem::size_of::<T>() != uniform_byte_size {
-            warn!(
+            println!(
                 "Trying to set uniform {} sized {} bytes value of {} bytes",
                 name,
                 std::mem::size_of::<T>(),
