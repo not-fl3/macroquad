@@ -1,4 +1,4 @@
-use macroquad::{clear_background, draw_window, hash, next_frame, Vec2, RED};
+use macroquad::prelude::*;
 
 #[macroquad::main("TestWindow")]
 async fn main() {

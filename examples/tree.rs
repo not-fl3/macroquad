@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 fn tree(gl: &mut QuadGl, time: f64, deep: u32, angle: f32, tall: f32) {
     if deep >= 8 {

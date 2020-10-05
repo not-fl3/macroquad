@@ -1,7 +1,11 @@
-//! Module for conveting 2D and 3D camera descriptions into matrices
-//! and some helpers like WorkdToCamera/CameraToWorld etc
+//! 2D and 3D camera.
 
-use crate::{screen_height, screen_width, Rect, RenderTarget};
+use crate::{
+    get_context,
+    texture::RenderTarget,
+    types::Rect,
+    window::{screen_height, screen_width},
+};
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 
 pub trait Camera {
@@ -145,7 +149,7 @@ impl Default for Camera3D {
             up: vec3(0., 0., 1.),
             fovy: 45.,
             projection: Projection::Perspective,
-            render_target: None
+            render_target: None,
         }
     }
 }
@@ -180,4 +184,40 @@ impl Camera for Camera3D {
     fn render_pass(&self) -> Option<miniquad::RenderPass> {
         self.render_target.map(|rt| rt.render_pass)
     }
+}
+
+/// Set active 2D or 3D camera
+pub fn set_camera<T: Camera>(camera: T) {
+    let context = get_context();
+
+    // flush previous camera draw calls
+    context
+        .draw_context
+        .perform_render_passes(&mut context.quad_context);
+
+    context.draw_context.current_pass = camera.render_pass();
+    context.draw_context.gl.render_pass(camera.render_pass());
+    context.draw_context.gl.depth_test(camera.depth_enabled());
+    context.draw_context.camera_matrix = Some(camera.matrix());
+    context
+        .draw_context
+        .update_projection_matrix(&mut context.quad_context);
+}
+
+/// Reset default 2D camera mode
+pub fn set_default_camera() {
+    let context = get_context();
+
+    // flush previous camera draw calls
+    context
+        .draw_context
+        .perform_render_passes(&mut context.quad_context);
+
+    context.draw_context.current_pass = None;
+    context.draw_context.gl.render_pass(None);
+    context.draw_context.gl.depth_test(false);
+    context.draw_context.camera_matrix = None;
+    context
+        .draw_context
+        .update_projection_matrix(&mut context.quad_context);
 }

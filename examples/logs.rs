@@ -2,9 +2,9 @@
 //! They will use browser console, android console or just stdout depending on the platform.
 //! Those macros are the recommended way to output debug traces and logs.
 
-use macroquad::*;
+use macroquad::prelude::*;
 
-#[macroquad::main("Texture")]
+#[macroquad::main("Logs")]
 async fn main() {
     debug!("This is a debug message");
     info!("and info message");

@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 #[macroquad::main("Camera")]
 async fn main() {

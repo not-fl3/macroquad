@@ -1,50 +1,89 @@
+//!
+//! `macroquad` is a simple and easy to use game library for Rust programming language. 
+//!  
+//! `macroquad` attempts to avoid any rust-specific programming concepts like lifetimes/borrowing, making it very friendly for rust beginners.
+//!  
+//! ## Supported platforms
+//!  
+//! * PC: Windows/Linux/MacOS
+//! * HTML5
+//! * Android
+//! * IOS
+//!  
+//! ## Features
+//!  
+//! * Same code for all supported platforms, no platform dependent defines required 
+//! * Efficient 2D rendering with automatic geometry batching
+//! * Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old laptop)
+//! * Immidiate mode UI library included
+//! * Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples)
+//! # Example
+//! ```
+//! use macroquad::prelude::*;
+//!
+//! #[macroquad::main("BasicShapes")]
+//! async fn main() {
+//!     loop {
+//!         clear_background(RED);
+//!  
+//!         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
+//!         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
+//!         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
+//!         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
+//!  
+//!         next_frame().await
+//!     }
+//! }
+//!```
+
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
 pub use megaui;
-pub use megaui::hash;
-
-pub use glam::{self, vec2, vec3, Vec2, Vec3};
 
 use std::collections::HashSet;
 use std::future::Future;
 use std::pin::Pin;
 
-mod camera;
 mod drawing;
 mod exec;
-mod models;
-mod shapes;
-mod texture;
-mod material;
-mod time;
+
+pub mod camera;
+pub mod material;
+pub mod models;
+pub mod shapes;
+pub mod texture;
+pub mod time;
+pub mod input;
+pub mod window;
+pub mod file;
+
 mod types;
 mod ui;
 
 pub mod collections;
 pub mod coroutines;
 
-pub use camera::{Camera, Camera2D, Camera3D, Projection};
+pub mod prelude;
 
+// TODO: write something about macroquad entrypoint
+#[doc(hidden)]
 pub use macroquad_macro::main;
-pub use models::*;
-pub use shapes::*;
-pub use texture::*;
-pub use material::*;
-pub use time::*;
-pub use types::*;
-pub use ui::*;
 
-pub use collections::*;
-pub use drawing::FilterMode;
-pub use miniquad::{conf::Conf, Comparison, PipelineParams, UniformType};
-pub use quad_gl::{colors::*, GlPipeline, QuadGl, Vertex};
-pub use quad_rand as rand;
+/// Cross platform random generator.
+pub mod rand {
+    pub use quad_rand::*;
+}
 
 #[cfg(feature = "log-impl")]
-pub use miniquad::{debug, error, info, warn};
+/// Logging macroses, available with "log-impl" feature.
+pub mod logging {
+    pub use miniquad::{debug, error, info, warn};
+}
 
 use drawing::DrawContext;
+use glam::{vec2, Vec2};
+use quad_gl::{colors::*, Color};
 
 struct Context {
     quad_context: QuadContext,
@@ -79,8 +118,8 @@ impl Context {
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
             mouse_pressed: HashSet::new(),
-            mouse_position: Vec2::new(0., 0.),
-            mouse_wheel: Vec2::new(0., 0.),
+            mouse_position: vec2(0., 0.),
+            mouse_wheel: vec2(0., 0.),
 
             draw_context: DrawContext::new(&mut ctx),
 
@@ -313,6 +352,8 @@ impl EventHandlerFree for Stage {
     }
 }
 
+/// Not meant to be used directly, only from the macro.
+#[doc(hidden)]
 pub struct Window {}
 
 impl Window {
@@ -342,147 +383,4 @@ impl Window {
             },
         );
     }
-}
-
-pub fn next_frame() -> exec::FrameFuture {
-    exec::FrameFuture
-}
-
-pub use miniquad::{KeyCode, MouseButton};
-
-pub fn mouse_position() -> (f32, f32) {
-    let context = get_context();
-
-    (context.mouse_position.x(), context.mouse_position.y())
-}
-
-pub fn mouse_wheel() -> (f32, f32) {
-    let context = get_context();
-
-    (context.mouse_wheel.x(), context.mouse_wheel.y())
-}
-
-/// Detect if the key has been pressed once
-pub fn is_key_pressed(key_code: KeyCode) -> bool {
-    let context = get_context();
-
-    context.keys_pressed.contains(&key_code)
-}
-
-/// Detect if the key is being pressed
-pub fn is_key_down(key_code: KeyCode) -> bool {
-    let context = get_context();
-
-    context.keys_down.contains(&key_code)
-}
-
-pub fn is_mouse_button_down(btn: MouseButton) -> bool {
-    let context = get_context();
-
-    context.mouse_pressed.contains(&btn)
-}
-
-pub fn mouse_over_ui() -> bool {
-    let context = get_context();
-
-    context.draw_context.ui.is_mouse_over(megaui::Vector2::new(
-        context.mouse_position.x(),
-        context.mouse_position.y(),
-    ))
-}
-
-pub fn clear_background(color: Color) {
-    let context = get_context();
-
-    // all drawcalls are batched
-    // and batching is not clear-friendly
-    // so as a workaround we do immediate render pass with clear color
-    let clear = PassAction::clear_color(
-        color.0[0] as f32 / 255.,
-        color.0[1] as f32 / 255.,
-        color.0[2] as f32 / 255.,
-        color.0[3] as f32 / 255.,
-    );
-    if let Some(current_pass) = context.draw_context.current_pass {
-        context.quad_context.begin_pass(current_pass, clear);
-    } else {
-        context.quad_context.begin_default_pass(clear);
-    }
-    context.quad_context.end_render_pass();
-
-    context.draw_context.gl.clear_draw_calls();
-}
-
-/// Set active 2D or 3D camera
-pub fn set_camera<T: Camera>(camera: T) {
-    let context = get_context();
-
-    // flush previous camera draw calls
-    context
-        .draw_context
-        .perform_render_passes(&mut context.quad_context);
-
-    context.draw_context.current_pass = camera.render_pass();
-    context.draw_context.gl.render_pass(camera.render_pass());
-    context.draw_context.gl.depth_test(camera.depth_enabled());
-    context.draw_context.camera_matrix = Some(camera.matrix());
-    context
-        .draw_context
-        .update_projection_matrix(&mut context.quad_context);
-}
-
-/// Reset default 2D camera mode
-pub fn set_default_camera() {
-    let context = get_context();
-
-    // flush previous camera draw calls
-    context
-        .draw_context
-        .perform_render_passes(&mut context.quad_context);
-
-    context.draw_context.current_pass = None;
-    context.draw_context.gl.render_pass(None);
-    context.draw_context.gl.depth_test(false);
-    context.draw_context.camera_matrix = None;
-    context
-        .draw_context
-        .update_projection_matrix(&mut context.quad_context);
-}
-
-pub fn screen_width() -> f32 {
-    let context = get_context();
-
-    context.screen_width
-}
-
-pub fn screen_height() -> f32 {
-    let context = get_context();
-
-    context.screen_height
-}
-
-pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
-    let context = &mut get_context().draw_context;
-
-    &mut context.gl
-}
-
-pub fn load_file(path: &str) -> exec::FileLoadingFuture {
-    use std::cell::RefCell;
-    use std::rc::Rc;
-
-    let contents = Rc::new(RefCell::new(None));
-    let path = path.to_owned();
-
-    {
-        let contents = contents.clone();
-        let err_path = path.clone();
-
-        miniquad::fs::load_file(&path, move |bytes| {
-            *contents.borrow_mut() =
-                Some(bytes.map_err(|kind| exec::FileError::new(kind, &err_path)));
-        });
-    }
-
-    exec::FileLoadingFuture { contents }
 }

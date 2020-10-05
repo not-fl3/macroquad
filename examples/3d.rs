@@ -1,6 +1,4 @@
-use macroquad::*;
-
-use glam::vec3;
+use macroquad::prelude::*;
 
 #[macroquad::main("3D")]
 async fn main() {

@@ -1,8 +1,7 @@
-use glam::vec2;
 
 use macroquad::{
     megaui::{widgets::Group, Drag, Ui, Vector2},
-    *,
+    prelude::*,
 };
 
 pub struct Slot {

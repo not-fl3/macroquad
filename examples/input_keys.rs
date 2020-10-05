@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 #[macroquad::main("InputKeys")]
 async fn main() {

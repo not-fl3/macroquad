@@ -1,4 +1,4 @@
-use macroquad::{self as mq, *};
+use macroquad::prelude::*;
 
 #[macroquad::main("Arkanoid")]
 async fn main() {
@@ -27,7 +27,7 @@ async fn main() {
     });
 
     loop {
-        clear_background(mq::SKYBLUE);
+        clear_background(SKYBLUE);
 
         let delta = get_frame_time();
 
@@ -47,7 +47,7 @@ async fn main() {
                 SCR_W / 2. - 5.,
                 SCR_H / 2.,
                 1.,
-                mq::BLACK,
+                BLACK,
             );
 
             ball_x = platform_x;
@@ -80,7 +80,7 @@ async fn main() {
                     let block_x = i as f32 * block_w + 0.05;
                     let block_y = j as f32 * block_h + 0.05;
 
-                    draw_rectangle(block_x, block_y, block_w - 0.1, block_h - 0.1, mq::DARKBLUE);
+                    draw_rectangle(block_x, block_y, block_w - 0.1, block_h - 0.1, DARKBLUE);
                     if ball_x >= block_x
                         && ball_x < block_x + block_w
                         && ball_y >= block_y
@@ -93,13 +93,13 @@ async fn main() {
             }
         }
 
-        draw_circle(ball_x, ball_y, 0.2, mq::RED);
+        draw_circle(ball_x, ball_y, 0.2, RED);
         draw_rectangle(
             platform_x - platform_width / 2.,
             SCR_H - platform_height,
             platform_width,
             platform_height,
-            mq::DARKPURPLE,
+            DARKPURPLE,
         );
 
         next_frame().await

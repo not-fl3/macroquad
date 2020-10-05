@@ -1,6 +1,4 @@
-use glam::Vec2;
-use macroquad::{self as mq, *};
-use std::process::exit;
+use macroquad::prelude::*;
 
 const SHIP_HEIGHT: f32 = 25.;
 const SHIP_BASE: f32 = 22.;
@@ -74,10 +72,6 @@ async fn main() {
     }
 
     loop {
-        if is_key_down(KeyCode::Escape) {
-            exit(0);
-        }
-
         if gameover {
             clear_background(LIGHTGRAY);
             let mut text = "You Win!. Press [enter] to play again.";
@@ -212,7 +206,7 @@ async fn main() {
             continue;
         }
 
-        clear_background(mq::LIGHTGRAY);
+        clear_background(LIGHTGRAY);
         for bullet in bullets.iter() {
             draw_circle(bullet.pos.x(), bullet.pos.y(), 2., BLACK);
         }

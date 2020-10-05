@@ -1,4 +1,4 @@
-use macroquad::*;
+use macroquad::prelude::*;
 
 use macroquad::megaui::widgets::{Label, TreeNode};
 
