@@ -2,8 +2,11 @@
 
 use crate::get_context;
 
-use quad_gl::Color;
 use miniquad::PassAction;
+use quad_gl::Color;
+
+// miniquad is re-exported for the use in combination with `get_internal_gl`
+pub use miniquad;
 
 /// Block execution until the next frame.
 pub fn next_frame() -> crate::exec::FrameFuture {
@@ -32,10 +35,30 @@ pub fn clear_background(color: Color) {
     context.draw_context.gl.clear_draw_calls();
 }
 
-pub unsafe fn get_internal_gl<'a>() -> &'a mut quad_gl::QuadGl {
-    let context = &mut get_context().draw_context;
+pub struct InternalGlContext<'a> {
+    pub quad_context: &'a mut miniquad::Context,
+    pub quad_gl: &'a mut quad_gl::QuadGl,
+}
 
-    &mut context.gl
+impl<'a> InternalGlContext<'a> {
+    /// Draw all the batched stuff and reset the internal state cache
+    /// May be helpfull for combining macroquad's drawing with raw miniquad/opengl calls
+    pub fn flush(&mut self) {
+        let context = get_context();
+
+        context
+            .draw_context
+            .perform_render_passes(&mut self.quad_context);
+    }
+}
+
+pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
+    let context = get_context();
+
+    InternalGlContext {
+        quad_context: &mut context.quad_context,
+        quad_gl: &mut context.draw_context.gl,
+    }
 }
 
 pub fn screen_width() -> f32 {
@@ -49,4 +72,3 @@ pub fn screen_height() -> f32 {
 
     context.screen_height
 }
-

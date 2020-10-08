@@ -39,7 +39,7 @@ async fn main() {
         clear_background(GREEN);
 
         draw_circle(0., 0., 0.03, RED);
-        tree(unsafe { get_internal_gl() }, get_time(), 0, 1., 0.3);
+        tree(unsafe { get_internal_gl().quad_gl }, get_time(), 0, 1., 0.3);
 
         next_frame().await
     }

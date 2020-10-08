@@ -19,10 +19,13 @@ log-impl = ["miniquad/log-impl"]
 all-features = true
 
 [dependencies]
-miniquad = "0.3.0-alpha.15"
+miniquad = "0.3.0-alpha.16"
 quad-gl = { version = "=0.2.5", path = "./quad-gl" }
 quad-rand = "0.1"
 glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { version = "=0.2.13", path = "./megaui" }
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
+
+#[patch.crates-io]
+#miniquad = { path = '../miniquad' }
