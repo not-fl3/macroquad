@@ -29,6 +29,14 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
     context.keys_down.contains(&key_code)
 }
 
+/// Detect if the key is being pressed.
+/// Each call "is_key_down" call will consume a character from input queue.
+pub fn get_key_pressed() -> Option<char> {
+    let context = get_context();
+
+    context.chars_pressed_queue.pop()
+}
+
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
     let context = get_context();
 

@@ -94,6 +94,7 @@ struct Context {
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
     mouse_pressed: HashSet<MouseButton>,
+    chars_pressed_queue: Vec<char>,
     mouse_position: Vec2,
     mouse_wheel: Vec2,
 
@@ -117,6 +118,7 @@ impl Context {
 
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
+            chars_pressed_queue: Vec::new(),
             mouse_pressed: HashSet::new(),
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
@@ -224,6 +226,8 @@ impl EventHandlerFree for Stage {
         use megaui::InputHandler;
 
         let context = get_context();
+
+        context.chars_pressed_queue.push(character);
         context
             .draw_context
             .ui
