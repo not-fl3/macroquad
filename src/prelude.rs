@@ -12,6 +12,7 @@ pub use crate::ui::*;
 pub use crate::window::*;
 pub use crate::file::*;
 
+pub use glam;
 pub use glam::*;
 pub use megaui::hash;
 pub use miniquad::{conf::Conf, Comparison, PipelineParams, UniformType};

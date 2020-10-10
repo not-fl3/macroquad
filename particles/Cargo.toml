@@ -1,0 +1,8 @@
+[package]
+name = "particles"
+version = "0.1.0"
+authors = ["Fedor Logachev <not.fl3@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+macroquad = { path = "../", version = "0.3.0-alpha" }

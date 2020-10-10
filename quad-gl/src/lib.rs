@@ -737,6 +737,10 @@ impl QuadGl {
         self.draw_calls_count = 0;
     }
 
+    pub fn get_projection_matrix(&self) -> glam::Mat4 {
+        self.state.projection
+    }
+    
     pub fn render_pass(&mut self, render_pass: Option<RenderPass>) {
         self.state.render_pass = render_pass;
     }
@@ -948,6 +952,10 @@ impl Texture2D {
 
     pub fn set_filter(&self, ctx: &mut miniquad::Context, filter_mode: FilterMode) {
         self.texture.set_filter(ctx, filter_mode);
+    }
+
+    pub fn raw_miniquad_texture_handle(&self) -> Texture {
+        self.texture
     }
 }
 
