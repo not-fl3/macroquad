@@ -230,7 +230,7 @@ impl Emitter {
         }
     }
 
-    fn emit_particle(&mut self) {
+    fn emit_particle(&mut self, offset: Vec2) {
         fn random_initial_vector(dir: Vec2, spread: f32, velocity: f32) -> Vec2 {
             let angle = rand::gen_range(-spread / 2.0, spread / 2.0);
 
@@ -243,12 +243,16 @@ impl Emitter {
 
         let particle = if self.config.local_coords {
             GpuParticle {
-                pos: vec3(0.0, 0.0, 0.0),
+                pos: vec3(offset.x(), offset.y(), 0.0),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
             }
         } else {
             GpuParticle {
-                pos: vec3(self.position.x(), self.position.y(), 0.0),
+                pos: vec3(
+                    self.position.x() + offset.x(),
+                    self.position.y() + offset.y(),
+                    0.0,
+                ),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
             }
         };
@@ -292,7 +296,7 @@ impl Emitter {
                 self.last_emit_time = self.time_passed;
 
                 if self.particles_spawned < self.config.amount as u64 {
-                    self.emit_particle();
+                    self.emit_particle(vec2(0.0, 0.0));
                 } else if self.config.one_shot {
                     self.config.emitting = false;
                     self.particles_spawned = 0;
@@ -341,6 +345,14 @@ impl Emitter {
         }
 
         self.bindings.vertex_buffers[1].update(ctx, &self.gpu_particles[..]);
+    }
+
+    /// Immidiately emit N particles, ignoring "emitting" and "amount" params of EmitterConfig
+    pub fn emit(&mut self, pos: Vec2, n: usize) {
+        for _ in 0..n {
+            self.emit_particle(pos);
+            self.particles_spawned += 1;
+        }
     }
 
     pub fn draw(&mut self, pos: Vec2) {
