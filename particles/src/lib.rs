@@ -348,9 +348,15 @@ impl Emitter {
             quad_gl,
         } = gl;
 
+        let pass = quad_gl.get_active_render_pass();
+
         self.update(ctx, get_frame_time());
 
-        ctx.begin_default_pass(PassAction::Nothing);
+        if let Some(pass) = pass {
+            ctx.begin_pass(pass, PassAction::Nothing);
+        } else {
+            ctx.begin_default_pass(PassAction::Nothing);
+        }
 
         ctx.apply_pipeline(&self.pipeline);
         ctx.apply_bindings(&self.bindings);
