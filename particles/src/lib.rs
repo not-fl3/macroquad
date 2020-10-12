@@ -29,6 +29,10 @@ pub struct EmitterConfig {
     /// Initial speed for each emitted particle.
     /// Direction of the initial speed vector is affected by "direction" and "spread"
     pub initial_velocity: f32,
+    /// Initial velocity randomness ratio.
+    /// Each particle will spawned with "initial_velocity = initial_velocity - initial_velocity * rand::gen_range(0.0, initial_velocity_randomness)".
+    pub initial_velocity_randomness: f32,
+
     /// Each particle is a square "initial_size x initial_size" size.
     pub initial_size: f32,
     /// Particles rendering mode.
@@ -96,6 +100,7 @@ impl Default for EmitterConfig {
             initial_direction: vec2(0., -1.),
             initial_direction_spread: 0.,
             initial_velocity: 200.0,
+            initial_velocity_randomness: 0.8,
             initial_size: 10.0,
             blend_mode: BlendMode::Alpha,
             gravity: vec2(0.0, 0.0),
@@ -257,7 +262,9 @@ impl Emitter {
                     self.config.initial_direction.y(),
                 ),
                 self.config.initial_direction_spread,
-                self.config.initial_velocity,
+                self.config.initial_velocity
+                    - self.config.initial_velocity
+                        * rand::gen_range(0.0, self.config.initial_velocity_randomness),
             ),
             lived: 0.0,
             lifetime: self.config.lifetime
