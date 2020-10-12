@@ -740,6 +740,10 @@ impl QuadGl {
     pub fn get_projection_matrix(&self) -> glam::Mat4 {
         self.state.projection
     }
+
+    pub fn get_active_render_pass(&self) -> Option<RenderPass> {
+        self.state.render_pass
+    }
     
     pub fn render_pass(&mut self, render_pass: Option<RenderPass>) {
         self.state.render_pass = render_pass;
