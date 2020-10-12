@@ -233,13 +233,13 @@ mod snapshoter_shader {
     use miniquad::{ShaderMeta, UniformBlockLayout};
 
     pub const VERTEX: &str = r#"#version 100
-    attribute vec3 position;
+    attribute vec2 position;
     attribute vec2 texcoord;
 
     varying lowp vec2 uv;
 
     void main() {
-        gl_Position = vec4(position, 1);
+        gl_Position = vec4(position, 0, 1);
         uv = texcoord;
     }"#;
 
@@ -326,6 +326,7 @@ impl MagicSnapshoter {
                 );
 
                 self.pass = Some(RenderPass::new(ctx, color_img, None));
+                self.screen_texture = Some(color_img);
             }
 
             if self.bindings.images.len() == 0 {
@@ -339,10 +340,9 @@ impl MagicSnapshoter {
             );
             ctx.apply_pipeline(&self.pipeline);
             ctx.apply_bindings(&self.bindings);
-            ctx.draw(0, 36, 1);
+            ctx.draw(0, 6, 1);
             ctx.end_render_pass();
 
-            self.screen_texture = Some(texture);
         } else {
             if self.screen_texture.is_none() {
                 let (screen_width, screen_height) = ctx.screen_size();
@@ -620,16 +620,16 @@ impl QuadGl {
         params: PipelineParams,
         uniforms: Vec<(String, UniformType)>,
     ) -> Result<GlPipeline, ShaderError> {
-        let mut shader_meta_ok: ShaderMeta = shader::meta();
+        let mut shader_meta: ShaderMeta = shader::meta();
 
         for uniform in &uniforms {
-            shader_meta_ok
+            shader_meta
                 .uniforms
                 .uniforms
                 .push(UniformDesc::new(&uniform.0, uniform.1));
         }
 
-        let shader = Shader::new(ctx, vertex_shader, fragment_shader, shader_meta_ok)?;
+        let shader = Shader::new(ctx, vertex_shader, fragment_shader, shader_meta)?;
         let wants_screen_texture = fragment_shader.find("_ScreenTexture").is_some();
 
         Ok(self
@@ -872,6 +872,7 @@ impl QuadGl {
             ($uniform_size:expr, $byte_offset:expr, $n:expr) => {
                 if $uniform_size == $n {
                     let data: [u8; $n] = unsafe { std::mem::transmute_copy(&uniform) };
+
                     for i in 0..$uniform_size {
                         pipeline.uniforms_data[$byte_offset + i] = data[i];
                     }
