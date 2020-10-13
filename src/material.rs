@@ -1,10 +1,10 @@
-//! Custom materials - shaders, uniforms. 
+//! Custom materials - shaders, uniforms.
 
-use quad_gl::GlPipeline;
 use crate::get_context;
-use miniquad::{PipelineParams, UniformType, ShaderError};
+use miniquad::{PipelineParams, ShaderError, UniformType};
+use quad_gl::GlPipeline;
 
-/// Material instance loaded on GPU. 
+/// Material instance loaded on GPU.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Material {
     pipeline: GlPipeline,
@@ -45,7 +45,7 @@ impl Default for MaterialParams {
     fn default() -> Self {
         MaterialParams {
             pipeline_params: Default::default(),
-            uniforms: vec![]
+            uniforms: vec![],
         }
     }
 }
@@ -75,9 +75,125 @@ pub fn gl_use_material(material: Material) {
     context.gl.pipeline(Some(material.pipeline));
 }
 
-/// Use default macroquad material. 
+/// Use default macroquad material.
 pub fn gl_use_default_material() {
     let context = &mut get_context().draw_context;
 
     context.gl.pipeline(None);
+}
+
+#[doc(hidden)]
+pub mod shaders {
+    type IncludeFilename = String;
+    type IncludeContent = String;
+
+    #[derive(Debug, Clone)]
+    pub struct PreprocessorConfig {
+        pub includes: Vec<(IncludeFilename, IncludeContent)>,
+    }
+    impl Default for PreprocessorConfig {
+        fn default() -> PreprocessorConfig {
+            PreprocessorConfig { includes: vec![] }
+        }
+    }
+
+    impl PreprocessorConfig {}
+
+    pub fn preprocess_shader(source: &str, config: &PreprocessorConfig) -> String {
+        let mut res = source.chars().collect::<Vec<_>>();
+
+        fn find(data: &[char], n: &mut usize, target: &str) -> bool {
+            if *n >= data.len() {
+                return false;
+            }
+            let target = target.chars().collect::<Vec<_>>();
+
+            'outer: for i in *n..data.len() {
+                for j in 0..target.len() {
+                    if data[i + j] != target[j] {
+                        *n += 1;
+                        continue 'outer;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        fn skip_character(data: &[char], n: &mut usize, target: char) {
+            while *n < data.len() && data[*n] == target {
+                *n += 1;
+            }
+        }
+
+        let mut i = 0;
+        while find(&res, &mut i, "#include") {
+            let directive_start_ix = i;
+            i += "#include".len();
+            skip_character(&res, &mut i, ' ');
+            assert!(res[i] == '\"');
+            i += 1;
+            let filename_start_ix = i;
+            find(&res, &mut i, "\"");
+            let filename_end_ix = i;
+            let filename = res[filename_start_ix..filename_end_ix]
+                .iter()
+                .cloned()
+                .collect::<String>();
+
+            let include_content = config
+                .includes
+                .iter()
+                .find(|(name, _)| name == &filename)
+                .expect(&format!(
+                    "Include file {} in not on \"includes\" list",
+                    filename
+                ));
+
+            let _ = res
+                .splice(
+                    directive_start_ix..filename_end_ix + 1,
+                    include_content.1.chars(),
+                )
+                .collect::<Vec<_>>();
+        }
+
+        res.into_iter().collect()
+    }
+
+    #[test]
+    fn preprocessor_test() {
+        let shader_string = r#"
+#version blah blah
+
+asd
+asd
+
+#include "hello.glsl"
+
+qwe
+"#;
+
+        let preprocessed = r#"
+#version blah blah
+
+asd
+asd
+
+iii
+jjj
+
+qwe
+"#;
+
+        let result = preprocess_shader(
+            &shader_string,
+            &PreprocessorConfig {
+                includes: vec![("hello.glsl".to_string(), "iii\njjj".to_string())],
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(result, preprocessed);
+    }
 }

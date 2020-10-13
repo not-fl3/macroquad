@@ -47,6 +47,24 @@ pub struct EmitterConfig {
     /// For animated texture specify spritesheet layout.
     /// If none the whole texture will be used.
     pub atlas: Option<AtlasConfig>,
+
+    /// Custom material used to shade each particle.
+    pub material: Option<ParticleMaterial>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ParticleMaterial {
+    vertex: String,
+    fragment: String,
+}
+
+impl ParticleMaterial {
+    pub fn new(vertex: &str, fragment: &str) -> ParticleMaterial {
+        ParticleMaterial {
+            vertex: vertex.to_owned(),
+            fragment: fragment.to_owned(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -106,6 +124,7 @@ impl Default for EmitterConfig {
             gravity: vec2(0.0, 0.0),
             texture: None,
             atlas: None,
+            material: None,
         }
     }
 }
@@ -114,6 +133,7 @@ impl Default for EmitterConfig {
 struct GpuParticle {
     pos: Vec3,
     uv: Vec4,
+    data: Vec4
 }
 
 struct CpuParticle {
@@ -180,7 +200,26 @@ impl Emitter {
             )],
         };
 
-        let shader = Shader::new(ctx, shader::VERTEX, shader::FRAGMENT, shader::meta()).unwrap();
+        let (vertex, fragment) = config.material.as_ref().map_or_else(
+            || (shader::VERTEX, shader::FRAGMENT),
+            |material| (&material.vertex, &material.fragment),
+        );
+
+        let shader = {
+            use macroquad::material::shaders::{preprocess_shader, PreprocessorConfig};
+
+            let config = PreprocessorConfig {
+                includes: vec![(
+                    "particles.glsl".to_string(),
+                    include_str!("particles.glsl").to_owned(),
+                )],
+                ..Default::default()
+            };
+            let vertex = preprocess_shader(&vertex, &config);
+            let fragment = preprocess_shader(&fragment, &config);
+
+            Shader::new(ctx, &vertex, &fragment, shader::meta()).unwrap()
+        };
 
         let blend_mode = match config.blend_mode {
             BlendMode::Alpha => BlendState::new(
@@ -204,11 +243,13 @@ impl Emitter {
                 },
             ],
             &[
-                VertexAttribute::with_buffer("pos", VertexFormat::Float3, 0),
-                VertexAttribute::with_buffer("uv", VertexFormat::Float2, 0),
-                VertexAttribute::with_buffer("color0", VertexFormat::Float4, 0),
-                VertexAttribute::with_buffer("inst_pos", VertexFormat::Float3, 1),
-                VertexAttribute::with_buffer("inst_uv", VertexFormat::Float4, 1),
+                VertexAttribute::with_buffer("in_attr_pos", VertexFormat::Float3, 0),
+                VertexAttribute::with_buffer("in_attr_uv", VertexFormat::Float2, 0),
+                VertexAttribute::with_buffer("in_attr_color", VertexFormat::Float4, 0),
+                VertexAttribute::with_buffer("in_attr_inst_pos", VertexFormat::Float3, 1),
+                VertexAttribute::with_buffer("in_attr_inst_uv", VertexFormat::Float4, 1),
+                VertexAttribute::with_buffer("in_attr_inst_data", VertexFormat::Float4, 1),
+
             ],
             shader,
             PipelineParams {
@@ -245,6 +286,7 @@ impl Emitter {
             GpuParticle {
                 pos: vec3(offset.x(), offset.y(), 0.0),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
+                data: vec4(self.particles_spawned as f32, 0.0, 0.0, 0.0),
             }
         } else {
             GpuParticle {
@@ -254,6 +296,7 @@ impl Emitter {
                     0.0,
                 ),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
+                data: vec4(self.particles_spawned as f32, 0.0, 0.0, 0.0),
             }
         };
 
@@ -310,7 +353,9 @@ impl Emitter {
 
         for (gpu, cpu) in self.gpu_particles.iter_mut().zip(&mut self.cpu_counterpart) {
             gpu.pos += vec3(cpu.velocity.x(), cpu.velocity.y(), 0.0) * dt;
-            //cpu.velocity -= vec3(0.0, -10.0, 0.0);
+
+            *gpu.data.y_mut() = cpu.lived / cpu.lifetime;
+
             cpu.lived += dt;
 
             cpu.velocity += self.config.gravity * dt;
@@ -393,40 +438,24 @@ mod shader {
     use super::*;
 
     pub const VERTEX: &str = r#"#version 100
-    attribute vec3 pos;
-    attribute vec2 uv;
-    attribute vec4 color0;
-    attribute vec3 inst_pos;
-    attribute vec4 inst_uv;
+    #include "particles.glsl"
 
-    varying lowp vec4 color;
+    PARTICLE_MESH_DECL
+
     varying lowp vec2 texcoord;
 
-    uniform mat4 mvp;
-    uniform float local_coords;
-    uniform vec3 emitter_position;
-
     void main() {
-        vec4 transformed = vec4(0.0, 0.0, 0.0, 0.0);
-
-        if (local_coords == 0.0) {
-           transformed = vec4(pos + inst_pos.xyz, 1.0);
-        } else {
-           transformed = vec4(pos + inst_pos.xyz + emitter_position.xyz, 1.0);
-        }
-        gl_Position =  mvp * transformed;
-        color = color0;
-        texcoord = uv * inst_uv.zw + inst_uv.xy;
+        gl_Position = particle_transform_vertex();
+        texcoord = particle_transform_uv();
     }
     "#;
 
     pub const FRAGMENT: &str = r#"#version 100
     varying lowp vec2 texcoord;
-    varying lowp vec4 color;
     uniform sampler2D texture;
     
     void main() {
-        gl_FragColor = texture2D(texture, texcoord) * color;
+        gl_FragColor = texture2D(texture, texcoord);
     }
     "#;
 
@@ -435,9 +464,9 @@ mod shader {
             images: vec!["texture".to_string()],
             uniforms: UniformBlockLayout {
                 uniforms: vec![
-                    UniformDesc::new("mvp", UniformType::Mat4),
-                    UniformDesc::new("local_coords", UniformType::Float1),
-                    UniformDesc::new("emitter_position", UniformType::Float3),
+                    UniformDesc::new("_mvp", UniformType::Mat4),
+                    UniformDesc::new("_local_coords", UniformType::Float1),
+                    UniformDesc::new("_emitter_position", UniformType::Float3),
                 ],
             },
         }

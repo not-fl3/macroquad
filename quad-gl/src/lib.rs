@@ -342,7 +342,6 @@ impl MagicSnapshoter {
             ctx.apply_bindings(&self.bindings);
             ctx.draw(0, 6, 1);
             ctx.end_render_pass();
-
         } else {
             if self.screen_texture.is_none() {
                 let (screen_width, screen_height) = ctx.screen_size();
@@ -744,7 +743,7 @@ impl QuadGl {
     pub fn get_active_render_pass(&self) -> Option<RenderPass> {
         self.state.render_pass
     }
-    
+
     pub fn render_pass(&mut self, render_pass: Option<RenderPass>) {
         self.state.render_pass = render_pass;
     }
