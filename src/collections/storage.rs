@@ -1,7 +1,7 @@
 //! Global read-only storage
 //!
 //! ```
-//! use macroquad::storage;
+//! use macroquad::collections::storage;
 //!
 //! const WORLD_BOUNDRIES: usize = 1;
 //!
