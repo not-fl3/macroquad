@@ -11,6 +11,7 @@ pub struct DrawContext {
     pub(crate) gl: QuadGl,
     pub(crate) camera_matrix: Option<Mat4>,
     pub(crate) current_pass: Option<miniquad::RenderPass>,
+    pub(crate) post_render_hooks: Vec<Box<dyn FnMut(&mut miniquad::Context)>>,
     pub ui: megaui::Ui,
     ui_draw_list: Vec<megaui::DrawList>,
 }
@@ -33,6 +34,7 @@ impl DrawContext {
             font_texture,
             ui,
             ui_draw_list: Vec::with_capacity(10000),
+            post_render_hooks: Vec::new(),
             current_pass: None
         };
 
@@ -111,6 +113,9 @@ impl DrawContext {
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
         self.draw_ui(ctx);
         self.gl.draw(ctx);
+        for f in self.post_render_hooks.iter_mut() {
+            f(ctx)
+        }
     }
 
     pub fn update_projection_matrix(&mut self, ctx: &mut miniquad::Context) {
