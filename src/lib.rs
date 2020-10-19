@@ -1,5 +1,5 @@
 //!
-//! `macroquad` is a simple and easy to use game library for Rust programming language. 
+//! `macroquad` is a simple and easy to use game library for Rust programming language.
 //!  
 //! `macroquad` attempts to avoid any rust-specific programming concepts like lifetimes/borrowing, making it very friendly for rust beginners.
 //!  
@@ -12,7 +12,7 @@
 //!  
 //! ## Features
 //!  
-//! * Same code for all supported platforms, no platform dependent defines required 
+//! * Same code for all supported platforms, no platform dependent defines required
 //! * Efficient 2D rendering with automatic geometry batching
 //! * Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old laptop)
 //! * Immidiate mode UI library included
@@ -49,14 +49,15 @@ mod drawing;
 mod exec;
 
 pub mod camera;
+pub mod file;
+pub mod input;
 pub mod material;
 pub mod models;
 pub mod shapes;
+pub mod text;
 pub mod texture;
 pub mod time;
-pub mod input;
 pub mod window;
-pub mod file;
 
 mod types;
 mod ui;
