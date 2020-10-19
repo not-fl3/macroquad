@@ -2,74 +2,11 @@
 
 use crate::{
     get_context,
-    types::{Color, Rect},
+    types::Color,
 };
 
 use glam::{vec2, Vec2};
 use quad_gl::{DrawMode, Vertex};
-
-pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
-    let context = &mut get_context().draw_context;
-
-    let atlas = context.ui.font_atlas.clone();
-
-    let mut total_width = 0.;
-    for character in text.chars() {
-        if let Some(font_data) = atlas.character_infos.get(&character) {
-            let font_data = font_data.scale(font_size);
-
-            total_width += font_data.left_padding;
-
-            let left_coord = total_width;
-            let top_coord = font_size as f32 - font_data.height_over_line;
-
-            total_width += font_data.size.0 + font_data.right_padding;
-
-            let dest = Rect::new(
-                left_coord + x,
-                top_coord + y,
-                font_data.size.0,
-                font_data.size.1,
-            );
-
-            let source = Rect::new(
-                font_data.tex_coords.0 * context.font_texture.width(),
-                font_data.tex_coords.1 * context.font_texture.height(),
-                font_data.tex_size.0 * context.font_texture.width(),
-                font_data.tex_size.1 * context.font_texture.height(),
-            );
-            crate::texture::draw_texture_ex(
-                context.font_texture,
-                dest.x,
-                dest.y,
-                color,
-                crate::texture::DrawTextureParams {
-                    dest_size: Some(vec2(dest.w, dest.h)),
-                    source: Some(source),
-                    ..Default::default()
-                },
-            );
-        }
-    }
-}
-
-pub fn measure_text(text: &str, font_size: f32) -> (f32, f32) {
-    let context = &mut get_context().draw_context;
-
-    let atlas = context.ui.font_atlas.clone();
-
-    let mut width = 0.;
-    let mut height: f32 = 0.;
-
-    for character in text.chars() {
-        if let Some(font_data) = atlas.character_infos.get(&character) {
-            let font_data = font_data.scale(font_size);
-            width += font_data.left_padding + font_data.size.0 + font_data.right_padding;
-            height = height.max(font_data.size.1);
-        }
-    }
-    return (width, height);
-}
 
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     let context = &mut get_context().draw_context;
