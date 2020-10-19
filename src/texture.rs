@@ -7,6 +7,16 @@ use quad_gl::{Color, DrawMode, Vertex};
 
 pub use quad_gl::{Image, Texture2D, FilterMode};
 
+/// Load image from file into CPU memory
+pub async fn load_image(path: &str) -> Image {
+    let bytes = load_file(path)
+        .await
+        .unwrap_or_else(|e| panic!("Error loading texture: {}", e));
+
+    Image::from_file_with_format(&bytes, None)
+}
+
+/// Load texture from file into GPU memory
 pub async fn load_texture(path: &str) -> Texture2D {
     let bytes = load_file(path)
         .await
