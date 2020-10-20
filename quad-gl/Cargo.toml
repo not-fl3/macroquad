@@ -6,9 +6,9 @@ homepage = "https://github.com/not-fl3/quad-gl"
 license = "MIT/Apache-2.0"
 name = "quad-gl"
 repository = "https://github.com/not-fl3/quad-gl"
-version = "0.2.5"
+version = "0.2.7"
 
 [dependencies]
-miniquad = "0.3.0-alpha.15"
+miniquad = "0.3.0-alpha.19"
 glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec"] }

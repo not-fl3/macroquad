@@ -306,7 +306,7 @@ pub(crate) struct FontsStorage {
 impl FontsStorage {
     pub(crate) fn new(ctx: &mut miniquad::Context) -> FontsStorage {
         let default_font =
-            FontInternal::load_from_bytes(ctx, include_bytes!("../megaui/assets//ProggyClean.ttf"));
+            FontInternal::load_from_bytes(ctx, include_bytes!("ProggyClean.ttf"));
         FontsStorage {
             fonts: vec![default_font],
         }
