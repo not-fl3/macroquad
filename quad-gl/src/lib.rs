@@ -971,10 +971,7 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn from_file_with_format(
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Image {
+    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Image {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(&bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
@@ -991,7 +988,7 @@ impl Image {
         Image {
             width,
             height,
-            bytes
+            bytes,
         }
     }
 
@@ -1055,6 +1052,12 @@ impl Image {
                 self.width as usize * self.height as usize,
             )
         }
+    }
+
+    pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
+        let width = self.width;
+
+        self.get_image_data_mut()[(y * width as u32 + x) as usize] = color;
     }
 
     pub fn get_pixel(&self, x: u32, y: u32) -> Color {
