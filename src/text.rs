@@ -247,7 +247,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
         let font_data = &font.characters[&(character, params.font_size)];
         {
             let left_coord = font_data.offset_x as f32 * params.font_scale + total_width;
-            let top_coord = 15.0
+            let top_coord = params.font_size as f32
                 - font_data.glyph_h as f32 * params.font_scale
                 - font_data.offset_y as f32 * params.font_scale;
 

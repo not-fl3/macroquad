@@ -10,7 +10,7 @@ async fn main() {
         draw_text_ex("Custom font size:", 20.0, 20.0, TextParams::default());
         let mut y = 20.0;
 
-        for font_size in (30..120).step_by(20) {
+        for font_size in (30..100).step_by(20) {
             let text = "abcdef";
             let params = TextParams {
                 font_size,
