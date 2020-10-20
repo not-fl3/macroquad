@@ -31,6 +31,8 @@ impl DrawContext {
             texture_data.height as u16,
             &texture_data.data,
         );
+        font_texture.set_filter(ctx, FilterMode::Nearest);
+
         let mut draw_context = DrawContext {
             camera_matrix: None,
             gl: QuadGl::new(ctx),

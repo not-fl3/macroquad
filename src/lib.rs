@@ -101,6 +101,7 @@ struct Context {
 
     draw_context: DrawContext,
     coroutines_context: coroutines::CoroutinesContext,
+    fonts_storage: text::FontsStorage,
 
     start_time: f64,
     last_frame_time: f64,
@@ -125,6 +126,7 @@ impl Context {
             mouse_wheel: vec2(0., 0.),
 
             draw_context: DrawContext::new(&mut ctx),
+            fonts_storage: text::FontsStorage::new(&mut ctx),
 
             quad_context: ctx,
             coroutines_context: coroutines::CoroutinesContext::new(),

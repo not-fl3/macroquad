@@ -26,6 +26,8 @@ glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
 megaui = { version = "=0.2.13", path = "./megaui" }
 macroquad_macro = { version = "0.1", path = "macroquad_macro" }
+fontdue = "0.3.2"
+
 
 #[patch.crates-io]
 #miniquad = { path = '../miniquad' }
