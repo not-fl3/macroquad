@@ -11,14 +11,14 @@ async fn main() {
         let mut y = 20.0;
 
         for font_size in (30..120).step_by(20) {
-            let text = "abcdefghjkl";
+            let text = "abcdef";
             let params = TextParams {
                 font_size,
                 ..Default::default()
             };
 
             y += font_size as f32;
-            draw_text_ex("abcd", 20.0, y, params);
+            draw_text_ex(text, 20.0, y, params);
         }
 
         draw_text_ex("Dynamic font scale:", 20.0, 400.0, TextParams::default());
