@@ -37,7 +37,7 @@ impl Camera2D {
 
         Camera2D {
             target,
-            zoom: vec2(1. / rect.w * 2., 1. / rect.h * 2.),
+            zoom: vec2(1. / rect.w * 2., -1. / rect.h * 2.),
             offset: vec2(0., 0.),
             rotation: 0.,
 
