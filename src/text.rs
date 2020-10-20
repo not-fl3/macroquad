@@ -89,9 +89,6 @@ impl FontInternal {
             Self::GAP
         };
 
-        if self.cursor_y + height as u16 > self.font_image.height {
-            panic!("Font texture too small, automatic font texture resize is not yet implemented!");
-        }
         let y = self.cursor_y;
 
         let character_info = CharacterInfo {
@@ -107,19 +104,47 @@ impl FontInternal {
 
         self.characters.insert((character, size), character_info);
 
-        for j in 0..height {
-            for i in 0..width {
-                let coverage = bitmap[j * width + i] as f32 / 255.0;
-                self.font_image.set_pixel(
-                    x as u32 + i as u32,
-                    y as u32 + j as u32,
-                    Color::new(1.0, 1.0, 1.0, coverage),
-                );
-            }
-        }
-        let ctx = &mut get_context().quad_context;
+        // texture bounds exceeded
+        if self.cursor_y + height as u16 > self.font_image.height {
+            // reset glyph cache state
+            let characters = self.characters.drain().collect::<Vec<_>>();
+            self.cursor_x = 0;
+            self.cursor_y = 0;
+            self.max_line_height = 0;
 
-        self.font_texture.update(ctx, &self.font_image);
+            // increase font texture size
+            self.font_image = Image::gen_image_color(
+                self.font_image.width * 2,
+                self.font_image.height * 2,
+                Color::new(0.0, 0.0, 0.0, 0.0),
+            );
+            let ctx = &mut get_context().quad_context;
+            self.font_texture = Texture2D::from_rgba8(
+                ctx,
+                self.font_image.width,
+                self.font_image.height,
+                &self.font_image.bytes[..],
+            );
+
+            // recache all previously cached symbols
+            for ((character, size), _) in characters {
+                self.cache_glyph(character, size);
+            }
+        } else {
+            for j in 0..height {
+                for i in 0..width {
+                    let coverage = bitmap[j * width + i] as f32 / 255.0;
+                    self.font_image.set_pixel(
+                        x as u32 + i as u32,
+                        y as u32 + j as u32,
+                        Color::new(1.0, 1.0, 1.0, coverage),
+                    );
+                }
+            }
+            let ctx = &mut get_context().quad_context;
+
+            self.font_texture.update(ctx, &self.font_image);
+        }
     }
 }
 
