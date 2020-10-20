@@ -1,4 +1,4 @@
-//! Fonts and text rendering.
+//! Functions to load fonts and draw text.
 
 use std::collections::HashMap;
 
@@ -173,6 +173,7 @@ impl Font {
     }
 }
 
+/// Arguments for "draw_text_ex" function such as font, font_size etc
 #[derive(Debug, Clone, Copy)]
 pub struct TextParams {
     pub font: Font,
@@ -219,6 +220,7 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Font {
     font
 }
 
+/// Draw text with given font_size
 pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     draw_text_ex(
         text,
@@ -233,6 +235,7 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     )
 }
 
+/// Draw text with custom params such as font, font size and font scale.
 pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     let font = get_context().fonts_storage.get_font_mut(params.font);
 
