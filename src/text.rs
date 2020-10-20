@@ -228,7 +228,7 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
         y,
         TextParams {
             font_size: font_size as u16,
-            font_scale: font_size % 1.0,
+            font_scale: 1.0,
             color,
             ..Default::default()
         },
