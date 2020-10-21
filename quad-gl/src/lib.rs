@@ -975,34 +975,7 @@ impl Texture2D {
             bytes: vec![0; self.texture.width as usize * self.texture.height as usize * 4],
         };
 
-        // TODO: this is actually miniquad's buisness, but lets test it here first
-        let mut fbo = 0;
-        unsafe {
-            let mut binded_fbo: i32 = 0;
-            gl::glGetIntegerv(gl::GL_DRAW_FRAMEBUFFER_BINDING, &mut binded_fbo);
-            gl::glGenFramebuffers(1, &mut fbo);
-            gl::glBindFramebuffer(gl::GL_FRAMEBUFFER, fbo);
-            gl::glFramebufferTexture2D(
-                gl::GL_FRAMEBUFFER,
-                gl::GL_COLOR_ATTACHMENT0,
-                gl::GL_TEXTURE_2D,
-                self.texture.gl_internal_id(),
-                0,
-            );
-
-            gl::glReadPixels(
-                0,
-                0,
-                self.texture.width as _,
-                self.texture.height as _,
-                gl::GL_RGBA,
-                gl::GL_UNSIGNED_BYTE,
-                image.bytes.as_mut_ptr() as _,
-            );
-
-            gl::glBindFramebuffer(gl::GL_FRAMEBUFFER, binded_fbo as _);
-            gl::glDeleteFramebuffers(1, &fbo);
-        }
+        self.texture.read_pixels(&mut image.bytes);
 
         image
     }
