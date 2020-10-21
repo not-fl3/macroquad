@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.3.0-alpha.4"
+version = "0.3.0-alpha.5"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -20,7 +20,7 @@ all-features = true
 
 [dependencies]
 miniquad = "0.3.0-alpha.19"
-quad-gl = { version = "=0.2.7", path = "./quad-gl" }
+quad-gl = { version = "=0.2.8", path = "./quad-gl" }
 quad-rand = "0.1"
 glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }

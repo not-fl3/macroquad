@@ -1,11 +1,11 @@
 //! Loading and rendering textures. Also render textures, per-pixel image manipluations.
 
-use crate::{get_context, file::load_file, types::Rect};
+use crate::{file::load_file, get_context, types::Rect};
 
 use glam::{vec2, Vec2};
 use quad_gl::{Color, DrawMode, Vertex};
 
-pub use quad_gl::{Image, Texture2D, FilterMode};
+pub use quad_gl::{FilterMode, Image, Texture2D};
 
 /// Load image from file into CPU memory
 pub async fn load_image(path: &str) -> Image {
@@ -200,4 +200,31 @@ pub fn draw_texture_rec(
             ..Default::default()
         },
     );
+}
+
+/// Get pixel data from GPU texture and return an Image
+pub fn get_texture_data(texture: Texture2D) -> Image {
+    texture.get_texture_data()
+}
+
+/// Get pixel data from screen buffer and return an Image (screenshot)
+pub fn get_screen_data() -> Image {
+    unsafe {
+        crate::window::get_internal_gl().flush();
+    }
+
+    let context = get_context();
+
+    let texture = Texture2D::from_miniquad_texture(miniquad::Texture::new_render_texture(
+        &mut context.quad_context,
+        miniquad::TextureParams {
+            width: context.screen_width as _,
+            height: context.screen_height as _,
+            ..Default::default()
+        },
+    ));
+
+    texture.grab_screen();
+
+    get_texture_data(texture)
 }
