@@ -16,7 +16,7 @@ pub struct Editbox<'a> {
 
 mod text_editor;
 
-use text_editor::EditboxState;
+pub use text_editor::EditboxState;
 
 const LEFT_MARGIN: f32 = 2.;
 const N_SPACES_IN_TAB: usize = 4;

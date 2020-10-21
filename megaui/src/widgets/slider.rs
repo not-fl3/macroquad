@@ -93,14 +93,14 @@ impl<'a> Slider<'a> {
 
         if hovered && context.input.is_mouse_down() {
             *dragging = 1;
-	    context.window.input_focus = Some(self.id);
+			context.window.input_focus = Some(self.id);
             context.input.cursor_grabbed = true;
         }
 
         if *dragging == 1 && context.input.is_mouse_down == false {
             context.input.cursor_grabbed = false;
             *dragging = 0;
-	    context.window.input_focus = None;
+			context.window.input_focus = None;
         }
 
         if *dragging == 1 {
@@ -113,7 +113,7 @@ impl<'a> Slider<'a> {
             if old_data != *data {
                 use std::fmt::Write;
 
-		temp_string.clear();
+				temp_string.clear();
                 let _ = write!(&mut temp_string, "{:.2}", *data);
             }
         }

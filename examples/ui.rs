@@ -138,8 +138,8 @@ impl Data {
 async fn main() {
     let mut data = Data::new();
 
-    let mut data0 = String::new();
-    let mut data1 = String::new();
+    let mut string = String::new();
+    let mut float = 1337.0;
 
     let mut text0 = String::new();
     let mut text1 = String::new();
@@ -215,11 +215,11 @@ async fn main() {
 
                     ui.separator();
 
-                    ui.input_field(hash!(), "<- input text 1", &mut data0);
-                    ui.input_field(hash!(), "<- input text 2", &mut data1);
+                    ui.input_string(hash!(), "<- input text", &mut string);
+                    ui.input_float(hash!(), "<- input float", &mut float);
                     ui.label(
                         None,
-                        &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
+                        &format!("Text entered: \"{}\" and \"{}\"", string, float),
                     );
 
                     ui.separator();
