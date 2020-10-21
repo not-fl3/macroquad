@@ -1,7 +1,7 @@
-//! Cross-platform mouse, keyboard (and gamepads soon) module. 
+//! Cross-platform mouse, keyboard (and gamepads soon) module.
 
-pub use miniquad::{KeyCode, MouseButton};
 use crate::get_context;
+pub use miniquad::{KeyCode, MouseButton};
 
 pub fn mouse_position() -> (f32, f32) {
     let context = get_context();

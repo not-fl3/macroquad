@@ -59,9 +59,9 @@ async fn main() {
     for _ in 0..10 {
         asteroids.push(Asteroid {
             pos: screen_center
-                + Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.))
-                    .normalize()
-                    * screen_width().min(screen_height()) / 2.,
+                + Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)).normalize()
+                    * screen_width().min(screen_height())
+                    / 2.,
             vel: Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)),
             rot: 0.,
             rot_speed: rand::gen_range(-2., 2.),
@@ -103,7 +103,8 @@ async fn main() {
                         pos: screen_center
                             + Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.))
                                 .normalize()
-                                * screen_width().min(screen_height()) / 2.,
+                                * screen_width().min(screen_height())
+                                / 2.,
                         vel: Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)),
                         rot: 0.,
                         rot_speed: rand::gen_range(-2., 2.),
@@ -159,7 +160,7 @@ async fn main() {
 
         let mut new_asteroids = Vec::new();
         for asteroid in asteroids.iter_mut() {
-            if (asteroid.pos - ship.pos).length() < asteroid.size + SHIP_HEIGHT/3. {
+            if (asteroid.pos - ship.pos).length() < asteroid.size + SHIP_HEIGHT / 3. {
                 gameover = true;
                 break;
             }

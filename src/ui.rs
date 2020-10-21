@@ -1,4 +1,3 @@
-
 use quad_gl::Texture2D;
 
 use crate::get_context;

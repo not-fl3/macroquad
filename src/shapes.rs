@@ -1,9 +1,6 @@
 //! 2D shapes rendering.
 
-use crate::{
-    get_context,
-    types::Color,
-};
+use crate::{get_context, types::Color};
 
 use glam::{vec2, Vec2};
 use quad_gl::{DrawMode, Vertex};

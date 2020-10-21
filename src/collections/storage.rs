@@ -9,7 +9,7 @@
 //!   let boundries: i32 = *storage::get(WORLD_BOUNDRIES).unwrap();
 //!   assert_eq!(boundries, 23);
 //! }
-//! 
+//!
 //! storage::store::<i32>(WORLD_BOUNDRIES, 23);
 //! draw_player();
 //! ```
