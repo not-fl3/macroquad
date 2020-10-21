@@ -226,7 +226,7 @@ struct MagicSnapshoter {
     bindings: Bindings,
     pass: Option<RenderPass>,
 
-    screen_texture: Option<Texture>,
+    screen_texture: Option<Texture2D>,
 }
 
 mod snapshoter_shader {
@@ -326,7 +326,7 @@ impl MagicSnapshoter {
                 );
 
                 self.pass = Some(RenderPass::new(ctx, color_img, None));
-                self.screen_texture = Some(color_img);
+                self.screen_texture = Some(Texture2D::from_miniquad_texture(color_img));
             }
 
             if self.bindings.images.len() == 0 {
@@ -346,34 +346,24 @@ impl MagicSnapshoter {
             if self.screen_texture.is_none() {
                 let (screen_width, screen_height) = ctx.screen_size();
 
-                self.screen_texture = Some(Texture::new_render_texture(
-                    ctx,
-                    TextureParams {
-                        width: screen_width as _,
-                        height: screen_height as _,
-                        ..Default::default()
-                    },
+                self.screen_texture = Some(Texture2D::from_miniquad_texture(
+                    Texture::new_render_texture(
+                        ctx,
+                        TextureParams {
+                            width: screen_width as _,
+                            height: screen_height as _,
+                            ..Default::default()
+                        },
+                    ),
                 ))
             }
 
             let texture = self.screen_texture.unwrap();
-            let (internal_format, _, _) = texture.format.into();
-            unsafe {
-                gl::glBindTexture(gl::GL_TEXTURE_2D, texture.gl_internal_id());
-                gl::glCopyTexImage2D(
-                    gl::GL_TEXTURE_2D,
-                    0,
-                    internal_format,
-                    0,
-                    0,
-                    texture.width as _,
-                    texture.height as _,
-                    0,
-                );
-            }
+            texture.grab_screen();
         }
     }
 }
+
 struct GlState {
     texture: Texture,
     draw_mode: DrawMode,
@@ -705,11 +695,10 @@ impl QuadGl {
             bindings.index_buffer.update(ctx, dc.indices());
 
             bindings.images[0] = dc.texture;
-            bindings.images[1] = self
-                .state
-                .snapshoter
-                .screen_texture
-                .unwrap_or_else(|| Texture::empty());
+            bindings.images[1] = self.state.snapshoter.screen_texture.map_or_else(
+                || Texture::empty(),
+                |texture| texture.raw_miniquad_texture_handle(),
+            );
 
             ctx.apply_pipeline(&pipeline.pipeline);
             if let Some(clip) = dc.clip {
@@ -961,6 +950,62 @@ impl Texture2D {
     pub fn raw_miniquad_texture_handle(&self) -> Texture {
         self.texture
     }
+
+    pub fn grab_screen(&self) {
+        let (internal_format, _, _) = self.texture.format.into();
+        unsafe {
+            gl::glBindTexture(gl::GL_TEXTURE_2D, self.texture.gl_internal_id());
+            gl::glCopyTexImage2D(
+                gl::GL_TEXTURE_2D,
+                0,
+                internal_format,
+                0,
+                0,
+                self.texture.width as _,
+                self.texture.height as _,
+                0,
+            );
+        }
+    }
+
+    pub fn get_texture_data(&self) -> Image {
+        let mut image = Image {
+            width: self.texture.width as _,
+            height: self.texture.height as _,
+            bytes: vec![0; self.texture.width as usize * self.texture.height as usize * 4],
+        };
+
+        // TODO: this is actually miniquad's buisness, but lets test it here first
+        let mut fbo = 0;
+        unsafe {
+            let mut binded_fbo: i32 = 0;
+            gl::glGetIntegerv(gl::GL_DRAW_FRAMEBUFFER_BINDING, &mut binded_fbo);
+            gl::glGenFramebuffers(1, &mut fbo);
+            gl::glBindFramebuffer(gl::GL_FRAMEBUFFER, fbo);
+            gl::glFramebufferTexture2D(
+                gl::GL_FRAMEBUFFER,
+                gl::GL_COLOR_ATTACHMENT0,
+                gl::GL_TEXTURE_2D,
+                self.texture.gl_internal_id(),
+                0,
+            );
+
+            gl::glReadPixels(
+                0,
+                0,
+                self.texture.width as _,
+                self.texture.height as _,
+                gl::GL_RGBA,
+                gl::GL_UNSIGNED_BYTE,
+                image.bytes.as_mut_ptr() as _,
+            );
+
+            gl::glBindFramebuffer(gl::GL_FRAMEBUFFER, binded_fbo as _);
+            gl::glDeleteFramebuffers(1, &fbo);
+        }
+
+        image
+    }
 }
 
 /// Image, data stored in CPU memory
@@ -1062,6 +1107,27 @@ impl Image {
 
     pub fn get_pixel(&self, x: u32, y: u32) -> Color {
         self.get_image_data()[(y * self.width as u32 + x) as usize]
+    }
+
+    pub fn export_png(&self, path: &str) {
+        let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
+
+        // flip the image before saving
+        for y in 0..self.height as usize {
+            for x in 0..self.width as usize * 4 {
+                bytes[y * self.width as usize * 4 + x] =
+                    self.bytes[(self.height as usize - y - 1) * self.width as usize * 4 + x];
+            }
+        }
+
+        image::save_buffer(
+            path,
+            &bytes[..],
+            self.width as _,
+            self.height as _,
+            image::ColorType::RGBA(8),
+        )
+        .unwrap();
     }
 }
 
