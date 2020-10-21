@@ -152,6 +152,12 @@ impl FontInternal {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Font(usize);
 
+impl Default for Font {
+    fn default() -> Font {
+        Font(0)
+    }
+}
+
 impl Font {
     /// List of ascii characters, may be helpfull in combination with "populate_font_cache"
     pub fn ascii_character_list() -> Vec<char> {
@@ -282,19 +288,23 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     }
 }
 
-pub fn measure_text(text: &str, font_size: f32) -> (f32, f32) {
-    let context = &mut get_context().draw_context;
+pub fn measure_text(text: &str, font: Option<Font>, font_size: u16, font_scale: f32) -> (f32, f32) {
+    let context = get_context();
 
-    let atlas = context.ui.font_atlas.clone();
+    let font = context
+        .fonts_storage
+        .get_font(font.unwrap_or(Font::default()));
 
     let mut width = 0.;
     let mut height: f32 = 0.;
 
     for character in text.chars() {
-        if let Some(font_data) = atlas.character_infos.get(&character) {
-            let font_data = font_data.scale(font_size);
-            width += font_data.left_padding + font_data.size.0 + font_data.right_padding;
-            height = height.max(font_data.size.1);
+        if let Some(font_data) = font.characters.get(&(character, font_size)) {
+            width += font_data.advance * font_scale;
+
+            if height < font_data.glyph_h as f32 * font_scale {
+                height = font_data.glyph_h as f32 * font_scale;
+            }
         }
     }
     return (width, height);
@@ -305,8 +315,7 @@ pub(crate) struct FontsStorage {
 }
 impl FontsStorage {
     pub(crate) fn new(ctx: &mut miniquad::Context) -> FontsStorage {
-        let default_font =
-            FontInternal::load_from_bytes(ctx, include_bytes!("ProggyClean.ttf"));
+        let default_font = FontInternal::load_from_bytes(ctx, include_bytes!("ProggyClean.ttf"));
         FontsStorage {
             fonts: vec![default_font],
         }
