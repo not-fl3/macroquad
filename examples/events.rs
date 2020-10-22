@@ -1,4 +1,8 @@
-use macroquad::megaui::{widgets, Vector2};
+use megaui_macroquad::{
+    draw_megaui, draw_window,
+    megaui::{hash, widgets, Vector2},
+};
+
 use macroquad::prelude::*;
 
 #[macroquad::main("Events")]
@@ -47,6 +51,7 @@ async fn main() {
             },
         );
 
+        draw_megaui();
         next_frame().await;
     }
 }

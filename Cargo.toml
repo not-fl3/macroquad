@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.3.0-alpha.6"
+version = "0.3.0-alpha.7"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -29,8 +29,11 @@ fontdue = "0.3.2"
 
 
 [dev-dependencies]
-megaui-macroquad = { path = "./megaui" }
-megaui = { version = "*" }
+megaui-macroquad = "0.1.0"
 
-#[patch.crates-io]
+# workaround to fix the examples
+# this allows to use megaui-macroquad in examples without two versions of macroquad
+[patch.crates-io]
+macroquad = { path = './' }
+
 #miniquad = { path = '../miniquad' }

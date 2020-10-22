@@ -1,5 +1,7 @@
 use macroquad::prelude::*;
 
+use megaui_macroquad::{draw_megaui, draw_window, megaui::hash};
+
 #[macroquad::main("TestWindow")]
 async fn main() {
     loop {
@@ -31,6 +33,8 @@ async fn main() {
                 ui.button(None, "OK?");
             },
         );
+
+        draw_megaui();
 
         next_frame().await
     }
