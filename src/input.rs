@@ -37,18 +37,25 @@ pub fn get_key_pressed() -> Option<char> {
     context.chars_pressed_queue.pop()
 }
 
+/// Detect if the key is being pressed
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
+    let context = get_context();
+
+    context.mouse_down.contains(&btn)
+}
+
+/// Detect if the key has been pressed once
+pub fn is_mouse_button_pressed(btn: MouseButton) -> bool {
     let context = get_context();
 
     context.mouse_pressed.contains(&btn)
 }
 
-/// Check for megaui mouse overlap
-pub fn mouse_over_ui() -> bool {
+/// Detect if the key has been released this frame
+pub fn is_mouse_button_released(btn: MouseButton) -> bool {
     let context = get_context();
 
-    context.draw_context.ui.is_mouse_over(megaui::Vector2::new(
-        context.mouse_position.x(),
-        context.mouse_position.y(),
-    ))
+    context.mouse_released.contains(&btn)
 }
+
+

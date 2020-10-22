@@ -39,8 +39,6 @@
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
-pub use megaui;
-
 use std::collections::HashSet;
 use std::future::Future;
 use std::pin::Pin;
@@ -60,7 +58,6 @@ pub mod time;
 pub mod window;
 
 mod types;
-mod ui;
 
 pub mod collections;
 pub mod coroutines;
@@ -94,7 +91,9 @@ struct Context {
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
+    mouse_down: HashSet<MouseButton>,
     mouse_pressed: HashSet<MouseButton>,
+    mouse_released: HashSet<MouseButton>,
     chars_pressed_queue: Vec<char>,
     mouse_position: Vec2,
     mouse_wheel: Vec2,
@@ -121,9 +120,12 @@ impl Context {
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
             chars_pressed_queue: Vec::new(),
+            mouse_down: HashSet::new(),
             mouse_pressed: HashSet::new(),
+            mouse_released: HashSet::new(),
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
+
 
             draw_context: DrawContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
@@ -147,12 +149,12 @@ impl Context {
         self.draw_context
             .perform_render_passes(&mut self.quad_context);
 
-        self.draw_context.ui.new_frame();
-
         self.quad_context.commit_frame();
 
         self.mouse_wheel = Vec2::new(0., 0.);
         self.keys_pressed.clear();
+        self.mouse_pressed.clear();
+        self.mouse_released.clear();
     }
 
     fn clear(&mut self, color: Color) {
@@ -189,145 +191,41 @@ impl EventHandlerFree for Stage {
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        use megaui::InputHandler;
-
         let context = get_context();
 
         context.mouse_position = Vec2::new(x, y);
-        context.draw_context.ui.mouse_move((x, y));
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
-        use megaui::InputHandler;
-
         let context = get_context();
 
         context.mouse_wheel.set_x(x);
         context.mouse_wheel.set_y(y);
-
-        context.draw_context.ui.mouse_wheel(x, -y);
     }
-    fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        use megaui::InputHandler;
-
+    fn mouse_button_down_event(&mut self, btn: MouseButton, _x: f32, _y: f32) {
         let context = get_context();
 
+        context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
-        context.draw_context.ui.mouse_down((x, y));
     }
 
-    fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        use megaui::InputHandler;
-
+    fn mouse_button_up_event(&mut self, btn: MouseButton, _x: f32, _y: f32) {
         let context = get_context();
 
-        context.mouse_pressed.remove(&btn);
-
-        context.draw_context.ui.mouse_up((x, y));
+        context.mouse_down.remove(&btn);
+        context.mouse_released.insert(btn);
     }
 
-    fn char_event(&mut self, character: char, modifiers: KeyMods, _repeat: bool) {
-        use megaui::InputHandler;
-
+    fn char_event(&mut self, character: char, _modifiers: KeyMods, _repeat: bool) {
         let context = get_context();
 
         context.chars_pressed_queue.push(character);
-        context
-            .draw_context
-            .ui
-            .char_event(character, modifiers.shift, modifiers.ctrl);
     }
 
-    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
-        use megaui::InputHandler;
-
+    fn key_down_event(&mut self, keycode: KeyCode, _modifiers: KeyMods, repeat: bool) {
         let context = get_context();
         context.keys_down.insert(keycode);
         if repeat == false {
             context.keys_pressed.insert(keycode);
-        }
-
-        match keycode {
-            KeyCode::Up => context.draw_context.ui.key_down(
-                megaui::KeyCode::Up,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Down => context.draw_context.ui.key_down(
-                megaui::KeyCode::Down,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Right => context.draw_context.ui.key_down(
-                megaui::KeyCode::Right,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Left => context.draw_context.ui.key_down(
-                megaui::KeyCode::Left,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Home => context.draw_context.ui.key_down(
-                megaui::KeyCode::Home,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::End => context.draw_context.ui.key_down(
-                megaui::KeyCode::End,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Delete => context.draw_context.ui.key_down(
-                megaui::KeyCode::Delete,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Backspace => context.draw_context.ui.key_down(
-                megaui::KeyCode::Backspace,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Enter => context.draw_context.ui.key_down(
-                megaui::KeyCode::Enter,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Tab => context.draw_context.ui.key_down(
-                megaui::KeyCode::Tab,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Z => context.draw_context.ui.key_down(
-                megaui::KeyCode::Z,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::Y => context.draw_context.ui.key_down(
-                megaui::KeyCode::Y,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::C => context.draw_context.ui.key_down(
-                megaui::KeyCode::C,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::X => context.draw_context.ui.key_down(
-                megaui::KeyCode::X,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::V => context.draw_context.ui.key_down(
-                megaui::KeyCode::V,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            KeyCode::A => context.draw_context.ui.key_down(
-                megaui::KeyCode::A,
-                modifiers.shift,
-                modifiers.ctrl,
-            ),
-            _ => {}
         }
     }
 
