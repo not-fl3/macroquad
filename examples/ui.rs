@@ -1,8 +1,6 @@
-
-use macroquad::{
-    megaui::{widgets::Group, Drag, Ui, Vector2},
-    prelude::*,
-};
+use macroquad::prelude::*;
+use megaui::{hash, widgets::Group, Drag, Ui, Vector2};
+use megaui_macroquad::{draw_window, WindowParams};
 
 pub struct Slot {
     id: u64,
@@ -124,11 +122,7 @@ impl Data {
     }
 
     fn set_item(&mut self, id: u64, item: Option<String>) {
-        if let Some(slot) = self
-            .slots
-            .iter_mut()
-            .find(|(_, slot)| slot.id == id)
-        {
+        if let Some(slot) = self.slots.iter_mut().find(|(_, slot)| slot.id == id) {
             slot.1.item = item;
         }
     }
@@ -253,7 +247,7 @@ async fn main() {
         );
 
         match data.fit_command.take() {
-            Some(FittingCommand::Unfit { target_slot }) =>                 data.set_item(target_slot, None),
+            Some(FittingCommand::Unfit { target_slot }) => data.set_item(target_slot, None),
             Some(FittingCommand::Fit { target_slot, item }) => {
                 data.set_item(target_slot, Some(item));
             }
@@ -261,7 +255,8 @@ async fn main() {
                 target_slot,
                 origin_slot,
             }) => {
-                let origin_item = data.slots
+                let origin_item = data
+                    .slots
                     .iter()
                     .find_map(|(_, slot)| {
                         if slot.id == origin_slot {
@@ -273,9 +268,11 @@ async fn main() {
                     .flatten();
                 data.set_item(target_slot, origin_item);
                 data.set_item(origin_slot, None);
-            },
+            }
             None => {}
         };
+
+        megaui_macroquad::draw();
 
         next_frame().await;
     }
