@@ -1,6 +1,14 @@
 use macroquad::prelude::*;
 
-use macroquad::megaui::widgets::{Label, TreeNode};
+use megaui_macroquad::{
+    draw_window,
+    draw_megaui,
+    megaui::{
+        self, hash,
+        widgets::{Label, TreeNode},
+    },
+    set_megaui_texture, WindowParams,
+};
 
 enum Uniform {
     Float1(String),
@@ -376,6 +384,8 @@ async fn main() {
                 }
             }
         }
+
+        draw_megaui();
 
         next_frame().await
     }
