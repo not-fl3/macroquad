@@ -131,7 +131,7 @@ async fn main() {
             clear_background(WHITE);
             let text = "Game Over. Press [enter] to play again.";
             let font_size = 30.;
-            let text_size = measure_text(text, font_size);
+            let text_size = measure_text(text, None, font_size as _, 1.0);
 
             draw_text(
                 text,

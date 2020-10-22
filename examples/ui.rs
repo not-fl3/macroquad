@@ -1,6 +1,10 @@
 use macroquad::prelude::*;
-use megaui::{hash, widgets::Group, Drag, Ui, Vector2};
-use megaui_macroquad::{draw_window, WindowParams};
+
+use megaui_macroquad::{
+    draw_megaui, draw_window,
+    megaui::{self, hash, widgets::Group, Drag, Ui, Vector2},
+    WindowParams,
+};
 
 pub struct Slot {
     id: u64,
@@ -272,7 +276,7 @@ async fn main() {
             None => {}
         };
 
-        megaui_macroquad::draw();
+        draw_megaui();
 
         next_frame().await;
     }
