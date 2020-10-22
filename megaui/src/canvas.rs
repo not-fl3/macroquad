@@ -3,17 +3,17 @@
 use crate::ui::WindowContext;
 use crate::Color;
 use crate::Rect;
-use crate::Vector2;
+use glam::Vec2;
 
 pub struct DrawCanvas<'a> {
     pub(crate) context: WindowContext<'a>,
 }
 
 impl<'a> DrawCanvas<'a> {
-    pub fn cursor(&self) -> Vector2 {
+    pub fn cursor(&self) -> Vec2 {
         let cursor = &self.context.window.cursor;
-        Vector2::new(cursor.x, cursor.y)
-            + Vector2::new(cursor.area.x as f32, cursor.area.y as f32)
+        Vec2::new(cursor.x, cursor.y)
+            + Vec2::new(cursor.area.x, cursor.area.y)
             + cursor.scroll.scroll
     }
 

@@ -1,5 +1,5 @@
 use macroquad::{
-    megaui::{widgets::Group, Drag, Ui, Vector2},
+    megaui::{widgets::Group, Drag, Ui},
     prelude::*,
 };
 
@@ -51,8 +51,8 @@ impl Data {
 
         let fit_command = &mut self.fit_command;
         for (label, slot) in self.slots.iter_mut() {
-            Group::new(hash!("grp", slot.id, &label), Vector2::new(210., 55.)).ui(ui, |ui| {
-                let drag = Group::new(slot.id, Vector2::new(50., 50.))
+            Group::new(hash!("grp", slot.id, &label), vec2(210., 55.)).ui(ui, |ui| {
+                let drag = Group::new(slot.id, vec2(50., 50.))
                     // slot without item is not draggable
                     .draggable(slot.item.is_some())
                     // but could be a target of drag
@@ -61,7 +61,7 @@ impl Data {
                     .highlight(*item_dragging)
                     .ui(ui, |ui| {
                         if let Some(ref item) = slot.item {
-                            ui.label(Vector2::new(5., 10.), &item);
+                            ui.label(vec2(5., 10.), &item);
                         }
                     });
 
@@ -88,7 +88,7 @@ impl Data {
                     }
                     Drag::No => {}
                 }
-                ui.label(Vector2::new(60., 20.), label);
+                ui.label(vec2(60., 20.), label);
             });
         }
     }
@@ -96,10 +96,10 @@ impl Data {
     fn inventory(&mut self, ui: &mut Ui) {
         let item_dragging = &mut self.item_dragging;
         for (n, item) in self.inventory.iter().enumerate() {
-            let drag = Group::new(hash!("inventory", n), Vector2::new(50., 50.))
+            let drag = Group::new(hash!("inventory", n), vec2(50., 50.))
                 .draggable(true)
                 .ui(ui, |ui| {
-                    ui.label(Vector2::new(5., 10.), &item);
+                    ui.label(vec2(5., 10.), &item);
                 });
 
             match drag {
@@ -155,11 +155,11 @@ async fn main() {
             },
             |ui| {
                 for i in 0..30 {
-                    Group::new(hash!("shop", i), Vector2::new(300., 80.)).ui(ui, |ui| {
-                        ui.label(Vector2::new(10., 10.), &format!("Item N {}", i));
-                        ui.label(Vector2::new(260., 40.), "10/10");
-                        ui.label(Vector2::new(200., 58.), &format!("{} kr", 800));
-                        if ui.button(Vector2::new(260., 55.), "buy") {
+                    Group::new(hash!("shop", i), vec2(300., 80.)).ui(ui, |ui| {
+                        ui.label(vec2(10., 10.), &format!("Item N {}", i));
+                        ui.label(vec2(260., 40.), "10/10");
+                        ui.label(vec2(200., 58.), &format!("{} kr", 800));
+                        if ui.button(vec2(260., 55.), "buy") {
                             data.inventory.push(format!("Item {}", i));
                         }
                     });
@@ -177,10 +177,10 @@ async fn main() {
                 ..Default::default()
             },
             |ui| {
-                Group::new(hash!(), Vector2::new(220., 400.)).ui(ui, |ui| {
+                Group::new(hash!(), vec2(220., 400.)).ui(ui, |ui| {
                     data.slots(ui);
                 });
-                Group::new(hash!(), Vector2::new(280., 400.)).ui(ui, |ui| {
+                Group::new(hash!(), vec2(280., 400.)).ui(ui, |ui| {
                     data.inventory(ui);
                 });
             },
@@ -225,11 +225,11 @@ async fn main() {
                 });
                 ui.tree_node(hash!(), "editbox 1", |ui| {
                     ui.label(None, "This is editbox!");
-                    ui.editbox(hash!(), megaui::Vector2::new(285., 165.), &mut text0);
+                    ui.editbox(hash!(), vec2(285., 165.), &mut text0);
                 });
                 ui.tree_node(hash!(), "editbox 2", |ui| {
                     ui.label(None, "This is editbox!");
-                    ui.editbox(hash!(), megaui::Vector2::new(285., 165.), &mut text1);
+                    ui.editbox(hash!(), vec2(285., 165.), &mut text1);
                 });
             },
         );

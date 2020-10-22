@@ -1,9 +1,10 @@
 use crate::{
-    types::{Rect, Color, Vector2},
+    types::{Rect, Color},
 	hash,
     widgets::Editbox,
     Id, Layout, Ui,
 };
+use glam::Vec2;
 
 #[derive(Default)]
 struct State {
@@ -15,14 +16,14 @@ struct State {
 
 #[derive(Clone, Copy)]
 struct Drag {
-	start_mouse: Vector2,
+	start_mouse: Vec2,
 	start_data: f32,
 }
 
 pub struct InputFloat<'a> {
     id: Id,
     label: &'a str,
-    size: Option<Vector2>,
+    size: Option<Vec2>,
 	step: f32,
 }
 
@@ -45,7 +46,7 @@ impl<'a> InputFloat<'a> {
         }
     }
 
-    pub fn size(self, size: Vector2) -> Self {
+    pub fn size(self, size: Vec2) -> Self {
         Self {
             size: Some(size),
             ..self
@@ -71,7 +72,7 @@ impl<'a> InputFloat<'a> {
 		);
 
         let size = self.size.unwrap_or_else(|| {
-            Vector2::new(
+            Vec2::new(
                 context.window.cursor.area.w
                     - context.global_style.margin * 2.
                     - context.window.cursor.ident,
@@ -80,16 +81,16 @@ impl<'a> InputFloat<'a> {
         });
         let pos = context.window.cursor.fit(size, Layout::Vertical);
 
-        let editbox_area = Vector2::new(
-			if self.label.is_empty() { size.x } else { size.x / 2.0 },
-			size.y,
+        let editbox_area = Vec2::new(
+			if self.label.is_empty() { size.x() } else { size.x() / 2.0 },
+			size.y(),
 		);
 
         let editbox = Editbox::new(self.id, editbox_area)
             .position(pos)
             .multiline(false);
 
-        let hovered = Rect::new(pos.x, pos.y, editbox_area.x, editbox_area.y)
+        let hovered = Rect::new(pos.x(), pos.y(), editbox_area.x(), editbox_area.y())
             .contains(context.input.mouse_position);
 
         if hovered && context.input.is_mouse_down() {
@@ -116,7 +117,7 @@ impl<'a> InputFloat<'a> {
                 }
             }
 
-            let mouse_delta = context.input.mouse_position.x - drag.start_mouse.x;
+            let mouse_delta = context.input.mouse_position.x() - drag.start_mouse.x();
             *data = drag.start_data + mouse_delta * self.step;
         }
 
@@ -142,7 +143,7 @@ impl<'a> InputFloat<'a> {
         if self.label.is_empty() == false {
             context.window.draw_commands.draw_label(
                 self.label,
-                Vector2::new(pos.x + size.x / 2. + 5., pos.y + 2.),
+                Vec2::new(pos.x() + size.x() / 2. + 5., pos.y() + 2.),
                 Color::from_rgba(0, 0, 0, 255),
             );
         }

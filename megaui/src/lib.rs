@@ -11,7 +11,7 @@ pub mod widgets;
 pub use draw_list::{DrawList, Vertex};
 pub use input_handler::{InputHandler, KeyCode};
 pub use style::Style;
-pub use types::{Color, Rect, Vector2};
+pub use types::{Color, Rect};
 pub use ui::{Drag, Layout, Ui};
 
 pub type Id = u64;

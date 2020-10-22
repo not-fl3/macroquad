@@ -1,4 +1,5 @@
-use crate::{Color, Rect, Vector2};
+use glam::Vec2;
+use crate::{Color, Rect};
 
 use miniquad_text_rusttype::FontAtlas;
 
@@ -20,14 +21,14 @@ pub(crate) enum DrawCommand {
         fill: Option<Color>,
     },
     DrawTriangle {
-        p0: Vector2,
-        p1: Vector2,
-        p2: Vector2,
+        p0: Vec2,
+        p1: Vec2,
+        p2: Vec2,
         color: Color,
     },
     DrawLine {
-        start: Vector2,
-        end: Vector2,
+        start: Vec2,
+        end: Vec2,
         color: Color,
     },
     DrawRawTexture {
@@ -40,7 +41,7 @@ pub(crate) enum DrawCommand {
 }
 
 impl DrawCommand {
-    pub fn offset(&self, offset: Vector2) -> DrawCommand {
+    pub fn offset(&self, offset: Vec2) -> DrawCommand {
         match self.clone() {
             DrawCommand::DrawCharacter {
                 dest,
@@ -119,7 +120,7 @@ impl CommandsList {
         0.
     }
 
-    pub fn label_size(&self, label: &str, multiline: Option<f32>) -> Vector2 {
+    pub fn label_size(&self, label: &str, multiline: Option<f32>) -> Vec2 {
         let width = label.split('\n').fold(0.0f32, |max_width, line| {
             max_width.max(line.chars().map(|c| self.character_advance(c)).sum::<f32>())
         });
@@ -127,14 +128,14 @@ impl CommandsList {
             line_height * label.split('\n').count() as f32
         });
 
-        Vector2::new(width, height)
+        Vec2::new(width, height)
     }
 
     /// If character is in font atlas - will return x advance from position to potential next character position
     pub fn draw_character(
         &mut self,
         character: char,
-        position: Vector2,
+        position: Vec2,
         color: Color,
     ) -> Option<f32> {
         if let Some(font_data) = self.font_atlas.character_infos.get(&character) {
@@ -150,8 +151,8 @@ impl CommandsList {
 
             let cmd = DrawCommand::DrawCharacter {
                 dest: Rect::new(
-                    left_coord + position.x,
-                    top_coord + position.y,
+                    left_coord + position.x(),
+                    top_coord + position.y(),
                     font_data.size.0,
                     font_data.size.1,
                 ),
@@ -172,9 +173,9 @@ impl CommandsList {
         }
     }
 
-    pub fn draw_label<T: Into<LabelParams>>(&mut self, label: &str, position: Vector2, params: T) {
+    pub fn draw_label<T: Into<LabelParams>>(&mut self, label: &str, position: Vec2, params: T) {
         if self.clipping_zone.map_or(false, |clip| {
-            !clip.overlaps(&Rect::new(position.x - 150., position.y - 25., 200., 50.))
+            !clip.overlaps(&Rect::new(position.x() - 150., position.y() - 25., 200., 50.))
         }) {
             return;
         }
@@ -185,7 +186,7 @@ impl CommandsList {
         for character in label.chars() {
             if let Some(advance) = self.draw_character(
                 character,
-                position + Vector2::new(total_width, 0.),
+                position + Vec2::new(total_width, 0.),
                 params.color,
             ) {
                 total_width += advance;
@@ -225,7 +226,7 @@ impl CommandsList {
         })
     }
 
-    pub fn draw_triangle<T>(&mut self, p0: Vector2, p1: Vector2, p2: Vector2, color: T)
+    pub fn draw_triangle<T>(&mut self, p0: Vec2, p1: Vec2, p2: Vec2, color: T)
     where
         T: Into<Color>,
     {
@@ -243,7 +244,7 @@ impl CommandsList {
         })
     }
 
-    pub fn draw_line<T: Into<Color>>(&mut self, start: Vector2, end: Vector2, color: T) {
+    pub fn draw_line<T: Into<Color>>(&mut self, start: Vec2, end: Vec2, color: T) {
         if self
             .clipping_zone
             .map_or(false, |clip| !clip.contains(start) && !clip.contains(end))

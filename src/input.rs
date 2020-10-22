@@ -47,7 +47,7 @@ pub fn is_mouse_button_down(btn: MouseButton) -> bool {
 pub fn mouse_over_ui() -> bool {
     let context = get_context();
 
-    context.draw_context.ui.is_mouse_over(megaui::Vector2::new(
+    context.draw_context.ui.is_mouse_over(glam::vec2(
         context.mouse_position.x(),
         context.mouse_position.y(),
     ))

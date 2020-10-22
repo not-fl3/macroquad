@@ -1,40 +1,4 @@
-#[derive(Copy, Clone, Default, Debug)]
-pub struct Vector2 {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Vector2 {
-    pub fn new(x: f32, y: f32) -> Vector2 {
-        Vector2 { x, y }
-    }
-
-    pub fn distance(self, other: Vector2) -> f32 {
-        ((self.x - other.x) * (self.x - other.x) + (self.y - other.y) * (self.y - other.y)).sqrt()
-    }
-}
-
-impl std::ops::Add for Vector2 {
-    type Output = Vector2;
-
-    fn add(self, rhs: Vector2) -> Vector2 {
-        Vector2 {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
-    }
-}
-
-impl std::ops::Sub for Vector2 {
-    type Output = Vector2;
-
-    fn sub(self, rhs: Vector2) -> Vector2 {
-        Vector2 {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
+use glam::Vec2;
 
 /// A simple 2D rectangle.
 ///
@@ -110,11 +74,11 @@ impl Rect {
     }
 
     /// Checks whether the `Rect` contains a `Point`
-    pub fn contains(&self, point: Vector2) -> bool {
-        point.x >= self.left()
-            && point.x <= self.right()
-            && point.y <= self.bottom()
-            && point.y >= self.top()
+    pub fn contains(&self, point: Vec2) -> bool {
+        point.x() >= self.left()
+            && point.x() <= self.right()
+            && point.y() <= self.bottom()
+            && point.y() >= self.top()
     }
 
     /// Checks whether the `Rect` overlaps another `Rect`
@@ -152,8 +116,8 @@ impl Rect {
         })
     }
 
-    pub fn offset(self, offset: Vector2) -> Rect {
-        Rect::new(self.x + offset.x, self.y + offset.y, self.w, self.h)
+    pub fn offset(self, offset: Vec2) -> Rect {
+        Rect::new(self.x + offset.x(), self.y + offset.y(), self.w, self.h)
     }
 }
 

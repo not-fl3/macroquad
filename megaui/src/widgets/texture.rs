@@ -1,7 +1,8 @@
-use crate::{types::Vector2, Layout, Rect, Ui};
+use crate::{Layout, Rect, Ui};
+use glam::Vec2;
 
 pub struct Texture {
-    position: Option<Vector2>,
+    position: Option<Vec2>,
     w: f32,
     h: f32,
     texture: u32,
@@ -21,7 +22,7 @@ impl Texture {
         Texture { w, h, ..self }
     }
 
-    pub fn position<P: Into<Option<Vector2>>>(self, position: P) -> Self {
+    pub fn position<P: Into<Option<Vec2>>>(self, position: P) -> Self {
         let position = position.into();
 
         Texture { position, ..self }
@@ -30,7 +31,7 @@ impl Texture {
     pub fn ui(self, ui: &mut Ui) -> bool {
         let context = ui.get_active_window_context();
 
-        let size = Vector2::new(self.w, self.h);
+        let size = Vec2::new(self.w, self.h);
 
         let pos = context
             .window
@@ -39,9 +40,9 @@ impl Texture {
         context
             .window
             .draw_commands
-            .draw_raw_texture(Rect::new(pos.x, pos.y, self.w, self.h), self.texture);
+            .draw_raw_texture(Rect::new(pos.x(), pos.y(), self.w, self.h), self.texture);
 
-        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let rect = Rect::new(pos.x(), pos.y(), size.x(), size.y());
         let hovered = rect.contains(context.input.mouse_position);
 
         context.focused && hovered && context.input.click_up

@@ -1,7 +1,8 @@
 use crate::{
-    types::{Rect, Vector2},
+    types::Rect,
     Id, Layout, Ui,
 };
+use glam::Vec2;
 
 use std::borrow::Cow;
 
@@ -31,12 +32,12 @@ impl<'a> TreeNode<'a> {
     pub fn ui<F: FnOnce(&mut Ui)>(self, ui: &mut Ui, f: F) {
         let context = ui.get_active_window_context();
 
-        let size = Vector2::new(300., 14.);
+        let size = Vec2::new(300., 14.);
 
         let color = context.global_style.text(context.focused);
         let pos = context.window.cursor.fit(size, Layout::Vertical);
 
-        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let rect = Rect::new(pos.x(), pos.y(), size.x(), size.y());
         let hovered = rect.contains(context.input.mouse_position);
 
         let clicked = context.focused && hovered && context.input.click_down();
@@ -57,7 +58,7 @@ impl<'a> TreeNode<'a> {
         context
             .window
             .draw_commands
-            .draw_label(&*self.label, pos + Vector2::new(10., 0.), color);
+            .draw_label(&*self.label, pos + Vec2::new(10., 0.), color);
 
         if *opened == 1 {
             context.window.cursor.ident += 5.;

@@ -1,7 +1,8 @@
 use crate::{
     canvas::DrawCanvas, draw_command::CommandsList, draw_list::DrawList, types::Rect,
-    types::Vector2, Id, InputHandler, Style,
+    Id, InputHandler, Style,
 };
+use glam::Vec2;
 
 use miniquad_text_rusttype::FontAtlas;
 use std::{collections::HashMap, rc::Rc};
@@ -25,8 +26,8 @@ pub(crate) struct Window {
     // the way to find out wich windows should be rendered after end of the frame and during next frame, before begin_window of the next frame will be called on each window
     pub was_active: bool,
     pub title_height: f32,
-    pub position: Vector2,
-    pub size: Vector2,
+    pub position: Vec2,
+    pub size: Vec2,
     pub vertical_scroll_bar_width: f32,
     pub movable: bool,
     pub draw_commands: CommandsList,
@@ -40,8 +41,8 @@ impl Window {
     pub fn new(
         id: Id,
         parent: Option<Id>,
-        position: Vector2,
-        size: Vector2,
+        position: Vec2,
+        size: Vec2,
         title_height: f32,
         margin: f32,
         movable: bool,
@@ -60,10 +61,10 @@ impl Window {
             draw_commands: CommandsList::new(font_atlas),
             cursor: Cursor::new(
                 Rect::new(
-                    position.x,
-                    position.y + title_height,
-                    size.x,
-                    size.y - title_height,
+                    position.x(),
+                    position.y() + title_height,
+                    size.x(),
+                    size.y() - title_height,
                 ),
                 margin,
             ),
@@ -84,29 +85,29 @@ impl Window {
     }
 
     pub fn full_rect(&self) -> Rect {
-        Rect::new(self.position.x, self.position.y, self.size.x, self.size.y)
+        Rect::new(self.position.x(), self.position.y(), self.size.x(), self.size.y())
     }
 
     pub fn content_rect(&self) -> Rect {
         Rect::new(
-            self.position.x,
-            self.position.y + self.title_height,
-            self.size.x - self.vertical_scroll_bar_width,
-            self.size.y - self.title_height,
+            self.position.x(),
+            self.position.y() + self.title_height,
+            self.size.x() - self.vertical_scroll_bar_width,
+            self.size.y() - self.title_height,
         )
     }
 
-    pub fn set_position(&mut self, position: Vector2) {
+    pub fn set_position(&mut self, position: Vec2) {
         self.position = position;
-        self.cursor.area.x = position.x;
-        self.cursor.area.y = position.y + self.title_height;
+        self.cursor.area.x = position.x();
+        self.cursor.area.y = position.y() + self.title_height;
     }
 
     pub fn title_rect(&self) -> Rect {
         Rect::new(
-            self.position.x,
-            self.position.y,
-            self.size.x,
+            self.position.x(),
+            self.position.y(),
+            self.size.x(),
             self.title_height,
         )
     }
@@ -118,15 +119,15 @@ impl Window {
 
 #[derive(Copy, Clone, Debug)]
 pub enum DragState {
-    Clicked(Vector2),
-    Dragging(Vector2),
+    Clicked(Vec2),
+    Dragging(Vec2),
 }
 
 #[derive(Copy, Clone, Debug)]
 pub enum Drag {
     No,
-    Dragging(Vector2, Option<Id>),
-    Dropped(Vector2, Option<Id>),
+    Dragging(Vec2, Option<Id>),
+    Dropped(Vec2, Option<Id>),
 }
 
 pub struct Ui {
@@ -134,7 +135,7 @@ pub struct Ui {
     pub(crate) style: Style,
     pub(crate) frame: u64,
 
-    moving: Option<(Id, Vector2)>,
+    moving: Option<(Id, Vec2)>,
     windows: HashMap<Id, Window>,
     // special window that is always rendered on top of anything
     // TODO: maybe make modal windows stack instead
@@ -205,7 +206,7 @@ impl<'a> WindowContext<'a> {
             ..rect
         };
 
-        self.window.cursor.scroll.scroll = Vector2::new(
+        self.window.cursor.scroll.scroll = Vec2::new(
             -self.window.cursor.scroll.rect.x,
             -self.window.cursor.scroll.rect.y,
         );
@@ -239,8 +240,8 @@ impl<'a> WindowContext<'a> {
         let pos = (scroll.rect.y - inner_rect.y) / inner_rect.h * rect.h;
 
         self.window.draw_commands.draw_line(
-            Vector2::new(rect.x, rect.y),
-            Vector2::new(rect.x, rect.y + rect.h),
+            Vec2::new(rect.x, rect.y),
+            Vec2::new(rect.x, rect.y + rect.h),
             self.global_style.window_border(self.focused),
         );
 
@@ -254,7 +255,7 @@ impl<'a> WindowContext<'a> {
         if hovered && self.input.is_mouse_down() {
             self.input.cursor_grabbed = true;
             scroll.dragging_y = true;
-            scroll.initial_scroll.y = scroll.rect.y - self.input.mouse_position.y * k;
+            *scroll.initial_scroll.y_mut() = scroll.rect.y - self.input.mouse_position.y() * k;
         }
         if scroll.dragging_y && self.input.is_mouse_down == false {
             self.input.cursor_grabbed = false;
@@ -262,15 +263,15 @@ impl<'a> WindowContext<'a> {
         }
         if scroll.dragging_y {
             clicked = true;
-            scroll.scroll_to(self.input.mouse_position.y * k + scroll.initial_scroll.y);
+            scroll.scroll_to(self.input.mouse_position.y() * k + scroll.initial_scroll.y());
         }
 
         if self.focused
             && area.contains(self.input.mouse_position)
-            && self.input.mouse_wheel.y != 0.
+            && self.input.mouse_wheel.y() != 0.
         {
             scroll.scroll_to(
-                scroll.rect.y + self.input.mouse_wheel.y * k * self.global_style.scroll_multiplier,
+                scroll.rect.y + self.input.mouse_wheel.y() * k * self.global_style.scroll_multiplier,
             );
         }
 
@@ -285,7 +286,7 @@ impl<'a> WindowContext<'a> {
 
 impl InputHandler for Ui {
     fn mouse_down(&mut self, position: (f32, f32)) {
-        let position = Vector2::new(position.0, position.1);
+        let position = Vec2::new(position.0, position.1);
 
         self.input.is_mouse_down = true;
         self.input.click_down = true;
@@ -293,10 +294,10 @@ impl InputHandler for Ui {
 
         if let Some(ref window) = self.modal {
             let rect = Rect::new(
-                window.position.x,
-                window.position.y,
-                window.size.x,
-                window.size.y,
+                window.position.x(),
+                window.position.y(),
+                window.size.x(),
+                window.size.y(),
             );
             if window.was_active && rect.contains(position) {
                 return;
@@ -313,7 +314,7 @@ impl InputHandler for Ui {
             if window.top_level() && window.title_rect().contains(position) && window.movable {
                 self.moving = Some((
                     window.id,
-                    position - Vector2::new(window.position.x, window.position.y),
+                    position - Vec2::new(window.position.x(), window.position.y()),
                 ));
             }
 
@@ -332,18 +333,18 @@ impl InputHandler for Ui {
     }
 
     fn mouse_wheel(&mut self, x: f32, y: f32) {
-        self.input.mouse_wheel = Vector2::new(x, y);
+        self.input.mouse_wheel = Vec2::new(x, y);
     }
 
     fn mouse_move(&mut self, position: (f32, f32)) {
-        let position = Vector2::new(position.0, position.1);
+        let position = Vec2::new(position.0, position.1);
 
         self.input.mouse_position = position;
         if let Some((id, orig)) = self.moving.as_ref() {
             self.windows
                 .get_mut(id)
                 .unwrap()
-                .set_position(Vector2::new(position.x - orig.x, position.y - orig.y));
+                .set_position(position - *orig);
         }
     }
 
@@ -414,8 +415,8 @@ impl Ui {
         &mut self,
         id: Id,
         parent: Option<Id>,
-        position: Vector2,
-        size: Vector2,
+        position: Vec2,
+        size: Vec2,
         title_height: f32,
         movable: bool,
     ) -> WindowContext {
@@ -483,8 +484,8 @@ impl Ui {
     pub(crate) fn begin_modal(
         &mut self,
         id: Id,
-        position: Vector2,
-        size: Vector2,
+        position: Vec2,
+        size: Vec2,
     ) -> WindowContext {
         let font_atlas = self.font_atlas.clone();
 
@@ -496,8 +497,7 @@ impl Ui {
         window.want_close = false;
         window.active = true;
         window.draw_commands.clipping_zone =
-            Some(Rect::new(position.x, position.y, size.x, size.y));
-        window.set_position(position);
+            Some(Rect::new(position.x(), position.y(), size.x(), size.y()));
 
         WindowContext {
             focused: true,
@@ -549,7 +549,7 @@ impl Ui {
         self.clipboard = Box::new(clipboard);
     }
 
-    pub fn is_mouse_over(&self, mouse_position: Vector2) -> bool {
+    pub fn is_mouse_over(&self, mouse_position: Vec2) -> bool {
         for window in self.windows_focus_order.iter() {
             let window = &self.windows[window];
             if window.was_active == false {
@@ -621,12 +621,12 @@ impl Ui {
         for window in self.windows_focus_order.iter().rev() {
             let window = &self.windows[window];
             if window.was_active {
-                self.render_window(window, Vector2::new(0., 0.), draw_list);
+                self.render_window(window, Vec2::new(0., 0.), draw_list);
             }
         }
         if let Some(modal) = self.modal.as_ref() {
             if modal.was_active {
-                self.render_window(modal, Vector2::new(0., 0.), draw_list);
+                self.render_window(modal, Vec2::new(0., 0.), draw_list);
             }
         }
 
@@ -637,7 +637,7 @@ impl Ui {
         }
     }
 
-    fn render_window(&self, window: &Window, offset: Vector2, draw_list: &mut Vec<DrawList>) {
+    fn render_window(&self, window: &Window, offset: Vec2, draw_list: &mut Vec<DrawList>) {
         for cmd in &window.draw_commands.commands {
             crate::draw_list::render_command(draw_list, cmd.offset(offset));
         }
@@ -657,7 +657,7 @@ impl Ui {
         }
     }
 
-    pub fn move_window(&mut self, id: Id, position: Vector2) {
+    pub fn move_window(&mut self, id: Id, position: Vec2) {
         if let Some(window) = self.windows.get_mut(&id) {
             window.set_position(position);
         }

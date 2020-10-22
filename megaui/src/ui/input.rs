@@ -1,4 +1,4 @@
-use crate::types::Vector2;
+use glam::Vec2;
 
 pub use crate::input_handler::KeyCode;
 
@@ -17,11 +17,11 @@ pub struct InputCharacter {
 
 #[derive(Default, Clone)]
 pub struct Input {
-    pub(crate) mouse_position: Vector2,
+    pub(crate) mouse_position: Vec2,
     pub(crate) is_mouse_down: bool,
     pub(crate) click_down: bool,
     pub(crate) click_up: bool,
-    pub(crate) mouse_wheel: Vector2,
+    pub(crate) mouse_wheel: Vec2,
     pub(crate) input_buffer: Vec<InputCharacter>,
     pub(crate) cursor_grabbed: bool,
     // TODO: its a hack to prevent button click behind modal
@@ -45,7 +45,7 @@ impl Input {
         self.click_down = false;
         self.click_up = false;
         self.modal_active = false;
-        self.mouse_wheel = Vector2::new(0., 0.);
+        self.mouse_wheel = Vec2::new(0., 0.);
         self.input_buffer = vec![];
     }
 }

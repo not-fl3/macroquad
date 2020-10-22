@@ -1,6 +1,6 @@
 use crate::draw_command::DrawCommand;
 use crate::types::{Color, Rect};
-use crate::Vector2;
+use glam::Vec2;
 
 #[derive(Debug, Clone, Copy)]
 #[repr(C)]
@@ -110,11 +110,11 @@ impl DrawList {
             .extend(indices.iter().map(|i| i + indices_offset));
     }
 
-    fn draw_triangle(&mut self, p0: Vector2, p1: Vector2, p2: Vector2, color: Color) {
+    fn draw_triangle(&mut self, p0: Vec2, p1: Vec2, p2: Vec2, color: Color) {
         let vertices = [
-            Vertex::new(p0.x, p0.y, 0.0, 0.0, color),
-            Vertex::new(p1.x, p1.y, 0.0, 0.0, color),
-            Vertex::new(p2.x, p2.y, 0.0, 0.0, color),
+            Vertex::new(p0.x(), p0.y(), 0.0, 0.0, color),
+            Vertex::new(p1.x(), p1.y(), 0.0, 0.0, color),
+            Vertex::new(p2.x(), p2.y(), 0.0, 0.0, color),
         ];
         let indices: [u16; 3] = [0, 1, 2];
 
@@ -203,7 +203,7 @@ pub(crate) fn render_command(draw_lists: &mut Vec<DrawList>, command: DrawComman
             }
         }
         DrawCommand::DrawLine { start, end, color } => {
-            active_draw_list.draw_line(start.x, start.y, end.x, end.y, 1., color);
+            active_draw_list.draw_line(start.x(), start.y(), end.x(), end.y(), 1., color);
         }
         DrawCommand::DrawCharacter {
             dest,

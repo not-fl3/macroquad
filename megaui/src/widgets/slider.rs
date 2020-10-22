@@ -1,9 +1,10 @@
 use crate::{
     hash,
-    types::{Rect, Vector2},
+    types::Rect,
     widgets::Editbox,
     Id, Layout, Ui,
 };
+use glam::Vec2;
 use std::ops::Range;
 
 pub struct Slider<'a> {
@@ -32,7 +33,7 @@ impl<'a> Slider<'a> {
     pub fn ui(self, ui: &mut Ui, data: &mut f32) {
         let context = ui.get_active_window_context();
 
-        let size = Vector2::new(
+        let size = Vec2::new(
             context.window.cursor.area.w
                 - context.global_style.margin * 3.
                 - context.window.cursor.ident,
@@ -42,7 +43,7 @@ impl<'a> Slider<'a> {
 
         let editbox_width = 50.;
         let label_width = 100.;
-        let slider_width = size.x - editbox_width - label_width;
+        let slider_width = size.x() - editbox_width - label_width;
         let margin = 5.;
 
         let mut temp_string = context
@@ -58,7 +59,7 @@ impl<'a> Slider<'a> {
             let _ = write!(&mut temp_string, "{:.2}", *data);
         }
 
-        Editbox::new(editbox_id, Vector2::new(50., size.y))
+        Editbox::new(editbox_id, Vec2::new(50., size.y()))
             .position(pos)
             .multiline(false)
             .filter(&|character| character.is_digit(10) || character == '.' || character == '-')
@@ -83,12 +84,12 @@ impl<'a> Slider<'a> {
             .entry(hash!(self.id, "dragging"))
             .or_insert(0);
 
-        let slider_start_x = editbox_width + pos.x + margin;
+        let slider_start_x = editbox_width + pos.x() + margin;
         let data_pos = (*data - self.range.start) / (self.range.end - self.range.start)
             * slider_width
             + slider_start_x;
 
-        let bar_rect = Rect::new(data_pos - 4., pos.y, 8., 20.);
+        let bar_rect = Rect::new(data_pos - 4., pos.y(), 8., 20.);
         let hovered = bar_rect.contains(context.input.mouse_position);
 
         if hovered && context.input.is_mouse_down() {
@@ -104,7 +105,7 @@ impl<'a> Slider<'a> {
         }
 
         if *dragging == 1 {
-            let mouse_position = ((context.input.mouse_position.x - slider_start_x) / slider_width)
+            let mouse_position = ((context.input.mouse_position.x() - slider_start_x) / slider_width)
                 .min(1.)
                 .max(0.);
             let old_data = *data;
@@ -119,10 +120,10 @@ impl<'a> Slider<'a> {
         }
 
         context.window.draw_commands.draw_line(
-            Vector2::new(pos.x + editbox_width + margin, pos.y + size.y / 2.),
-            Vector2::new(
-                pos.x + editbox_width + slider_width + margin,
-                pos.y + size.y / 2.,
+            Vec2::new(pos.x() + editbox_width + margin, pos.y() + size.y() / 2.),
+            Vec2::new(
+                pos.x() + editbox_width + slider_width + margin,
+                pos.y() + size.y() / 2.,
             ),
             context.global_style.text(context.focused),
         );
@@ -135,9 +136,9 @@ impl<'a> Slider<'a> {
 
         context.window.draw_commands.draw_label(
             self.label,
-            Vector2::new(
-                pos.x + editbox_width + slider_width + margin * 2.,
-                pos.y + 2.,
+            Vec2::new(
+                pos.x() + editbox_width + slider_width + margin * 2.,
+                pos.y() + 2.,
             ),
             context.global_style.text(context.focused),
         );

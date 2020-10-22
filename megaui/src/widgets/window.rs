@@ -1,14 +1,15 @@
 use crate::{
-    types::{Rect, Vector2},
+    types::Rect,
     ui::WindowContext,
     Id, Ui,
 };
+use glam::Vec2;
 
 #[derive(Debug, Clone)]
 pub struct Window {
     id: Id,
-    position: Vector2,
-    size: Vector2,
+    position: Vec2,
+    size: Vec2,
     close_button: bool,
     enabled: bool,
     movable: bool,
@@ -17,7 +18,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(id: Id, position: Vector2, size: Vector2) -> Window {
+    pub fn new(id: Id, position: Vec2, size: Vec2) -> Window {
         Window {
             id,
             position,
@@ -103,17 +104,16 @@ impl Window {
 
     fn draw_close_button(&self, context: &mut WindowContext) -> bool {
         let button_rect = Rect::new(
-            context.window.position.x + context.window.size.x - 15.,
-            context.window.position.y,
+            context.window.position.x() + context.window.size.x() - 15.,
+            context.window.position.y(),
             20.,
             20.,
         );
         context.window.draw_commands.draw_label(
             "X",
-            Vector2::new(
-                context.window.position.x + context.window.size.x - 10.,
-                context.window.position.y + 3.,
-            ),
+            context.window.position
+                + (Vec2::unit_x() * context.window.size)
+                + Vec2::new(-10.0, 3.0),
             Some(context.global_style.title(context.focused)),
         );
         context.focused
@@ -128,7 +128,7 @@ impl Window {
         let size = context.window.size;
 
         context.window.draw_commands.draw_rect(
-            Rect::new(position.x, position.y, size.x, size.y),
+            Rect::new(position.x(), position.y(), size.x(), size.y()),
             style.window_border(focused),
             style.background(focused),
         );
@@ -137,13 +137,13 @@ impl Window {
             if let Some(label) = &self.label {
                 context.window.draw_commands.draw_label(
                     &label,
-                    Vector2::new(position.x + style.margin, position.y + style.margin),
+                    position + Vec2::one() * style.margin,
                     context.global_style.title(focused),
                 );
             }
             context.window.draw_commands.draw_line(
-                Vector2::new(position.x, position.y + style.title_height),
-                Vector2::new(position.x + size.x, position.y + style.title_height),
+                position + Vec2::unit_y() * style.title_height,
+                position + Vec2::new(size.x(), style.title_height),
                 style.window_border(focused),
             );
         }
@@ -154,8 +154,8 @@ impl Ui {
     pub fn window<F: FnOnce(&mut Ui)>(
         &mut self,
         id: Id,
-        position: Vector2,
-        size: Vector2,
+        position: Vec2,
+        size: Vec2,
         f: F,
     ) -> bool {
         Window::new(id, position, size).ui(self, f)

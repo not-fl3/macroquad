@@ -1,18 +1,19 @@
 use crate::{
     draw_command::Aligment,
-    types::{Color, Rect, Vector2},
+    types::{Color, Rect},
     Id, Layout, Ui,
 };
+use glam::Vec2;
 
 pub struct Tabbar {
     id: Id,
-    position: Vector2,
-    size: Vector2,
+    position: Vec2,
+    size: Vec2,
     tabs: &'static [&'static str],
 }
 
 impl Tabbar {
-    pub fn new(id: Id, position: Vector2, size: Vector2, tabs: &'static [&'static str]) -> Tabbar {
+    pub fn new(id: Id, position: Vec2, size: Vec2, tabs: &'static [&'static str]) -> Tabbar {
         Tabbar {
             id,
             position,
@@ -29,15 +30,15 @@ impl Tabbar {
             .cursor
             .fit(self.size, Layout::Free(self.position));
 
-        let width = self.size.x as f32 / self.tabs.len() as f32;
+        let width = self.size.x() as f32 / self.tabs.len() as f32;
         let selected = *context.storage_u32.entry(self.id).or_insert(0);
 
         for (n, label) in self.tabs.iter().enumerate() {
             let rect = Rect::new(
-                pos.x + width * n as f32 + 1.,
-                pos.y,
+                pos.x() + width * n as f32 + 1.,
+                pos.y(),
                 width - 2.,
-                self.size.y,
+                self.size.y(),
             );
             let hovered = rect.contains(context.input.mouse_position);
             let selected = n as u32 == selected;
@@ -58,7 +59,7 @@ impl Tabbar {
 
             context.window.draw_commands.draw_label(
                 label,
-                pos + Vector2::new(
+                pos + Vec2::new(
                     width * n as f32 + width / 2.,
                     context.global_style.margin_button + 2.,
                 ),
@@ -80,8 +81,8 @@ impl Ui {
     pub fn tabbar(
         &mut self,
         id: Id,
-        position: Vector2,
-        size: Vector2,
+        position: Vec2,
+        size: Vec2,
         tabs: &'static [&'static str],
     ) -> u32 {
         Tabbar::new(id, position, size, tabs).ui(self)

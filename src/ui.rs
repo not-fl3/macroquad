@@ -56,14 +56,10 @@ pub fn draw_window<F: FnOnce(&mut megaui::Ui)>(
     let context = &mut get_context().draw_context;
     let params = params.into();
 
-    megaui::widgets::Window::new(
-        id,
-        megaui::Vector2::new(position.x(), position.y()),
-        megaui::Vector2::new(size.x(), size.y()),
-    )
-    .label(params.as_ref().map_or("", |params| &params.label))
-    .titlebar(params.as_ref().map_or(true, |params| params.titlebar))
-    .movable(params.as_ref().map_or(true, |params| params.movable))
-    .close_button(params.as_ref().map_or(false, |params| params.close_button))
-    .ui(&mut context.ui, f)
+    megaui::widgets::Window::new(id, position, size)
+        .label(params.as_ref().map_or("", |params| &params.label))
+        .titlebar(params.as_ref().map_or(true, |params| params.titlebar))
+        .movable(params.as_ref().map_or(true, |params| params.movable))
+        .close_button(params.as_ref().map_or(false, |params| params.close_button))
+        .ui(&mut context.ui, f)
 }

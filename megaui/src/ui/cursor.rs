@@ -1,14 +1,15 @@
-use crate::types::{Rect, Vector2};
+use crate::types::Rect;
+use glam::Vec2;
 
 #[derive(Clone, Debug)]
 pub struct Scroll {
-    pub scroll: Vector2,
+    pub scroll: Vec2,
     pub dragging_x: bool,
     pub dragging_y: bool,
     pub rect: Rect,
     pub inner_rect: Rect,
     pub inner_rect_previous_frame: Rect,
-    pub initial_scroll: Vector2,
+    pub initial_scroll: Vec2,
 }
 impl Scroll {
     pub fn scroll_to(&mut self, y: f32) {
@@ -29,7 +30,7 @@ impl Scroll {
 pub enum Layout {
     Vertical,
     Horizontal,
-    Free(Vector2),
+    Free(Vec2),
 }
 
 #[derive(Debug)]
@@ -59,10 +60,10 @@ impl Cursor {
                 rect: Rect::new(0., 0., area.w, area.h),
                 inner_rect: Rect::new(0., 0., area.w, area.h),
                 inner_rect_previous_frame: Rect::new(0., 0., area.w, area.h),
-                scroll: Vector2::new(0., 0.),
+                scroll: Vec2::zero(),
                 dragging_x: false,
                 dragging_y: false,
-                initial_scroll: Vector2::new(0., 0.),
+                initial_scroll: Vec2::zero(),
             },
             area,
 	    next_same_line: None,
@@ -79,7 +80,7 @@ impl Cursor {
         self.scroll.inner_rect = Rect::new(0., 0., self.area.w, self.area.h);
     }
 
-    pub fn fit(&mut self, size: Vector2, mut layout: Layout) -> Vector2 {
+    pub fn fit(&mut self, size: Vec2, mut layout: Layout) -> Vec2 {
         let res;
 
 	if let Some(x) = self.next_same_line {
@@ -91,26 +92,26 @@ impl Cursor {
 	}
         match layout {
             Layout::Horizontal => {
-		self.max_row_y = self.max_row_y.max(size.y);
+		self.max_row_y = self.max_row_y.max(size.y());
 
-                if self.x + size.x < self.area.w as f32 - self.margin * 2. {
-                    res = Vector2::new(self.x, self.y);
+                if self.x + size.x() < self.area.w as f32 - self.margin * 2. {
+                    res = Vec2::new(self.x, self.y);
                 } else {
                     self.x = self.margin;
                     self.y += self.max_row_y + self.margin;
 		    self.max_row_y = 0.;
-                    res = Vector2::new(self.x, self.y);
+                    res = Vec2::new(self.x, self.y);
                 }
-                self.x += size.x + self.margin;
+                self.x += size.x() + self.margin;
             }
             Layout::Vertical => {
 		if self.x != self.margin {
 		    self.x = self.margin;
 		    self.y += self.max_row_y;
 		}
-                res = Vector2::new(self.x, self.y);
-		self.x += size.x + self.margin;
-                self.max_row_y = size.y + self.margin;
+                res = Vec2::new(self.x, self.y);
+		self.x += size.x() + self.margin;
+                self.max_row_y = size.y() + self.margin;
             }
             Layout::Free(point) => {
                 res = point;
@@ -119,9 +120,9 @@ impl Cursor {
         self.scroll.inner_rect = self
             .scroll
             .inner_rect
-            .combine_with(Rect::new(res.x, res.y, size.x, size.y));
-        res + Vector2::new(self.area.x as f32, self.area.y as f32)
+            .combine_with(Rect::new(res.x(), res.y(), size.x(), size.y()));
+        res + Vec2::new(self.area.x as f32, self.area.y as f32)
             + self.scroll.scroll
-            + Vector2::new(self.ident, 0.)
+            + Vec2::new(self.ident, 0.)
     }
 }
