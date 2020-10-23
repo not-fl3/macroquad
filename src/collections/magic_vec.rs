@@ -1,7 +1,16 @@
 use std::{cell::UnsafeCell, ops::Drop};
 
+#[derive(Clone, Copy, Debug)]
+pub struct MagicHandle(Option<usize>);
+
+impl MagicHandle {
+    pub fn null() -> MagicHandle {
+        MagicHandle(None)
+    }
+}
 pub struct MagicRef<T: 'static> {
     pub data: &'static mut T,
+    pub handle: MagicHandle,
     used: *mut bool,
 }
 
@@ -15,13 +24,15 @@ impl<T: 'static> Drop for MagicRef<T> {
 }
 
 struct MagicCell<T> {
+    id: usize,
     data: UnsafeCell<T>,
     used: UnsafeCell<bool>,
 }
 
 impl<T> MagicCell<T> {
-    fn new(data: T) -> Self {
+    fn new(id: usize, data: T) -> Self {
         MagicCell {
+            id,
             data: UnsafeCell::new(data),
             used: UnsafeCell::new(false),
         }
@@ -49,6 +60,27 @@ impl<T: 'static> MagicVec<T> {
         self.data.clear()
     }
 
+    pub fn get(&self, handle: MagicHandle) -> Option<MagicRef<T>> {
+        if handle.0.is_none() {
+            return None;
+        }
+        let handle = handle.0.unwrap();
+        let cell = &self.data[handle];
+
+        if unsafe { *cell.used.get() } {
+            return None;
+        }
+
+        unsafe { *cell.used.get() = true };
+
+        Some(MagicRef {
+            data: unsafe { &mut *cell.data.get() },
+            handle: MagicHandle(Some(cell.id)),
+            used: cell.used.get(),
+        })
+
+    }
+
     pub fn iter(&self) -> MagicVecIterator<'static, T> {
         let iter = unsafe { std::mem::transmute(self.data.iter()) };
         MagicVecIterator { iter }
@@ -57,7 +89,7 @@ impl<T: 'static> MagicVec<T> {
     pub fn push(&mut self, data: T) {
         assert!(self.data.len() + 1 < self.capacity);
 
-        self.data.push(MagicCell::new(data));
+        self.data.push(MagicCell::new(self.data.len(), data));
     }
 }
 
@@ -79,6 +111,7 @@ impl<'a, T: 'static> Iterator for MagicVecIterator<'a, T> {
 
         Some(MagicRef {
             data: unsafe { &mut *cell.data.get() },
+            handle: MagicHandle(Some(cell.id)),
             used: cell.used.get(),
         })
     }
