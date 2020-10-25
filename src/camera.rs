@@ -82,7 +82,7 @@ impl Camera for Camera2D {
         let mat_scale = Mat4::from_scale(vec3(self.zoom.x(), self.zoom.y(), 1.0));
         let mat_translation = Mat4::from_translation(vec3(self.offset.x(), self.offset.y(), 0.0));
 
-        mat_translation * ((mat_rotation * mat_scale) * mat_origin)
+        mat_translation * ((mat_scale * mat_rotation) * mat_origin)
     }
 
     fn depth_enabled(&self) -> bool {
