@@ -344,7 +344,15 @@ impl MagicSnapshoter {
             ctx.end_render_pass();
         } else {
             let (screen_width, screen_height) = ctx.screen_size();
-            if self.screen_texture.is_none() || self.screen_texture.map(|t| t.texture.width != screen_width as _ || t.texture.height != screen_height as _).unwrap_or(false) {
+            if self.screen_texture.is_none()
+                || self
+                    .screen_texture
+                    .map(|t| {
+                        t.texture.width != screen_width as _
+                            || t.texture.height != screen_height as _
+                    })
+                    .unwrap_or(false)
+            {
                 self.screen_texture = Some(Texture2D::from_miniquad_texture(
                     Texture::new_render_texture(
                         ctx,
