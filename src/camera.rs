@@ -96,15 +96,24 @@ impl Camera for Camera2D {
 
 impl Camera2D {
     /// Returns the screen space position for a 2d camera world space position
+    /// Screen position in window space - from (0, 0) to (screen_width, screen_height())
     pub fn world_to_screen(&self, point: Vec2) -> Vec2 {
         let mat = self.matrix();
         let transform = mat.transform_point3(vec3(point.x(), point.y(), 0.));
 
-        vec2(transform.x(), transform.y())
+        vec2(
+            (transform.x() / 2. + 0.5) * screen_width(),
+            (0.5 - transform.y() / 2.) * screen_height(),
+        )
     }
 
     // Returns the world space position for a 2d camera screen space position
+    // Point is a screen space position, often mouse x and y
     pub fn screen_to_world(&self, point: Vec2) -> Vec2 {
+        let point = vec2(
+            point.x() / screen_width() * 2. - 1.,
+            1. - point.y() / screen_height() * 2.,
+        );
         let inv_mat = self.matrix().inverse();
         let transform = inv_mat.transform_point3(vec3(point.x(), point.y(), 0.));
 

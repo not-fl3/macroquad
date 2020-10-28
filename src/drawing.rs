@@ -25,10 +25,6 @@ impl DrawContext {
         draw_context
     }
 
-    // pub(crate) fn set_megaui_texture(&mut self, id: u32, texture: Texture2D) {
-    //     self.megaui_textures.insert(id, texture);
-    // }
-
     pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
         self.gl.draw(ctx);
     }
@@ -36,11 +32,11 @@ impl DrawContext {
     pub(crate) fn update_projection_matrix(&mut self, ctx: &mut miniquad::Context) {
         let (width, height) = ctx.screen_size();
 
-        let mut projection = glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.);
-
-        if let Some(matrix) = self.camera_matrix {
-            projection = matrix;
-        }
+        let projection = if let Some(matrix) = self.camera_matrix {
+            matrix
+        } else {
+            glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
+        };
 
         self.gl.set_projection_matrix(projection);
     }
