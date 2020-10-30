@@ -174,6 +174,7 @@ impl Context {
     }
 }
 
+#[no_mangle]
 static mut CONTEXT: Option<Context> = None;
 
 fn get_context() -> &'static mut Context {
