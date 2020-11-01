@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use particles::{AtlasConfig, Emitter, EmitterConfig, BlendMode};
+use macroquad_particles::{self as particles, AtlasConfig, Emitter, EmitterConfig, BlendMode};
 
 fn explosion() -> particles::EmitterConfig {
     particles::EmitterConfig {
