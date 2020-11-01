@@ -133,7 +133,7 @@ impl Default for EmitterConfig {
 struct GpuParticle {
     pos: Vec3,
     uv: Vec4,
-    data: Vec4
+    data: Vec4,
 }
 
 struct CpuParticle {
@@ -249,7 +249,6 @@ impl Emitter {
                 VertexAttribute::with_buffer("in_attr_inst_pos", VertexFormat::Float3, 1),
                 VertexAttribute::with_buffer("in_attr_inst_uv", VertexFormat::Float4, 1),
                 VertexAttribute::with_buffer("in_attr_inst_data", VertexFormat::Float4, 1),
-
             ],
             shader,
             PipelineParams {
@@ -375,6 +374,8 @@ impl Emitter {
                     1.0 / atlas.n as f32,
                     1.0 / atlas.m as f32,
                 );
+            } else {
+                gpu.uv = vec4(0.0, 0.0, 1.0, 1.0);
             }
         }
 
