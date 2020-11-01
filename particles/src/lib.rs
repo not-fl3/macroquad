@@ -353,17 +353,21 @@ impl Emitter {
         for (gpu, cpu) in self.gpu_particles.iter_mut().zip(&mut self.cpu_counterpart) {
             gpu.pos += vec3(cpu.velocity.x(), cpu.velocity.y(), 0.0) * dt;
 
-            *gpu.data.y_mut() = cpu.lived / cpu.lifetime;
+            if cpu.lifetime != 0.0 {
+                *gpu.data.y_mut() = cpu.lived / cpu.lifetime;
+            }
 
             cpu.lived += dt;
 
             cpu.velocity += self.config.gravity * dt;
 
             if let Some(atlas) = &self.config.atlas {
-                cpu.frame = (cpu.lived / cpu.lifetime
-                    * (atlas.end_index - atlas.start_index) as f32)
-                    as u16
-                    + atlas.start_index;
+                if cpu.lifetime != 0.0 {
+                    cpu.frame = (cpu.lived / cpu.lifetime
+                        * (atlas.end_index - atlas.start_index) as f32)
+                        as u16
+                        + atlas.start_index;
+                }
 
                 let x = cpu.frame % atlas.n;
                 let y = cpu.frame / atlas.m;
