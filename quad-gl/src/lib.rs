@@ -21,6 +21,12 @@ impl Into<[f32; 4]> for Color {
     }
 }
 
+impl From<[f32; 4]> for Color {
+    fn from(colors: [f32; 4]) -> Color {
+        Color::new(colors[0], colors[1], colors[2], colors[3])
+    }
+}
+
 impl Color {
     #[rustfmt::skip]
     pub fn from_hsl(h: f32, s: f32, l: f32) -> Color {
@@ -60,6 +66,10 @@ impl Color {
             (b.min(1.).max(0.) * 255.) as u8,
             (a.min(1.).max(0.) * 255.) as u8,
         ])
+    }
+
+    pub const fn new_const(r: u8, g: u8, b: u8, a: u8) -> Color {
+        Color([r, g, b, a])
     }
 
     pub fn r(&self) -> f32 {
