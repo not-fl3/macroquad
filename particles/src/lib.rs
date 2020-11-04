@@ -215,6 +215,7 @@ impl Emitter {
                 )],
                 ..Default::default()
             };
+
             let vertex = preprocess_shader(&vertex, &config);
             let fragment = preprocess_shader(&fragment, &config);
 
@@ -444,8 +445,6 @@ mod shader {
 
     pub const VERTEX: &str = r#"#version 100
     #include "particles.glsl"
-
-    PARTICLE_MESH_DECL
 
     varying lowp vec2 texcoord;
 
