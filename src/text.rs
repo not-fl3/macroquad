@@ -12,6 +12,7 @@ use quad_gl::Image;
 use quad_gl::Texture2D;
 use quad_gl::WHITE;
 
+#[derive(Debug)]
 struct CharacterInfo {
     offset_x: i32,
     offset_y: i32,
@@ -290,10 +291,15 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 
 pub fn measure_text(text: &str, font: Option<Font>, font_size: u16, font_scale: f32) -> (f32, f32) {
     let context = get_context();
-
     let font = context
         .fonts_storage
-        .get_font(font.unwrap_or(Font::default()));
+        .get_font_mut(font.unwrap_or(Font::default()));
+
+    for character in text.chars() {
+        if font.characters.contains_key(&(character, font_size)) == false {
+            font.cache_glyph(character, font_size);
+        }
+    }
 
     let mut width = 0.;
     let mut height: f32 = 0.;
