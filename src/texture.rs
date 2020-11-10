@@ -124,11 +124,10 @@ pub fn draw_texture_ex(
         h: texture.height(),
     });
 
-    let (w, h) = params
-        .dest_size
-        .map_or((texture.width(), texture.height()), |dst| {
-            (dst.x(), dst.y())
-        });
+    let (w, h) = match params.dest_size{
+        Some(dst) => (dst.x(), dst.y()),
+        _ => (sw, sh),
+    };
 
     let pivot = params.pivot.unwrap_or(vec2(x + w / 2., y + h / 2.));
     let m = pivot;
