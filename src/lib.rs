@@ -235,7 +235,13 @@ impl EventHandlerFree for Stage {
         context.keys_down.remove(&keycode);
     }
 
-    fn update(&mut self) {}
+    fn update(&mut self) {
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            // TODO: consider making it a part of miniquad? 
+            std::thread::yield_now();
+        }
+    }
 
     fn draw(&mut self) {
         if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
