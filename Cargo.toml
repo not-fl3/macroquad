@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.3.0-alpha.9"
+version = "0.3.0-alpha.11"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -20,7 +20,7 @@ all-features = true
 
 [dependencies]
 miniquad = "0.3.0-alpha.22"
-quad-gl = { version = "=0.2.10", path = "./quad-gl" }
+quad-gl = { version = "=0.2.11", path = "./quad-gl" }
 quad-rand = "0.1"
 glam = {version = "0.9", features = ["scalar-math"] }
 image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
@@ -35,4 +35,5 @@ megaui-macroquad = "0.1.1"
 # this allows to use megaui-macroquad in examples without two versions of macroquad
 [patch.crates-io]
 macroquad = { path = './' }
+
 #miniquad = { path = '../miniquad' }

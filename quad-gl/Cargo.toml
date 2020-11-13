@@ -6,7 +6,7 @@ homepage = "https://github.com/not-fl3/quad-gl"
 license = "MIT/Apache-2.0"
 name = "quad-gl"
 repository = "https://github.com/not-fl3/quad-gl"
-version = "0.2.10"
+version = "0.2.11"
 
 [dependencies]
 miniquad = "0.3.0-alpha.22"
