@@ -26,6 +26,12 @@ pub async fn load_texture(path: &str) -> Texture2D {
     Texture2D::from_file_with_format(context, &bytes[..], None)
 }
 
+/// Unload texture from GPU memory
+/// Using deleted texture will gives different results on different platforms and is not recommended
+pub fn delete_texture(texture: Texture2D) {
+    texture.raw_miniquad_texture_handle().delete()
+}
+
 pub fn set_texture_filter(texture: Texture2D, filter_mode: FilterMode) {
     let context = &mut get_context().quad_context;
 
