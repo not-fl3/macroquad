@@ -29,12 +29,19 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
     context.keys_down.contains(&key_code)
 }
 
-/// Detect if the key is being pressed.
-/// Each call "is_key_down" call will consume a character from input queue.
-pub fn get_key_pressed() -> Option<char> {
+/// Return the last pressed char.
+/// Each "get_char_pressed" call will consume a character from the input queue.
+pub fn get_char_pressed() -> Option<char> {
     let context = get_context();
 
     context.chars_pressed_queue.pop()
+}
+
+/// Return the last pressed key.
+pub fn get_last_key_pressed() -> Option<KeyCode> {
+    let context = get_context();
+    // TODO: this will return a random key from keys_pressed HashMap instead of the last one, fix me later
+    context.keys_pressed.iter().next().cloned()
 }
 
 /// Detect if the key is being pressed
