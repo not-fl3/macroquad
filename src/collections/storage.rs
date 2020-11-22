@@ -3,39 +3,71 @@
 //! ```
 //! use macroquad::collections::storage;
 //!
-//! const WORLD_BOUNDRIES: usize = 1;
+//! struct WorldBoundries(i32);
 //!
 //! fn draw_player() {
-//!   let boundries: i32 = *storage::get(WORLD_BOUNDRIES).unwrap();
+//!   let boundries: i32 = storage::get::<WorldBoundries>().unwrap().0;
 //!   assert_eq!(boundries, 23);
 //! }
-//! 
-//! storage::store::<i32>(WORLD_BOUNDRIES, 23);
+//!
+//! storage::store(WorldBoundries(23));
 //! draw_player();
 //! ```
 
-use std::any::Any;
+use std::any::{Any, TypeId};
 
-use std::{ops::Deref, rc::Rc};
+use std::collections::HashMap;
+use std::{
+    cell::RefCell,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
 
-const MAX_ID: usize = 32;
-static mut STORAGE: [Option<Box<dyn Any>>; MAX_ID] = [
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-    None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None,
-];
+static mut STORAGE: Option<HashMap<TypeId, Box<dyn Any>>> = None;
 
 /// Store data in global storage.
-/// Will panic on incorrect id.
-/// And will silently overwrite an old value if any.
-pub fn store<T: Any>(id: usize, data: T) {
-    assert!(id < MAX_ID);
+/// Will silently overwrite an old value if any.
+pub fn store<T: Any>(data: T) {
+    unsafe {
+        if STORAGE.is_none() {
+            STORAGE = Some(HashMap::new());
+        }
 
-    unsafe { STORAGE[id] = Some(Box::new(Rc::new(data))) };
+        STORAGE
+            .as_mut()
+            .unwrap()
+            .insert(TypeId::of::<T>(), Box::new(Rc::new(RefCell::new(data))))
+    };
 }
 
-/// Get data from global storage.
-/// Will return None either if id is invalid, requested type do not match stored one or there is no data available with this id.
-pub fn get<T: Any>(id: usize) -> Option<impl Deref<Target = T>> {
-    unsafe { STORAGE[id].as_ref() }
-        .and_then(|data| data.downcast_ref::<Rc<T>>().map(|data| data.clone()))
+/// Get reference to data from global storage.
+/// Will return None if there is no data available with this type.
+pub fn get<T: Any>() -> Option<impl Deref<Target = T>> {
+    unsafe {
+        if STORAGE.is_none() {
+            STORAGE = Some(HashMap::new());
+        }
+
+        STORAGE.as_mut().unwrap().get(&TypeId::of::<T>()).as_ref()
+    }
+    .and_then(|data| {
+        data.downcast_ref::<Rc<RefCell<T>>>()
+            .map(|data| data.borrow())
+    })
+}
+
+/// Get mutable reference to data from global storage.
+/// Will return None if there is no data available with this type.
+pub fn get_mut<T: Any>() -> Option<impl DerefMut<Target = T>> {
+    unsafe {
+        if STORAGE.is_none() {
+            STORAGE = Some(HashMap::new());
+        }
+
+        STORAGE.as_mut().unwrap().get(&TypeId::of::<T>()).as_ref()
+    }
+    .and_then(|data| {
+        data.downcast_ref::<Rc<RefCell<T>>>()
+            .map(|data| data.borrow_mut())
+    })
 }
