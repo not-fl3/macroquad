@@ -87,6 +87,15 @@ impl Color {
     pub fn a(&self) -> f32 {
         self.0[3] as f32 / 255.0
     }
+
+    pub fn to_vec(&self) -> glam::Vec4 {
+        glam::Vec4::new(self.r(), self.g(), self.b(), self.a())
+    }
+
+    pub fn from_vec(vec: glam::Vec4) -> Self {
+        Self::new(vec.x(), vec.y(), vec.z(), vec.w())
+    }
+
 }
 
 pub mod colors {
