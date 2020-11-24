@@ -158,16 +158,8 @@ impl Context {
     }
 
     fn clear(&mut self, color: Color) {
-        self.quad_context.clear(
-            Some((
-                color.0[0] as f32 / 255.0,
-                color.0[1] as f32 / 255.0,
-                color.0[2] as f32 / 255.0,
-                color.0[3] as f32 / 255.0,
-            )),
-            None,
-            None,
-        );
+        self.quad_context
+            .clear(Some((color.r, color.g, color.b, color.a)), None, None);
         self.draw_context.gl.reset();
         self.draw_context
             .update_projection_matrix(&mut self.quad_context);

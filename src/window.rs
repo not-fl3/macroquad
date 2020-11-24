@@ -19,12 +19,7 @@ pub fn clear_background(color: Color) {
     // all drawcalls are batched
     // and batching is not clear-friendly
     // so as a workaround we do immediate render pass with clear color
-    let clear = PassAction::clear_color(
-        color.0[0] as f32 / 255.,
-        color.0[1] as f32 / 255.,
-        color.0[2] as f32 / 255.,
-        color.0[3] as f32 / 255.,
-    );
+    let clear = PassAction::clear_color(color.r, color.g, color.b, color.a);
     if let Some(current_pass) = context.draw_context.current_pass {
         context.quad_context.begin_pass(current_pass, clear);
     } else {

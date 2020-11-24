@@ -1,17 +1,25 @@
 use macroquad::prelude::*;
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum CellState {
+    Alive,
+    Dead,
+}
+
 #[macroquad::main("Life")]
 async fn main() {
     let w = screen_width() as usize;
     let h = screen_height() as usize;
 
-    let mut buffer = vec![WHITE; w * h];
+    let mut cells = vec![CellState::Dead; w * h];
+    let mut buffer = vec![CellState::Dead; w * h];
+
     let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
-    let image_data = image.get_image_data_mut();
+
     for y in 0..h {
         for x in 0..w {
             if rand::gen_range(0, 5) == 0 {
-                image_data[y * w + x] = BLACK;
+                cells[y * w + x] = CellState::Alive;
             }
         }
     }
@@ -23,7 +31,6 @@ async fn main() {
         let w = image.width();
         let h = image.height();
 
-        let image_data = image.get_image_data();
         for y in 0..h as i32 {
             for x in 0..w as i32 {
                 let mut neighbors_count = 0;
@@ -39,34 +46,45 @@ async fn main() {
                             continue;
                         }
 
-                        let neighbor = image_data[(y + j) as usize * w + (x + i) as usize];
-                        if neighbor == BLACK {
+                        let neighbor = cells[(y + j) as usize * w + (x + i) as usize];
+                        if neighbor == CellState::Alive {
                             neighbors_count += 1;
                         }
                     }
                 }
 
-                let current_cell = image_data[y as usize * w + x as usize];
+                let current_cell = cells[y as usize * w + x as usize];
                 buffer[y as usize * w + x as usize] = match (current_cell, neighbors_count) {
                     // Rule 1: Any live cell with fewer than two live neighbours
                     // dies, as if caused by underpopulation.
-                    (BLACK, x) if x < 2 => WHITE,
+                    (CellState::Alive, x) if x < 2 => CellState::Dead,
                     // Rule 2: Any live cell with two or three live neighbours
                     // lives on to the next generation.
-                    (BLACK, 2) | (BLACK, 3) => BLACK,
+                    (CellState::Alive, 2) | (CellState::Alive, 3) => CellState::Alive,
                     // Rule 3: Any live cell with more than three live
                     // neighbours dies, as if by overpopulation.
-                    (BLACK, x) if x > 3 => WHITE,
+                    (CellState::Alive, x) if x > 3 => CellState::Dead,
                     // Rule 4: Any dead cell with exactly three live neighbours
                     // becomes a live cell, as if by reproduction.
-                    (WHITE, 3) => BLACK,
+                    (CellState::Dead, 3) => CellState::Alive,
                     // All other cells remain in the same state.
                     (otherwise, _) => otherwise,
                 };
             }
         }
 
-        image.update(&buffer);
+        for i in 0..buffer.len() {
+            cells[i] = buffer[i];
+
+            image.set_pixel(
+                (i % w) as u32,
+                (i / w) as u32,
+                match buffer[i as usize] {
+                    CellState::Alive => RED,
+                    CellState::Dead => GREEN,
+                },
+            );
+        }
 
         update_texture(texture, &image);
 
