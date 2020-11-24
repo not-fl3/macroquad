@@ -39,7 +39,7 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
             let lightness = 1.0 - i as f32 * ratio;
             let hue = j as f32 * ratio;
 
-            image_data[i + j * w] = Color::from_hsl(hue, 1.0, lightness);
+            image_data[i + j * w] = Color::from_hsl(hue, 1.0, lightness).into();
         }
     }
 
@@ -330,7 +330,7 @@ async fn main() {
                     canvas.rect(
                         megaui::Rect::new(cursor.x, cursor.y, 200.0, 18.0),
                         megaui::Color::new(0.0, 0.0, 0.0, 1.0),
-                        megaui::Color::new(color.r(), color.g(), color.b(), 1.0),
+                        megaui::Color::new(color.r, color.g, color.b, 1.0),
                     );
                     canvas.image(
                         megaui::Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0),
@@ -352,7 +352,7 @@ async fn main() {
                                 .iter_mut()
                                 .find(|(name, _)| name == &uniform_name)
                                 .unwrap()
-                                .1 = Uniform::Color(vec3(color.r(), color.g(), color.b()));
+                                .1 = Uniform::Color(vec3(color.r, color.g, color.b));
                         }
                     }
                 },

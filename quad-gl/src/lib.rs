@@ -7,17 +7,39 @@ pub use miniquad::{FilterMode, ShaderError};
 const UNIFORMS_ARRAY_SIZE: usize = 512;
 
 #[repr(C)]
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct Color(pub [u8; 4]);
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Color {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
+}
+
+impl Into<[u8; 4]> for Color {
+    fn into(self) -> [u8; 4] {
+        [
+            (self.r * 255.) as u8,
+            (self.g * 255.) as u8,
+            (self.b * 255.) as u8,
+            (self.a * 255.) as u8,
+        ]
+    }
+}
+
+impl Into<Color> for [u8; 4] {
+    fn into(self) -> Color {
+        Color::new(
+            self[0] as f32 / 255.,
+            self[1] as f32 / 255.,
+            self[2] as f32 / 255.,
+            self[3] as f32 / 255.,
+        )
+    }
+}
 
 impl Into<[f32; 4]> for Color {
     fn into(self) -> [f32; 4] {
-        [
-            self.0[0] as f32 / 255.,
-            self.0[1] as f32 / 255.,
-            self.0[2] as f32 / 255.,
-            self.0[3] as f32 / 255.,
-        ]
+        [self.r, self.g, self.b, self.a]
     }
 }
 
@@ -59,73 +81,47 @@ impl Color {
         Color::new(r, g, b, 1.0)
     }
 
-    pub fn new(r: f32, g: f32, b: f32, a: f32) -> Color {
-        Color([
-            (r.min(1.).max(0.) * 255.) as u8,
-            (g.min(1.).max(0.) * 255.) as u8,
-            (b.min(1.).max(0.) * 255.) as u8,
-            (a.min(1.).max(0.) * 255.) as u8,
-        ])
-    }
-
-    pub const fn new_const(r: u8, g: u8, b: u8, a: u8) -> Color {
-        Color([r, g, b, a])
-    }
-
-    pub fn r(&self) -> f32 {
-        self.0[0] as f32 / 255.0
-    }
-
-    pub fn g(&self) -> f32 {
-        self.0[1] as f32 / 255.0
-    }
-
-    pub fn b(&self) -> f32 {
-        self.0[2] as f32 / 255.0
-    }
-
-    pub fn a(&self) -> f32 {
-        self.0[3] as f32 / 255.0
+    pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Color {
+        Color { r, g, b, a }
     }
 
     pub fn to_vec(&self) -> glam::Vec4 {
-        glam::Vec4::new(self.r(), self.g(), self.b(), self.a())
+        glam::Vec4::new(self.r, self.g, self.b, self.a)
     }
 
     pub fn from_vec(vec: glam::Vec4) -> Self {
         Self::new(vec.x(), vec.y(), vec.z(), vec.w())
     }
-
 }
 
 pub mod colors {
     use super::Color;
 
-    pub const LIGHTGRAY: Color = Color([200, 200, 200, 255]);
-    pub const GRAY: Color = Color([130, 130, 130, 255]);
-    pub const DARKGRAY: Color = Color([80, 80, 80, 255]);
-    pub const YELLOW: Color = Color([253, 249, 0, 255]);
-    pub const GOLD: Color = Color([255, 203, 0, 255]);
-    pub const ORANGE: Color = Color([255, 161, 0, 255]);
-    pub const PINK: Color = Color([255, 109, 194, 255]);
-    pub const RED: Color = Color([230, 41, 55, 255]);
-    pub const MAROON: Color = Color([190, 33, 55, 255]);
-    pub const GREEN: Color = Color([0, 228, 48, 255]);
-    pub const LIME: Color = Color([0, 158, 47, 255]);
-    pub const DARKGREEN: Color = Color([0, 117, 44, 255]);
-    pub const SKYBLUE: Color = Color([102, 191, 255, 255]);
-    pub const BLUE: Color = Color([0, 121, 241, 255]);
-    pub const DARKBLUE: Color = Color([0, 82, 172, 255]);
-    pub const PURPLE: Color = Color([200, 122, 255, 255]);
-    pub const VIOLET: Color = Color([135, 60, 190, 255]);
-    pub const DARKPURPLE: Color = Color([112, 31, 126, 255]);
-    pub const BEIGE: Color = Color([211, 176, 131, 255]);
-    pub const BROWN: Color = Color([127, 106, 79, 255]);
-    pub const DARKBROWN: Color = Color([76, 63, 47, 255]);
-    pub const WHITE: Color = Color([255, 255, 255, 255]);
-    pub const BLACK: Color = Color([0, 0, 0, 255]);
-    pub const BLANK: Color = Color([0, 0, 0, 0]);
-    pub const MAGENTA: Color = Color([255, 0, 255, 255]);
+    pub const LIGHTGRAY: Color = Color::new(0.78, 0.78, 0.78, 1.00);
+    pub const GRAY: Color = Color::new(0.51, 0.51, 0.51, 1.00);
+    pub const DARKGRAY: Color = Color::new(0.31, 0.31, 0.31, 1.00);
+    pub const YELLOW: Color = Color::new(0.99, 0.98, 0.00, 1.00);
+    pub const GOLD: Color = Color::new(1.00, 0.80, 0.00, 1.00);
+    pub const ORANGE: Color = Color::new(1.00, 0.63, 0.00, 1.00);
+    pub const PINK: Color = Color::new(1.00, 0.43, 0.76, 1.00);
+    pub const RED: Color = Color::new(0.90, 0.16, 0.22, 1.00);
+    pub const MAROON: Color = Color::new(0.75, 0.13, 0.22, 1.00);
+    pub const GREEN: Color = Color::new(0.00, 0.89, 0.19, 1.00);
+    pub const LIME: Color = Color::new(0.00, 0.62, 0.18, 1.00);
+    pub const DARKGREEN: Color = Color::new(0.00, 0.46, 0.17, 1.00);
+    pub const SKYBLUE: Color = Color::new(0.40, 0.75, 1.00, 1.00);
+    pub const BLUE: Color = Color::new(0.00, 0.47, 0.95, 1.00);
+    pub const DARKBLUE: Color = Color::new(0.00, 0.32, 0.67, 1.00);
+    pub const PURPLE: Color = Color::new(0.78, 0.48, 1.00, 1.00);
+    pub const VIOLET: Color = Color::new(0.53, 0.24, 0.75, 1.00);
+    pub const DARKPURPLE: Color = Color::new(0.44, 0.12, 0.49, 1.00);
+    pub const BEIGE: Color = Color::new(0.83, 0.69, 0.51, 1.00);
+    pub const BROWN: Color = Color::new(0.50, 0.42, 0.31, 1.00);
+    pub const DARKBROWN: Color = Color::new(0.30, 0.25, 0.18, 1.00);
+    pub const WHITE: Color = Color::new(1.00, 1.00, 1.00, 1.00);
+    pub const BLACK: Color = Color::new(0.00, 0.00, 0.00, 1.00);
+    pub const BLANK: Color = Color::new(0.00, 0.00, 0.00, 0.00);
+    pub const MAGENTA: Color = Color::new(1.00, 0.00, 1.00, 1.00);
 }
 
 const MAX_VERTICES: usize = 10000;
@@ -163,7 +159,7 @@ struct DrawCall {
 pub struct Vertex {
     pos: [f32; 3],
     uv: [f32; 2],
-    color: Color,
+    color: [u8; 4],
 }
 
 pub type VertexInterop = ([f32; 3], [f32; 2], [f32; 4]);
@@ -174,10 +170,10 @@ impl Into<VertexInterop> for Vertex {
             self.pos,
             self.uv,
             [
-                self.color.0[0] as f32 / 255.,
-                self.color.0[1] as f32 / 255.,
-                self.color.0[2] as f32 / 255.,
-                self.color.0[3] as f32 / 255.,
+                self.color[0] as f32 / 255.0,
+                self.color[1] as f32 / 255.0,
+                self.color[2] as f32 / 255.0,
+                self.color[3] as f32 / 255.0,
             ],
         )
     }
@@ -187,12 +183,12 @@ impl Into<Vertex> for VertexInterop {
         Vertex {
             pos: self.0,
             uv: self.1,
-            color: Color([
+            color: [
                 ((self.2)[0] * 255.) as u8,
-                ((self.2)[1] as f32 * 255.) as u8,
-                ((self.2)[2] as f32 * 255.) as u8,
-                ((self.2)[3] as f32 * 255.) as u8,
-            ]),
+                ((self.2)[1] * 255.) as u8,
+                ((self.2)[2] * 255.) as u8,
+                ((self.2)[3] * 255.) as u8,
+            ],
         }
     }
 }
@@ -202,7 +198,12 @@ impl Vertex {
         Vertex {
             pos: [x, y, z],
             uv: [u, v],
-            color,
+            color: [
+                (color.r * 255.) as u8,
+                (color.g * 255.) as u8,
+                (color.b * 255.) as u8,
+                (color.a * 255.) as u8,
+            ],
         }
     }
 }
@@ -217,7 +218,8 @@ impl DrawCall {
         render_pass: Option<RenderPass>,
     ) -> DrawCall {
         DrawCall {
-            vertices: [Vertex::new(0., 0., 0., 0., 0., Color([0, 0, 0, 0])); MAX_VERTICES],
+            vertices: [Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0));
+                MAX_VERTICES],
             indices: [0; MAX_INDICES],
             vertices_count: 0,
             indices_count: 0,
@@ -1047,9 +1049,10 @@ impl Image {
     pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
         let mut bytes = vec![0; width as usize * height as usize * 4];
         for i in 0..width as usize * height as usize {
-            for c in 0..4 {
-                bytes[i * 4 + c] = color.0[c];
-            }
+            bytes[i * 4 + 0] = (color.r * 255.) as u8;
+            bytes[i * 4 + 1] = (color.g * 255.) as u8;
+            bytes[i * 4 + 2] = (color.b * 255.) as u8;
+            bytes[i * 4 + 3] = (color.a * 255.) as u8;
         }
         Image {
             width,
@@ -1058,14 +1061,14 @@ impl Image {
         }
     }
 
-    pub fn update(&mut self, bytes: &[Color]) {
-        assert!(self.width as usize * self.height as usize == bytes.len());
+    pub fn update(&mut self, colors: &[Color]) {
+        assert!(self.width as usize * self.height as usize == colors.len());
 
-        for i in 0..bytes.len() {
-            self.bytes[i * 4] = bytes[i].0[0];
-            self.bytes[i * 4 + 1] = bytes[i].0[1];
-            self.bytes[i * 4 + 2] = bytes[i].0[2];
-            self.bytes[i * 4 + 3] = bytes[i].0[3];
+        for i in 0..colors.len() {
+            self.bytes[i * 4] = (colors[i].r * 255.) as u8;
+            self.bytes[i * 4 + 1] = (colors[i].g * 255.) as u8;
+            self.bytes[i * 4 + 2] = (colors[i].b * 255.) as u8;
+            self.bytes[i * 4 + 3] = (colors[i].a * 255.) as u8;
         }
     }
     pub fn width(&self) -> usize {
@@ -1076,23 +1079,23 @@ impl Image {
         self.height as usize
     }
 
-    pub fn get_image_data(&self) -> &[Color] {
+    pub fn get_image_data(&self) -> &[[u8; 4]] {
         use std::slice;
 
         unsafe {
             slice::from_raw_parts(
-                self.bytes.as_ptr() as *const Color,
+                self.bytes.as_ptr() as *const [u8; 4],
                 self.width as usize * self.height as usize,
             )
         }
     }
 
-    pub fn get_image_data_mut(&mut self) -> &mut [Color] {
+    pub fn get_image_data_mut(&mut self) -> &mut [[u8; 4]] {
         use std::slice;
 
         unsafe {
             slice::from_raw_parts_mut(
-                self.bytes.as_mut_ptr() as *mut Color,
+                self.bytes.as_mut_ptr() as *mut [u8; 4],
                 self.width as usize * self.height as usize,
             )
         }
@@ -1101,11 +1104,11 @@ impl Image {
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
         let width = self.width;
 
-        self.get_image_data_mut()[(y * width as u32 + x) as usize] = color;
+        self.get_image_data_mut()[(y * width as u32 + x) as usize] = color.into();
     }
 
     pub fn get_pixel(&self, x: u32, y: u32) -> Color {
-        self.get_image_data()[(y * self.width as u32 + x) as usize]
+        self.get_image_data()[(y * self.width as u32 + x) as usize].into()
     }
 
     pub fn export_png(&self, path: &str) {
