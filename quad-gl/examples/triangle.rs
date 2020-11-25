@@ -17,7 +17,6 @@ impl EventHandler for Stage {
                 Vertex::new(-0.5, 0.5, 0., 0., 0., GREEN),
             ],
             &[0, 1, 2],
-	    DrawMode::Triangles
         );
         self.gl.draw(ctx);
     }
