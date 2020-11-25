@@ -23,3 +23,5 @@ pub use crate::coroutines;
 
 #[cfg(feature = "log-impl")]
 pub use crate::logging::*;
+
+pub use quad_gl::color_u8;
