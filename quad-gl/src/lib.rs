@@ -115,6 +115,8 @@ impl Color {
 }
 
 pub mod colors {
+    //! Constants for some common colors.
+
     use super::Color;
 
     pub const LIGHTGRAY: Color = Color::new(0.78, 0.78, 0.78, 1.00);
