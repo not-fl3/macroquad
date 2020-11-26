@@ -79,6 +79,21 @@ pub mod logging {
     pub use miniquad::{debug, error, info, warn};
 }
 
+pub mod math {
+    //! Math types and helpers.
+
+    pub use glam;
+    pub use crate::types::Rect;
+}
+
+pub mod color {
+    //! Color types and helpers.
+
+    pub use quad_gl::{Color, colors::*};
+}
+
+pub use miniquad;
+
 use drawing::DrawContext;
 use glam::{vec2, Vec2};
 use quad_gl::{colors::*, Color};
