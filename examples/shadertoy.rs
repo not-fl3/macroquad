@@ -1,8 +1,7 @@
 use macroquad::prelude::*;
 
 use megaui_macroquad::{
-    draw_window,
-    draw_megaui,
+    draw_megaui, draw_window,
     megaui::{
         self, hash,
         widgets::{Label, TreeNode},
@@ -48,7 +47,7 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
 
 #[macroquad::main("Shadertoy")]
 async fn main() {
-    let ferris = load_texture("rust.png").await;
+    let ferris = load_texture("examples/rust.png").await;
     let (color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
     set_megaui_texture(0, color_picker_texture);
 
@@ -395,7 +394,7 @@ const DEFAULT_FRAGMENT_SHADER: &'static str = "#version 100
 precision lowp float;
 
 varying vec2 uv;
-    
+
 uniform sampler2D Texture;
 
 void main() {

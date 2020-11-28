@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 
 #[macroquad::main("Texture")]
 async fn main() {
-    let texture: Texture2D = load_texture("chess.png").await;
+    let texture: Texture2D = load_texture("examples/chess.png").await;
 
     let lens_material = load_material(
         LENS_VERTEX_SHADER,
