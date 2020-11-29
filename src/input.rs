@@ -1,7 +1,9 @@
-//! Cross-platform mouse, keyboard (and gamepads soon) module. 
+//! Cross-platform mouse, keyboard (and gamepads soon) module.
 
-pub use miniquad::{KeyCode, MouseButton};
+use std::collections::HashSet;
+
 use crate::get_context;
+pub use miniquad::{KeyCode, MouseButton};
 
 pub fn mouse_position() -> (f32, f32) {
     let context = get_context();
@@ -65,4 +67,8 @@ pub fn is_mouse_button_released(btn: MouseButton) -> bool {
     context.mouse_released.contains(&btn)
 }
 
-
+/// Get a copy of all the down keys.
+pub fn get_down_keys() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_down.clone()
+}
