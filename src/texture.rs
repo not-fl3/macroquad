@@ -1,6 +1,6 @@
 //! Loading and rendering textures. Also render textures, per-pixel image manipluations.
 
-use crate::{file::load_file, get_context, types::Rect};
+use crate::{file::load_file, get_context, math::Rect};
 
 use glam::{vec2, Vec2};
 use quad_gl::{Color, DrawMode, Vertex};

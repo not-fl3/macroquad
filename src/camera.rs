@@ -3,7 +3,7 @@
 use crate::{
     get_context,
     texture::RenderTarget,
-    types::Rect,
+    math::Rect,
     window::{screen_height, screen_width},
 };
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};

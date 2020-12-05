@@ -50,14 +50,14 @@ pub mod camera;
 pub mod file;
 pub mod input;
 pub mod material;
+pub mod math;
 pub mod models;
 pub mod shapes;
 pub mod text;
 pub mod texture;
 pub mod time;
 pub mod window;
-
-mod types;
+pub mod color;
 
 pub mod collections;
 pub mod coroutines;
@@ -78,20 +78,6 @@ pub mod rand {
 pub mod logging {
     pub use miniquad::{debug, error, info, warn};
 }
-
-pub mod math {
-    //! Math types and helpers.
-
-    pub use glam;
-    pub use crate::types::Rect;
-}
-
-pub mod color {
-    //! Color types and helpers.
-
-    pub use quad_gl::{Color, colors::*};
-}
-
 pub use miniquad;
 
 use drawing::DrawContext;

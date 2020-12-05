@@ -2,10 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::{
-    get_context,
-    types::{Color, Rect},
-};
+use crate::{color::Color, get_context, math::Rect};
 
 use glam::vec2;
 use quad_gl::Image;

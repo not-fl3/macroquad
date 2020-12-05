@@ -9,6 +9,8 @@ use megaui_macroquad::{
     set_megaui_texture, WindowParams,
 };
 
+use macroquad::color;
+
 enum Uniform {
     Float1(String),
     Float2(String, String),
@@ -38,7 +40,7 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
             let lightness = 1.0 - i as f32 * ratio;
             let hue = j as f32 * ratio;
 
-            image_data[i + j * w] = Color::from_hsl(hue, 1.0, lightness).into();
+            image_data[i + j * w] = color::hsl_to_rgb(hue, 1.0, lightness).into();
         }
     }
 

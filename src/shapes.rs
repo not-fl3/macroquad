@@ -2,7 +2,7 @@
 
 use crate::{
     get_context,
-    types::Color,
+    color::Color,
 };
 
 use glam::{vec2, Vec2};
