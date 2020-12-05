@@ -124,11 +124,11 @@ pub fn draw_poly_lines(
 }
 
 pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
-    draw_poly(x, y, 200, r, 0., color);
+    draw_poly(x, y, 20, r, 0., color);
 }
 
 pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
-    draw_poly_lines(x, y, 200, r, 0., thickness, color);
+    draw_poly_lines(x, y, 20, r, 0., thickness, color);
 }
 
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
