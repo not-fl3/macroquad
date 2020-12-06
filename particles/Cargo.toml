@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 macroquad = { path = "../", version = "0.3.0-alpha" }
+nanoserde = { version = "=0.1.21", optional = true }

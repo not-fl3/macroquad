@@ -11,7 +11,7 @@ fn explosion() -> particles::EmitterConfig {
         amount: 30,
         initial_direction_spread: 2.0 * std::f32::consts::PI,
         initial_velocity: 200.0,
-        initial_size: 30.0,
+        size: 30.0,
         gravity: vec2(0.0, -1000.0),
         atlas: Some(AtlasConfig::new(4, 4, 8..)),
         blend_mode: BlendMode::Additive,
@@ -37,7 +37,7 @@ fn fire() -> particles::EmitterConfig {
         initial_direction_spread: 0.5,
         initial_velocity: 300.0,
         atlas: Some(AtlasConfig::new(4, 4, 8..)),
-        initial_size: 20.0,
+        size: 20.0,
         blend_mode: BlendMode::Additive,
         ..Default::default()
     }
