@@ -107,6 +107,8 @@ pub struct Tileset {
     pub tilewidth: i32,
     /// Hex-formatted color (#RRGGBB) (optional)
     pub transparentcolor: Option<String>,
+    /// The external file that contains this tilesets data
+    pub source: String,
 }
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#map

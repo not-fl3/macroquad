@@ -7,6 +7,8 @@ use std::collections::HashMap;
 mod error;
 mod tiled;
 
+pub use tiled::layer::Property;
+
 #[derive(Debug)]
 pub enum Object {
     Rect {
@@ -21,6 +23,8 @@ pub enum Object {
         tile_h: u32,
 
         name: String,
+
+        properties: HashMap<String, String>,
     },
 }
 
@@ -85,20 +89,47 @@ impl Map {
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(dest.w, dest.h)),
-                source: Some(Rect::new(spr_rect.x, spr_rect.y, spr_rect.w, spr_rect.h)),
+                source: Some(Rect::new(
+                    spr_rect.x - 1.0,
+                    spr_rect.y - 1.0,
+                    spr_rect.w + 2.0,
+                    spr_rect.h + 2.0,
+                )),
                 ..Default::default()
             },
         );
     }
 
+    pub fn spr_ex(&self, tileset: &str, source: Rect, dest: Rect) {
+        let tileset = &self.tilesets[tileset];
+
+        draw_texture_ex(
+            tileset.texture,
+            dest.x,
+            dest.y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(dest.w, dest.h)),
+                source: Some(source),
+                ..Default::default()
+            },
+        );
+    }
+
+    pub fn contains_layer(&self, layer: &str) -> bool {
+        self.layers.contains_key(layer)
+    }
+
     pub fn draw_tiles(&self, layer: &str, dest: Rect, source: Rect) {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+
         let layer = &self.layers[layer];
 
         let spr_width = dest.w / (source.w + 1.);
         let spr_height = dest.h / (source.h + 1.);
 
-        for y in source.y as u32..source.y as u32 + source.h as u32 + 1 {
-            for x in source.x as u32..source.x as u32 + source.w as u32 + 1 {
+        for y in source.y as u32..source.y as u32 + source.h as u32 {
+            for x in source.x as u32..source.x as u32 + source.w as u32 {
                 let pos = vec2(
                     (x - source.x as u32) as f32 / (source.w + 1.) * dest.w + dest.x,
                     (y - source.y as u32) as f32 / (source.h + 1.) * dest.h + dest.y,
@@ -116,10 +147,14 @@ impl Map {
     }
 
     pub fn tiles(&self, layer: &str, rect: Rect) -> TilesIterator {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+
         TilesIterator::new(&self.layers[layer], rect)
     }
 
     pub fn get_tile(&self, layer: &str, x: u32, y: u32) -> &Option<Tile> {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+
         let layer = &self.layers[layer];
 
         if x >= layer.width || y >= layer.height {
@@ -176,14 +211,35 @@ impl<'a> Iterator for TilesIterator<'a> {
     }
 }
 
-/// Load Tiled tileset from given json string
-pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error::Error> {
+/// Load Tiled tile map from given json string.
+/// "data" is a tiled json content.
+/// "textures" is a map from the name used in the json to macroquad texture.
+/// "external_tilesets" is a map of tileset name to tileset json content.
+/// "external_tilesets" is used when in tiled the "source" field is used instead of embedded tileset.
+pub fn load_map(
+    data: &str,
+    textures: &[(&str, Texture2D)],
+    external_tilesets: &[(&str, &str)],
+) -> Result<Map, error::Error> {
     let map: tiled::Map = DeJson::deserialize_json(data)?;
 
     let mut layers = HashMap::new();
     let mut tilesets = HashMap::new();
+    let mut map_tilesets = vec![];
 
     for tileset in &map.tilesets {
+        let tileset = if tileset.source.is_empty() {
+            tileset.clone()
+        } else {
+            let tileset_data = external_tilesets
+                .iter()
+                .find(|(name, _)| *name == &tileset.source)
+                .unwrap();
+            let mut map_tileset: tiled::Tileset = DeJson::deserialize_json(&tileset_data.1)?;
+            map_tileset.firstgid = tileset.firstgid;
+            map_tileset
+        };
+
         let texture = textures
             .iter()
             .find(|(name, _)| *name == tileset.image)
@@ -203,6 +259,8 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
                 tileheight: tileset.tileheight,
             },
         );
+
+        map_tilesets.push(tileset);
     }
 
     for layer in &map.layers {
@@ -228,11 +286,16 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
                 tile_w: (object.width / tile_width) as u32,
                 tile_h: (object.height / tile_height) as u32,
                 name: object.name.clone(),
+                properties: object
+                    .properties
+                    .iter()
+                    .map(|property| (property.name.to_string(), property.value.to_string()))
+                    .collect(),
             });
         }
 
         let find_tileset = |tile: u32| {
-            map.tilesets.iter().find(|tileset| {
+            map_tilesets.iter().find(|tileset| {
                 tile >= tileset.firstgid && tile < tileset.firstgid + tileset.tilecount
             })
         };
