@@ -19,7 +19,7 @@ log-impl = ["miniquad/log-impl"]
 all-features = true
 
 [dependencies]
-miniquad = "0.3.0-alpha.22"
+miniquad = "0.3.0-alpha.23"
 quad-gl = { version = "=0.2.12", path = "./quad-gl" }
 quad-rand = "0.1"
 glam = {version = "0.9", features = ["scalar-math"] }
@@ -30,6 +30,7 @@ fontdue = "0.3.2"
 
 [dev-dependencies]
 megaui-macroquad = "0.1.2"
+macroquad-particles = { path = "./particles" }
 
 # workaround to fix the examples
 # this allows to use megaui-macroquad in examples without two versions of macroquad
@@ -37,3 +38,4 @@ megaui-macroquad = "0.1.2"
 macroquad = { path = './' }
 
 #miniquad = { path = '../miniquad' }
+#quad-gl = {path = './quad-gl'}

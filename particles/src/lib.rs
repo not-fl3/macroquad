@@ -962,7 +962,4 @@ mod post_processing_shader {
             uniforms: UniformBlockLayout { uniforms: vec![] },
         }
     }
-
-    #[repr(C)]
-    pub struct Uniforms {}
 }
