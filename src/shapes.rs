@@ -13,9 +13,9 @@ pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
 
     let mut vertices = Vec::<Vertex>::with_capacity(3);
 
-    vertices.push(Vertex::new(v1.x(), v1.y(), 0., 0., 0., color));
-    vertices.push(Vertex::new(v2.x(), v2.y(), 0., 0., 0., color));
-    vertices.push(Vertex::new(v3.x(), v3.y(), 0., 0., 0., color));
+    vertices.push(Vertex::new(v1.x, v1.y, 0., 0., 0., color));
+    vertices.push(Vertex::new(v2.x, v2.y, 0., 0., 0., color));
+    vertices.push(Vertex::new(v3.x, v3.y, 0., 0., 0., color));
     let indices: [u16; 3] = [0, 1, 2];
 
     context.gl.texture(None);
@@ -24,9 +24,9 @@ pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
 }
 
 pub fn draw_triangle_lines(v1: Vec2, v2: Vec2, v3: Vec2, thickness: f32, color: Color) {
-    draw_line(v1.x(), v1.y(), v2.x(), v2.y(), thickness, color);
-    draw_line(v2.x(), v2.y(), v3.x(), v3.y(), thickness, color);
-    draw_line(v3.x(), v3.y(), v1.x(), v1.y(), thickness, color);
+    draw_line(v1.x, v1.y, v2.x, v2.y, thickness, color);
+    draw_line(v2.x, v2.y, v3.x, v3.y, thickness, color);
+    draw_line(v3.x, v3.y, v1.x, v1.y, thickness, color);
 }
 
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
@@ -119,7 +119,7 @@ pub fn draw_poly_lines(
 
         let p1 = vec2(x + radius * rx, y + radius * ry);
 
-        draw_line(p0.x(), p0.y(), p1.x(), p1.y(), thickness, color);
+        draw_line(p0.x, p0.y, p1.x, p1.y, thickness, color);
     }
 }
 

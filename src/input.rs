@@ -6,13 +6,13 @@ use crate::get_context;
 pub fn mouse_position() -> (f32, f32) {
     let context = get_context();
 
-    (context.mouse_position.x(), context.mouse_position.y())
+    (context.mouse_position.x, context.mouse_position.y)
 }
 
 pub fn mouse_wheel() -> (f32, f32) {
     let context = get_context();
 
-    (context.mouse_wheel.x(), context.mouse_wheel.y())
+    (context.mouse_wheel.x, context.mouse_wheel.y)
 }
 
 /// Detect if the key has been pressed once

@@ -192,8 +192,8 @@ impl EventHandlerFree for Stage {
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();
 
-        context.mouse_wheel.set_x(x);
-        context.mouse_wheel.set_y(y);
+        context.mouse_wheel.x = x;
+        context.mouse_wheel.y = y;
     }
     fn mouse_button_down_event(&mut self, btn: MouseButton, _x: f32, _y: f32) {
         let context = get_context();

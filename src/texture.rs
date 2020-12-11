@@ -131,7 +131,7 @@ pub fn draw_texture_ex(
     });
 
     let (w, h) = match params.dest_size {
-        Some(dst) => (dst.x(), dst.y()),
+        Some(dst) => (dst.x, dst.y),
         _ => (sw, sh),
     };
 
@@ -146,28 +146,28 @@ pub fn draw_texture_ex(
     let r = params.rotation;
     let p = [
         vec2(
-            p[0].x() * r.cos() - p[0].y() * r.sin(),
-            p[0].x() * r.sin() + p[0].y() * r.cos(),
+            p[0].x * r.cos() - p[0].y * r.sin(),
+            p[0].x * r.sin() + p[0].y * r.cos(),
         ) + m,
         vec2(
-            p[1].x() * r.cos() - p[1].y() * r.sin(),
-            p[1].x() * r.sin() + p[1].y() * r.cos(),
+            p[1].x * r.cos() - p[1].y * r.sin(),
+            p[1].x * r.sin() + p[1].y * r.cos(),
         ) + m,
         vec2(
-            p[2].x() * r.cos() - p[2].y() * r.sin(),
-            p[2].x() * r.sin() + p[2].y() * r.cos(),
+            p[2].x * r.cos() - p[2].y * r.sin(),
+            p[2].x * r.sin() + p[2].y * r.cos(),
         ) + m,
         vec2(
-            p[3].x() * r.cos() - p[3].y() * r.sin(),
-            p[3].x() * r.sin() + p[3].y() * r.cos(),
+            p[3].x * r.cos() - p[3].y * r.sin(),
+            p[3].x * r.sin() + p[3].y * r.cos(),
         ) + m,
     ];
     #[rustfmt::skip]
     let vertices = [
-        Vertex::new(p[0].x(), p[0].y(), 0.,  sx      /texture.width(),  sy      /texture.height(), color),
-        Vertex::new(p[1].x(), p[1].y(), 0., (sx + sw)/texture.width(),  sy      /texture.height(), color),
-        Vertex::new(p[2].x(), p[2].y(), 0., (sx + sw)/texture.width(), (sy + sh)/texture.height(), color),
-        Vertex::new(p[3].x(), p[3].y(), 0.,  sx      /texture.width(), (sy + sh)/texture.height(), color),
+        Vertex::new(p[0].x, p[0].y, 0.,  sx      /texture.width(),  sy      /texture.height(), color),
+        Vertex::new(p[1].x, p[1].y, 0., (sx + sw)/texture.width(),  sy      /texture.height(), color),
+        Vertex::new(p[2].x, p[2].y, 0., (sx + sw)/texture.width(), (sy + sh)/texture.height(), color),
+        Vertex::new(p[3].x, p[3].y, 0.,  sx      /texture.width(), (sy + sh)/texture.height(), color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 

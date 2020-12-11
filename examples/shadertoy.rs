@@ -216,14 +216,14 @@ async fn main() {
                             canvas.rect(
                                 megaui::Rect::new(cursor.x + 20.0, cursor.y, 50.0, 18.0),
                                 megaui::Color::new(0.2, 0.2, 0.2, 1.0),
-                                megaui::Color::new(color.x(), color.y(), color.z(), 1.0),
+                                megaui::Color::new(color.x, color.y, color.z, 1.0),
                             );
 
                             if ui.button(None, "change") {
                                 colorpicker_window = true;
                                 color_picking_uniform = Some(name.to_owned());
                             }
-                            material.set_uniform(name, (color.x(), color.y(), color.z()));
+                            material.set_uniform(name, (color.x, color.y, color.z));
                         }
                     }
                 }

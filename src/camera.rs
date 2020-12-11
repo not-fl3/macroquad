@@ -77,10 +77,10 @@ impl Camera for Camera2D {
         //   1. Move to offset
         //   2. Rotate and Scale
         //   3. Move by -target
-        let mat_origin = Mat4::from_translation(vec3(-self.target.x(), -self.target.y(), 0.0));
+        let mat_origin = Mat4::from_translation(vec3(-self.target.x, -self.target.y, 0.0));
         let mat_rotation = Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), self.rotation.to_radians());
-        let mat_scale = Mat4::from_scale(vec3(self.zoom.x(), self.zoom.y(), 1.0));
-        let mat_translation = Mat4::from_translation(vec3(self.offset.x(), self.offset.y(), 0.0));
+        let mat_scale = Mat4::from_scale(vec3(self.zoom.x, self.zoom.y, 1.0));
+        let mat_translation = Mat4::from_translation(vec3(self.offset.x, self.offset.y, 0.0));
 
         mat_translation * ((mat_scale * mat_rotation) * mat_origin)
     }
@@ -99,11 +99,11 @@ impl Camera2D {
     /// Screen position in window space - from (0, 0) to (screen_width, screen_height())
     pub fn world_to_screen(&self, point: Vec2) -> Vec2 {
         let mat = self.matrix();
-        let transform = mat.transform_point3(vec3(point.x(), point.y(), 0.));
+        let transform = mat.transform_point3(vec3(point.x, point.y, 0.));
 
         vec2(
-            (transform.x() / 2. + 0.5) * screen_width(),
-            (0.5 - transform.y() / 2.) * screen_height(),
+            (transform.x / 2. + 0.5) * screen_width(),
+            (0.5 - transform.y / 2.) * screen_height(),
         )
     }
 
@@ -111,13 +111,13 @@ impl Camera2D {
     // Point is a screen space position, often mouse x and y
     pub fn screen_to_world(&self, point: Vec2) -> Vec2 {
         let point = vec2(
-            point.x() / screen_width() * 2. - 1.,
-            1. - point.y() / screen_height() * 2.,
+            point.x / screen_width() * 2. - 1.,
+            1. - point.y / screen_height() * 2.,
         );
         let inv_mat = self.matrix().inverse();
-        let transform = inv_mat.transform_point3(vec3(point.x(), point.y(), 0.));
+        let transform = inv_mat.transform_point3(vec3(point.x, point.y, 0.));
 
-        vec2(transform.x(), transform.y())
+        vec2(transform.x, transform.y)
     }
 }
 

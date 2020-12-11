@@ -79,7 +79,7 @@ impl Color {
     }
 
     pub fn from_vec(vec: glam::Vec4) -> Self {
-        Self::new(vec.x(), vec.y(), vec.z(), vec.w())
+        Self::new(vec.x, vec.y, vec.z, vec.w)
     }
 }
 

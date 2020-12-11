@@ -10,23 +10,23 @@ fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
     let indices = [0, 1, 2, 0, 2, 3];
     let quad = [
         (
-            [vertices[0].0.x(), vertices[0].0.y(), vertices[0].0.z()],
-            [vertices[0].1.x(), vertices[0].1.y()],
+            [vertices[0].0.x, vertices[0].0.y, vertices[0].0.z],
+            [vertices[0].1.x, vertices[0].1.y],
             vertices[0].2.into(),
         ),
         (
-            [vertices[1].0.x(), vertices[1].0.y(), vertices[1].0.z()],
-            [vertices[1].1.x(), vertices[1].1.y()],
+            [vertices[1].0.x, vertices[1].0.y, vertices[1].0.z],
+            [vertices[1].1.x, vertices[1].1.y],
             vertices[1].2.into(),
         ),
         (
-            [vertices[2].0.x(), vertices[2].0.y(), vertices[2].0.z()],
-            [vertices[2].1.x(), vertices[2].1.y()],
+            [vertices[2].0.x, vertices[2].0.y, vertices[2].0.z],
+            [vertices[2].1.x, vertices[2].1.y],
             vertices[2].2.into(),
         ),
         (
-            [vertices[3].0.x(), vertices[3].0.y(), vertices[3].0.z()],
-            [vertices[3].1.x(), vertices[3].1.y()],
+            [vertices[3].0.x, vertices[3].0.y, vertices[3].0.z],
+            [vertices[3].1.x, vertices[3].1.y],
             vertices[3].2.into(),
         ),
     ];
@@ -42,8 +42,8 @@ pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
     let indices = [0, 1];
 
     let line = [
-        ([start.x(), start.y(), start.z()], uv, color),
-        ([end.x(), end.y(), end.z()], uv, color),
+        ([start.x, start.y, start.z], uv, color),
+        ([end.x, end.y, end.z], uv, color),
     ];
     context.gl.texture(None);
     context.gl.draw_mode(DrawMode::Lines);
@@ -75,22 +75,22 @@ pub fn draw_grid(slices: u32, spacing: f32) {
 
 pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>>, color: Color) {
     let v1 = (
-        (center + vec3(-size.x(), 0., -size.y())).into(),
+        (center + vec3(-size.x, 0., -size.y)).into(),
         vec2(0., 0.),
         color,
     );
     let v2 = (
-        (center + vec3(-size.x(), 0., size.y())).into(),
+        (center + vec3(-size.x, 0., size.y)).into(),
         vec2(0., 1.),
         color,
     );
     let v3 = (
-        (center + vec3(size.x(), 0., size.y())).into(),
+        (center + vec3(size.x, 0., size.y)).into(),
         vec2(1., 1.),
         color,
     );
     let v4 = (
-        (center + vec3(size.x(), 0., -size.y())).into(),
+        (center + vec3(size.x, 0., -size.y)).into(),
         vec2(1., 0.),
         color,
     );
@@ -106,8 +106,8 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let context = &mut get_context().draw_context;
     context.gl.texture(texture.into());
 
-    let (x, y, z) = (position.x(), position.y(), position.z());
-    let (width, height, length) = (size.x(), size.y(), size.z());
+    let (x, y, z) = (position.x, position.y, position.z);
+    let (width, height, length) = (size.x, size.y, size.z);
 
     // Front face
     let bl_pos = vec3(x - width / 2., y - height / 2., z + length / 2.);
@@ -225,8 +225,8 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
 }
 
 pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
-    let (x, y, z) = (position.x(), position.y(), position.z());
-    let (width, height, length) = (size.x(), size.y(), size.z());
+    let (x, y, z) = (position.x, position.y, position.z);
+    let (width, height, length) = (size.x, size.y, size.z);
 
     // Front Face
 

@@ -43,8 +43,8 @@ impl Rect {
 
     /// Moves the `Rect`'s origin to (x, y)
     pub fn move_to(&mut self, destination: Vec2) {
-        self.x = destination.x();
-        self.y = destination.y();
+        self.x = destination.x;
+        self.y = destination.y;
     }
 
     /// Scales the `Rect` by a factor of (sx, sy),
@@ -56,10 +56,10 @@ impl Rect {
 
     /// Checks whether the `Rect` contains a `Point`
     pub fn contains(&self, point: Vec2) -> bool {
-        point.x() >= self.left()
-            && point.x() <= self.right()
-            && point.y() <= self.bottom()
-            && point.y() >= self.top()
+        point.x >= self.left()
+            && point.x <= self.right()
+            && point.y <= self.bottom()
+            && point.y >= self.top()
     }
 
     /// Checks whether the `Rect` overlaps another `Rect`
@@ -79,7 +79,7 @@ pub fn polar_to_cartesian(rho: f32, theta: f32) -> Vec2 {
 /// Converts 2d cartesian coordinates to 2d polar coordinates.
 pub fn cartesian_to_polar(cartesian: Vec2) -> Vec2 {
     vec2(
-        (cartesian.x().powi(2) + cartesian.y().powi(2)).sqrt(),
-        cartesian.y().atan2(cartesian.x()),
+        (cartesian.x.powi(2) + cartesian.y.powi(2)).sqrt(),
+        cartesian.y.atan2(cartesian.x),
     )
 }

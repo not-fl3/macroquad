@@ -123,8 +123,8 @@ pub struct Vec2Serializable {
 impl From<&Vec2> for Vec2Serializable {
     fn from(vec: &Vec2) -> Vec2Serializable {
         Vec2Serializable {
-            x: vec.x(),
-            y: vec.y(),
+            x: vec.x,
+            y: vec.y,
         }
     }
 }
@@ -644,10 +644,10 @@ impl Emitter {
             let angle = rand::gen_range(-spread / 2.0, spread / 2.0);
 
             let quat = glam::Quat::from_rotation_z(angle);
-            let dir = quat * vec3(dir.x(), dir.y(), 0.0);
+            let dir = quat * vec3(dir.x, dir.y, 0.0);
             let res = dir * velocity;
 
-            vec2(res.x(), res.y())
+            vec2(res.x, res.y)
         }
 
         let r =
@@ -655,7 +655,7 @@ impl Emitter {
 
         let particle = if self.config.local_coords {
             GpuParticle {
-                pos: vec4(offset.x(), offset.y(), 0.0, r),
+                pos: vec4(offset.x, offset.y, 0.0, r),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
                 data: vec4(self.particles_spawned as f32, 0.0, 0.0, 0.0),
                 color: self.config.colors_curve.start.to_vec(),
@@ -663,8 +663,8 @@ impl Emitter {
         } else {
             GpuParticle {
                 pos: vec4(
-                    self.position.x() + offset.x(),
-                    self.position.y() + offset.y(),
+                    self.position.x + offset.x,
+                    self.position.y + offset.y,
                     0.0,
                     r,
                 ),
@@ -679,8 +679,8 @@ impl Emitter {
         self.cpu_counterpart.push(CpuParticle {
             velocity: random_initial_vector(
                 vec2(
-                    self.config.initial_direction.x(),
-                    self.config.initial_direction.y(),
+                    self.config.initial_direction.x,
+                    self.config.initial_direction.y,
                 ),
                 self.config.initial_direction_spread,
                 self.config.initial_velocity
@@ -754,16 +754,16 @@ impl Emitter {
                         + self.config.colors_curve.end.to_vec() * t
                 }
             };
-            gpu.pos += vec4(cpu.velocity.x(), cpu.velocity.y(), 0.0, 0.0) * dt;
+            gpu.pos += vec4(cpu.velocity.x, cpu.velocity.y, 0.0, 0.0) * dt;
 
-            *gpu.pos.w_mut() = cpu.initial_size
+            gpu.pos.w = cpu.initial_size
                 * self
                     .batched_size_curve
                     .as_ref()
                     .map_or(1.0, |curve| curve.get(cpu.lived / cpu.lifetime));
 
             if cpu.lifetime != 0.0 {
-                *gpu.data.y_mut() = cpu.lived / cpu.lifetime;
+                gpu.data.y = cpu.lived / cpu.lifetime;
             }
 
             cpu.lived += dt;
@@ -853,7 +853,7 @@ impl Emitter {
         ctx.apply_bindings(&self.bindings);
         ctx.apply_uniforms(&shader::Uniforms {
             mvp: quad_gl.get_projection_matrix(),
-            emitter_position: vec3(self.position.x(), self.position.y(), 0.0),
+            emitter_position: vec3(self.position.x, self.position.y, 0.0),
             local_coords: if self.config.local_coords { 1.0 } else { 0.0 },
         });
         ctx.draw(
