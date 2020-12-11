@@ -1,6 +1,6 @@
 //! 3D shapes and models, loading 3d models from files, drawing 3D primitives.
 
-use crate::{get_context, color::Color};
+use crate::{color::Color, get_context};
 
 use glam::{vec2, vec3, Vec2, Vec3};
 use quad_gl::{DrawMode, Texture2D};

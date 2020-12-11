@@ -47,6 +47,7 @@ mod drawing;
 mod exec;
 
 pub mod camera;
+pub mod color;
 pub mod file;
 pub mod input;
 pub mod material;
@@ -57,7 +58,6 @@ pub mod text;
 pub mod texture;
 pub mod time;
 pub mod window;
-pub mod color;
 
 pub mod collections;
 pub mod coroutines;
@@ -126,7 +126,6 @@ impl Context {
             mouse_released: HashSet::new(),
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
-
 
             draw_context: DrawContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
@@ -231,7 +230,7 @@ impl EventHandlerFree for Stage {
     fn update(&mut self) {
         #[cfg(not(target_arch = "wasm32"))]
         {
-            // TODO: consider making it a part of miniquad? 
+            // TODO: consider making it a part of miniquad?
             std::thread::yield_now();
         }
     }

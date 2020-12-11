@@ -122,10 +122,7 @@ pub struct Vec2Serializable {
 
 impl From<&Vec2> for Vec2Serializable {
     fn from(vec: &Vec2) -> Vec2Serializable {
-        Vec2Serializable {
-            x: vec.x,
-            y: vec.y,
-        }
+        Vec2Serializable { x: vec.x, y: vec.y }
     }
 }
 

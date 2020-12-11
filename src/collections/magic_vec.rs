@@ -78,7 +78,6 @@ impl<T: 'static> MagicVec<T> {
             handle: MagicHandle(Some(cell.id)),
             used: cell.used.get(),
         })
-
     }
 
     pub fn iter(&self) -> MagicVecIterator<'static, T> {

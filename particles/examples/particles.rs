@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use macroquad_particles::{self as particles, AtlasConfig, Emitter, EmitterConfig, BlendMode};
+use macroquad_particles::{self as particles, AtlasConfig, BlendMode, Emitter, EmitterConfig};
 
 fn explosion() -> particles::EmitterConfig {
     particles::EmitterConfig {
@@ -92,7 +92,7 @@ async fn main() {
         draw_circle(local_emitter_pos.x, local_emitter_pos.y, 15.0, RED);
 
         let world_emitter_pos = vec2(
-            (get_time() * 0.6  + 1.0).sin() as f32 * screen_width() / 2.5 + screen_width() / 2.0,
+            (get_time() * 0.6 + 1.0).sin() as f32 * screen_width() / 2.5 + screen_width() / 2.0,
             (get_time() * 0.4 + 1.0).cos() as f32 * screen_height() / 2.5 + screen_height() / 2.0,
         );
 

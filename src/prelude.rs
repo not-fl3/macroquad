@@ -4,13 +4,13 @@ pub use crate::camera::*;
 pub use crate::file::*;
 pub use crate::input::*;
 pub use crate::material::*;
+pub use crate::math::*;
 pub use crate::models::*;
 pub use crate::shapes::*;
 pub use crate::text::*;
 pub use crate::texture::*;
 pub use crate::time::*;
 pub use crate::window::*;
-pub use crate::math::*;
 
 pub use glam;
 pub use glam::*;

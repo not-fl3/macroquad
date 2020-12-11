@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-use macroquad_particles::{BlendMode, Emitter, EmitterConfig, Curve};
+use macroquad_particles::{BlendMode, Curve, Emitter, EmitterConfig};
 
 #[macroquad::main("Fountain")]
 async fn main() {
@@ -18,7 +18,7 @@ async fn main() {
         blend_mode: BlendMode::Additive,
         ..Default::default()
     });
-    
+
     loop {
         clear_background(BLACK);
 

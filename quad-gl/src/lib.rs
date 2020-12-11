@@ -21,18 +21,26 @@ pub struct Color {
 #[macro_export]
 macro_rules! color_u8 {
     ($r:expr, $g:expr, $b:expr, $a:expr) => {
-        Color::new($r as f32 / 255.,
-                   $g as f32 / 255.,
-                   $b as f32 / 255.,
-                   $a as f32 / 255.)
-    }
+        Color::new(
+            $r as f32 / 255.,
+            $g as f32 / 255.,
+            $b as f32 / 255.,
+            $a as f32 / 255.,
+        )
+    };
 }
 
 #[test]
 fn color_from_bytes() {
     assert_eq!(Color::new(1.0, 0.0, 0.0, 1.0), color_u8!(255, 0, 0, 255));
-    assert_eq!(Color::new(1.0, 0.5, 0.0, 1.0), color_u8!(255, 127.5, 0, 255));
-    assert_eq!(Color::new(0.0, 1.0, 0.5, 1.0), color_u8!(0, 255, 127.5, 255));
+    assert_eq!(
+        Color::new(1.0, 0.5, 0.0, 1.0),
+        color_u8!(255, 127.5, 0, 255)
+    );
+    assert_eq!(
+        Color::new(0.0, 1.0, 0.5, 1.0),
+        color_u8!(0, 255, 127.5, 255)
+    );
 }
 
 impl Into<[u8; 4]> for Color {

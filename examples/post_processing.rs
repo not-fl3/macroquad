@@ -4,12 +4,13 @@ use macroquad::prelude::*;
 async fn main() {
     let render_target = render_target(320, 150);
     set_texture_filter(render_target.texture, FilterMode::Nearest);
-    let material = load_material(CRT_VERTEX_SHADER, CRT_FRAGMENT_SHADER, Default::default()).unwrap();
+    let material =
+        load_material(CRT_VERTEX_SHADER, CRT_FRAGMENT_SHADER, Default::default()).unwrap();
 
     loop {
         // drawing to the texture
 
-        // 0..100, 0..100 camera        
+        // 0..100, 0..100 camera
         set_camera(Camera2D {
             zoom: vec2(0.01, 0.01),
             target: vec2(0.0, 0.0),
