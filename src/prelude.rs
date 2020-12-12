@@ -13,7 +13,6 @@ pub use crate::time::*;
 pub use crate::window::*;
 
 pub use glam;
-pub use glam::*;
 pub use miniquad::{conf::Conf, Comparison, PipelineParams, UniformType};
 pub use quad_gl::{colors::*, Color, DrawMode, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;

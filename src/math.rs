@@ -1,8 +1,8 @@
 //! Math types and helpers.
+//!
+//! Consists of re-exported `glam` types with some additions.
 
-pub use glam;
-
-use glam::{vec2, Vec2};
+pub use glam::*;
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Rect {
