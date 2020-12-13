@@ -9,8 +9,8 @@ pub enum Error {
         layer: String,
     },
     TextureNotFound {
-        texture: String
-    }
+        texture: String,
+    },
 }
 
 impl From<nanoserde::DeJsonErr> for Error {
@@ -31,7 +31,6 @@ impl std::fmt::Display for Error {
                 f,
                 "Layer name should be unique to load tiled level in macroquad, non-unique layer name: {}", layer
             ),
-            
         }
     }
 }

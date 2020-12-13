@@ -64,7 +64,8 @@ impl TileSet {
         let sx = (ix % self.columns) as f32 * (sw + self.spacing as f32) + self.margin as f32;
         let sy = (ix / self.columns) as f32 * (sh + self.spacing as f32) + self.margin as f32;
 
-        Rect::new(sx + 1., sy + 1., sw - 2., sh - 2.)
+        // TODO: configure tiles margin
+        Rect::new(sx + 1.1, sy + 1.1, sw - 2.2, sh - 2.2)
     }
 }
 
@@ -79,6 +80,13 @@ pub struct Map {
 
 impl Map {
     pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
+        if self.tilesets.contains_key(tileset) == false {
+            panic!(
+                "No such tilest: {}, tilesets available: {:?}",
+                tileset,
+                self.tilesets.keys()
+            )
+        }
         let tileset = &self.tilesets[tileset];
         let spr_rect = tileset.sprite_rect(sprite);
 
@@ -120,35 +128,47 @@ impl Map {
         self.layers.contains_key(layer)
     }
 
-    pub fn draw_tiles(&self, layer: &str, dest: Rect, source: Rect) {
+    pub fn draw_tiles(&self, layer: &str, dest: Rect, source: impl Into<Option<Rect>>) {
         assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
 
+        let source = source.into().unwrap_or(Rect::new(
+            0.,
+            0.,
+            self.raw_tiled_map.width as f32,
+            self.raw_tiled_map.height as f32,
+        ));
         let layer = &self.layers[layer];
 
-        let spr_width = dest.w / (source.w + 1.);
-        let spr_height = dest.h / (source.h + 1.);
+        let spr_width = dest.w / source.w;
+        let spr_height = dest.h / source.h;
 
         for y in source.y as u32..source.y as u32 + source.h as u32 {
             for x in source.x as u32..source.x as u32 + source.w as u32 {
                 let pos = vec2(
-                    (x - source.x as u32) as f32 / (source.w + 1.) * dest.w + dest.x,
-                    (y - source.y as u32) as f32 / (source.h + 1.) * dest.h + dest.y,
+                    (x - source.x as u32) as f32 / source.w * dest.w + dest.x,
+                    (y - source.y as u32) as f32 / source.h * dest.h + dest.y,
                 );
 
                 if let Some(tile) = &layer.data[(y * layer.width + x) as usize] {
                     self.spr(
                         &tile.tileset,
                         tile.id,
-                        Rect::new(pos.x(), pos.y(), spr_width, spr_height),
+                        Rect::new(pos.x, pos.y, spr_width, spr_height),
                     );
                 }
             }
         }
     }
 
-    pub fn tiles(&self, layer: &str, rect: Rect) -> TilesIterator {
+    pub fn tiles(&self, layer: &str, rect: impl Into<Option<Rect>>) -> TilesIterator {
         assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
 
+        let rect = rect.into().unwrap_or(Rect::new(
+            0.,
+            0.,
+            self.raw_tiled_map.width as f32,
+            self.raw_tiled_map.height as f32,
+        ));
         TilesIterator::new(&self.layers[layer], rect)
     }
 
@@ -197,17 +217,18 @@ impl<'a> Iterator for TilesIterator<'a> {
             next_x = self.current.0 + 1;
             next_y = self.current.1;
         }
-        self.current = (next_x, next_y);
 
-        if next_y > self.rect.y as u32 + self.rect.h as u32 {
-            None
-        } else {
-            Some((
-                next_x,
-                next_y,
-                &self.layer.data[(next_y * self.layer.width + next_x) as usize],
-            ))
+        if next_y >= self.rect.y as u32 + self.rect.h as u32 {
+            return None;
         }
+
+        let res = Some((
+            self.current.0,
+            self.current.1,
+            &self.layer.data[(self.current.1 * self.layer.width + self.current.0) as usize],
+        ));
+        self.current = (next_x, next_y);
+        res
     }
 }
 

@@ -45,7 +45,6 @@ pub struct Tile {
     /// Layer with type objectgroup (optional)
     pub objectgroup: Option<Layer>,
     /// A list of properties (name, value, type)
-
     pub properties: Vec<Property>,
     /// Index of terrain for each corner of tile
     pub terrain: Vec<i32>,
@@ -137,5 +136,5 @@ pub struct Map {
     pub width: u32,
 
     #[nserde(rename = "type")]
-    pub ty: String
+    pub ty: String,
 }
