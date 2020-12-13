@@ -31,6 +31,8 @@ fontdue = "0.3.2"
 [dev-dependencies]
 megaui-macroquad = "0.1.2"
 macroquad-particles = { path = "./particles" }
+macroquad-tiled = { path = "./tiled" }
+physics-platformer = { path = "./physics-platformer" }
 
 # workaround to fix the examples
 # this allows to use megaui-macroquad in examples without two versions of macroquad
