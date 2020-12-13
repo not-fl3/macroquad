@@ -57,8 +57,8 @@ impl Rect {
     /// Checks whether the `Rect` contains a `Point`
     pub fn contains(&self, point: Vec2) -> bool {
         point.x >= self.left()
-            && point.x <= self.right()
-            && point.y <= self.bottom()
+            && point.x < self.right()
+            && point.y < self.bottom()
             && point.y >= self.top()
     }
 
