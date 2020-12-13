@@ -23,3 +23,12 @@ pub fn load_file(path: &str) -> exec::FileLoadingFuture {
 
     exec::FileLoadingFuture { contents }
 }
+
+/// Load string from the path and block until its loaded.
+/// Right now this will use load_file and `from_utf8_lossy` internally, but
+/// implementatio details may change in the future
+pub async fn load_string(path: &str) -> Result<String, exec::FileError> {
+    let data = load_file(path).await?;
+
+    Ok(String::from_utf8_lossy(&data).to_string())
+}
