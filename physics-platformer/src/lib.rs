@@ -197,7 +197,7 @@ impl World {
         for (actor, actor_collider) in &mut self.actors {
             let rider_rect = Rect::new(
                 actor_collider.pos.x,
-                actor_collider.pos.y + actor_collider.height as f32,
+                actor_collider.pos.y + actor_collider.height as f32 - 1.0,
                 actor_collider.width as f32,
                 1.0,
             );

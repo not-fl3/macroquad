@@ -93,7 +93,7 @@ async fn main() {
                 player.speed.x = 0.;
             }
 
-            if is_key_down(KeyCode::Space) {
+            if is_key_pressed(KeyCode::Space) {
                 if on_ground {
                     player.speed.y = -120.;
                 }
