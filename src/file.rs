@@ -2,6 +2,8 @@
 
 use crate::exec;
 
+pub use crate::exec::FileError;
+
 /// Load file from the path and block until its loaded
 /// Will use filesystem on PC and do http request on web
 pub fn load_file(path: &str) -> exec::FileLoadingFuture {
