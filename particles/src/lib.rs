@@ -853,9 +853,10 @@ impl Emitter {
             emitter_position: vec3(self.position.x, self.position.y, 0.0),
             local_coords: if self.config.local_coords { 1.0 } else { 0.0 },
         });
+
         ctx.draw(
             0,
-            self.bindings.index_buffer.size() as i32,
+            self.bindings.index_buffer.size() as i32 / std::mem::size_of::<u16>() as i32,
             self.gpu_particles.len() as i32,
         );
         ctx.end_render_pass();
