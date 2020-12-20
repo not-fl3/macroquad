@@ -5,6 +5,33 @@ use crate::{color::Color, get_context};
 use glam::{vec2, vec3, Vec2, Vec3};
 use quad_gl::{DrawMode, Texture2D};
 
+#[derive(Clone, Debug, Copy)]
+pub struct Vertex {
+    pub position: Vec3,
+    pub uv: Vec2,
+    pub color: Color,
+}
+
+impl From<Vertex> for quad_gl::VertexInterop {
+    fn from(vertex: Vertex) -> quad_gl::VertexInterop {
+        (vertex.position.into(), vertex.uv.into(), vertex.color.into())
+    }
+}
+
+pub struct Mesh {
+    vertices: Vec<Vertex>,
+    indices: Vec<u16>,
+    texture: Option<Texture2D>,
+}
+
+pub fn draw_mesh(mesh: &Mesh) {
+    let context = &mut get_context().draw_context;
+
+    context.gl.texture(mesh.texture);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
+}
+
 fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
     let context = &mut get_context().draw_context;
     let indices = [0, 1, 2, 0, 2, 3];
