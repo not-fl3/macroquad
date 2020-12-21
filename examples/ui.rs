@@ -144,6 +144,7 @@ async fn main() {
 
     let mut number0 = 0.;
     let mut number1 = 0.;
+    
     loop {
         clear_background(WHITE);
 
@@ -213,8 +214,8 @@ async fn main() {
 
                     ui.separator();
 
-                    ui.input_field(hash!(), "<- input text 1", &mut data0);
-                    ui.input_field(hash!(), "<- input text 2", &mut data1);
+                    ui.input_text(hash!(), "<- input text 1", &mut data0);
+                    ui.input_text(hash!(), "<- input text 2", &mut data1);
                     ui.label(
                         None,
                         &format!("Text entered: \"{}\" and \"{}\"", data0, data1),

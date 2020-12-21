@@ -29,7 +29,7 @@ fontdue = "0.3.2"
 
 
 [dev-dependencies]
-megaui-macroquad = "0.1.2"
+megaui-macroquad = "0.1.3"
 macroquad-particles = { path = "./particles" }
 macroquad-tiled = { path = "./tiled" }
 physics-platformer = { path = "./physics-platformer" }
@@ -41,3 +41,4 @@ macroquad = { path = './' }
 
 #miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}
+

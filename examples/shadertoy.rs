@@ -155,7 +155,7 @@ async fn main() {
 
                     match uniform {
                         Uniform::Float1(x) => {
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
+                            megaui::widgets::InputText::new(hash!(hash!(), i))
                                 .size(megaui::Vector2::new(200.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
@@ -165,14 +165,14 @@ async fn main() {
                             }
                         }
                         Uniform::Float2(x, y) => {
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
+                            megaui::widgets::InputText::new(hash!(hash!(), i))
                                 .size(megaui::Vector2::new(99.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
+                            megaui::widgets::InputText::new(hash!(hash!(), i))
                                 .size(megaui::Vector2::new(99.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, y);
@@ -182,21 +182,21 @@ async fn main() {
                             }
                         }
                         Uniform::Float3(x, y, z) => {
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
+                            megaui::widgets::InputText::new(hash!(hash!(), i))
                                 .size(megaui::Vector2::new(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
+                            megaui::widgets::InputText::new(hash!(hash!(), i))
                                 .size(megaui::Vector2::new(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, y);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
+                            megaui::widgets::InputText::new(hash!(hash!(), i))
                                 .size(megaui::Vector2::new(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, z);
@@ -272,9 +272,13 @@ async fn main() {
                     if ui.active_window_focused() == false {
                         new_uniform_window = false;
                     }
-                    ui.input_field(hash!(), "Name", &mut new_uniform_name);
-                    let uniform_type =
-                        ui.combo_box(hash!(), "Type", &["Float1", "Float2", "Float3", "Color"]);
+                    ui.input_text(hash!(), "Name", &mut new_uniform_name);
+                    let uniform_type = ui.combo_box(
+                        hash!(),
+                        "Type",
+                        &["Float1", "Float2", "Float3", "Color"],
+                        None,
+                    );
 
                     if ui.button(None, "Add") {
                         if new_uniform_name.is_empty() == false {
