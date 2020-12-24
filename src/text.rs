@@ -286,9 +286,15 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     }
 }
 
+/// World space dimensions of the text, measured by "measure_text" function
 pub struct TextDimensions {
+    /// Distance from very left to very right of the rasterized text
     pub width: f32,
+    /// Distance from the bottom to the top of the text. 
     pub height: f32,
+    /// Height offset from the baseline of the text.
+    /// "draw_text(.., X, Y, ..)" will be rendered in a "Rect::new(X, Y - dimensions.offset_y, dimensions.width, dimensions.height)"
+    /// For reference check "text_dimensions" example.
     pub offset_y: f32,
 }
 
