@@ -83,8 +83,8 @@ async fn main() {
             let text_size = measure_text(text, None, font_size as _, 1.0);
             draw_text(
                 text,
-                screen_width() / 2. - text_size.0 / 2.,
-                screen_height() / 2. - text_size.1 / 2.,
+                screen_width() / 2. - text_size.width / 2.,
+                screen_height() / 2. - text_size.height / 2.,
                 font_size,
                 DARKGRAY,
             );
