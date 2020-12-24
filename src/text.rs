@@ -251,7 +251,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
         let font_data = &font.characters[&(character, params.font_size)];
         {
             let left_coord = font_data.offset_x as f32 * params.font_scale + total_width;
-            let top_coord = params.font_size as f32 * params.font_scale
+            let top_coord = 0.0
                 - font_data.glyph_h as f32 * params.font_scale
                 - font_data.offset_y as f32 * params.font_scale;
 
@@ -286,7 +286,18 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     }
 }
 
-pub fn measure_text(text: &str, font: Option<Font>, font_size: u16, font_scale: f32) -> (f32, f32) {
+pub struct TextDimensions {
+    pub width: f32,
+    pub height: f32,
+    pub offset_y: f32,
+}
+
+pub fn measure_text(
+    text: &str,
+    font: Option<Font>,
+    font_size: u16,
+    font_scale: f32,
+) -> TextDimensions {
     let context = get_context();
     let font = context
         .fonts_storage
@@ -299,18 +310,31 @@ pub fn measure_text(text: &str, font: Option<Font>, font_size: u16, font_scale: 
     }
 
     let mut width = 0.;
-    let mut height: f32 = 0.;
+    let mut min_y = std::f32::MAX;
+    let mut max_y = -std::f32::MAX;
 
     for character in text.chars() {
         if let Some(font_data) = font.characters.get(&(character, font_size)) {
             width += font_data.advance * font_scale;
 
-            if height < font_data.glyph_h as f32 * font_scale {
-                height = font_data.glyph_h as f32 * font_scale;
+            if min_y > font_data.offset_y as f32 * font_scale {
+                min_y = font_data.offset_y as f32 * font_scale;
+            }
+            if max_y
+                < font_data.glyph_h as f32 * font_scale + font_data.offset_y as f32 * font_scale
+            {
+                max_y =
+                    font_data.glyph_h as f32 * font_scale + font_data.offset_y as f32 * font_scale;
             }
         }
     }
-    return (width, height);
+
+    let height = max_y - min_y;
+    TextDimensions {
+        width,
+        height: height,
+        offset_y: min_y + height,
+    }
 }
 
 pub(crate) struct FontsStorage {
