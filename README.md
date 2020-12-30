@@ -36,7 +36,7 @@ opt-level = 3
 ## async/await
 
 While macroquad attempts to use as mini rust-specific concepts as possible, `.await` in every examples looks a bit scary.
-Rust's `async/await` is used to solve just one problem - cross platform main loop ogranisation. 
+Rust's `async/await` is used to solve just one problem - cross platform main loop organisation. 
 
 <details>
 <summary>details</summary>
@@ -62,7 +62,7 @@ It is fixable on Android with threads, but on web there is not way to "pause" an
 While that loop is blocking for the entire game execution!
 The C++ solution for that problem: https://kripken.github.io/blog/wasm/2019/07/16/asyncify.html
 
-But in Rust we have async/await. Rust's `futures` is basicly a continuations - `future`'s stack may be store into a variable to later pause/resume execution of future's code.
+But in Rust we have async/await. Rust's `futures` is basically a continuations - `future`'s stack may be store into a variable to later pause/resume execution of future's code.
 
 async/await in macroquad is used without any external dependencies - no runtime, executor or even futures-rs are involved. Its just a way to preserve `main`'s stack on WASM and keep the code cross platform without any wasm-specific main loop.
 </details>
