@@ -65,6 +65,8 @@ pub mod coroutines;
 
 pub mod prelude;
 
+pub mod telemetry;
+
 // TODO: write something about macroquad entrypoint
 #[doc(hidden)]
 pub use macroquad_macro::main;
@@ -141,6 +143,8 @@ impl Context {
     }
 
     fn begin_frame(&mut self) {
+        telemetry::begin_gpu_query("GPU");
+
         self.clear(Self::DEFAULT_BG_COLOR);
         self.draw_context
             .update_projection_matrix(&mut self.quad_context);
@@ -151,6 +155,8 @@ impl Context {
             .perform_render_passes(&mut self.quad_context);
 
         self.quad_context.commit_frame();
+
+        telemetry::end_gpu_query();
 
         self.mouse_wheel = Vec2::new(0., 0.);
         self.keys_pressed.clear();
@@ -237,23 +243,29 @@ impl EventHandlerFree for Stage {
     }
 
     fn draw(&mut self) {
-        if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
-            get_context().begin_frame();
+        {
+            let _z = telemetry::ZoneGuard::new("Event::draw");
 
-            if exec::resume(future) {
-                unsafe {
-                    MAIN_FUTURE = None;
+            if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+                get_context().begin_frame();
+
+                if exec::resume(future) {
+                    unsafe {
+                        MAIN_FUTURE = None;
+                    }
+                    get_context().quad_context.quit();
+                    return;
                 }
-                get_context().quad_context.quit();
-                return;
+                get_context().coroutines_context.update();
             }
-            get_context().coroutines_context.update();
+
+            get_context().end_frame();
+
+            get_context().frame_time = date::now() - get_context().last_frame_time;
+            get_context().last_frame_time = date::now();
         }
 
-        get_context().end_frame();
-
-        get_context().frame_time = date::now() - get_context().last_frame_time;
-        get_context().last_frame_time = date::now();
+        telemetry::reset();
     }
 }
 
