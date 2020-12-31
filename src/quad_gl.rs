@@ -4,6 +4,8 @@ pub use colors::*;
 
 pub use miniquad::{FilterMode, ShaderError};
 
+//use crate::telemetry;
+
 const UNIFORMS_ARRAY_SIZE: usize = 512;
 
 #[repr(C)]
@@ -624,6 +626,7 @@ impl QuadGl {
             draw_calls_bindings: Vec::with_capacity(200),
             draw_calls_count: 0,
             start_time: miniquad::date::now(),
+
             white_texture,
         }
     }
