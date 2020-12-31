@@ -3,7 +3,7 @@
 use crate::get_context;
 
 use miniquad::PassAction;
-use quad_gl::Color;
+use crate::quad_gl::Color;
 
 // miniquad is re-exported for the use in combination with `get_internal_gl`
 pub use miniquad;
@@ -32,7 +32,7 @@ pub fn clear_background(color: Color) {
 
 pub struct InternalGlContext<'a> {
     pub quad_context: &'a mut miniquad::Context,
-    pub quad_gl: &'a mut quad_gl::QuadGl,
+    pub quad_gl: &'a mut crate::quad_gl::QuadGl,
 }
 
 impl<'a> InternalGlContext<'a> {

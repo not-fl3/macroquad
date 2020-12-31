@@ -1,8 +1,8 @@
 //! this is legacy and going to disappear soon
 
-use quad_gl::QuadGl;
+use crate::quad_gl::QuadGl;
 
-pub use quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
+pub use crate::quad_gl::{colors::*, Color, DrawMode, FilterMode, Image, Texture2D};
 
 use glam::Mat4;
 

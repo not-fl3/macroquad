@@ -14,7 +14,7 @@ pub use crate::window::*;
 
 pub use glam;
 pub use miniquad::{conf::Conf, Comparison, PipelineParams, UniformType};
-pub use quad_gl::{colors::*, Color, DrawMode, GlPipeline, QuadGl, Vertex};
+pub use crate::quad_gl::{colors::*, Color, DrawMode, GlPipeline, QuadGl, Vertex};
 pub use quad_rand as rand;
 
 pub use crate::collections;
@@ -23,4 +23,4 @@ pub use crate::coroutines;
 #[cfg(feature = "log-impl")]
 pub use crate::logging::*;
 
-pub use quad_gl::color_u8;
+pub use crate::color_u8;
