@@ -3,7 +3,7 @@
 use crate::{color::Color, get_context};
 
 use glam::{vec2, vec3, Vec2, Vec3};
-use quad_gl::{DrawMode, Texture2D};
+use crate::quad_gl::{DrawMode, Texture2D};
 
 #[derive(Clone, Debug, Copy)]
 pub struct Vertex {
@@ -12,8 +12,8 @@ pub struct Vertex {
     pub color: Color,
 }
 
-impl From<Vertex> for quad_gl::VertexInterop {
-    fn from(vertex: Vertex) -> quad_gl::VertexInterop {
+impl From<Vertex> for crate::quad_gl::VertexInterop {
+    fn from(vertex: Vertex) -> crate::quad_gl::VertexInterop {
         (vertex.position.into(), vertex.uv.into(), vertex.color.into())
     }
 }

@@ -2,7 +2,7 @@
 
 use crate::get_context;
 use miniquad::{PipelineParams, ShaderError, UniformType};
-use quad_gl::GlPipeline;
+use crate::quad_gl::GlPipeline;
 
 /// Material instance loaded on GPU.
 #[derive(Copy, Clone, Debug, PartialEq)]
