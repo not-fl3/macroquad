@@ -4,10 +4,8 @@ use std::collections::HashMap;
 
 use crate::{color::Color, get_context, math::Rect};
 
+use crate::quad_gl::{Image, Texture2D, WHITE};
 use glam::vec2;
-use quad_gl::Image;
-use quad_gl::Texture2D;
-use quad_gl::WHITE;
 
 #[derive(Debug)]
 struct CharacterInfo {
@@ -290,7 +288,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 pub struct TextDimensions {
     /// Distance from very left to very right of the rasterized text
     pub width: f32,
-    /// Distance from the bottom to the top of the text. 
+    /// Distance from the bottom to the top of the text.
     pub height: f32,
     /// Height offset from the baseline of the text.
     /// "draw_text(.., X, Y, ..)" will be rendered in a "Rect::new(X, Y - dimensions.offset_y, dimensions.width, dimensions.height)"

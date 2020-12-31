@@ -45,6 +45,7 @@ use std::pin::Pin;
 
 mod drawing;
 mod exec;
+mod quad_gl;
 
 pub mod camera;
 pub mod color;
