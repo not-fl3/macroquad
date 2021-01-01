@@ -3,9 +3,9 @@
 use crate::{file::load_file, get_context, math::Rect};
 
 use glam::{vec2, Vec2};
-use quad_gl::{Color, DrawMode, Vertex};
+use crate::quad_gl::{Color, DrawMode, Vertex};
 
-pub use quad_gl::{FilterMode, Image, Texture2D};
+pub use crate::quad_gl::{FilterMode, Image, Texture2D};
 
 /// Load image from file into CPU memory
 pub async fn load_image(path: &str) -> Image {

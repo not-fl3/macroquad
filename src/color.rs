@@ -1,6 +1,6 @@
 //! Color types and helpers.
 
-pub use quad_gl::{colors::*, Color};
+pub use crate::quad_gl::{colors::*, Color};
 
 #[rustfmt::skip]
 pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> Color {
