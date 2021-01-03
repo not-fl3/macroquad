@@ -83,3 +83,14 @@ pub fn cartesian_to_polar(cartesian: Vec2) -> Vec2 {
         cartesian.y.atan2(cartesian.x),
     )
 }
+
+/// Returns value, bounded in range [min, max].
+pub fn clamp<T: PartialOrd>(value: T, min: T, max: T) -> T {
+    if value < min {
+        min
+    } else if value > max {
+        max
+    } else {
+        value
+    }
+}
