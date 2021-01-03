@@ -10,7 +10,10 @@ use megaui_macroquad::{
 
 pub struct ProfilerState {
     fps_buffer: Vec<f32>,
+    frames_buffer: Vec<telemetry::Frame>,
+    selected_frame: Option<telemetry::Frame>,
     profiler_window_opened: bool,
+    paused: bool,
 }
 
 pub struct ProfilerParams {
@@ -25,20 +28,31 @@ impl Default for ProfilerParams {
     }
 }
 
+const FPS_BUFFER_CAPACITY: usize = 100;
+const FRAMES_BUFFER_CAPACITY: usize = 400;
+
 pub fn profiler(params: ProfilerParams) {
     if storage::get::<ProfilerState>().is_none() {
         storage::store(ProfilerState {
             fps_buffer: vec![],
+            frames_buffer: vec![],
             profiler_window_opened: false,
+            selected_frame: None,
+            paused: false,
         })
     }
+    let mut state = storage::get_mut::<ProfilerState>().unwrap();
 
     let frame = profiler_next_frame();
-    let queries = telemetry::gpu_queries();
 
-    let mut state = storage::get_mut::<ProfilerState>().unwrap();
+    if state.paused == false && state.profiler_window_opened {
+        state.frames_buffer.insert(0, frame);
+    }
     let time = get_frame_time();
     state.fps_buffer.insert(0, time);
+
+    state.fps_buffer.truncate(FPS_BUFFER_CAPACITY);
+    state.frames_buffer.truncate(FRAMES_BUFFER_CAPACITY);
 
     let mut sum = 0.0;
     for (x, time) in state.fps_buffer.iter().enumerate() {
@@ -77,9 +91,6 @@ pub fn profiler(params: ProfilerParams) {
             }
         }
     }
-    if state.fps_buffer.len() > 100 {
-        state.fps_buffer.resize(100, 0.0);
-    }
 
     draw_text(
         &format!("{:.1}", 1.0 / (sum / state.fps_buffer.len() as f32)),
@@ -90,7 +101,7 @@ pub fn profiler(params: ProfilerParams) {
     );
 
     if state.profiler_window_opened {
-        fn wtf(ui: &mut Ui, zone: &Zone, n: usize) {
+        fn zone_ui(ui: &mut Ui, zone: &Zone, n: usize) {
             let label = format!(
                 "{}: {:.4}ms {:.1}(1/t)",
                 zone.name,
@@ -100,7 +111,7 @@ pub fn profiler(params: ProfilerParams) {
             if zone.children.len() != 0 {
                 ui.tree_node(hash!(hash!(), n), &label, |ui| {
                     for (m, zone) in zone.children.iter().enumerate() {
-                        wtf(ui, zone, n * 1000 + m + 1);
+                        zone_ui(ui, zone, n * 1000 + m + 1);
                     }
                 });
             } else {
@@ -119,6 +130,64 @@ pub fn profiler(params: ProfilerParams) {
                 ..Default::default()
             },
             |ui| {
+                {
+                    let mut canvas = ui.canvas();
+                    let w = 515.0;
+                    let h = 40.0;
+                    let pos = canvas.request_space(megaui::Vector2::new(w, h));
+
+                    let rect = megaui::Rect::new(pos.x, pos.y, w, h);
+                    canvas.rect(rect, megaui::Color::new(0.5, 0.5, 0.5, 1.0), None);
+
+                    let (mouse_x, mouse_y) = mouse_position();
+
+                    let mut selected_frame = None;
+
+                    // select the slowest frame among the ones close to the mouse cursor
+                    if rect.contains(megaui::Vector2::new(mouse_x, mouse_y))
+                        && state.frames_buffer.len() >= 1
+                    {
+                        let x = ((mouse_x - pos.x - 2.) / w * FRAMES_BUFFER_CAPACITY as f32) as i32;
+
+                        let min = clamp(x - 2, 0, state.frames_buffer.len() as i32 - 1) as usize;
+                        let max = clamp(x + 3, 0, state.frames_buffer.len() as i32 - 1) as usize;
+
+                        selected_frame = state.frames_buffer[min..max]
+                            .iter()
+                            .enumerate()
+                            .max_by(|(_, a), (_, b)| {
+                                a.full_frame_time.partial_cmp(&b.full_frame_time).unwrap()
+                            })
+                            .map(|(n, _)| n + min);
+                    }
+
+                    if let Some(frame) = selected_frame {
+                        if is_mouse_button_down(MouseButton::Left) {
+                            state.selected_frame = state.frames_buffer[frame].try_clone();
+                        }
+                    }
+                    for (n, frame) in state.frames_buffer.iter().enumerate() {
+                        let x = n as f32 / FRAMES_BUFFER_CAPACITY as f32 * (w - 2.);
+                        let selected = selected_frame.map_or(false, |selected| n == selected);
+                        let color = if selected {
+                            megaui::Color::new(1.0, 1.0, 0.0, 1.0)
+                        } else if frame.full_frame_time < 1.0 / 58.0 {
+                            megaui::Color::new(0.6, 0.6, 1.0, 1.0)
+                        } else if frame.full_frame_time < 1.0 / 25.0 {
+                            megaui::Color::new(0.3, 0.3, 0.8, 1.0)
+                        } else {
+                            megaui::Color::new(0.2, 0.2, 0.6, 1.0)
+                        };
+                        let t = macroquad::math::clamp(frame.full_frame_time * 1000.0, 0.0, h);
+
+                        canvas.line(
+                            megaui::Vector2::new(pos.x + x + 2., pos.y + h - 1.0),
+                            megaui::Vector2::new(pos.x + x + 2., pos.y + h - t),
+                            color,
+                        );
+                    }
+                }
+
                 ui.label(
                     None,
                     &format!(
@@ -128,28 +197,38 @@ pub fn profiler(params: ProfilerParams) {
                     ),
                 );
 
-                {
-                    let mut canvas = ui.canvas();
-                    let w = 500.0;
-                    let h = 40.0;
-                    let pos = canvas.request_space(megaui::Vector2::new(w, h));
-
-                    canvas.rect(
-                        megaui::Rect::new(pos.x, pos.y, w, h),
-                        megaui::Color::new(0.5, 0.5, 0.5, 1.0),
-                        None,
-                    );
-
-                    // TODO: draw nice clickable graph with previous frame time
+                if state.paused {
+                    if ui.button(None, "resume") {
+                        state.paused = false;
+                    }
+                } else {
+                    if ui.button(None, "pause") {
+                        state.paused = true;
+                    }
+                }
+                if state.selected_frame.is_some() {
+                    ui.same_line(100.0);
+                    if ui.button(None, "deselect frame") {
+                        state.selected_frame = None;
+                    }
                 }
 
+                let frame = state
+                    .selected_frame
+                    .as_ref()
+                    .or_else(|| state.frames_buffer.get(0));
+
                 ui.separator();
-                ui.group(hash!(), megaui::Vector2::new(255., 320.), |ui| {
-                    for (n, zone) in frame.zones.iter().enumerate() {
-                        wtf(ui, zone, n + 1);
+                ui.group(hash!(), megaui::Vector2::new(255., 300.), |ui| {
+                    if let Some(frame) = frame {
+                        for (n, zone) in frame.zones.iter().enumerate() {
+                            zone_ui(ui, zone, n + 1);
+                        }
                     }
                 });
-                ui.group(hash!(), megaui::Vector2::new(255., 320.), |ui| {
+                ui.group(hash!(), megaui::Vector2::new(255., 300.), |ui| {
+                    let queries = telemetry::gpu_queries();
+
                     for query in queries {
                         let t = query.1 as f64 / 1_000_000_000.0;
                         ui.label(

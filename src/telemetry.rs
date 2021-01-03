@@ -12,17 +12,35 @@ fn get_profiler() -> &'static mut Profiler {
             active_query: None,
             prev_frame: Frame::new(),
             enabled: false,
-            enable_request: None
+            enable_request: None,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct Zone {
     pub name: String,
     pub start_time: f64,
     pub duration: f64,
-    pub parent: *mut Zone,
     pub children: Vec<Zone>,
+
+    parent: *mut Zone,
+}
+
+impl Zone {
+    fn clone(&self, parent: *mut Zone) -> Zone {
+        Zone {
+            name: self.name.clone(),
+            start_time: self.start_time,
+            duration: self.duration,
+            children: self
+                .children
+                .iter()
+                .map(|zone| zone.clone(self as *const _ as *mut _))
+                .collect(),
+            parent,
+        }
+    }
 }
 
 pub struct ZoneGuard {
@@ -78,6 +96,8 @@ pub(crate) fn reset() {
         "New frame started with unpaired begin/end zones."
     );
 
+    profiler.frame.full_frame_time = crate::time::get_frame_time();
+
     std::mem::swap(&mut profiler.prev_frame, &mut profiler.frame);
     profiler.frame = Frame::new();
 
@@ -86,17 +106,36 @@ pub(crate) fn reset() {
     }
 }
 
+#[derive(Debug)]
 pub struct Frame {
+    pub full_frame_time: f32,
     pub zones: Vec<Zone>,
     active_zone: *mut Zone,
 }
 
 impl Frame {
-    pub fn new() -> Frame {
+    fn new() -> Frame {
         Frame {
+            full_frame_time: 0.0,
             zones: vec![],
             active_zone: std::ptr::null_mut(),
         }
+    }
+
+    pub fn try_clone(&self) -> Option<Frame> {
+        if self.active_zone.is_null() == false {
+            return None;
+        }
+
+        Some(Frame {
+            full_frame_time: self.full_frame_time,
+            zones: self
+                .zones
+                .iter()
+                .map(|zone| zone.clone(std::ptr::null_mut()))
+                .collect(),
+            active_zone: std::ptr::null_mut(),
+        })
     }
 }
 
@@ -124,7 +163,7 @@ struct Profiler {
     queries: HashMap<String, GpuQuery>,
     active_query: Option<String>,
     enabled: bool,
-    enable_request: Option<bool>
+    enable_request: Option<bool>,
 }
 
 impl Profiler {

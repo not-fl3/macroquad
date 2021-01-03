@@ -802,6 +802,9 @@ impl QuadGl {
     }
 
     pub fn geometry(&mut self, vertices: &[impl Into<VertexInterop> + Copy], indices: &[u16]) {
+        assert!(vertices.len() <= MAX_VERTICES);
+        assert!(indices.len() <= MAX_INDICES);
+
         let pip = self.state.pipeline.unwrap_or(
             self.pipelines
                 .get(self.state.draw_mode, self.state.depth_test_enable),
