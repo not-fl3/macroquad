@@ -188,14 +188,20 @@ pub fn profiler(params: ProfilerParams) {
                     }
                 }
 
-                ui.label(
-                    None,
-                    &format!(
-                        "Full frame time: {:.3}ms {:.1}(1/t)",
-                        get_frame_time(),
-                        (1.0 / get_frame_time())
-                    ),
-                );
+                if let Some(frame) = state
+                    .selected_frame
+                    .as_ref()
+                    .or_else(|| state.frames_buffer.get(0))
+                {
+                    ui.label(
+                        None,
+                        &format!(
+                            "Full frame time: {:.3}ms {:.1}(1/t)",
+                            frame.full_frame_time,
+                            (1.0 / frame.full_frame_time)
+                        ),
+                    );
+                }
 
                 if state.paused {
                     if ui.button(None, "resume") {

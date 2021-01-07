@@ -247,6 +247,8 @@ impl EventHandlerFree for Stage {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
             if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+                let _z = telemetry::ZoneGuard::new("Main loop");
+
                 get_context().begin_frame();
 
                 if exec::resume(future) {
@@ -263,6 +265,16 @@ impl EventHandlerFree for Stage {
 
             get_context().frame_time = date::now() - get_context().last_frame_time;
             get_context().last_frame_time = date::now();
+
+            #[cfg(any(target_arch = "wasm32", target_os = "linux"))]
+            {
+                let _z = telemetry::ZoneGuard::new("glFinish/glFLush");
+
+                unsafe {
+                    miniquad::gl::glFlush();
+                    miniquad::gl::glFinish();
+                }
+            }
         }
 
         telemetry::reset();
