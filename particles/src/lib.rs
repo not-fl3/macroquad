@@ -477,7 +477,7 @@ pub struct Emitter {
 }
 
 impl Emitter {
-    const MAX_PARTICLES: usize = 512 * 1024;
+    const MAX_PARTICLES: usize = 10000;
 
     pub fn new(config: EmitterConfig) -> Emitter {
         let InternalGlContext {
@@ -626,6 +626,13 @@ impl Emitter {
         }
     }
 
+    fn reset(&mut self) {
+        self.gpu_particles.clear();
+        self.cpu_counterpart.clear();
+        self.last_emit_time = 0.0;
+        self.time_passed = 0.0;
+        self.particles_spawned = 0;
+    }
     pub fn rebuild_size_curve(&mut self) {
         self.batched_size_curve = self.config.size_curve.as_ref().map(|curve| curve.batch());
     }
@@ -812,25 +819,27 @@ impl Emitter {
         }
     }
 
-    pub fn draw(&mut self, pos: Vec2) {
-        self.position = pos;
+    fn perform_render_pass(&mut self, quad_gl: &QuadGl, ctx: &mut Context) {
+        ctx.apply_bindings(&self.bindings);
+        ctx.apply_uniforms(&shader::Uniforms {
+            mvp: quad_gl.get_projection_matrix(),
+            emitter_position: vec3(self.position.x, self.position.y, 0.0),
+            local_coords: if self.config.local_coords { 1.0 } else { 0.0 },
+        });
 
-        let mut gl = unsafe { get_internal_gl() };
+        ctx.draw(
+            0,
+            self.bindings.index_buffer.size() as i32 / std::mem::size_of::<u16>() as i32,
+            self.gpu_particles.len() as i32,
+        );
+    }
 
-        gl.flush();
-
-        let InternalGlContext {
-            quad_context: ctx,
-            quad_gl,
-        } = gl;
-
+    pub fn setup_render_pass(&mut self, quad_gl: &QuadGl, ctx: &mut Context) {
         if self.config.blend_mode != self.blend_mode {
             self.pipeline
                 .set_blend(ctx, Some(self.config.blend_mode.blend_state()));
             self.blend_mode = self.config.blend_mode.clone();
         }
-
-        self.update(ctx, get_frame_time());
 
         if self.config.post_processing.is_none() {
             let pass = quad_gl.get_active_render_pass();
@@ -847,18 +856,9 @@ impl Emitter {
         };
 
         ctx.apply_pipeline(&self.pipeline);
-        ctx.apply_bindings(&self.bindings);
-        ctx.apply_uniforms(&shader::Uniforms {
-            mvp: quad_gl.get_projection_matrix(),
-            emitter_position: vec3(self.position.x, self.position.y, 0.0),
-            local_coords: if self.config.local_coords { 1.0 } else { 0.0 },
-        });
+    }
 
-        ctx.draw(
-            0,
-            self.bindings.index_buffer.size() as i32 / std::mem::size_of::<u16>() as i32,
-            self.gpu_particles.len() as i32,
-        );
+    pub fn end_render_pass(&mut self, quad_gl: &QuadGl, ctx: &mut Context) {
         ctx.end_render_pass();
 
         if self.config.post_processing.is_some() {
@@ -876,6 +876,102 @@ impl Emitter {
 
             ctx.end_render_pass();
         }
+    }
+
+    pub fn draw(&mut self, pos: Vec2) {
+        let mut gl = unsafe { get_internal_gl() };
+
+        gl.flush();
+
+        let InternalGlContext {
+            quad_context: ctx,
+            quad_gl,
+        } = gl;
+
+        self.position = pos;
+
+        self.update(ctx, get_frame_time());
+
+        self.setup_render_pass(quad_gl, ctx);
+        self.perform_render_pass(quad_gl, ctx);
+        self.end_render_pass(quad_gl, ctx);
+    }
+}
+
+/// Mutlitple Emitters drawn simultaniously.
+/// Will reuse as much GPU resources as possible, so should be more efficient than
+/// just Vec<Emitter>
+pub struct EmittersCache {
+    emitter: Emitter,
+    emitters_cache: Vec<Emitter>,
+    active_emitters: Vec<Option<(Emitter, Vec2)>>,
+    config: EmitterConfig,
+}
+
+impl EmittersCache {
+    const CACHE_DEFAULT_SIZE: usize = 10;
+
+    pub fn new(config: EmitterConfig) -> EmittersCache {
+        let mut emitters_cache = vec![];
+        // prepopulate cache
+        for _ in 0..Self::CACHE_DEFAULT_SIZE {
+            emitters_cache.push(Emitter::new(EmitterConfig {
+                emitting: false,
+                ..config.clone()
+            }));
+        }
+        EmittersCache {
+            emitter: Emitter::new(config.clone()),
+            emitters_cache,
+            active_emitters: vec![],
+            config,
+        }
+    }
+
+    pub fn spawn(&mut self, pos: Vec2) {
+        let mut emitter = if let Some(emitter) = self.emitters_cache.pop() {
+            emitter
+        } else {
+            Emitter::new(self.config.clone())
+        };
+
+        emitter.config.emitting = true;
+        emitter.reset();
+
+        self.active_emitters.push(Some((emitter, pos)));
+    }
+
+    pub fn draw(&mut self) {
+        let mut gl = unsafe { get_internal_gl() };
+
+        gl.flush();
+
+        let InternalGlContext {
+            quad_context: ctx,
+            quad_gl,
+        } = gl;
+
+        if self.active_emitters.len() > 0 {
+            self.emitter.setup_render_pass(quad_gl, ctx);
+        }
+        for i in &mut self.active_emitters {
+            if let Some((emitter, pos)) = i {
+                emitter.position = *pos;
+
+                emitter.update(ctx, get_frame_time());
+
+                emitter.perform_render_pass(quad_gl, ctx);
+
+                if emitter.config.emitting == false {
+                    self.emitters_cache.push(i.take().unwrap().0);
+                }
+            }
+        }
+        if self.active_emitters.len() > 0 {
+            self.emitter.end_render_pass(quad_gl, ctx);
+        }
+
+        self.active_emitters.retain(|emitter| emitter.is_some())
     }
 }
 
