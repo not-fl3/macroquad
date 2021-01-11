@@ -2,29 +2,40 @@
 //! Usefull for organizing state machines, animation cutscenes and other stuff that require
 //! some evaluation over time.
 //!
-//! Unfortunately right now it is only partially safe. Functions that may violate rust safety guarantees are markes as unsafe though. Use them with extra care, additional contracts not checked by the type system are specified in each of those function documentation.
 
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::exec::ExecState;
-use crate::get_context;
+use crate::{experimental::scene, get_context};
 
 pub(crate) struct CoroutinesContext {
-    futures: Vec<Option<(Pin<Box<dyn Future<Output = ()>>>, ExecState)>>,
+    futures: Vec<
+        Option<(
+            Pin<Box<dyn Future<Output = ()>>>,
+            Option<scene::HandleUntyped>,
+            ExecState,
+        )>,
+    >,
+
+    // if coroutine is in progress - active_scene_node keeps track in wich scene node it was started
+    active_scene_node: Option<scene::HandleUntyped>,
 }
 
 impl CoroutinesContext {
     pub fn new() -> CoroutinesContext {
         CoroutinesContext {
             futures: Vec::with_capacity(1000),
+            active_scene_node: None,
         }
     }
 
     pub fn update(&mut self) {
         for future in &mut self.futures {
-            if let Some((f, context)) = future {
+            if let Some((f, node, context)) = future {
+                self.active_scene_node = *node;
+
                 *context = ExecState::RunOnce;
 
                 let futures_context_ref: &mut _ = unsafe { std::mem::transmute(context) };
@@ -49,15 +60,27 @@ impl Coroutine {
     }
 }
 
-pub unsafe fn start_coroutine(future: impl Future<Output = ()>) -> Coroutine {
+pub fn active_node<T: scene::Node + 'static>() -> Option<scene::RefMut<T>> {
+    let handle = &mut get_context().coroutines_context.active_scene_node;
+
+    if let Some(handle) = handle {
+        scene::get_node(handle.to_typed())
+    } else {
+        None
+    }
+}
+
+pub fn start_coroutine(future: impl Future<Output = ()> + 'static) -> Coroutine {
     let context = &mut get_context().coroutines_context;
 
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
-    let boxed_future = std::mem::transmute(boxed_future);
+    let boxed_future = unsafe { std::mem::transmute(boxed_future) };
+
+    let active_node = scene::active_node();
 
     context
         .futures
-        .push(Some((boxed_future, ExecState::RunOnce)));
+        .push(Some((boxed_future, active_node, ExecState::RunOnce)));
 
     Coroutine {
         id: context.futures.len() - 1,

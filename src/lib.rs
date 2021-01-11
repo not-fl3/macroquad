@@ -60,8 +60,7 @@ pub mod texture;
 pub mod time;
 pub mod window;
 
-pub mod collections;
-pub mod coroutines;
+pub mod experimental;
 
 pub mod prelude;
 
@@ -103,7 +102,7 @@ struct Context {
     mouse_wheel: Vec2,
 
     draw_context: DrawContext,
-    coroutines_context: coroutines::CoroutinesContext,
+    coroutines_context: experimental::coroutines::CoroutinesContext,
     fonts_storage: text::FontsStorage,
 
     start_time: f64,
@@ -134,7 +133,7 @@ impl Context {
             fonts_storage: text::FontsStorage::new(&mut ctx),
 
             quad_context: ctx,
-            coroutines_context: coroutines::CoroutinesContext::new(),
+            coroutines_context: experimental::coroutines::CoroutinesContext::new(),
 
             start_time: miniquad::date::now(),
             last_frame_time: miniquad::date::now(),

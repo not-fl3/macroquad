@@ -1,6 +1,7 @@
-use macroquad::collections::storage;
-use macroquad::prelude::*;
+use macroquad::experimental::collections::storage;
 use macroquad::telemetry::{self, *};
+
+use macroquad::prelude::*;
 
 use megaui_macroquad::{
     draw_megaui, draw_window,
