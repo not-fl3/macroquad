@@ -110,6 +110,14 @@ impl World {
         solid
     }
 
+    pub fn set_actor_position(&mut self, actor: Actor, pos: Vec2) {
+        let collider = &mut self.actors[actor.0].1;
+
+        collider.x_remainder = 0.0;
+        collider.y_remainder = 0.0;
+        collider.pos = pos;
+    }
+
     pub fn move_v(&mut self, actor: Actor, dy: f32) -> bool {
         let id = actor.0;
         let mut collider = self.actors[id].1.clone();
