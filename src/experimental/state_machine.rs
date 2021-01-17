@@ -75,7 +75,7 @@ impl<T: 'static> StateMachine<T> {
         }
     }
 
-    pub fn put_back(&mut self, mut state_machine: StateMachineOwned<T>) {
+    fn put_back(&mut self, mut state_machine: StateMachineOwned<T>) {
         match self {
             StateMachine::Ready(_) => panic!(),
             StateMachine::InUse { next_state, .. } => {
@@ -109,10 +109,20 @@ impl<T: 'static> StateMachine<T> {
         }
     }
 
-    pub fn update<'a, F: FnMut(&mut T) -> &mut StateMachine<T>>(t: &'a mut T, mut f: F) {
+    /// A hack to update a state machine being part of an updating struct
+    pub fn update_detached<'a, F: FnMut(&mut T) -> &mut StateMachine<T>>(t: &'a mut T, mut f: F) {
         let mut state_machine = f(t).take();
         state_machine.update(t, crate::time::get_frame_time());
         f(t).put_back(state_machine);
+    }
+
+    pub fn update<'a>(&mut self, t: &'a mut T) {
+        match self {
+            StateMachine::Ready(state_machine) => {
+                state_machine.update(t, crate::time::get_frame_time())
+            }
+            _ => panic!(),
+        }
     }
 }
 

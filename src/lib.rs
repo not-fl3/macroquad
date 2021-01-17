@@ -18,7 +18,7 @@
 //! * Immidiate mode UI library included
 //! * Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples)
 //! # Example
-//! ```
+//! ```no_run
 //! use macroquad::prelude::*;
 //!
 //! #[macroquad::main("BasicShapes")]

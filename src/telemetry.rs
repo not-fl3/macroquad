@@ -247,3 +247,9 @@ pub struct GpuQuery {
     pub value: u64,
     pub force_resume: bool,
 }
+
+pub fn scene_allocated_memory() -> usize {
+    use crate::experimental::scene;
+
+    scene::allocated_memory()
+}
