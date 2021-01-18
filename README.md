@@ -1,12 +1,13 @@
 # macroquad
 
 [![Github Actions](https://github.com/not-fl3/macroquad/workflows/Cross-compile/badge.svg)](https://github.com/not-fl3/macroquad/actions?query=workflow%3A)
+[![Docs](https://docs.rs/macroquad/badge.svg)](https://docs.rs/macroquad)
 [![Crates.io version](https://img.shields.io/crates/v/macroquad.svg)](https://crates.io/crates/macroquad)
 [![Discord chat](https://img.shields.io/discord/710177966440579103.svg?label=discord%20chat)](https://discord.gg/WfEp6ut)
 
 `macroquad` is a simple and easy to use game library for Rust programming language, heavily inspired by [raylib](https://github.com/raysan5/raylib). 
 
-`macroquad` attempts to avoid any rust-specific programming concepts like lifetimes/borrowing, making it very friendly for rust beginners.
+`macroquad` attempts to avoid any rust-specific programming concepts like lifetimes/borrowing, making it very friendly for rust beginners. See the [docs](https://docs.rs/macroquad).
 
 ## Supported platforms
 
