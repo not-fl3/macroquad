@@ -7,7 +7,7 @@
 
 `macroquad` is a simple and easy to use game library for Rust programming language, heavily inspired by [raylib](https://github.com/raysan5/raylib). 
 
-`macroquad` attempts to avoid any rust-specific programming concepts like lifetimes/borrowing, making it very friendly for rust beginners. See the [docs](https://docs.rs/macroquad/0.3.0-alpha/macroquad/index.html).
+`macroquad` attempts to avoid any Rust-specific programming concepts like lifetimes/borrowing, making it very friendly for Rust beginners. See the [docs](https://docs.rs/macroquad/0.3.0-alpha/macroquad/index.html).
 
 ## Supported platforms
 
@@ -36,7 +36,7 @@ opt-level = 3
 
 ## async/await
 
-While macroquad attempts to use as mini rust-specific concepts as possible, `.await` in every examples looks a bit scary.
+While macroquad attempts to use as few Rust-specific concepts as possible, `.await` in all examples looks a bit scary.
 Rust's `async/await` is used to solve just one problem - cross platform main loop organisation. 
 
 <details>
@@ -59,13 +59,13 @@ fn main() {
 }
 ```
 
-It is fixable on Android with threads, but on web there is not way to "pause" and "resume" wasm execution, so no wasm code should block ever.
+It is fixable on Android with threads, but on web there is not way to "pause" and "resume" WASM execution, so no WASM code should block ever.
 While that loop is blocking for the entire game execution!
 The C++ solution for that problem: https://kripken.github.io/blog/wasm/2019/07/16/asyncify.html
 
 But in Rust we have async/await. Rust's `futures` is basically a continuations - `future`'s stack may be store into a variable to later pause/resume execution of future's code.
 
-async/await in macroquad is used without any external dependencies - no runtime, executor or even futures-rs are involved. Its just a way to preserve `main`'s stack on WASM and keep the code cross platform without any wasm-specific main loop.
+async/await in macroquad is used without any external dependencies - no runtime, executor or even futures-rs are involved. It's just a way to preserve `main`'s stack on WASM and keep the code cross platform without any WASM-specific main loop.
 </details>
 
 # Platinum sponsors
@@ -77,5 +77,3 @@ Macroquad is supported by:
     <img src="https://www.embark.dev/img/logo_black.png" width="201px">
   </a>
 </p>
-
-
