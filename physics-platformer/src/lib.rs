@@ -278,17 +278,72 @@ impl World {
     }
 
     pub fn collide_solids(&self, pos: Vec2, width: i32, height: i32) -> bool {
-        self.solid_at(pos)
-            || self.solid_at(pos + vec2(width as f32 - 1., 0.0))
-            || self.solid_at(pos + vec2(0.0, height as f32 - 1.))
-            || self.solid_at(pos + vec2(width as f32 - 1., height as f32 - 1.))
+        self.collide_tag(1, pos, width, height)
+            || self.solids.iter().any(|solid| {
+                solid.1.collidable
+                    && solid.1.rect().overlaps(&Rect::new(
+                        pos.x,
+                        pos.y,
+                        width as f32,
+                        height as f32,
+                    ))
+            })
     }
 
     pub fn collide_tag(&self, tag: u8, pos: Vec2, width: i32, height: i32) -> bool {
-        self.tag_at(pos, tag)
-            || self.tag_at(pos + vec2(width as f32 - 1., 0.0), tag)
-            || self.tag_at(pos + vec2(0.0, height as f32 - 1.), tag)
-            || self.tag_at(pos + vec2(width as f32 - 1., height as f32 - 1.), tag)
+        for StaticTiledLayer {
+            tile_width,
+            tile_height,
+            width: layer_width,
+            static_colliders,
+            tag: layer_tag,
+        } in &self.static_tiled_layers
+        {
+            let check = |pos: Vec2| {
+                let y = (pos.y / tile_width) as i32;
+                let x = (pos.x / tile_height) as i32;
+                let ix = y * (*layer_width as i32) + x;
+                if ix >= 0 && ix < static_colliders.len() as i32 && static_colliders[ix as usize] {
+                    return *layer_tag == tag;
+                }
+                return false;
+            };
+
+            if check(pos)
+                || check(pos + vec2(width as f32 - 1.0, 0.0))
+                || check(pos + vec2(width as f32 - 1.0, height as f32 - 1.0))
+                || check(pos + vec2(0.0, height as f32 - 1.0))
+            {
+                return true;
+            }
+
+            if width > *tile_width as i32 {
+                let mut x = pos.x;
+
+                while {
+                    x += tile_width;
+                    x < pos.x + width as f32 - 1.
+                } {
+                    if check(vec2(x, pos.y)) || check(vec2(x, pos.y + height as f32 - 1.0)) {
+                        return true;
+                    }
+                }
+            }
+
+            if height > *tile_height as i32 {
+                let mut y = pos.y;
+
+                while {
+                    y += tile_height;
+                    y < pos.y + height as f32 - 1.
+                } {
+                    if check(vec2(pos.x, y)) || check(vec2(pos.x + width as f32 - 1., y)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     pub fn squished(&self, actor: Actor) -> bool {
