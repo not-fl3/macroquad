@@ -32,7 +32,6 @@ megaui-macroquad = "0.1.3"
 macroquad-particles = { path = "./particles" }
 macroquad-tiled = { path = "./tiled" }
 physics-platformer = { path = "./physics-platformer" }
-macroquad-profiler = { path = "./profiler" }
 
 # workaround to fix the examples
 # this allows to use megaui-macroquad in examples without two versions of macroquad
