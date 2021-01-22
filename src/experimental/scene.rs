@@ -36,6 +36,8 @@ pub struct Handle<T: 'static> {
     _marker: PhantomData<T>,
 }
 
+unsafe impl<T: 'static> Send for Handle<T> {}
+
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct HandleUntyped(Id);
 
@@ -62,6 +64,42 @@ impl<T: 'static> Handle<T> {
     pub fn null() -> Handle<T> {
         Handle {
             id: None,
+            _marker: PhantomData,
+        }
+    }
+}
+
+pub(crate) struct Lens<T> {
+    handle: HandleUntyped,
+    offset: isize,
+    _marker: PhantomData<T>,
+}
+
+impl<T> Lens<T> {
+    pub fn get(&mut self) -> Option<&mut T> {
+        let node = get_untyped_node(self.handle)?;
+
+        Some(unsafe { &mut *((node.data as *mut u8).offset(self.offset) as *mut T) })
+    }
+}
+
+impl<T> Handle<T> {
+    pub(crate) fn lens<F, T1>(&self, f: F) -> Lens<T1>
+    where
+        F: for<'r> FnOnce(&'r mut T) -> &'r mut T1,
+    {
+        assert!(self.id.is_some());
+
+        let offset = unsafe {
+            let mut base = std::mem::MaybeUninit::<T>::uninit();
+            let field = f(std::mem::transmute(base.as_mut_ptr())) as *mut _ as *mut u8;
+
+            (field as *mut u8).offset_from(base.as_mut_ptr() as *mut u8)
+        };
+
+        Lens {
+            handle: HandleUntyped(self.id.unwrap()),
+            offset,
             _marker: PhantomData,
         }
     }
@@ -271,12 +309,9 @@ impl Scene {
         self.nodes.clear()
     }
 
-    pub fn get<T>(&self, handle: Handle<T>) -> Option<RefMut<T>> {
-        if handle.id.is_none() {
-            return None;
-        }
-        let handle = handle.id.unwrap();
-        let cell = &self.nodes[handle.id];
+    pub fn get_any(&self, handle: HandleUntyped) -> Option<RefMutAny> {
+        let handle = handle.0;
+        let cell = self.nodes.get(handle.id)?;
 
         if cell.is_none() {
             return None;
@@ -293,14 +328,22 @@ impl Scene {
 
         unsafe { *cell.used = true };
 
-        Some(RefMut {
-            data: unsafe { &mut *(cell.data as *mut T) },
-            handle: Handle {
-                id: Some(cell.id),
-                _marker: PhantomData,
-            },
+        Some(RefMutAny {
+            data: cell.data,
+            vtable: cell.vtable,
+            handle: HandleUntyped(cell.id),
             used: cell.used,
+
+            _marker: PhantomData,
         })
+    }
+
+    pub fn get<T>(&self, handle: Handle<T>) -> Option<RefMut<T>> {
+        if handle.id.is_none() {
+            return None;
+        }
+        let ref_mut_any = self.get_any(HandleUntyped(handle.id.unwrap()))?;
+        Some(ref_mut_any.to_typed())
     }
 
     fn iter(&self) -> MagicVecIterator {
@@ -426,11 +469,17 @@ pub(crate) fn allocated_memory() -> usize {
 }
 
 pub fn clear() {
+    crate::experimental::coroutines::stop_all_coroutines();
+
     unsafe { get_scene() }.clear()
 }
 
 pub fn get_node<T: Node>(handle: Handle<T>) -> Option<RefMut<T>> {
     unsafe { get_scene() }.get(handle)
+}
+
+pub(crate) fn get_untyped_node(handle: HandleUntyped) -> Option<RefMutAny<'static>> {
+    unsafe { get_scene() }.get_any(handle)
 }
 
 pub fn add_node<T: Node>(node: T) -> Handle<T> {
@@ -458,4 +507,3 @@ pub fn find_nodes_by_type<T: Any>() -> impl Iterator<Item = RefMut<T>> {
         .filter(|node| node.is::<T>())
         .map(|node| node.to_typed())
 }
-

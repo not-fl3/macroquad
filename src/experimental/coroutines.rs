@@ -7,8 +7,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use crate::exec::ExecState;
-use crate::get_context;
+use crate::{exec::ExecState, get_context};
 
 pub(crate) struct CoroutinesContext {
     futures: Vec<Option<(Pin<Box<dyn Future<Output = ()>>>, ExecState)>>,
@@ -48,7 +47,7 @@ impl Coroutine {
     }
 }
 
-pub fn start_coroutine(future: impl Future<Output = ()> + 'static) -> Coroutine {
+pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Coroutine {
     let context = &mut get_context().coroutines_context;
 
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
@@ -63,7 +62,7 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static) -> Coroutine 
     }
 }
 
-pub unsafe fn stop_all_coroutines() {
+pub fn stop_all_coroutines() {
     let context = &mut get_context().coroutines_context;
 
     context.futures.clear();
@@ -102,6 +101,7 @@ pub fn wait_seconds(time: f32) -> TimerDelayFuture {
 
 /// Special built-in coroutines for modifying values over time.
 pub mod tweens {
+    use crate::experimental::scene::{Handle, Lens, Node};
     use std::future::Future;
     use std::pin::Pin;
     use std::{
@@ -113,9 +113,9 @@ pub mod tweens {
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
     {
-        var: *mut T,
         from: T,
         to: T,
+        lens: Lens<T>,
         start_time: f64,
         time: f32,
     }
@@ -130,37 +130,69 @@ pub mod tweens {
     {
         type Output = ();
 
-        fn poll(mut self: Pin<&mut Self>, _: &mut Context) -> Poll<Self::Output> {
+        fn poll(self: Pin<&mut Self>, _: &mut Context) -> Poll<Self::Output> {
             let t = (miniquad::date::now() - self.start_time) / self.time as f64;
+            let this = self.get_mut();
+            let var = this.lens.get();
+
+            // node with value was deleted
+            if var.is_none() {
+                return Poll::Ready(());
+            }
+            let var = var.unwrap();
+
             if t <= 1. {
-                unsafe { *self.var = self.from + (self.to - self.from) * t as f32 };
+                *var = this.from + (this.to - this.from) * t as f32;
+
                 Poll::Pending
             } else {
-                unsafe { *self.var = self.to };
+                *var = this.to;
+
                 Poll::Ready(())
             }
         }
     }
 
-    pub fn linear<T>(x: &mut T, to: T, time: f32) -> LinearTweanFuture<T>
+    pub fn linear<T, T1, F>(
+        handle: Handle<T1>,
+        lens: F,
+        from: T,
+        to: T,
+        time: f32,
+    ) -> LinearTweanFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
+        T1: Node,
+        F: for<'r> FnMut(&'r mut T1) -> &'r mut T,
     {
         LinearTweanFuture {
-            var: x as *mut _,
             to,
-            from: *x,
+            from,
+            lens: handle.lens(lens),
             time,
             start_time: miniquad::date::now(),
         }
     }
 
-    pub async fn follow_path<T>(x: &mut T, path: Vec<T>, time: f32)
-    where
+    pub async fn follow_path<T, T1, F>(
+        handle: Handle<T1>,
+        mut lens: F,
+        path: Vec<T>,
+        time: f32,
+    ) where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
+        T1: Node,
+        F: for<'r> FnMut(&'r mut T1) -> &'r mut T,
     {
-        for point in &path {
-            linear(x, *point, time / path.len() as f32).await
+        for point in path.windows(2) {
+            linear(
+                handle,
+                &mut lens,
+                point[0],
+                point[1],
+                time / path.len() as f32,
+            )
+            .await
         }
     }
 }
