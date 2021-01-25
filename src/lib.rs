@@ -76,7 +76,7 @@ pub mod rand {
 }
 
 #[cfg(feature = "log-impl")]
-/// Logging macroses, available with "log-impl" feature.
+/// Logging macros, available with "log-impl" feature.
 pub mod logging {
     pub use miniquad::{debug, error, info, warn};
 }
