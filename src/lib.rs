@@ -200,16 +200,18 @@ impl EventHandlerFree for Stage {
         context.mouse_wheel.x = x;
         context.mouse_wheel.y = y;
     }
-    fn mouse_button_down_event(&mut self, btn: MouseButton, _x: f32, _y: f32) {
+    fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         let context = get_context();
 
+        context.mouse_position = Vec2::new(x, y);
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
     }
 
-    fn mouse_button_up_event(&mut self, btn: MouseButton, _x: f32, _y: f32) {
+    fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         let context = get_context();
 
+        context.mouse_position = Vec2::new(x, y);
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
     }
