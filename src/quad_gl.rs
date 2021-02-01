@@ -952,11 +952,11 @@ impl Texture2D {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(&bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba()
+                .to_rgba8()
         } else {
             image::load_from_memory(&bytes)
                 .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba()
+                .to_rgba8()
         };
         let width = img.width() as u16;
         let height = img.height() as u16;
@@ -1026,11 +1026,11 @@ impl Image {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(&bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba()
+                .to_rgba8()
         } else {
             image::load_from_memory(&bytes)
                 .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba()
+                .to_rgba8()
         };
         let width = img.width() as u16;
         let height = img.height() as u16;
@@ -1132,7 +1132,7 @@ impl Image {
             &bytes[..],
             self.width as _,
             self.height as _,
-            image::ColorType::RGBA(8),
+            image::ColorType::Rgba8,
         )
         .unwrap();
     }
