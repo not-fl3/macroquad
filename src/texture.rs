@@ -97,7 +97,10 @@ pub struct DrawTextureParams {
     /// Mirror on the Y axis
     pub flip_y: bool,
 
-    /// Rotation around this point
+    /// Rotate around this point.
+    /// When `None`, rotate around the texture's center.
+    /// When `Some`, the coordinates are in screen-space.
+    /// E.g. pivot (0,0) rotates around the top left corner of the screen, not of the
     pub pivot: Option<Vec2>,
 }
 
