@@ -22,10 +22,15 @@ pub struct AnimatedSprite {
     current_animation: usize,
     time: f32,
     frame: u32,
+    pub playing: bool,
 }
 
 impl AnimatedSprite {
-    pub fn new(texture: (Texture2D, u32, u32), animations: &[Animation]) -> AnimatedSprite {
+    pub fn new(
+        texture: (Texture2D, u32, u32),
+        animations: &[Animation],
+        playing: bool,
+    ) -> AnimatedSprite {
         AnimatedSprite {
             texture: texture.0,
             tile_width: texture.1 as f32,
@@ -34,11 +39,16 @@ impl AnimatedSprite {
             current_animation: 0,
             time: 0.0,
             frame: 0,
+            playing,
         }
     }
 
     pub fn set_animation(&mut self, animation: usize) {
         self.current_animation = animation;
+    }
+
+    pub fn set_frame(&mut self, frame: u32) {
+        self.frame = frame;
     }
 
     pub fn draw(&mut self, pos: Vec2, flip_x: bool, _flip_y: bool) {
@@ -62,10 +72,12 @@ impl AnimatedSprite {
                 ..Default::default()
             },
         );
-        self.time += get_frame_time();
-        if self.time > 1. / animation.fps as f32 {
-            self.frame += 1;
-            self.time = 0.0;
+        if self.playing {
+            self.time += get_frame_time();
+            if self.time > 1. / animation.fps as f32 {
+                self.frame += 1;
+                self.time = 0.0;
+            }
         }
     }
 }
