@@ -1,7 +1,5 @@
 use crate::{
-    color,
     math::{vec2, Rect, Vec2},
-    texture::{draw_texture_ex, DrawTextureParams, Texture2D},
     time::get_frame_time,
 };
 
@@ -13,8 +11,12 @@ pub struct Animation {
     pub fps: u32,
 }
 
+pub struct AnimationFrame {
+    pub source_rect: Rect,
+    pub dest_size: Vec2,
+}
+
 pub struct AnimatedSprite {
-    texture: Texture2D,
     tile_width: f32,
     tile_height: f32,
     animations: Vec<Animation>,
@@ -27,14 +29,14 @@ pub struct AnimatedSprite {
 
 impl AnimatedSprite {
     pub fn new(
-        texture: (Texture2D, u32, u32),
+        tile_width: u32,
+        tile_height: u32,
         animations: &[Animation],
         playing: bool,
     ) -> AnimatedSprite {
         AnimatedSprite {
-            texture: texture.0,
-            tile_width: texture.1 as f32,
-            tile_height: texture.2 as f32,
+            tile_width: tile_width as f32,
+            tile_height: tile_height as f32,
             animations: animations.to_vec(),
             current_animation: 0,
             time: 0.0,
@@ -51,33 +53,30 @@ impl AnimatedSprite {
         self.frame = frame;
     }
 
-    pub fn draw(&mut self, pos: Vec2, flip_x: bool, _flip_y: bool) {
+    pub fn update(&mut self) {
         let animation = &self.animations[self.current_animation];
 
-        let x_sign = if flip_x { 1. } else { -1. };
-        self.frame %= animation.frames;
-        draw_texture_ex(
-            self.texture,
-            pos.x + self.tile_width * !flip_x as i32 as f32,
-            pos.y,
-            color::WHITE,
-            DrawTextureParams {
-                source: Some(Rect::new(
-                    self.tile_width * self.frame as f32,
-                    self.tile_height * animation.row as f32,
-                    self.tile_width,
-                    self.tile_height,
-                )),
-                dest_size: Some(vec2(x_sign * self.tile_width, self.tile_height)),
-                ..Default::default()
-            },
-        );
         if self.playing {
             self.time += get_frame_time();
             if self.time > 1. / animation.fps as f32 {
                 self.frame += 1;
                 self.time = 0.0;
             }
+        }
+        self.frame %= animation.frames;
+    }
+
+    pub fn frame(&self) -> AnimationFrame {
+        let animation = &self.animations[self.current_animation];
+
+        AnimationFrame {
+            source_rect: Rect::new(
+                self.tile_width * self.frame as f32,
+                self.tile_height * animation.row as f32,
+                self.tile_width,
+                self.tile_height,
+            ),
+            dest_size: vec2(self.tile_width, self.tile_height),
         }
     }
 }
