@@ -345,17 +345,43 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
     );
 }
 
+#[derive(Debug, Clone)]
+pub struct DrawSphereParams {
+    pub rings: usize,
+    pub slices: usize,
+    pub draw_mode: DrawMode,
+}
+
+impl Default for DrawSphereParams {
+   fn default() -> DrawSphereParams {
+       DrawSphereParams {
+            rings: 16,
+            slices: 16,
+            draw_mode: DrawMode::Triangles,
+       }
+   } 
+}
+
 pub fn draw_sphere(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
+    draw_sphere_ex(center, radius, texture, color, Default::default());
+}
+
+pub fn draw_sphere_wires(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
+    let params = DrawSphereParams { draw_mode: DrawMode::Lines, ..Default::default() };
+    draw_sphere_ex(center, radius, texture, color, params);
+}
+
+pub fn draw_sphere_ex(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color, params: DrawSphereParams) {
     let context = &mut get_context().draw_context;
 
-    let rings: usize = 16;
-    let slices: usize = 16;
+    let rings = params.rings;
+    let slices = params.slices;
 
     let color: [f32; 4] = color.into();
     let scale = vec3(radius, radius, radius);
 
     context.gl.texture(texture.into());
-    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.draw_mode(params.draw_mode);
 
     for i in 0..rings + 1 {
         for j in 0..slices {
