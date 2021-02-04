@@ -2,8 +2,8 @@
 
 use crate::{file::load_file, get_context, math::Rect};
 
-use glam::{vec2, Vec2};
 use crate::quad_gl::{Color, DrawMode, Vertex};
+use glam::{vec2, Vec2};
 
 pub use crate::quad_gl::{FilterMode, Image, Texture2D};
 
@@ -91,6 +91,12 @@ pub struct DrawTextureParams {
     /// Rotation in radians
     pub rotation: f32,
 
+    /// Mirror on the X axis
+    pub flip_x: bool,
+
+    /// Mirror on the Y axis
+    pub flip_y: bool,
+
     /// Rotation around this point
     pub pivot: Option<Vec2>,
 }
@@ -102,6 +108,8 @@ impl Default for DrawTextureParams {
             source: None,
             rotation: 0.,
             pivot: None,
+            flip_x: false,
+            flip_y: false,
         }
     }
 }
@@ -131,10 +139,20 @@ pub fn draw_texture_ex(
         h: texture.height(),
     });
 
-    let (w, h) = match params.dest_size {
+    let (mut w, mut h) = match params.dest_size {
         Some(dst) => (dst.x, dst.y),
         _ => (sw, sh),
     };
+    let mut x = x;
+    let mut y = y;
+    if params.flip_x {
+        x = x + w;
+        w = -w;
+    }
+    if params.flip_y {
+        y = y + h;
+        h = -h;
+    }
 
     let pivot = params.pivot.unwrap_or(vec2(x + w / 2., y + h / 2.));
     let m = pivot;
