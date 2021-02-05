@@ -11,7 +11,7 @@ pub struct Material {
 }
 
 impl Material {
-    /// Set GPU uniform valuye for this material.
+    /// Set GPU uniform value for this material.
     /// "name" should be from "uniforms" list used for material creation.
     /// Otherwise uniform value would be silently ignored.
     pub fn set_uniform<T>(&self, name: &str, uniform: T) {
