@@ -1,12 +1,23 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
+use crate::prelude::screen_width;
+use crate::prelude::screen_height;
+use crate::Vec2;
 use crate::get_context;
 pub use miniquad::{KeyCode, MouseButton};
 
+/// Return mouse position in pixels.
 pub fn mouse_position() -> (f32, f32) {
     let context = get_context();
 
     (context.mouse_position.x, context.mouse_position.y)
+}
+
+/// Return mouse position in range [-1; 1].
+pub fn mouse_position_local() -> Vec2 {
+    let (pixels_x, pixels_y) = mouse_position();
+
+    Vec2::new(pixels_x / screen_width(), pixels_y / screen_height()) * 2.0 - Vec2::new(1.0, 1.0)
 }
 
 pub fn mouse_wheel() -> (f32, f32) {
