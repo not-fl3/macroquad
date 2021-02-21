@@ -88,10 +88,10 @@ use quad_gl::{colors::*, Color};
 
 struct Context {
     quad_context: QuadContext,
-
+    
     screen_width: f32,
     screen_height: f32,
-
+    
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
     mouse_down: HashSet<MouseButton>,
@@ -100,6 +100,9 @@ struct Context {
     chars_pressed_queue: Vec<char>,
     mouse_position: Vec2,
     mouse_wheel: Vec2,
+
+    // TODO(pebaz): Add flag for cursor_grab
+    cursor_grabbed: bool,
 
     draw_context: DrawContext,
     coroutines_context: experimental::coroutines::CoroutinesContext,
@@ -128,6 +131,9 @@ impl Context {
             mouse_released: HashSet::new(),
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
+
+            // TODO(pebaz): Set cursor grab
+            cursor_grabbed: false,
 
             draw_context: DrawContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
@@ -189,10 +195,24 @@ impl EventHandlerFree for Stage {
         get_context().screen_height = height;
     }
 
-    fn mouse_motion_event(&mut self, x: f32, y: f32) {
+    fn raw_mouse_motion(&mut self, x: f32, y: f32) {
+        // TODO(pebaz): Only set raw mouse motion if grab is set
         let context = get_context();
 
-        context.mouse_position = Vec2::new(x, y);
+        println!("HERE: {}, {}", x, y);
+
+        if context.cursor_grabbed {
+            context.mouse_position = Vec2::new(x, y);
+        }
+    }
+
+    fn mouse_motion_event(&mut self, x: f32, y: f32) {
+        // TODO(pebaz): Need to do anything here?
+        let context = get_context();
+
+        if !context.cursor_grabbed {
+            context.mouse_position = Vec2::new(x, y);
+        }
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();

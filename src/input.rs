@@ -6,6 +6,21 @@ use crate::Vec2;
 use crate::get_context;
 pub use miniquad::{KeyCode, MouseButton};
 
+/// Constrain mouse to window
+pub fn set_cursor_grab(grab: bool) {
+    // TODO(pebaz): Grab cursor function
+    let context = get_context();
+    context.cursor_grabbed = grab;
+    context.quad_context.set_cursor_grab(grab);
+}
+
+/// Set mouse cursor visibility
+pub fn show_mouse(shown: bool) {
+    // TODO(pebaz): Show mouse function
+    let context = get_context();
+    context.quad_context.show_mouse(shown);
+}
+
 /// Return mouse position in pixels.
 pub fn mouse_position() -> (f32, f32) {
     let context = get_context();
