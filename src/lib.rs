@@ -199,10 +199,8 @@ impl EventHandlerFree for Stage {
         // TODO(pebaz): Only set raw mouse motion if grab is set
         let context = get_context();
 
-        println!("HERE: {}, {}", x, y);
-
         if context.cursor_grabbed {
-            context.mouse_position = Vec2::new(x, y);
+            context.mouse_position += Vec2::new(x, y);
         }
     }
 
