@@ -101,7 +101,6 @@ struct Context {
     mouse_position: Vec2,
     mouse_wheel: Vec2,
 
-    // TODO(pebaz): Add flag for cursor_grab
     cursor_grabbed: bool,
 
     draw_context: DrawContext,
@@ -132,7 +131,6 @@ impl Context {
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
 
-            // TODO(pebaz): Set cursor grab
             cursor_grabbed: false,
 
             draw_context: DrawContext::new(&mut ctx),
@@ -196,7 +194,6 @@ impl EventHandlerFree for Stage {
     }
 
     fn raw_mouse_motion(&mut self, x: f32, y: f32) {
-        // TODO(pebaz): Only set raw mouse motion if grab is set
         let context = get_context();
 
         if context.cursor_grabbed {
@@ -205,7 +202,6 @@ impl EventHandlerFree for Stage {
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        // TODO(pebaz): Need to do anything here?
         let context = get_context();
 
         if !context.cursor_grabbed {

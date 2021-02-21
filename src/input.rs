@@ -8,7 +8,6 @@ pub use miniquad::{KeyCode, MouseButton};
 
 /// Constrain mouse to window
 pub fn set_cursor_grab(grab: bool) {
-    // TODO(pebaz): Grab cursor function
     let context = get_context();
     context.cursor_grabbed = grab;
     context.quad_context.set_cursor_grab(grab);
@@ -16,7 +15,6 @@ pub fn set_cursor_grab(grab: bool) {
 
 /// Set mouse cursor visibility
 pub fn show_mouse(shown: bool) {
-    // TODO(pebaz): Show mouse function
     let context = get_context();
     context.quad_context.show_mouse(shown);
 }

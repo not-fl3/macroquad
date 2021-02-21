@@ -18,9 +18,6 @@ fn conf() -> Conf
 
 #[macroquad::main(conf)]
 async fn main() {
-    set_cursor_grab(true);
-    show_mouse(false);
-
     let mut x = 0.0;
     let mut switch = false;
     let bounds = 8.0;
@@ -41,6 +38,9 @@ async fn main() {
     let mut last_mouse_position: Vec2 = mouse_position().into();
 
     loop {
+        set_cursor_grab(true);
+        show_mouse(false);
+
         let delta = get_frame_time();
         
         if is_key_pressed(KeyCode::Escape) { break; }
