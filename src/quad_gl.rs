@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use miniquad::*;
 
 pub use colors::*;
@@ -426,6 +428,8 @@ struct PipelineExt {
     wants_screen_texture: bool,
     uniforms: Vec<Uniform>,
     uniforms_data: [u8; UNIFORMS_ARRAY_SIZE],
+    textures: Vec<String>,
+    textures_data: BTreeMap<String, Texture>,
 }
 
 struct PipelinesStorage {
@@ -467,6 +471,7 @@ impl PipelinesStorage {
             },
             false,
             vec![],
+            vec![],
         );
         assert_eq!(triangles_pipeline, Self::TRIANGLES_PIPELINE);
 
@@ -478,6 +483,7 @@ impl PipelinesStorage {
                 ..params
             },
             false,
+            vec![],
             vec![],
         );
         assert_eq!(lines_pipeline, Self::LINES_PIPELINE);
@@ -493,6 +499,7 @@ impl PipelinesStorage {
             },
             false,
             vec![],
+            vec![],
         );
         assert_eq!(triangles_depth_pipeline, Self::TRIANGLES_DEPTH_PIPELINE);
 
@@ -507,6 +514,7 @@ impl PipelinesStorage {
             },
             false,
             vec![],
+            vec![],
         );
         assert_eq!(lines_depth_pipeline, Self::LINES_DEPTH_PIPELINE);
 
@@ -520,6 +528,7 @@ impl PipelinesStorage {
         params: PipelineParams,
         wants_screen_texture: bool,
         uniforms: Vec<(String, UniformType)>,
+        textures: Vec<String>,
     ) -> GlPipeline {
         let pipeline = Pipeline::with_params(
             ctx,
@@ -565,6 +574,8 @@ impl PipelinesStorage {
             wants_screen_texture,
             uniforms,
             uniforms_data: [0; UNIFORMS_ARRAY_SIZE],
+            textures,
+            textures_data: BTreeMap::new(),
         });
         self.pipelines_amount += 1;
 
@@ -638,6 +649,7 @@ impl QuadGl {
         fragment_shader: &str,
         params: PipelineParams,
         uniforms: Vec<(String, UniformType)>,
+        textures: Vec<String>,
     ) -> Result<GlPipeline, ShaderError> {
         let mut shader_meta: ShaderMeta = shader::meta();
 
@@ -648,12 +660,31 @@ impl QuadGl {
                 .push(UniformDesc::new(&uniform.0, uniform.1));
         }
 
+        for texture in &textures {
+            if texture == "Texture" {
+                panic!(
+                    "you can't use name `Texture` for your texture. This name is reserved for the texture that will be drawed with that material"
+                );
+            }
+            if texture == "_ScreenTexture" {
+                panic!(
+                    "you can't use name `_ScreenTexture` for your texture in shaders. This name is reserved for screen texture"
+                );
+            }
+            shader_meta.images.push(texture.clone());
+        }
+
         let shader = Shader::new(ctx, vertex_shader, fragment_shader, shader_meta)?;
         let wants_screen_texture = fragment_shader.find("_ScreenTexture").is_some();
 
-        Ok(self
-            .pipelines
-            .make_pipeline(ctx, shader, params, wants_screen_texture, uniforms))
+        Ok(self.pipelines.make_pipeline(
+            ctx,
+            shader,
+            params,
+            wants_screen_texture,
+            uniforms,
+            textures,
+        ))
     }
 
     /// Reset only draw calls state
@@ -729,6 +760,14 @@ impl QuadGl {
                 || Texture::empty(),
                 |texture| texture.raw_miniquad_texture_handle(),
             );
+            bindings
+                .images
+                .resize(2 + pipeline.textures.len(), Texture::empty());
+            for (pos, name) in pipeline.textures.iter().enumerate() {
+                if let Some(texture) = pipeline.textures_data.get(name).copied() {
+                    bindings.images[2 + pos] = texture;
+                }
+            }
 
             ctx.apply_pipeline(&pipeline.pipeline);
             if let Some(clip) = dc.clip {
@@ -871,9 +910,11 @@ impl QuadGl {
         let pipeline = self.pipelines.get_quad_pipeline_mut(pipeline);
 
         let uniform_meta = pipeline.uniforms.iter().find(
-            |Uniform {
-                 name: uniform_name, ..
-             }| uniform_name == name,
+            |
+                Uniform {
+                    name: uniform_name, ..
+                },
+            | uniform_name == name,
         );
         if uniform_meta.is_none() {
             println!("Trying to set non-existing uniform: {}", name);
@@ -909,6 +950,24 @@ impl QuadGl {
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 12);
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 16);
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 64);
+    }
+
+    pub fn set_texture(&mut self, pipeline: GlPipeline, name: &str, texture: Texture2D) {
+        let pipeline = self.pipelines.get_quad_pipeline_mut(pipeline);
+        pipeline
+            .textures
+            .iter()
+            .find(|x| *x == name)
+            .unwrap_or_else(|| {
+                panic!(
+                    "can't find texture with name '{}', there is only this names: {:?}",
+                    name, pipeline.textures
+                )
+            });
+        *pipeline
+            .textures_data
+            .entry(name.to_owned())
+            .or_insert(texture.texture) = texture.texture;
     }
 }
 

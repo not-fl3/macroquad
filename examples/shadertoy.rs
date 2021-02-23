@@ -376,6 +376,7 @@ async fn main() {
                 MaterialParams {
                     pipeline_params,
                     uniforms,
+                    textures: vec![],
                 },
             ) {
                 Ok(new_material) => {
