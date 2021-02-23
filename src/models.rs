@@ -19,9 +19,9 @@ impl From<Vertex> for crate::quad_gl::VertexInterop {
 }
 
 pub struct Mesh {
-    vertices: Vec<Vertex>,
-    indices: Vec<u16>,
-    texture: Option<Texture2D>,
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u16>,
+    pub texture: Option<Texture2D>,
 }
 
 pub fn draw_mesh(mesh: &Mesh) {
