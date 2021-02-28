@@ -1,8 +1,9 @@
 //! Custom materials - shaders, uniforms.
 
 use crate::get_context;
-use miniquad::{PipelineParams, ShaderError, UniformType};
+use crate::prelude::Texture2D;
 use crate::quad_gl::GlPipeline;
+use miniquad::{PipelineParams, ShaderError, UniformType};
 
 /// Material instance loaded on GPU.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -18,6 +19,12 @@ impl Material {
         let context = &mut get_context().draw_context;
 
         context.gl.set_uniform(self.pipeline, name, uniform);
+    }
+
+    pub fn set_texture(&self, name: &str, texture: Texture2D) {
+        let context = &mut get_context().draw_context;
+
+        context.gl.set_texture(self.pipeline, name, texture);
     }
 
     /// Delete this material. Using deleted material for either rendering
@@ -39,6 +46,9 @@ pub struct MaterialParams {
 
     /// List of custom uniforms used in this material
     pub uniforms: Vec<(String, UniformType)>,
+
+    /// List of textures used in this material
+    pub textures: Vec<String>,
 }
 
 impl Default for MaterialParams {
@@ -46,6 +56,7 @@ impl Default for MaterialParams {
         MaterialParams {
             pipeline_params: Default::default(),
             uniforms: vec![],
+            textures: vec![],
         }
     }
 }
@@ -63,6 +74,7 @@ pub fn load_material(
         fragment_shader,
         params.pipeline_params,
         params.uniforms,
+        params.textures,
     )?;
 
     Ok(Material { pipeline })
