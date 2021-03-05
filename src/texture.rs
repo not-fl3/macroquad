@@ -5,7 +5,167 @@ use crate::{file::load_file, get_context, math::Rect};
 use crate::quad_gl::{Color, DrawMode, Vertex};
 use glam::{vec2, Vec2};
 
-pub use crate::quad_gl::{FilterMode, Image, Texture2D};
+pub use crate::quad_gl::{FilterMode, Texture2D};
+
+/// Image, data stored in CPU memory
+#[derive(Clone)]
+pub struct Image {
+    pub bytes: Vec<u8>,
+    pub width: u16,
+    pub height: u16,
+}
+
+impl std::fmt::Debug for Image {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Iamge")
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .field("bytes.len()", &self.bytes.len())
+            .finish()
+    }
+}
+
+impl Image {
+    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Image {
+        let img = if let Some(fmt) = format {
+            image::load_from_memory_with_format(&bytes, fmt)
+                .unwrap_or_else(|e| panic!("{}", e))
+                .to_rgba8()
+        } else {
+            image::load_from_memory(&bytes)
+                .unwrap_or_else(|e| panic!("{}", e))
+                .to_rgba8()
+        };
+        let width = img.width() as u16;
+        let height = img.height() as u16;
+        let bytes = img.into_raw();
+
+        Image {
+            width,
+            height,
+            bytes,
+        }
+    }
+
+    pub fn empty() -> Image {
+        Image {
+            width: 0,
+            height: 0,
+            bytes: vec![],
+        }
+    }
+
+    pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
+        let mut bytes = vec![0; width as usize * height as usize * 4];
+        for i in 0..width as usize * height as usize {
+            bytes[i * 4 + 0] = (color.r * 255.) as u8;
+            bytes[i * 4 + 1] = (color.g * 255.) as u8;
+            bytes[i * 4 + 2] = (color.b * 255.) as u8;
+            bytes[i * 4 + 3] = (color.a * 255.) as u8;
+        }
+        Image {
+            width,
+            height,
+            bytes,
+        }
+    }
+
+    pub fn update(&mut self, colors: &[Color]) {
+        assert!(self.width as usize * self.height as usize == colors.len());
+
+        for i in 0..colors.len() {
+            self.bytes[i * 4] = (colors[i].r * 255.) as u8;
+            self.bytes[i * 4 + 1] = (colors[i].g * 255.) as u8;
+            self.bytes[i * 4 + 2] = (colors[i].b * 255.) as u8;
+            self.bytes[i * 4 + 3] = (colors[i].a * 255.) as u8;
+        }
+    }
+
+    pub fn width(&self) -> usize {
+        self.width as usize
+    }
+
+    pub fn height(&self) -> usize {
+        self.height as usize
+    }
+
+    pub fn get_image_data(&self) -> &[[u8; 4]] {
+        use std::slice;
+
+        unsafe {
+            slice::from_raw_parts(
+                self.bytes.as_ptr() as *const [u8; 4],
+                self.width as usize * self.height as usize,
+            )
+        }
+    }
+
+    pub fn get_image_data_mut(&mut self) -> &mut [[u8; 4]] {
+        use std::slice;
+
+        unsafe {
+            slice::from_raw_parts_mut(
+                self.bytes.as_mut_ptr() as *mut [u8; 4],
+                self.width as usize * self.height as usize,
+            )
+        }
+    }
+
+    pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
+        let width = self.width;
+
+        self.get_image_data_mut()[(y * width as u32 + x) as usize] = color.into();
+    }
+
+    pub fn get_pixel(&self, x: u32, y: u32) -> Color {
+        self.get_image_data()[(y * self.width as u32 + x) as usize].into()
+    }
+
+    pub fn sub_image(&self, rect: Rect) -> Image {
+        let width = rect.w as usize;
+        let height = rect.h as usize;
+        let mut bytes = vec![0; width * height * 4];
+
+        let x = rect.x as usize;
+        let y = rect.y as usize;
+        let mut n = 0;
+        for y in y..y + height {
+            for x in x..x + width {
+                bytes[n] = self.bytes[y * self.width as usize * 4 + x * 4 + 0];
+                bytes[n + 1] = self.bytes[y * self.width as usize * 4 + x * 4 + 1];
+                bytes[n + 2] = self.bytes[y * self.width as usize * 4 + x * 4 + 2];
+                bytes[n + 3] = self.bytes[y * self.width as usize * 4 + x * 4 + 3];
+                n += 4;
+            }
+        }
+        Image {
+            width: width as u16,
+            height: height as u16,
+            bytes,
+        }
+    }
+
+    pub fn export_png(&self, path: &str) {
+        let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
+
+        // flip the image before saving
+        for y in 0..self.height as usize {
+            for x in 0..self.width as usize * 4 {
+                bytes[y * self.width as usize * 4 + x] =
+                    self.bytes[(self.height as usize - y - 1) * self.width as usize * 4 + x];
+            }
+        }
+
+        image::save_buffer(
+            path,
+            &bytes[..],
+            self.width as _,
+            self.height as _,
+            image::ColorType::Rgba8,
+        )
+        .unwrap();
+    }
+}
 
 /// Load image from file into CPU memory
 pub async fn load_image(path: &str) -> Image {

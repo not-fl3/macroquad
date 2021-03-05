@@ -1,10 +1,14 @@
-use std::collections::BTreeMap;
+//! Legacy module, code should be either removed or moved to different modules
 
 use miniquad::*;
 
 pub use colors::*;
 
 pub use miniquad::{FilterMode, ShaderError};
+
+use crate::texture::Image;
+
+use std::collections::BTreeMap;
 
 //use crate::telemetry;
 
@@ -537,6 +541,7 @@ impl PipelinesStorage {
                 VertexAttribute::new("position", VertexFormat::Float3),
                 VertexAttribute::new("texcoord", VertexFormat::Float2),
                 VertexAttribute::new("color0", VertexFormat::Byte4),
+                VertexAttribute::new("data", VertexFormat::Float4),
             ],
             shader,
             params,
@@ -569,6 +574,7 @@ impl PipelinesStorage {
                 Some(uniform)
             })
             .collect();
+
         self.pipelines[id] = Some(PipelineExt {
             pipeline,
             wants_screen_texture,
@@ -910,11 +916,9 @@ impl QuadGl {
         let pipeline = self.pipelines.get_quad_pipeline_mut(pipeline);
 
         let uniform_meta = pipeline.uniforms.iter().find(
-            |
-                Uniform {
-                    name: uniform_name, ..
-                },
-            | uniform_name == name,
+            |Uniform {
+                 name: uniform_name, ..
+             }| uniform_name == name,
         );
         if uniform_meta.is_none() {
             println!("Trying to set non-existing uniform: {}", name);
@@ -1070,130 +1074,6 @@ impl Texture2D {
         self.texture.read_pixels(&mut image.bytes);
 
         image
-    }
-}
-
-/// Image, data stored in CPU memory
-pub struct Image {
-    pub bytes: Vec<u8>,
-    pub width: u16,
-    pub height: u16,
-}
-
-impl Image {
-    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Image {
-        let img = if let Some(fmt) = format {
-            image::load_from_memory_with_format(&bytes, fmt)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
-        } else {
-            image::load_from_memory(&bytes)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
-        };
-        let width = img.width() as u16;
-        let height = img.height() as u16;
-        let bytes = img.into_raw();
-
-        Image {
-            width,
-            height,
-            bytes,
-        }
-    }
-
-    pub fn empty() -> Image {
-        Image {
-            width: 0,
-            height: 0,
-            bytes: vec![],
-        }
-    }
-
-    pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
-        let mut bytes = vec![0; width as usize * height as usize * 4];
-        for i in 0..width as usize * height as usize {
-            bytes[i * 4 + 0] = (color.r * 255.) as u8;
-            bytes[i * 4 + 1] = (color.g * 255.) as u8;
-            bytes[i * 4 + 2] = (color.b * 255.) as u8;
-            bytes[i * 4 + 3] = (color.a * 255.) as u8;
-        }
-        Image {
-            width,
-            height,
-            bytes,
-        }
-    }
-
-    pub fn update(&mut self, colors: &[Color]) {
-        assert!(self.width as usize * self.height as usize == colors.len());
-
-        for i in 0..colors.len() {
-            self.bytes[i * 4] = (colors[i].r * 255.) as u8;
-            self.bytes[i * 4 + 1] = (colors[i].g * 255.) as u8;
-            self.bytes[i * 4 + 2] = (colors[i].b * 255.) as u8;
-            self.bytes[i * 4 + 3] = (colors[i].a * 255.) as u8;
-        }
-    }
-    pub fn width(&self) -> usize {
-        self.width as usize
-    }
-
-    pub fn height(&self) -> usize {
-        self.height as usize
-    }
-
-    pub fn get_image_data(&self) -> &[[u8; 4]] {
-        use std::slice;
-
-        unsafe {
-            slice::from_raw_parts(
-                self.bytes.as_ptr() as *const [u8; 4],
-                self.width as usize * self.height as usize,
-            )
-        }
-    }
-
-    pub fn get_image_data_mut(&mut self) -> &mut [[u8; 4]] {
-        use std::slice;
-
-        unsafe {
-            slice::from_raw_parts_mut(
-                self.bytes.as_mut_ptr() as *mut [u8; 4],
-                self.width as usize * self.height as usize,
-            )
-        }
-    }
-
-    pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
-        let width = self.width;
-
-        self.get_image_data_mut()[(y * width as u32 + x) as usize] = color.into();
-    }
-
-    pub fn get_pixel(&self, x: u32, y: u32) -> Color {
-        self.get_image_data()[(y * self.width as u32 + x) as usize].into()
-    }
-
-    pub fn export_png(&self, path: &str) {
-        let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
-
-        // flip the image before saving
-        for y in 0..self.height as usize {
-            for x in 0..self.width as usize * 4 {
-                bytes[y * self.width as usize * 4 + x] =
-                    self.bytes[(self.height as usize - y - 1) * self.width as usize * 4 + x];
-            }
-        }
-
-        image::save_buffer(
-            path,
-            &bytes[..],
-            self.width as _,
-            self.height as _,
-            image::ColorType::Rgba8,
-        )
-        .unwrap();
     }
 }
 

@@ -1,9 +1,11 @@
+#![allow(warnings)]
+
 use macroquad::prelude::*;
 
-use megaui_macroquad::{
-    draw_megaui, draw_window,
-    megaui::{self, hash, widgets::Group, Drag, Ui, Vector2},
-    WindowParams,
+use macroquad::ui::{
+    hash, root_ui,
+    widgets::{self, Group},
+    Drag, Ui,
 };
 
 pub struct Slot {
@@ -54,8 +56,8 @@ impl Data {
 
         let fit_command = &mut self.fit_command;
         for (label, slot) in self.slots.iter_mut() {
-            Group::new(hash!("grp", slot.id, &label), Vector2::new(210., 55.)).ui(ui, |ui| {
-                let drag = Group::new(slot.id, Vector2::new(50., 50.))
+            Group::new(hash!("grp", slot.id, &label), Vec2::new(210., 55.)).ui(ui, |ui| {
+                let drag = Group::new(slot.id, Vec2::new(50., 50.))
                     // slot without item is not draggable
                     .draggable(slot.item.is_some())
                     // but could be a target of drag
@@ -64,7 +66,7 @@ impl Data {
                     .highlight(*item_dragging)
                     .ui(ui, |ui| {
                         if let Some(ref item) = slot.item {
-                            ui.label(Vector2::new(5., 10.), &item);
+                            ui.label(Vec2::new(5., 10.), &item);
                         }
                     });
 
@@ -91,7 +93,7 @@ impl Data {
                     }
                     Drag::No => {}
                 }
-                ui.label(Vector2::new(60., 20.), label);
+                ui.label(Vec2::new(60., 20.), label);
             });
         }
     }
@@ -99,10 +101,10 @@ impl Data {
     fn inventory(&mut self, ui: &mut Ui) {
         let item_dragging = &mut self.item_dragging;
         for (n, item) in self.inventory.iter().enumerate() {
-            let drag = Group::new(hash!("inventory", n), Vector2::new(50., 50.))
+            let drag = Group::new(hash!("inventory", n), Vec2::new(50., 50.))
                 .draggable(true)
                 .ui(ui, |ui| {
-                    ui.label(Vector2::new(5., 10.), &item);
+                    ui.label(Vec2::new(5., 10.), &item);
                 });
 
             match drag {
@@ -144,112 +146,87 @@ async fn main() {
 
     let mut number0 = 0.;
     let mut number1 = 0.;
-    
+
     loop {
         clear_background(WHITE);
 
-        draw_window(
-            hash!(),
-            vec2(400., 200.),
-            vec2(320., 400.),
-            WindowParams {
-                label: "Shop".to_string(),
-                close_button: false,
-                ..Default::default()
-            },
-            |ui| {
+        widgets::Window::new(hash!(), vec2(400., 200.), vec2(320., 400.))
+            .label("Shop")
+            .titlebar(true)
+            .ui(&mut *root_ui(), |ui| {
                 for i in 0..30 {
-                    Group::new(hash!("shop", i), Vector2::new(300., 80.)).ui(ui, |ui| {
-                        ui.label(Vector2::new(10., 10.), &format!("Item N {}", i));
-                        ui.label(Vector2::new(260., 40.), "10/10");
-                        ui.label(Vector2::new(200., 58.), &format!("{} kr", 800));
-                        if ui.button(Vector2::new(260., 55.), "buy") {
+                    Group::new(hash!("shop", i), Vec2::new(300., 80.)).ui(ui, |ui| {
+                        ui.label(Vec2::new(10., 10.), &format!("Item N {}", i));
+                        ui.label(Vec2::new(260., 40.), "10/10");
+                        ui.label(Vec2::new(200., 58.), &format!("{} kr", 800));
+                        if ui.button(Vec2::new(260., 55.), "buy") {
                             data.inventory.push(format!("Item {}", i));
                         }
                     });
                 }
-            },
-        );
+            });
 
-        draw_window(
-            hash!(),
-            vec2(100., 220.),
-            vec2(512., 420.),
-            WindowParams {
-                label: "Fitting window".to_string(),
-                close_button: false,
-                ..Default::default()
-            },
-            |ui| {
-                Group::new(hash!(), Vector2::new(220., 400.)).ui(ui, |ui| {
+        widgets::Window::new(hash!(), vec2(100., 220.), vec2(542., 430.))
+            .label("Fitting window")
+            .titlebar(true)
+            .ui(&mut *root_ui(), |ui| {
+                Group::new(hash!(), Vec2::new(230., 400.)).ui(ui, |ui| {
                     data.slots(ui);
                 });
-                Group::new(hash!(), Vector2::new(280., 400.)).ui(ui, |ui| {
+                Group::new(hash!(), Vec2::new(280., 400.)).ui(ui, |ui| {
                     data.inventory(ui);
                 });
-            },
-        );
+            });
 
-        draw_window(
-            hash!(),
-            glam::vec2(470., 50.),
-            glam::vec2(300., 300.),
-            WindowParams {
-                label: "Megaui Showcase Window".to_string(),
-                ..Default::default()
-            },
-            |ui| {
-                ui.tree_node(hash!(), "input", |ui| {
-                    ui.label(None, "Some random text");
-                    if ui.button(None, "click me") {
-                        println!("hi");
-                    }
+        // TODO: a lot of old megaui widgets are still missing in the new UI
+        // or needs some fixes
+        // draw_window(
+        //     hash!(),
+        //     glam::vec2(470., 50.),
+        //     glam::vec2(300., 300.),
+        //     WindowParams {
+        //         label: "Megaui Showcase Window".to_string(),
+        //         ..Default::default()
+        //     },
+        //     |ui| {
+        //         ui.tree_node(hash!(), "input", |ui| {
+        //             ui.label(None, "Some random text");
+        //             if ui.button(None, "click me") {
+        //                 println!("hi");
+        //             }
 
-                    ui.separator();
+        //             ui.separator();
 
-                    ui.label(None, "Some other random text");
-                    if ui.button(None, "other button") {
-                        println!("hi2");
-                    }
+        //             ui.label(None, "Some other random text");
+        //             if ui.button(None, "other button") {
+        //                 println!("hi2");
+        //             }
 
-                    ui.separator();
+        //             ui.separator();
 
-                    ui.input_text(hash!(), "<- input text 1", &mut data0);
-                    ui.input_text(hash!(), "<- input text 2", &mut data1);
-                    ui.label(
-                        None,
-                        &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
-                    );
+        //             ui.input_text(hash!(), "<- input text 1", &mut data0);
+        //             ui.input_text(hash!(), "<- input text 2", &mut data1);
+        //             ui.label(
+        //                 None,
+        //                 &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
+        //             );
 
-                    ui.separator();
-                });
-                ui.tree_node(hash!(), "sliders", |ui| {
-                    ui.slider(hash!(), "[-10 .. 10]", -10f32..10f32, &mut number0);
-                    ui.slider(hash!(), "[0 .. 100]", 0f32..100f32, &mut number1);
-                });
-                ui.tree_node(hash!(), "editbox 1", |ui| {
-                    ui.label(None, "This is editbox!");
-                    ui.editbox(hash!(), megaui::Vector2::new(285., 165.), &mut text0);
-                });
-                ui.tree_node(hash!(), "editbox 2", |ui| {
-                    ui.label(None, "This is editbox!");
-                    ui.editbox(hash!(), megaui::Vector2::new(285., 165.), &mut text1);
-                });
-            },
-        );
-
-        draw_window(
-            hash!(),
-            glam::vec2(10., 10.),
-            glam::vec2(50., 20.),
-            WindowParams {
-                titlebar: false,
-                ..Default::default()
-            },
-            |ui| {
-                ui.label(None, "Hello!");
-            },
-        );
+        //             ui.separator();
+        //         });
+        //         ui.tree_node(hash!(), "sliders", |ui| {
+        //             ui.slider(hash!(), "[-10 .. 10]", -10f32..10f32, &mut number0);
+        //             ui.slider(hash!(), "[0 .. 100]", 0f32..100f32, &mut number1);
+        //         });
+        //         ui.tree_node(hash!(), "editbox 1", |ui| {
+        //             ui.label(None, "This is editbox!");
+        //             ui.editbox(hash!(), megaui::Vec2::new(285., 165.), &mut text0);
+        //         });
+        //         ui.tree_node(hash!(), "editbox 2", |ui| {
+        //             ui.label(None, "This is editbox!");
+        //             ui.editbox(hash!(), megaui::Vec2::new(285., 165.), &mut text1);
+        //         });
+        //     },
+        // );
 
         match data.fit_command.take() {
             Some(FittingCommand::Unfit { target_slot }) => data.set_item(target_slot, None),
@@ -276,8 +253,6 @@ async fn main() {
             }
             None => {}
         };
-
-        draw_megaui();
 
         next_frame().await;
     }

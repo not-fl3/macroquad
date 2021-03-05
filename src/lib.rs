@@ -58,6 +58,7 @@ pub mod shapes;
 pub mod text;
 pub mod texture;
 pub mod time;
+pub mod ui;
 pub mod window;
 
 pub mod experimental;
@@ -85,6 +86,7 @@ pub use miniquad;
 use drawing::DrawContext;
 use glam::{vec2, Vec2};
 use quad_gl::{colors::*, Color};
+use ui::ui_context::UiContext;
 
 struct Context {
     quad_context: QuadContext,
@@ -102,6 +104,7 @@ struct Context {
     mouse_wheel: Vec2,
 
     draw_context: DrawContext,
+    ui_context: UiContext,
     coroutines_context: experimental::coroutines::CoroutinesContext,
     fonts_storage: text::FontsStorage,
 
@@ -130,6 +133,7 @@ impl Context {
             mouse_wheel: vec2(0., 0.),
 
             draw_context: DrawContext::new(&mut ctx),
+            ui_context: UiContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
 
             quad_context: ctx,
@@ -144,12 +148,15 @@ impl Context {
     fn begin_frame(&mut self) {
         telemetry::begin_gpu_query("GPU");
 
+        self.ui_context.process_input();
         self.clear(Self::DEFAULT_BG_COLOR);
         self.draw_context
             .update_projection_matrix(&mut self.quad_context);
     }
 
     fn end_frame(&mut self) {
+        self.ui_context.draw();
+
         self.draw_context
             .perform_render_passes(&mut self.quad_context);
 
