@@ -2,8 +2,8 @@
 
 use crate::{color::Color, get_context};
 
-use glam::{vec2, vec3, Vec2, Vec3};
 use crate::quad_gl::{DrawMode, Texture2D};
+use glam::{vec2, vec3, Vec2, Vec3};
 
 #[derive(Clone, Debug, Copy)]
 pub struct Vertex {
@@ -14,7 +14,11 @@ pub struct Vertex {
 
 impl From<Vertex> for crate::quad_gl::VertexInterop {
     fn from(vertex: Vertex) -> crate::quad_gl::VertexInterop {
-        (vertex.position.into(), vertex.uv.into(), vertex.color.into())
+        (
+            vertex.position.into(),
+            vertex.uv.into(),
+            vertex.color.into(),
+        )
     }
 }
 
@@ -353,25 +357,39 @@ pub struct DrawSphereParams {
 }
 
 impl Default for DrawSphereParams {
-   fn default() -> DrawSphereParams {
-       DrawSphereParams {
+    fn default() -> DrawSphereParams {
+        DrawSphereParams {
             rings: 16,
             slices: 16,
             draw_mode: DrawMode::Triangles,
-       }
-   } 
+        }
+    }
 }
 
 pub fn draw_sphere(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
     draw_sphere_ex(center, radius, texture, color, Default::default());
 }
 
-pub fn draw_sphere_wires(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
-    let params = DrawSphereParams { draw_mode: DrawMode::Lines, ..Default::default() };
+pub fn draw_sphere_wires(
+    center: Vec3,
+    radius: f32,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+) {
+    let params = DrawSphereParams {
+        draw_mode: DrawMode::Lines,
+        ..Default::default()
+    };
     draw_sphere_ex(center, radius, texture, color, params);
 }
 
-pub fn draw_sphere_ex(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color, params: DrawSphereParams) {
+pub fn draw_sphere_ex(
+    center: Vec3,
+    radius: f32,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+    params: DrawSphereParams,
+) {
     let context = &mut get_context().draw_context;
 
     let rings = params.rings;

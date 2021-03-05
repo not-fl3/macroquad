@@ -54,7 +54,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
     let mut canvas = ui.canvas();
     let w = 515.0;
     let h = 40.0;
-    let pos = canvas.request_space(megaui::Vector2::new(w, h));
+    let pos = canvas.request_space(megaui::Vec2::new(w, h));
 
     let rect = megaui::Rect::new(pos.x, pos.y, w, h);
     canvas.rect(rect, megaui::Color::new(0.5, 0.5, 0.5, 1.0), None);
@@ -64,7 +64,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
     let mut selected_frame = None;
 
     // select the slowest frame among the ones close to the mouse cursor
-    if rect.contains(megaui::Vector2::new(mouse_x, mouse_y)) && state.frames_buffer.len() >= 1 {
+    if rect.contains(megaui::Vec2::new(mouse_x, mouse_y)) && state.frames_buffer.len() >= 1 {
         let x = ((mouse_x - pos.x - 2.) / w * FRAMES_BUFFER_CAPACITY as f32) as i32;
 
         let min = clamp(x - 2, 0, state.frames_buffer.len() as i32 - 1) as usize;
@@ -97,8 +97,8 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         let t = macroquad::math::clamp(frame.full_frame_time * 1000.0, 0.0, h);
 
         canvas.line(
-            megaui::Vector2::new(pos.x + x + 2., pos.y + h - 1.0),
-            megaui::Vector2::new(pos.x + x + 2., pos.y + h - t),
+            megaui::Vec2::new(pos.x + x + 2., pos.y + h - 1.0),
+            megaui::Vec2::new(pos.x + x + 2., pos.y + h - t),
             color,
         );
     }
@@ -140,14 +140,14 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         .or_else(|| state.frames_buffer.get(0));
 
     ui.separator();
-    ui.group(hash!(), megaui::Vector2::new(255., 300.), |ui| {
+    ui.group(hash!(), megaui::Vec2::new(255., 300.), |ui| {
         if let Some(frame) = frame {
             for (n, zone) in frame.zones.iter().enumerate() {
                 zone_ui(ui, zone, n + 1);
             }
         }
     });
-    ui.group(hash!(), megaui::Vector2::new(253., 300.), |ui| {
+    ui.group(hash!(), megaui::Vec2::new(253., 300.), |ui| {
         let queries = telemetry::gpu_queries();
 
         for query in queries {
@@ -246,7 +246,7 @@ pub fn profiler(params: ProfilerParams) {
             |ui| {
                 let tab = ui.tabbar(
                     hash!(),
-                    megaui::Vector2::new(200.0, 20.0),
+                    megaui::Vec2::new(200.0, 20.0),
                     &["profiler", "scene"],
                 );
 

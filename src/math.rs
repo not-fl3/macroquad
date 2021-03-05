@@ -4,7 +4,7 @@
 
 pub use glam::*;
 
-#[derive(Clone, Copy, Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Rect {
     pub x: f32,
     pub y: f32,
@@ -68,6 +68,58 @@ impl Rect {
             && self.right() >= other.left()
             && self.top() <= other.bottom()
             && self.bottom() >= other.top()
+    }
+
+    /// Returns a new `Rect` that includes all points of these two `Rect`s.
+    pub fn combine_with(self, other: Rect) -> Rect {
+        let x = f32::min(self.x, other.x);
+        let y = f32::min(self.y, other.y);
+        let w = f32::max(self.right(), other.right()) - x;
+        let h = f32::max(self.bottom(), other.bottom()) - y;
+        Rect { x, y, w, h }
+    }
+
+    /// Returns an intersection rect there is any intersection
+    pub fn intersect(&self, other: Rect) -> Option<Rect> {
+        let left = self.x.max(other.x);
+        let top = self.y.max(other.y);
+        let right = self.right().min(other.right());
+        let bottom = self.bottom().min(other.bottom());
+
+        if right < left || bottom < top {
+            return None;
+        }
+
+        Some(Rect {
+            x: left,
+            y: top,
+            w: right - left,
+            h: bottom - top,
+        })
+    }
+
+    /// Translate rect origin be `offset` vector
+    pub fn offset(self, offset: Vec2) -> Rect {
+        Rect::new(self.x + offset.x, self.y + offset.y, self.w, self.h)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct RectOffset {
+    pub left: f32,
+    pub right: f32,
+    pub bottom: f32,
+    pub top: f32,
+}
+
+impl RectOffset {
+    pub fn new(left: f32, right: f32, top: f32, bottom: f32) -> RectOffset {
+        RectOffset {
+            left,
+            right,
+            top,
+            bottom,
+        }
     }
 }
 
