@@ -295,6 +295,7 @@ impl Style {
 pub struct Skin {
     pub label_style: Style,
     pub button_style: Style,
+    pub tabbar_style: Style,
     pub window_style: Style,
     pub editbox_style: Style,
     pub window_titlebar_style: Style,
@@ -323,6 +324,15 @@ impl Skin {
                 color: Color::from_rgba(204, 204, 204, 235),
                 color_clicked: Color::from_rgba(187, 187, 187, 255),
                 color_hovered: Color::from_rgba(170, 170, 170, 235),
+                text_color: Color::from_rgba(0, 0, 0, 255),
+                ..Style::default(default_font.clone())
+            },
+            tabbar_style: Style {
+                margin: Some(RectOffset::new(2., 2., 2., 2.)),
+                color: Color::from_rgba(204, 204, 204, 235),
+                color_clicked: Color::from_rgba(187, 187, 187, 255),
+                color_hovered: Color::from_rgba(170, 170, 170, 235),
+                color_selected: Color::from_rgba(240, 240, 240, 235),
                 text_color: Color::from_rgba(0, 0, 0, 255),
                 ..Style::default(default_font.clone())
             },
