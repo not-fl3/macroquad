@@ -21,6 +21,10 @@ impl Rect {
         vec2(self.x, self.y)
     }
 
+    pub fn size(&self) -> Vec2 {
+        vec2(self.w, self.h)
+    }
+
     /// Returns the left edge of the `Rect`
     pub fn left(&self) -> f32 {
         self.x
