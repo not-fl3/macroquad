@@ -12,8 +12,6 @@ use std::collections::BTreeMap;
 
 //use crate::telemetry;
 
-const UNIFORMS_ARRAY_SIZE: usize = 512;
-
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Color {
@@ -443,9 +441,55 @@ struct PipelineExt {
     pipeline: miniquad::Pipeline,
     wants_screen_texture: bool,
     uniforms: Vec<Uniform>,
-    uniforms_data: [u8; UNIFORMS_ARRAY_SIZE],
+    uniforms_data: Vec<u8>,
     textures: Vec<String>,
     textures_data: BTreeMap<String, Texture>,
+}
+
+impl PipelineExt {
+    fn set_uniform<T>(&mut self, name: &str, uniform: T) {
+        let uniform_meta = self.uniforms.iter().find(
+            |
+                Uniform {
+                    name: uniform_name, ..
+                },
+            | uniform_name == name,
+        );
+        if uniform_meta.is_none() {
+            println!("Trying to set non-existing uniform: {}", name);
+            return;
+        }
+        let uniform_meta = uniform_meta.unwrap();
+        let uniform_format = uniform_meta.uniform_type;
+        let uniform_byte_size = uniform_format.size();
+        let uniform_byte_offset = uniform_meta.byte_offset;
+
+        if std::mem::size_of::<T>() != uniform_byte_size {
+            println!(
+                "Trying to set uniform {} sized {} bytes value of {} bytes",
+                name,
+                std::mem::size_of::<T>(),
+                uniform_byte_size
+            );
+            return;
+        }
+        macro_rules! transmute_uniform {
+            ($uniform_size:expr, $byte_offset:expr, $n:expr) => {
+                if $uniform_size == $n {
+                    let data: [u8; $n] = unsafe { std::mem::transmute_copy(&uniform) };
+
+                    for i in 0..$uniform_size {
+                        self.uniforms_data[$byte_offset + i] = data[i];
+                    }
+                }
+            };
+        }
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 4);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 8);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 12);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 16);
+        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 64);
+    }
 }
 
 struct PipelinesStorage {
@@ -543,7 +587,7 @@ impl PipelinesStorage {
         shader: Shader,
         params: PipelineParams,
         wants_screen_texture: bool,
-        uniforms: Vec<(String, UniformType)>,
+        mut uniforms: Vec<(String, UniformType)>,
         textures: Vec<String>,
     ) -> GlPipeline {
         let pipeline = Pipeline::with_params(
@@ -564,23 +608,23 @@ impl PipelinesStorage {
             .position(|p| p.is_none())
             .unwrap_or_else(|| panic!("Pipelines amount exceeded"));
 
+        let mut max_offset = 0;
+
+        for (name, kind) in shader::uniforms().into_iter().rev() {
+            uniforms.insert(0, (name.to_owned(), kind));
+        }
+
         let uniforms = uniforms
             .iter()
             .scan(0, |offset, uniform| {
                 let uniform_byte_size = uniform.1.size();
-                if *offset + uniform_byte_size > UNIFORMS_ARRAY_SIZE {
-                    println!(
-                        "Material exceeds maximum uniforms amount, uniforms after {} skipped",
-                        uniform.0
-                    );
-                    return None;
-                }
                 let uniform = Uniform {
                     name: uniform.0.clone(),
                     uniform_type: uniform.1,
                     byte_offset: *offset,
                 };
                 *offset += uniform_byte_size;
+                max_offset = *offset;
 
                 Some(uniform)
             })
@@ -590,7 +634,7 @@ impl PipelinesStorage {
             pipeline,
             wants_screen_texture,
             uniforms,
-            uniforms_data: [0; UNIFORMS_ARRAY_SIZE],
+            uniforms_data: vec![0; max_offset],
             textures,
             textures_data: BTreeMap::new(),
         });
@@ -749,7 +793,7 @@ impl QuadGl {
             .iter_mut()
             .zip(self.draw_calls_bindings.iter_mut())
         {
-            let pipeline = self.pipelines.get_quad_pipeline(dc.pipeline);
+            let pipeline = self.pipelines.get_quad_pipeline_mut(dc.pipeline);
 
             let (width, height) = if let Some(render_pass) = dc.render_pass {
                 let render_texture = render_pass.texture(ctx);
@@ -794,12 +838,13 @@ impl QuadGl {
             }
             ctx.apply_bindings(&bindings);
 
-            ctx.apply_uniforms(&shader::Uniforms {
-                projection: dc.projection,
-                model: dc.model,
-                time,
-                data: pipeline.uniforms_data.clone(),
-            });
+            pipeline.set_uniform("Projection", dc.projection);
+            pipeline.set_uniform("Model", dc.model);
+            pipeline.set_uniform("_Time", time);
+            ctx.apply_uniforms_from_bytes(
+                pipeline.uniforms_data.as_ptr(),
+                pipeline.uniforms_data.len(),
+            );
             ctx.draw(0, dc.indices_count as i32, 1);
 
             dc.vertices_count = 0;
@@ -924,47 +969,9 @@ impl QuadGl {
     }
 
     pub fn set_uniform<T>(&mut self, pipeline: GlPipeline, name: &str, uniform: T) {
-        let pipeline = self.pipelines.get_quad_pipeline_mut(pipeline);
-
-        let uniform_meta = pipeline.uniforms.iter().find(
-            |Uniform {
-                 name: uniform_name, ..
-             }| uniform_name == name,
-        );
-        if uniform_meta.is_none() {
-            println!("Trying to set non-existing uniform: {}", name);
-            return;
-        }
-        let uniform_meta = uniform_meta.unwrap();
-        let uniform_format = uniform_meta.uniform_type;
-        let uniform_byte_size = uniform_format.size();
-        let uniform_byte_offset = uniform_meta.byte_offset;
-
-        if std::mem::size_of::<T>() != uniform_byte_size {
-            println!(
-                "Trying to set uniform {} sized {} bytes value of {} bytes",
-                name,
-                std::mem::size_of::<T>(),
-                uniform_byte_size
-            );
-            return;
-        }
-        macro_rules! transmute_uniform {
-            ($uniform_size:expr, $byte_offset:expr, $n:expr) => {
-                if $uniform_size == $n {
-                    let data: [u8; $n] = unsafe { std::mem::transmute_copy(&uniform) };
-
-                    for i in 0..$uniform_size {
-                        pipeline.uniforms_data[$byte_offset + i] = data[i];
-                    }
-                }
-            };
-        }
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 4);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 8);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 12);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 16);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 64);
+        self.pipelines
+            .get_quad_pipeline_mut(pipeline)
+            .set_uniform(name, uniform);
     }
 
     pub fn set_texture(&mut self, pipeline: GlPipeline, name: &str, texture: Texture2D) {
@@ -1089,7 +1096,6 @@ impl Texture2D {
 }
 
 mod shader {
-    use super::UNIFORMS_ARRAY_SIZE;
     use miniquad::{ShaderMeta, UniformBlockLayout, UniformDesc, UniformType};
 
     pub const VERTEX: &str = r#"#version 100
@@ -1119,25 +1125,23 @@ mod shader {
         gl_FragColor = color * texture2D(Texture, uv) ;
     }"#;
 
+    pub fn uniforms() -> Vec<(&'static str, UniformType)> {
+        vec![
+            ("Projection", UniformType::Mat4),
+            ("Model", UniformType::Mat4),
+            ("_Time", UniformType::Float4),
+        ]
+    }
+
     pub fn meta() -> ShaderMeta {
         ShaderMeta {
             images: vec!["Texture".to_string(), "_ScreenTexture".to_string()],
             uniforms: UniformBlockLayout {
-                uniforms: vec![
-                    UniformDesc::new("Projection", UniformType::Mat4),
-                    UniformDesc::new("Model", UniformType::Mat4),
-                    UniformDesc::new("_Time", UniformType::Float4),
-                ],
+                uniforms: uniforms()
+                    .into_iter()
+                    .map(|(name, kind)| UniformDesc::new(name, kind))
+                    .collect(),
             },
         }
-    }
-
-    #[repr(C)]
-    pub struct Uniforms {
-        pub projection: glam::Mat4,
-        pub model: glam::Mat4,
-        pub time: glam::Vec4,
-
-        pub data: [u8; UNIFORMS_ARRAY_SIZE],
     }
 }
