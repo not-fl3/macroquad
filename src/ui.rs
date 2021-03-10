@@ -1073,61 +1073,37 @@ pub(crate) mod ui_context {
                 }
             }
 
-            if is_key_down(KeyCode::Up) {
-                ui.key_down(megaui::KeyCode::Up, shift, ctrl);
+            macro_rules! process {
+                ($code:tt) => {
+                    if is_key_pressed(KeyCode::$code) || is_key_down(KeyCode::$code) {
+                        ui.key_down(megaui::KeyCode::$code, shift, ctrl);
+                    }
+                };
             }
-            if is_key_down(KeyCode::Down) {
-                ui.key_down(megaui::KeyCode::Down, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Right) {
-                ui.key_down(megaui::KeyCode::Right, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Left) {
-                ui.key_down(megaui::KeyCode::Left, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Home) {
-                ui.key_down(megaui::KeyCode::Home, shift, ctrl);
-            }
-            if is_key_down(KeyCode::End) {
-                ui.key_down(megaui::KeyCode::End, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Delete) {
-                ui.key_down(megaui::KeyCode::Delete, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Backspace) {
-                ui.key_down(megaui::KeyCode::Backspace, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Enter) {
-                ui.key_down(megaui::KeyCode::Enter, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Tab) {
-                ui.key_down(megaui::KeyCode::Tab, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Z) {
-                ui.key_down(megaui::KeyCode::Z, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Y) {
-                ui.key_down(megaui::KeyCode::Y, shift, ctrl);
-            }
-            if is_key_down(KeyCode::C) {
-                ui.key_down(megaui::KeyCode::C, shift, ctrl);
-            }
-            if is_key_down(KeyCode::X) {
-                ui.key_down(megaui::KeyCode::X, shift, ctrl);
-            }
-            if is_key_down(KeyCode::V) {
-                ui.key_down(megaui::KeyCode::V, shift, ctrl);
-            }
-            if is_key_down(KeyCode::A) {
-                ui.key_down(megaui::KeyCode::A, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Escape) {
-                ui.key_down(megaui::KeyCode::Escape, shift, ctrl);
-            }
-            if is_key_down(KeyCode::Enter) {
-                ui.key_down(megaui::KeyCode::Enter, shift, ctrl);
-            }
-            if is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl) {
+
+            process!(Up);
+            process!(Down);
+            process!(Right);
+            process!(Left);
+            process!(Home);
+            process!(End);
+            process!(Delete);
+            process!(Backspace);
+            process!(Tab);
+            process!(Z);
+            process!(Y);
+            process!(C);
+            process!(X);
+            process!(V);
+            process!(A);
+            process!(Escape);
+            process!(Enter);
+
+            if is_key_down(KeyCode::LeftControl)
+                || is_key_down(KeyCode::RightControl)
+                || is_key_pressed(KeyCode::LeftControl)
+                || is_key_pressed(KeyCode::RightControl)
+            {
                 ui.key_down(megaui::KeyCode::Control, shift, ctrl);
             }
             let (wheel_x, wheel_y) = mouse_wheel();
