@@ -106,6 +106,8 @@ struct Context {
     mouse_position: Vec2,
     mouse_wheel: Vec2,
 
+    input_events: Vec<MiniquadInputEvent>,
+
     draw_context: DrawContext,
     ui_context: UiContext,
     coroutines_context: experimental::coroutines::CoroutinesContext,
@@ -114,6 +116,42 @@ struct Context {
     start_time: f64,
     last_frame_time: f64,
     frame_time: f64,
+}
+
+#[derive(Clone)]
+enum MiniquadInputEvent {
+    MouseMotion {
+        x: f32,
+        y: f32,
+    },
+    MouseWheel {
+        x: f32,
+        y: f32,
+    },
+    MouseButtonDown {
+        x: f32,
+        y: f32,
+        btn: MouseButton,
+    },
+    MouseButtonUp {
+        x: f32,
+        y: f32,
+        btn: MouseButton,
+    },
+    Char {
+        character: char,
+        modifiers: KeyMods,
+        repeat: bool,
+    },
+    KeyDown {
+        keycode: KeyCode,
+        modifiers: KeyMods,
+        repeat: bool,
+    },
+    KeyUp {
+        keycode: KeyCode,
+        modifiers: KeyMods,
+    },
 }
 
 impl Context {
@@ -137,6 +175,8 @@ impl Context {
             touches: HashMap::new(),
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
+
+            input_events: Vec::new(),
 
             draw_context: DrawContext::new(&mut ctx),
             ui_context: UiContext::new(&mut ctx),
@@ -219,12 +259,20 @@ impl EventHandlerFree for Stage {
         let context = get_context();
 
         context.mouse_position = Vec2::new(x, y);
+
+        context
+            .input_events
+            .push(MiniquadInputEvent::MouseMotion { x, y });
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();
 
         context.mouse_wheel.x = x;
         context.mouse_wheel.y = y;
+
+        context
+            .input_events
+            .push(MiniquadInputEvent::MouseWheel { x, y });
     }
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         let context = get_context();
@@ -232,6 +280,10 @@ impl EventHandlerFree for Stage {
         context.mouse_position = Vec2::new(x, y);
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
+
+        context
+            .input_events
+            .push(MiniquadInputEvent::MouseButtonDown { x, y, btn });
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
@@ -240,6 +292,10 @@ impl EventHandlerFree for Stage {
         context.mouse_position = Vec2::new(x, y);
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
+
+        context
+            .input_events
+            .push(MiniquadInputEvent::MouseButtonUp { x, y, btn });
     }
 
     fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
@@ -269,23 +325,39 @@ impl EventHandlerFree for Stage {
         };
     }
 
-    fn char_event(&mut self, character: char, _modifiers: KeyMods, _repeat: bool) {
+    fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
         let context = get_context();
 
         context.chars_pressed_queue.push(character);
+
+        context.input_events.push(MiniquadInputEvent::Char {
+            character,
+            modifiers,
+            repeat,
+        });
     }
 
-    fn key_down_event(&mut self, keycode: KeyCode, _modifiers: KeyMods, repeat: bool) {
+    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
         let context = get_context();
         context.keys_down.insert(keycode);
         if repeat == false {
             context.keys_pressed.insert(keycode);
         }
+
+        context.input_events.push(MiniquadInputEvent::KeyDown {
+            keycode,
+            modifiers,
+            repeat,
+        });
     }
 
-    fn key_up_event(&mut self, keycode: KeyCode, _: KeyMods) {
+    fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
         let context = get_context();
         context.keys_down.remove(&keycode);
+
+        context
+            .input_events
+            .push(MiniquadInputEvent::KeyUp { keycode, modifiers });
     }
 
     fn update(&mut self) {
@@ -361,7 +433,9 @@ impl Window {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
-                unsafe { CONTEXT = Some(Context::new(ctx)) };
+                unsafe {
+                    CONTEXT = Some(Context::new(ctx))
+                };
                 UserData::free(Stage {})
             },
         );

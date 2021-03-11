@@ -138,3 +138,30 @@ fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
     Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0
         - Vec2::new(1.0, 1.0)
 }
+
+/// Repeats all events that came in this frame. This function should be used by external tools that uses miniquad system, like different UI librarires.
+pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T) {
+    let context = get_context();
+    let mut ctx = &mut context.quad_context;
+
+    for event in &context.input_events {
+        use crate::MiniquadInputEvent::*;
+        match event {
+            MouseMotion { x, y } => t.mouse_motion_event(&mut ctx, *x, *y),
+            MouseWheel { x, y } => t.mouse_wheel_event(&mut ctx, *x, *y),
+            MouseButtonDown { x, y, btn } => t.mouse_button_down_event(&mut ctx, *btn, *x, *y),
+            MouseButtonUp { x, y, btn } => t.mouse_button_up_event(&mut ctx, *btn, *x, *y),
+            Char {
+                character,
+                modifiers,
+                repeat,
+            } => t.char_event(&mut ctx, *character, *modifiers, *repeat),
+            KeyDown {
+                keycode,
+                modifiers,
+                repeat,
+            } => t.key_down_event(&mut ctx, *keycode, *modifiers, *repeat),
+            KeyUp { keycode, modifiers } => t.key_up_event(&mut ctx, *keycode, *modifiers),
+        }
+    }
+}
