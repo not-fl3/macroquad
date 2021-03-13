@@ -176,11 +176,14 @@ impl Context {
         self.mouse_released.clear();
 
         // remove all touches that were Ended or Cancelled
-        self.touches.retain(|_, touch| touch.phase != input::TouchPhase::Ended && touch.phase != input::TouchPhase::Cancelled);
+        self.touches.retain(|_, touch| {
+            touch.phase != input::TouchPhase::Ended && touch.phase != input::TouchPhase::Cancelled
+        });
 
         // change all Started or Moved touches to Stationary
         for touch in self.touches.values_mut() {
-            if touch.phase == input::TouchPhase::Started || touch.phase == input::TouchPhase::Moved {
+            if touch.phase == input::TouchPhase::Started || touch.phase == input::TouchPhase::Moved
+            {
                 touch.phase = input::TouchPhase::Stationary;
             }
         }
@@ -242,21 +245,24 @@ impl EventHandlerFree for Stage {
     fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
         let context = get_context();
 
-        context.touches.insert(id, input::Touch {
+        context.touches.insert(
             id,
-            phase: phase.into(),
-            position: Vec2::new(x, y),
-        });
-        
+            input::Touch {
+                id,
+                phase: phase.into(),
+                position: Vec2::new(x, y),
+            },
+        );
+
         if context.simulate_mouse_with_touch {
             if phase == TouchPhase::Started {
                 self.mouse_button_down_event(MouseButton::Left, x, y);
             }
-    
+
             if phase == TouchPhase::Ended {
                 self.mouse_button_up_event(MouseButton::Left, x, y);
             }
-    
+
             if phase == TouchPhase::Moved {
                 self.mouse_motion_event(x, y);
             }

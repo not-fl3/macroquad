@@ -1,9 +1,9 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
-use crate::prelude::screen_width;
-use crate::prelude::screen_height;
-use crate::Vec2;
 use crate::get_context;
+use crate::prelude::screen_height;
+use crate::prelude::screen_width;
+use crate::Vec2;
 pub use miniquad::{KeyCode, MouseButton};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -66,11 +66,15 @@ pub fn touches() -> Vec<Touch> {
 
 /// Return touches with positions in range [-1; 1].
 pub fn touches_local() -> Vec<Touch> {
-    get_context().touches.values().map(|touch| {
-        let mut touch = touch.clone();
-        touch.position = convert_to_local(touch.position);
-        touch
-    }).collect()
+    get_context()
+        .touches
+        .values()
+        .map(|touch| {
+            let mut touch = touch.clone();
+            touch.position = convert_to_local(touch.position);
+            touch
+        })
+        .collect()
 }
 
 pub fn mouse_wheel() -> (f32, f32) {
@@ -131,5 +135,6 @@ pub fn is_mouse_button_released(btn: MouseButton) -> bool {
 
 /// Convert a position in pixels to a position in the range [-1; 1].
 fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
-    Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0 - Vec2::new(1.0, 1.0)
+    Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0
+        - Vec2::new(1.0, 1.0)
 }
