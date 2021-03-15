@@ -80,7 +80,7 @@ pub fn load_material(
     Ok(Material { pipeline })
 }
 
-/// Al followed macroquad rendering calls will use the given material.
+/// All following macroquad rendering calls will use the given material.
 pub fn gl_use_material(material: Material) {
     let context = &mut get_context().draw_context;
 
