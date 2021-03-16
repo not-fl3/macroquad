@@ -39,7 +39,7 @@
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
 
@@ -94,11 +94,14 @@ struct Context {
     screen_width: f32,
     screen_height: f32,
 
+    simulate_mouse_with_touch: bool,
+
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
     mouse_down: HashSet<MouseButton>,
     mouse_pressed: HashSet<MouseButton>,
     mouse_released: HashSet<MouseButton>,
+    touches: HashMap<u64, input::Touch>,
     chars_pressed_queue: Vec<char>,
     mouse_position: Vec2,
     mouse_wheel: Vec2,
@@ -123,12 +126,15 @@ impl Context {
             screen_width,
             screen_height,
 
+            simulate_mouse_with_touch: true,
+
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
             chars_pressed_queue: Vec::new(),
             mouse_down: HashSet::new(),
             mouse_pressed: HashSet::new(),
             mouse_released: HashSet::new(),
+            touches: HashMap::new(),
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
 
@@ -168,6 +174,19 @@ impl Context {
         self.keys_pressed.clear();
         self.mouse_pressed.clear();
         self.mouse_released.clear();
+
+        // remove all touches that were Ended or Cancelled
+        self.touches.retain(|_, touch| {
+            touch.phase != input::TouchPhase::Ended && touch.phase != input::TouchPhase::Cancelled
+        });
+
+        // change all Started or Moved touches to Stationary
+        for touch in self.touches.values_mut() {
+            if touch.phase == input::TouchPhase::Started || touch.phase == input::TouchPhase::Moved
+            {
+                touch.phase = input::TouchPhase::Stationary;
+            }
+        }
     }
 
     fn clear(&mut self, color: Color) {
@@ -221,6 +240,33 @@ impl EventHandlerFree for Stage {
         context.mouse_position = Vec2::new(x, y);
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
+    }
+
+    fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
+        let context = get_context();
+
+        context.touches.insert(
+            id,
+            input::Touch {
+                id,
+                phase: phase.into(),
+                position: Vec2::new(x, y),
+            },
+        );
+
+        if context.simulate_mouse_with_touch {
+            if phase == TouchPhase::Started {
+                self.mouse_button_down_event(MouseButton::Left, x, y);
+            }
+
+            if phase == TouchPhase::Ended {
+                self.mouse_button_up_event(MouseButton::Left, x, y);
+            }
+
+            if phase == TouchPhase::Moved {
+                self.mouse_motion_event(x, y);
+            }
+        };
     }
 
     fn char_event(&mut self, character: char, _modifiers: KeyMods, _repeat: bool) {
