@@ -306,7 +306,9 @@ impl Scene {
             }
         }
 
-        self.nodes.clear()
+        self.arena.reset();
+        self.nodes.clear();
+        self.free_nodes.clear();
     }
 
     pub fn get_any(&self, handle: HandleUntyped) -> Option<RefMutAny> {
