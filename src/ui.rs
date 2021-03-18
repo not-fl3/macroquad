@@ -19,7 +19,6 @@ mod hash;
 mod input_handler;
 mod render;
 mod style;
-mod types;
 
 pub mod widgets;
 
@@ -27,7 +26,6 @@ pub use clipboard::ClipboardObject;
 pub use input_handler::{InputHandler, KeyCode};
 pub use render::{DrawList, Vertex};
 pub use style::{Skin, Style};
-pub use types::Color;
 
 pub use crate::hash;
 
@@ -250,6 +248,18 @@ pub(crate) struct AnyStorage {
 }
 
 impl AnyStorage {
+    pub(crate) fn get_or_insert_with<T: Default + 'static, F: Fn() -> T>(
+        &mut self,
+        id: Id,
+        f: F,
+    ) -> &mut T {
+        self.storage
+            .entry(id)
+            .or_insert_with(|| Box::new(f()))
+            .downcast_mut::<T>()
+            .unwrap()
+    }
+
     pub(crate) fn get_or_default<T: Default + 'static>(&mut self, id: Id) -> &mut T {
         self.storage
             .entry(id)

@@ -1,14 +1,8 @@
 use macroquad::prelude::*;
 
-// TODO: switch to macroquad's UI
-// the last unported piece!
-use megaui_macroquad::{
-    draw_megaui, draw_window,
-    megaui::{
-        self, hash,
-        widgets::{Label, TreeNode},
-    },
-    set_megaui_texture, WindowParams,
+use macroquad::ui::{
+    hash, root_ui,
+    widgets::{self, Label, TreeNode},
 };
 
 use macroquad::color;
@@ -52,8 +46,8 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
 #[macroquad::main("Shadertoy")]
 async fn main() {
     let ferris = load_texture("examples/rust.png").await;
-    let (color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
-    set_megaui_texture(0, color_picker_texture);
+    let (_color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
+    //set_megaui_texture(0, color_picker_texture);
 
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
     let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
@@ -115,16 +109,9 @@ async fn main() {
 
         let mut need_update = false;
 
-        draw_window(
-            hash!(),
-            vec2(20., 20.),
-            vec2(450., 650.),
-            WindowParams {
-                label: "Shader".to_string(),
-                close_button: false,
-                ..Default::default()
-            },
-            |ui| {
+        widgets::Window::new(hash!(), vec2(20., 20.), vec2(450., 650.))
+            .label("Shader")
+            .ui(&mut *root_ui(), |ui| {
                 ui.label(None, "Camera: ");
                 ui.same_line(0.0);
                 if ui.button(None, "Ortho") {
@@ -157,8 +144,8 @@ async fn main() {
 
                     match uniform {
                         Uniform::Float1(x) => {
-                            megaui::widgets::InputText::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(200.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(200.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
@@ -167,15 +154,15 @@ async fn main() {
                             }
                         }
                         Uniform::Float2(x, y) => {
-                            megaui::widgets::InputText::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(99.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(99.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputText::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(99.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(99.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, y);
 
@@ -184,22 +171,22 @@ async fn main() {
                             }
                         }
                         Uniform::Float3(x, y, z) => {
-                            megaui::widgets::InputText::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(65.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputText::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(65.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, y);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputText::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(65.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, z);
 
@@ -216,9 +203,9 @@ async fn main() {
                             let cursor = canvas.cursor();
 
                             canvas.rect(
-                                megaui::Rect::new(cursor.x + 20.0, cursor.y, 50.0, 18.0),
-                                megaui::Color::new(0.2, 0.2, 0.2, 1.0),
-                                megaui::Color::new(color.x, color.y, color.z, 1.0),
+                                Rect::new(cursor.x + 20.0, cursor.y, 50.0, 18.0),
+                                Color::new(0.2, 0.2, 0.2, 1.0),
+                                Color::new(color.x, color.y, color.z, 1.0),
                             );
 
                             if ui.button(None, "change") {
@@ -236,20 +223,12 @@ async fn main() {
                 TreeNode::new(hash!(), "Fragment shader")
                     .init_unfolded()
                     .ui(ui, |ui| {
-                        if ui.editbox(
-                            hash!(),
-                            megaui::Vector2::new(440., 200.),
-                            &mut fragment_shader,
-                        ) {
+                        if ui.editbox(hash!(), vec2(440., 200.), &mut fragment_shader) {
                             need_update = true;
                         };
                     });
                 ui.tree_node(hash!(), "Vertex shader", |ui| {
-                    if ui.editbox(
-                        hash!(),
-                        megaui::Vector2::new(440., 300.),
-                        &mut vertex_shader,
-                    ) {
+                    if ui.editbox(hash!(), vec2(440., 300.), &mut vertex_shader) {
                         need_update = true;
                     };
                 });
@@ -257,20 +236,12 @@ async fn main() {
                 if let Some(ref error) = error {
                     Label::new(error).multiline(14.0).ui(ui);
                 }
-            },
-        );
+            });
 
         if new_uniform_window {
-            draw_window(
-                hash!(),
-                vec2(100., 100.),
-                vec2(200., 80.),
-                WindowParams {
-                    label: "New uniform".to_string(),
-                    close_button: false,
-                    ..Default::default()
-                },
-                |ui| {
+            widgets::Window::new(hash!(), vec2(100., 100.), vec2(200., 80.))
+                .label("New uniform")
+                .ui(&mut *root_ui(), |ui| {
                     if ui.active_window_focused() == false {
                         new_uniform_window = false;
                     }
@@ -306,21 +277,13 @@ async fn main() {
                     if ui.button(None, "Cancel") {
                         new_uniform_window = false;
                     }
-                },
-            );
+                });
         }
 
         if colorpicker_window {
-            colorpicker_window &= draw_window(
-                hash!(),
-                vec2(140., 100.),
-                vec2(210., 240.),
-                WindowParams {
-                    label: "Colorpicker".to_string(),
-                    close_button: true,
-                    ..Default::default()
-                },
-                |ui| {
+            colorpicker_window &= widgets::Window::new(hash!(), vec2(140., 100.), vec2(210., 240.))
+                .label("Colorpicker")
+                .ui(&mut *root_ui(), |ui| {
                     if ui.active_window_focused() == false {
                         colorpicker_window = false;
                     }
@@ -335,20 +298,17 @@ async fn main() {
                         .get_pixel(x.max(0).min(199) as u32, y.max(0).min(199) as u32);
 
                     canvas.rect(
-                        megaui::Rect::new(cursor.x, cursor.y, 200.0, 18.0),
-                        megaui::Color::new(0.0, 0.0, 0.0, 1.0),
-                        megaui::Color::new(color.r, color.g, color.b, 1.0),
+                        Rect::new(cursor.x, cursor.y, 200.0, 18.0),
+                        Color::new(0.0, 0.0, 0.0, 1.0),
+                        Color::new(color.r, color.g, color.b, 1.0),
                     );
-                    canvas.image(
-                        megaui::Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0),
-                        0,
-                    );
+                    canvas.image(Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0), 0);
 
                     if x >= 0 && x < 200 && y >= 0 && y < 200 {
                         canvas.rect(
-                            megaui::Rect::new(mouse.0 - 3.5, mouse.1 - 3.5, 7.0, 7.0),
-                            megaui::Color::new(0.3, 0.3, 0.3, 1.0),
-                            megaui::Color::new(1.0, 1.0, 1.0, 1.0),
+                            Rect::new(mouse.0 - 3.5, mouse.1 - 3.5, 7.0, 7.0),
+                            Color::new(0.3, 0.3, 0.3, 1.0),
+                            Color::new(1.0, 1.0, 1.0, 1.0),
                         );
 
                         if is_mouse_button_down(MouseButton::Left) {
@@ -362,8 +322,7 @@ async fn main() {
                                 .1 = Uniform::Color(vec3(color.r, color.g, color.b));
                         }
                     }
-                },
-            );
+                });
         }
 
         if need_update {
@@ -392,8 +351,6 @@ async fn main() {
                 }
             }
         }
-
-        draw_megaui();
 
         next_frame().await
     }

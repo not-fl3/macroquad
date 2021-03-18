@@ -1,8 +1,9 @@
 use crate::{
+    color::Color,
     math::RectOffset,
     text::{atlas::Atlas, FontInternal},
     texture::Image,
-    ui::{types::Color, ElementState},
+    ui::ElementState,
 };
 
 use std::cell::RefCell;

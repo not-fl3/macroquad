@@ -1,5 +1,5 @@
 use crate::{
-    math::{Rect, Vec2},
+    math::{vec2, Rect, Vec2},
     ui::{ElementState, Id, InputCharacter, Key, KeyCode, Layout, Ui},
 };
 
@@ -10,7 +10,6 @@ pub struct Editbox<'a> {
     select_all: bool,
     filter: Option<&'a dyn Fn(char) -> bool>,
     pos: Option<Vec2>,
-    line_height: f32,
     password: bool,
 }
 
@@ -29,7 +28,6 @@ impl<'a> Editbox<'a> {
             select_all: false,
             multiline: true,
             pos: None,
-            line_height: 14.0,
             password: false,
         }
     }
@@ -56,17 +54,9 @@ impl<'a> Editbox<'a> {
         Editbox { password, ..self }
     }
 
-    pub fn line_height(self, line_height: f32) -> Self {
-        Self {
-            line_height,
-            ..self
-        }
-    }
-
     pub fn filter<'b>(self, filter: &'b dyn Fn(char) -> bool) -> Editbox<'b> {
         Editbox {
             id: self.id,
-            line_height: self.line_height,
             pos: self.pos,
             multiline: self.multiline,
             select_all: self.select_all,
@@ -342,14 +332,21 @@ impl<'a> Editbox<'a> {
         parent.window.childs.push(self.id);
         let parent_id = Some(parent.window.id);
 
-        let mut context = ui.begin_window(self.id, parent_id, pos, self.size, false, false);
+        let mut context = ui.begin_window(
+            self.id,
+            parent_id,
+            pos,
+            self.size + vec2(2., 2.),
+            false,
+            false,
+        );
 
-        let size = Vec2::new(150., self.line_height * text.split('\n').count() as f32);
+        let line_height = context.style.editbox_style.font_size as f32;
 
-        let pos = context
-            .window
-            .cursor
-            .fit(size, Layout::Free(Vec2::new(5., 5.)));
+        let size = vec2(150., line_height * text.split('\n').count() as f32);
+
+        // TODO: this is very weird hardcoded text margin
+        let pos = context.window.cursor.fit(size, Layout::Free(vec2(2., 2.)));
 
         context.window.painter.clip(parent_rect);
 
@@ -371,7 +368,7 @@ impl<'a> Editbox<'a> {
             if n == state.cursor as usize && input_focused {
                 // caret
                 context.window.painter.draw_rect(
-                    Rect::new(pos.x + x, pos.y + y - 2., 2., font_size as f32 - 4.),
+                    Rect::new(pos.x + x, pos.y + y + 2., 2., font_size as f32 - 5.),
                     text_color,
                     None,
                 );
@@ -386,12 +383,18 @@ impl<'a> Editbox<'a> {
                 let mut font = context.style.editbox_style.font.borrow_mut();
                 let font_size = context.style.editbox_style.font_size;
 
+                let ascent = font.ascent(font_size as f32);
+                let descent = font.descent(font_size as f32);
+
                 advance = context
                     .window
                     .painter
                     .draw_character(
                         if self.password { '*' } else { character },
-                        pos + Vec2::new(x, y + font_size as f32),
+                        pos + vec2(
+                            x,
+                            y + font_size as f32 / 2. + (ascent - descent) / 2. + descent,
+                        ),
                         text_color,
                         &mut *font,
                         font_size,
@@ -399,7 +402,7 @@ impl<'a> Editbox<'a> {
                     .unwrap_or(0.);
             }
             if state.in_selected_range(n as u32) {
-                let pos = pos + Vec2::new(x, y);
+                let pos = pos + vec2(x, y);
 
                 context.window.painter.draw_rect(
                     Rect::new(pos.x, pos.y, advance, font_size as f32 - 4.),
@@ -413,8 +416,8 @@ impl<'a> Editbox<'a> {
 
             if clicked == false && hovered && context.input.is_mouse_down() && input_focused {
                 let cursor_on_current_line =
-                    (context.input.mouse_position.y - (pos.y + y + self.line_height / 2.)).abs()
-                        < self.line_height / 2. + 0.1;
+                    (context.input.mouse_position.y - (pos.y + y + line_height / 2.)).abs()
+                        < line_height / 2. + 0.1;
                 let line_end = character == '\n' || n == text.len();
                 let cursor_after_line_end = context.input.mouse_position.x > (pos.x + x);
                 let clickable_character = character != '\n';
@@ -422,7 +425,7 @@ impl<'a> Editbox<'a> {
                     (context.input.mouse_position.x - (pos.x + x)).abs() < advance / 2.;
                 let last_character = n == text.len();
                 let cursor_below_line =
-                    (context.input.mouse_position.y - (pos.y + y + self.line_height)) > 0.;
+                    (context.input.mouse_position.y - (pos.y + y + line_height)) > 0.;
 
                 if (cursor_on_current_line && line_end && cursor_after_line_end)
                     || (cursor_on_current_line && clickable_character && cursor_on_character)
@@ -440,7 +443,7 @@ impl<'a> Editbox<'a> {
 
             x += advance;
             if character == '\n' && self.multiline {
-                y += self.line_height;
+                y += line_height;
                 x = LEFT_MARGIN;
             }
         }

@@ -1,8 +1,9 @@
 //! Rasterize DrawCommand into GPU drawable mesh
 
 use crate::{
+    color::Color,
     math::{Rect, RectOffset, Vec2},
-    ui::{render::DrawCommand, types::Color},
+    ui::render::DrawCommand,
 };
 
 const MAX_VERTICES: usize = 8000;

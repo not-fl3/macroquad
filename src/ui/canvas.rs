@@ -1,8 +1,11 @@
 //! In-window drawing canvas for custom primitives like lines, rect and textures
 
+use super::Layout;
 use super::WindowContext;
-use super::{Color, Layout};
-use crate::math::{Rect, Vec2};
+use crate::{
+    color::Color,
+    math::{Rect, Vec2},
+};
 
 pub struct DrawCanvas<'a> {
     pub(crate) context: WindowContext<'a>,

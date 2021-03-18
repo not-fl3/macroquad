@@ -5,9 +5,10 @@
 #![allow(warnings)]
 
 use crate::{
+    color::Color,
     math::{vec2, Rect, RectOffset, Vec2},
     text::{atlas::Atlas, FontInternal, TextDimensions},
-    ui::{style::Style, Color},
+    ui::style::Style,
 };
 
 use std::{cell::RefCell, rc::Rc};

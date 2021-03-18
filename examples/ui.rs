@@ -178,55 +178,46 @@ async fn main() {
                 });
             });
 
-        // TODO: a lot of old megaui widgets are still missing in the new UI
-        // or needs some fixes
-        // draw_window(
-        //     hash!(),
-        //     glam::vec2(470., 50.),
-        //     glam::vec2(300., 300.),
-        //     WindowParams {
-        //         label: "Megaui Showcase Window".to_string(),
-        //         ..Default::default()
-        //     },
-        //     |ui| {
-        //         ui.tree_node(hash!(), "input", |ui| {
-        //             ui.label(None, "Some random text");
-        //             if ui.button(None, "click me") {
-        //                 println!("hi");
-        //             }
+        widgets::Window::new(hash!(), vec2(470., 50.), vec2(300., 300.))
+            .label("Megaui Showcase Window")
+            .ui(&mut *root_ui(), |ui| {
+                ui.tree_node(hash!(), "input", |ui| {
+                    ui.label(None, "Some random text");
+                    if ui.button(None, "click me") {
+                        println!("hi");
+                    }
 
-        //             ui.separator();
+                    ui.separator();
 
-        //             ui.label(None, "Some other random text");
-        //             if ui.button(None, "other button") {
-        //                 println!("hi2");
-        //             }
+                    ui.label(None, "Some other random text");
+                    if ui.button(None, "other button") {
+                        println!("hi2");
+                    }
 
-        //             ui.separator();
+                    ui.separator();
 
-        //             ui.input_text(hash!(), "<- input text 1", &mut data0);
-        //             ui.input_text(hash!(), "<- input text 2", &mut data1);
-        //             ui.label(
-        //                 None,
-        //                 &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
-        //             );
+                    ui.input_text(hash!(), "<- input text 1", &mut data0);
+                    ui.input_text(hash!(), "<- input text 2", &mut data1);
+                    ui.label(
+                        None,
+                        &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
+                    );
 
-        //             ui.separator();
-        //         });
-        //         ui.tree_node(hash!(), "sliders", |ui| {
-        //             ui.slider(hash!(), "[-10 .. 10]", -10f32..10f32, &mut number0);
-        //             ui.slider(hash!(), "[0 .. 100]", 0f32..100f32, &mut number1);
-        //         });
-        //         ui.tree_node(hash!(), "editbox 1", |ui| {
-        //             ui.label(None, "This is editbox!");
-        //             ui.editbox(hash!(), megaui::Vec2::new(285., 165.), &mut text0);
-        //         });
-        //         ui.tree_node(hash!(), "editbox 2", |ui| {
-        //             ui.label(None, "This is editbox!");
-        //             ui.editbox(hash!(), megaui::Vec2::new(285., 165.), &mut text1);
-        //         });
-        //     },
-        // );
+                    ui.separator();
+                });
+                ui.tree_node(hash!(), "sliders", |ui| {
+                    ui.slider(hash!(), "[-10 .. 10]", -10f32..10f32, &mut number0);
+                    ui.slider(hash!(), "[0 .. 100]", 0f32..100f32, &mut number1);
+                });
+                ui.tree_node(hash!(), "editbox 1", |ui| {
+                    ui.label(None, "This is editbox!");
+                    ui.editbox(hash!(), vec2(285., 165.), &mut text0);
+                });
+                ui.tree_node(hash!(), "editbox 2", |ui| {
+                    ui.label(None, "This is editbox!");
+                    ui.editbox(hash!(), vec2(285., 165.), &mut text1);
+                });
+            });
 
         match data.fit_command.take() {
             Some(FittingCommand::Unfit { target_slot }) => data.set_item(target_slot, None),

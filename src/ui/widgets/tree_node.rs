@@ -1,6 +1,9 @@
 #![allow(warnings)]
 
-use crate::ui::{Id, Ui};
+use crate::{
+    math::{vec2, Rect},
+    ui::{ElementState, Id, Layout, Ui},
+};
 
 use std::borrow::Cow;
 
@@ -36,51 +39,53 @@ impl<'a> TreeNode<'a> {
         }
     }
 
-    pub fn begin(self, _ui: &mut Ui) -> Option<TreeNodeToken> {
-        // let context = ui.get_active_window_context();
+    pub fn begin(self, ui: &mut Ui) -> Option<TreeNodeToken> {
+        let context = ui.get_active_window_context();
 
-        // let size = Vec2::new(300., 14.);
+        let size = vec2(300., 14.);
 
-        // let color = context.style.text(context.focused);
-        // let pos = context.window.cursor.fit(size, Layout::Vertical);
+        let pos = context.window.cursor.fit(size, Layout::Vertical);
 
-        // let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
-        // let hovered = rect.contains(context.input.mouse_position);
+        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let hovered = rect.contains(context.input.mouse_position);
 
-        // let clicked = context.focused && hovered && context.input.click_down();
+        let clicked = context.focused && hovered && context.input.click_down();
 
-        // let opened = context
-        //     .storage_u32
-        //     .entry(self.id)
-        //     .or_insert(if self.init_unfolded { 1 } else { 0 });
+        let opened = context
+            .storage_u32
+            .entry(self.id)
+            .or_insert(if self.init_unfolded { 1 } else { 0 });
 
-        // if clicked {
-        //     *opened ^= 1;
-        // }
+        if clicked {
+            *opened ^= 1;
+        }
 
-        // context.window.painter.draw_label(
-        //     if *opened == 0 { "+" } else { "-" },
-        //     pos,
-        //     color,
-        //     unimplemented!(),
-        //     unimplemented!(),
-        // );
-        // context.window.painter.draw_label(
-        //     &*self.label,
-        //     pos + Vec2::new(10., 0.),
-        //     color,
-        //     unimplemented!(),
-        //     unimplemented!(),
-        // );
+        context.window.painter.draw_element_label(
+            &context.style.label_style,
+            pos,
+            if *opened == 0 { "+" } else { "-" },
+            ElementState {
+                focused: context.focused,
+                ..Default::default()
+            },
+        );
+        context.window.painter.draw_element_label(
+            &context.style.label_style,
+            pos + vec2(10., 0.),
+            &*self.label,
+            ElementState {
+                focused: context.focused,
+                ..Default::default()
+            },
+        );
 
-        // if *opened == 1 {
-        //     context.window.cursor.ident += 5.;
+        if *opened == 1 {
+            context.window.cursor.ident += 5.;
 
-        //     Some(TreeNodeToken { clicked })
-        // } else {
-        //     None
-        // }
-        unimplemented!()
+            Some(TreeNodeToken { clicked })
+        } else {
+            None
+        }
     }
 }
 

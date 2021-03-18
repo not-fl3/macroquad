@@ -51,6 +51,17 @@ impl FontInternal {
         }
     }
 
+    pub(crate) fn ascent(&self, font_size: f32) -> f32 {
+        self.font.horizontal_line_metrics(font_size).unwrap().ascent
+    }
+
+    pub(crate) fn descent(&self, font_size: f32) -> f32 {
+        self.font
+            .horizontal_line_metrics(font_size)
+            .unwrap()
+            .descent
+    }
+
     pub(crate) fn cache_glyph(&mut self, character: char, size: u16) {
         if self.characters.contains_key(&(character, size)) {
             return;

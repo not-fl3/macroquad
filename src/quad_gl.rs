@@ -90,6 +90,18 @@ impl Color {
         Color { r, g, b, a }
     }
 
+    /// Build a color from 4 0..255 components
+    /// Unfortunately it may not be const fn due to https://github.com/rust-lang/rust/issues/57241
+    /// When const version is needed "color_u8" macro may be a workaround
+    pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
+        Color::new(
+            r as f32 / 255.,
+            g as f32 / 255.,
+            b as f32 / 255.,
+            a as f32 / 255.,
+        )
+    }
+
     pub fn to_vec(&self) -> glam::Vec4 {
         glam::Vec4::new(self.r, self.g, self.b, self.a)
     }
@@ -541,7 +553,6 @@ impl PipelinesStorage {
                 VertexAttribute::new("position", VertexFormat::Float3),
                 VertexAttribute::new("texcoord", VertexFormat::Float2),
                 VertexAttribute::new("color0", VertexFormat::Byte4),
-
             ],
             shader,
             params,

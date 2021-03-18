@@ -2,6 +2,8 @@
 
 pub use crate::quad_gl::{colors::*, Color};
 
+pub use crate::color_u8;
+
 #[rustfmt::skip]
 pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> Color {
     let r;
