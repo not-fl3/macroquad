@@ -106,7 +106,7 @@ struct Context {
     mouse_position: Vec2,
     mouse_wheel: Vec2,
 
-    input_events: Vec<MiniquadInputEvent>,
+    input_events: Vec<Vec<MiniquadInputEvent>>,
 
     draw_context: DrawContext,
     ui_context: UiContext,
@@ -152,6 +152,29 @@ enum MiniquadInputEvent {
         keycode: KeyCode,
         modifiers: KeyMods,
     },
+}
+
+impl MiniquadInputEvent {
+    fn repeat<T: miniquad::EventHandler>(&self, ctx: &mut QuadContext, t: &mut T) {
+        use crate::MiniquadInputEvent::*;
+        match self {
+            MouseMotion { x, y } => t.mouse_motion_event(ctx, *x, *y),
+            MouseWheel { x, y } => t.mouse_wheel_event(ctx, *x, *y),
+            MouseButtonDown { x, y, btn } => t.mouse_button_down_event(ctx, *btn, *x, *y),
+            MouseButtonUp { x, y, btn } => t.mouse_button_up_event(ctx, *btn, *x, *y),
+            Char {
+                character,
+                modifiers,
+                repeat,
+            } => t.char_event(ctx, *character, *modifiers, *repeat),
+            KeyDown {
+                keycode,
+                modifiers,
+                repeat,
+            } => t.key_down_event(ctx, *keycode, *modifiers, *repeat),
+            KeyUp { keycode, modifiers } => t.key_up_event(ctx, *keycode, *modifiers),
+        }
+    }
 }
 
 impl Context {
@@ -262,7 +285,8 @@ impl EventHandlerFree for Stage {
 
         context
             .input_events
-            .push(MiniquadInputEvent::MouseMotion { x, y });
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
     }
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();
@@ -272,7 +296,8 @@ impl EventHandlerFree for Stage {
 
         context
             .input_events
-            .push(MiniquadInputEvent::MouseWheel { x, y });
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::MouseWheel { x, y }));
     }
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         let context = get_context();
@@ -283,7 +308,8 @@ impl EventHandlerFree for Stage {
 
         context
             .input_events
-            .push(MiniquadInputEvent::MouseButtonDown { x, y, btn });
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
@@ -295,7 +321,8 @@ impl EventHandlerFree for Stage {
 
         context
             .input_events
-            .push(MiniquadInputEvent::MouseButtonUp { x, y, btn });
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
     }
 
     fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
@@ -330,10 +357,12 @@ impl EventHandlerFree for Stage {
 
         context.chars_pressed_queue.push(character);
 
-        context.input_events.push(MiniquadInputEvent::Char {
-            character,
-            modifiers,
-            repeat,
+        context.input_events.iter_mut().for_each(|arr| {
+            arr.push(MiniquadInputEvent::Char {
+                character,
+                modifiers,
+                repeat,
+            })
         });
     }
 
@@ -344,10 +373,12 @@ impl EventHandlerFree for Stage {
             context.keys_pressed.insert(keycode);
         }
 
-        context.input_events.push(MiniquadInputEvent::KeyDown {
-            keycode,
-            modifiers,
-            repeat,
+        context.input_events.iter_mut().for_each(|arr| {
+            arr.push(MiniquadInputEvent::KeyDown {
+                keycode,
+                modifiers,
+                repeat,
+            })
         });
     }
 
@@ -357,7 +388,8 @@ impl EventHandlerFree for Stage {
 
         context
             .input_events
-            .push(MiniquadInputEvent::KeyUp { keycode, modifiers });
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
     }
 
     fn update(&mut self) {

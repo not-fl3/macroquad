@@ -139,29 +139,29 @@ fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
         - Vec2::new(1.0, 1.0)
 }
 
-/// Repeats all events that came in this frame. This function should be used by external tools that uses miniquad system, like different UI librarires.
-pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T) {
-    let context = get_context();
-    let mut ctx = &mut context.quad_context;
+#[doc(hidden)]
+pub mod utils {
+    use crate::get_context;
 
-    for event in &context.input_events {
-        use crate::MiniquadInputEvent::*;
-        match event {
-            MouseMotion { x, y } => t.mouse_motion_event(&mut ctx, *x, *y),
-            MouseWheel { x, y } => t.mouse_wheel_event(&mut ctx, *x, *y),
-            MouseButtonDown { x, y, btn } => t.mouse_button_down_event(&mut ctx, *btn, *x, *y),
-            MouseButtonUp { x, y, btn } => t.mouse_button_up_event(&mut ctx, *btn, *x, *y),
-            Char {
-                character,
-                modifiers,
-                repeat,
-            } => t.char_event(&mut ctx, *character, *modifiers, *repeat),
-            KeyDown {
-                keycode,
-                modifiers,
-                repeat,
-            } => t.key_down_event(&mut ctx, *keycode, *modifiers, *repeat),
-            KeyUp { keycode, modifiers } => t.key_up_event(&mut ctx, *keycode, *modifiers),
+    /// Functions in this module should be used by external tools that uses miniquad system, like different UI librarires. User shouldn't use this function.
+
+    /// Register input subscriber. Returns subscriber identifier that must be used in `repeat_all_miniquad_input`.
+    pub fn register_input_subscriber() -> usize {
+        let context = get_context();
+
+        context.input_events.push(vec![]);
+
+        context.input_events.len() - 1
+    }
+
+    /// Repeats all events that came since last call of this function with current value of `subscriber`. This function should be called at each frame.
+    pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T, subscriber: usize) {
+        let context = get_context();
+        let mut ctx = &mut context.quad_context;
+
+        for event in &context.input_events[subscriber] {
+            event.repeat(&mut ctx, t);
         }
+        context.input_events[subscriber].clear();
     }
 }
