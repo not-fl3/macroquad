@@ -152,6 +152,12 @@ enum MiniquadInputEvent {
         keycode: KeyCode,
         modifiers: KeyMods,
     },
+    Touch {
+        phase: TouchPhase,
+        id: u64,
+        x: f32,
+        y: f32,
+    },
 }
 
 impl MiniquadInputEvent {
@@ -173,6 +179,7 @@ impl MiniquadInputEvent {
                 repeat,
             } => t.key_down_event(ctx, *keycode, *modifiers, *repeat),
             KeyUp { keycode, modifiers } => t.key_up_event(ctx, *keycode, *modifiers),
+            Touch { phase, id, x, y } => t.touch_event(ctx, *phase, *id, *x, *y),
         }
     }
 }
@@ -350,6 +357,11 @@ impl EventHandlerFree for Stage {
                 self.mouse_motion_event(x, y);
             }
         };
+
+        context
+            .input_events
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::Touch { phase, id, x, y }));
     }
 
     fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
