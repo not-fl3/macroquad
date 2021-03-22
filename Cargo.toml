@@ -19,7 +19,7 @@ log-impl = ["miniquad/log-impl"]
 all-features = true
 
 [dependencies]
-miniquad = "0.3.0-alpha.27"
+miniquad = "0.3.0-alpha.28"
 quad-rand = "0.2.1"
 glam = {version = "0.10", features = ["scalar-math"] }
 image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
