@@ -652,10 +652,6 @@ impl PipelinesStorage {
         }
     }
 
-    fn get_quad_pipeline(&self, pip: GlPipeline) -> &PipelineExt {
-        &self.pipelines[pip.0].as_ref().unwrap()
-    }
-
     fn get_quad_pipeline_mut(&mut self, pip: GlPipeline) -> &mut PipelineExt {
         self.pipelines[pip.0].as_mut().unwrap()
     }
