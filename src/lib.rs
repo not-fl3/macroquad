@@ -294,7 +294,14 @@ impl EventHandlerFree for Stage {
 
         if context.cursor_grabbed {
             context.mouse_position += Vec2::new(x, y);
+    
+            let event = MiniquadInputEvent::MouseMotion { x: context.mouse_position.x, y: context.mouse_position.y };
+            context
+                .input_events
+                .iter_mut()
+                .for_each(|arr| arr.push(event.clone()));
         }
+
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
@@ -427,6 +434,10 @@ impl EventHandlerFree for Stage {
     }
 
     fn update(&mut self) {
+        // Unless called every frame, cursor will not remain grabbed
+        let context = get_context();
+        context.quad_context.set_cursor_grab(context.cursor_grabbed);
+
         #[cfg(not(target_arch = "wasm32"))]
         {
             // TODO: consider making it a part of miniquad?
