@@ -106,6 +106,8 @@ struct Context {
     mouse_position: Vec2,
     mouse_wheel: Vec2,
 
+    cursor_grabbed: bool,
+
     input_events: Vec<Vec<MiniquadInputEvent>>,
 
     draw_context: DrawContext,
@@ -206,6 +208,8 @@ impl Context {
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
 
+            cursor_grabbed: false,
+
             input_events: Vec::new(),
 
             draw_context: DrawContext::new(&mut ctx),
@@ -285,16 +289,27 @@ impl EventHandlerFree for Stage {
         get_context().screen_height = height;
     }
 
+    fn raw_mouse_motion(&mut self, x: f32, y: f32) {
+        let context = get_context();
+
+        if context.cursor_grabbed {
+            context.mouse_position += Vec2::new(x, y);
+        }
+    }
+
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
         let context = get_context();
 
-        context.mouse_position = Vec2::new(x, y);
-
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
+        if !context.cursor_grabbed {
+            context.mouse_position = Vec2::new(x, y);
+            
+            context
+                .input_events
+                .iter_mut()
+                .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
+        }
     }
+
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();
 
@@ -306,30 +321,37 @@ impl EventHandlerFree for Stage {
             .iter_mut()
             .for_each(|arr| arr.push(MiniquadInputEvent::MouseWheel { x, y }));
     }
+
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         let context = get_context();
 
-        context.mouse_position = Vec2::new(x, y);
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
 
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
+        if !context.cursor_grabbed {
+            context.mouse_position = Vec2::new(x, y);
+
+            context
+                .input_events
+                .iter_mut()
+                .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
+        }
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         let context = get_context();
 
-        context.mouse_position = Vec2::new(x, y);
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
 
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
+        if !context.cursor_grabbed {
+            context.mouse_position = Vec2::new(x, y);
+    
+            context
+                .input_events
+                .iter_mut()
+                .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
+        }
     }
 
     fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
