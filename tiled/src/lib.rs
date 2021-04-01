@@ -10,22 +10,23 @@ mod tiled;
 pub use tiled::layer::Property;
 
 #[derive(Debug)]
-pub enum Object {
-    Rect {
-        world_x: f32,
-        world_y: f32,
-        world_w: f32,
-        world_h: f32,
+pub struct Object {
+    /// If not null - the object is (probably) a tile
+    pub gid: Option<u32>,
 
-        tile_x: u32,
-        tile_y: u32,
-        tile_w: u32,
-        tile_h: u32,
+    pub world_x: f32,
+    pub world_y: f32,
+    pub world_w: f32,
+    pub world_h: f32,
 
-        name: String,
+    pub tile_x: u32,
+    pub tile_y: u32,
+    pub tile_w: u32,
+    pub tile_h: u32,
 
-        properties: HashMap<String, String>,
-    },
+    pub name: String,
+
+    pub properties: HashMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -296,7 +297,8 @@ pub fn load_map(
 
         let mut objects = vec![];
         for object in &layer.objects {
-            objects.push(Object::Rect {
+            objects.push(Object {
+                gid: object.gid,
                 world_x: object.x,
                 world_y: object.y,
                 world_w: object.width,
