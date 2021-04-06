@@ -57,7 +57,7 @@ async fn main() {
 
         match mouse_wheel() {
             (_x, y) if y != 0.0 => {
-                // Normalise mouse wheel values is browser (chromium: 53, firefox: 3)
+                // Normalize mouse wheel values is browser (chromium: 53, firefox: 3)
                 #[cfg(target_arch = "wasm32")]
                 let y = if y < 0.0 {
                     -1.0

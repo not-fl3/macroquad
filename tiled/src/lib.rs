@@ -83,7 +83,7 @@ impl Map {
     pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
         if self.tilesets.contains_key(tileset) == false {
             panic!(
-                "No such tilest: {}, tilesets available: {:?}",
+                "No such tileset: {}, tilesets available: {:?}",
                 tileset,
                 self.tilesets.keys()
             )

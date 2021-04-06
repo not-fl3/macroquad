@@ -72,7 +72,7 @@ pub(crate) struct Window {
     // and is going to be set to false at the end of each frame
     pub active: bool,
     // was the window "active" during the last frame
-    // the way to find out wich windows should be rendered after end of the frame and during next frame, before begin_window of the next frame will be called on each window
+    // the way to find out which windows should be rendered after end of the frame and during next frame, before begin_window of the next frame will be called on each window
     pub was_active: bool,
     pub title_height: f32,
     pub position: Vec2,
@@ -442,7 +442,7 @@ impl InputHandler for Ui {
         let position = Vec2::new(position.0, position.1);
 
         // assuming that the click was to the root window
-        // if it is not - hovered_window will be setted a little later in that function
+        // if it is not - hovered_window will be set a little later in that function
         self.hovered_window = 0;
         for window in self.windows_focus_order.iter() {
             let window = &self.windows[window];
@@ -615,7 +615,7 @@ impl Ui {
         let parent_force_focus = match parent {
             // childs of root window are always force_focused
             Some(0) => true,
-            // childs of force_focused windows are alwayws force_focused as well
+            // childs of force_focused windows are always force_focused as well
             Some(parent) => self
                 .windows
                 .get(&parent)
@@ -654,8 +654,8 @@ impl Ui {
         window.active = true;
         window.painter.clipping_zone = parent_clip_rect;
 
-        // top level windows are moveble, so we update their position only on the first frame
-        // while the child windows are not moveble and should update their position each frame
+        // top level windows are movable, so we update their position only on the first frame
+        // while the child windows are not movable and should update their position each frame
         if parent.is_some() {
             window.set_position(position);
         }
@@ -1121,7 +1121,7 @@ pub(crate) mod ui_context {
         }
 
         pub(crate) fn draw(&mut self) {
-            // TODO: this belongs to new and waits for cleaing up context initialisation mess
+            // TODO: this belongs to new and waits for cleaning up context initialization mess
             let material = self.material.get_or_insert_with(|| {
                 let fragment_shader = FRAGMENT_SHADER.to_string();
                 let vertex_shader = VERTEX_SHADER.to_string();

@@ -1,5 +1,5 @@
 //! The way to emulate multitasking with macroquad's `.await`.
-//! Usefull for organizing state machines, animation cutscenes and other stuff that require
+//! Useful for organizing state machines, animation cutscenes and other stuff that require
 //! some evaluation over time.
 //!
 

@@ -5,7 +5,7 @@
 [![Crates.io version](https://img.shields.io/crates/v/macroquad.svg)](https://crates.io/crates/macroquad)
 [![Discord chat](https://img.shields.io/discord/710177966440579103.svg?label=discord%20chat)](https://discord.gg/WfEp6ut)
 
-`macroquad` is a simple and easy to use game library for Rust programming language, heavily inspired by [raylib](https://github.com/raysan5/raylib). 
+`macroquad` is a simple and easy to use game library for Rust programming language, heavily inspired by [raylib](https://github.com/raysan5/raylib).
 
 `macroquad` attempts to avoid any Rust-specific programming concepts like lifetimes/borrowing, making it very friendly for Rust beginners. See the [docs](https://docs.rs/macroquad/0.3.0-alpha/macroquad/index.html).
 
@@ -18,7 +18,7 @@
 
 ## Features
 
-* Same code for all supported platforms, no platform dependent defines required 
+* Same code for all supported platforms, no platform dependent defines required
 * Efficient 2D rendering with automatic geometry batching
 * Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old laptop)
 * Immediate mode UI library included
@@ -37,20 +37,20 @@ opt-level = 3
 ## async/await
 
 While macroquad attempts to use as few Rust-specific concepts as possible, `.await` in all examples looks a bit scary.
-Rust's `async/await` is used to solve just one problem - cross platform main loop organisation. 
+Rust's `async/await` is used to solve just one problem - cross platform main loop organization.
 
 <details>
 <summary>details</summary>
-  
 
-The problem: on WASM and android its not really easy to organize main loop like this: 
+
+The problem: on WASM and android its not really easy to organize main loop like this:
 ```
 fn main() {
-    // do some initilization
-    
+    // do some initialization
+
     // start main loop
     loop {
-        // handle input 
+        // handle input
 
         // update logic
 

@@ -157,7 +157,7 @@ impl Default for Font {
 }
 
 impl Font {
-    /// List of ascii characters, may be helpfull in combination with "populate_font_cache"
+    /// List of ascii characters, may be helpful in combination with "populate_font_cache"
     pub fn ascii_character_list() -> Vec<char> {
         (0..255).filter_map(::std::char::from_u32).collect()
     }
@@ -200,7 +200,7 @@ impl Default for TextParams {
     }
 }
 
-/// Load font from file with "path"   
+/// Load font from file with "path"
 pub async fn load_ttf_font(path: &str) -> Font {
     let bytes = crate::file::load_file(path).await.unwrap();
 
