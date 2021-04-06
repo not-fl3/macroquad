@@ -283,7 +283,7 @@ mod snapshoter_shader {
 
     pub const FRAGMENT: &str = r#"#version 100
     varying lowp vec2 uv;
-    
+
     uniform sampler2D Texture;
 
     void main() {
@@ -720,7 +720,7 @@ impl QuadGl {
         for texture in &textures {
             if texture == "Texture" {
                 panic!(
-                    "you can't use name `Texture` for your texture. This name is reserved for the texture that will be drawed with that material"
+                    "you can't use name `Texture` for your texture. This name is reserved for the texture that will be drawn with that material"
                 );
             }
             if texture == "_ScreenTexture" {
@@ -1114,7 +1114,7 @@ mod shader {
     pub const FRAGMENT: &str = r#"#version 100
     varying lowp vec4 color;
     varying lowp vec2 uv;
-    
+
     uniform sampler2D Texture;
 
     void main() {

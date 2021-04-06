@@ -1,4 +1,4 @@
-//! Loading and rendering textures. Also render textures, per-pixel image manipluations.
+//! Loading and rendering textures. Also render textures, per-pixel image manipulations.
 
 use crate::{file::load_file, get_context, math::Rect};
 
@@ -17,7 +17,7 @@ pub struct Image {
 
 impl std::fmt::Debug for Image {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Iamge")
+        f.debug_struct("Image")
             .field("width", &self.width)
             .field("height", &self.height)
             .field("bytes.len()", &self.bytes.len())

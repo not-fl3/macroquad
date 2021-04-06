@@ -161,7 +161,7 @@ pub struct EmitterConfig {
     pub local_coords: bool,
     /// Particles will be emitted inside that region.
     pub emission_shape: EmissionShape,
-    /// If true only one emission cycle occures. May be re-emitted by .emit() call.
+    /// If true only one emission cycle occurs. May be re-emitted by .emit() call.
     pub one_shot: bool,
     /// Lifespan of individual particle.
     pub lifetime: f32,
@@ -177,7 +177,7 @@ pub struct EmitterConfig {
     /// Shape of each individual particle mesh.
     pub shape: ParticleShape,
     /// Particles are emitting when "emitting" is true.
-    /// If its a "oneshot" emitter, emitting will switch to false after active emission cycle.
+    /// If its a "one-shot" emitter, emitting will switch to false after active emission cycle.
     pub emitting: bool,
     /// Unit vector specifying emission direction.
     #[cfg_attr(feature = "nanoserde", nserde(proxy = "Vec2Serializable"))]
@@ -225,7 +225,7 @@ pub struct EmitterConfig {
     /// If not none all the particles will be rendered to a rectangle and than this rectangle
     /// will be rendered to the screen.
     /// This will allows some effects affecting particles as a whole.
-    /// NOTE: this is not really implemented and now Some will just make hardcoded downcaling
+    /// NOTE: this is not really implemented and now Some will just make hardcoded downscaling
     pub post_processing: Option<PostProcessing>,
 }
 
@@ -811,7 +811,7 @@ impl Emitter {
         self.bindings.vertex_buffers[1].update(ctx, &self.gpu_particles[..]);
     }
 
-    /// Immidiately emit N particles, ignoring "emitting" and "amount" params of EmitterConfig
+    /// Immediately emit N particles, ignoring "emitting" and "amount" params of EmitterConfig
     pub fn emit(&mut self, pos: Vec2, n: usize) {
         for _ in 0..n {
             self.emit_particle(pos);
@@ -898,7 +898,7 @@ impl Emitter {
     }
 }
 
-/// Mutlitple Emitters drawn simultaniously.
+/// Multiple emitters drawn simultaneously.
 /// Will reuse as much GPU resources as possible, so should be more efficient than
 /// just Vec<Emitter>
 pub struct EmittersCache {

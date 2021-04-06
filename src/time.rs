@@ -25,7 +25,7 @@ pub fn get_frame_time() -> f32 {
 ///
 /// Note that as real world time progresses during computation,
 /// the value returned will change. Therefore if you want
-/// your gamelogic update to happen at the same *in-game* time
+/// your game logic update to happen at the same *in-game* time
 /// for all game objects, you should call this function once
 /// save the value and reuse it throughout your code.
 pub fn get_time() -> f64 {

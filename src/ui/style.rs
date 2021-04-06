@@ -196,12 +196,12 @@ pub struct Style {
     pub(crate) color_selected: Color,
     pub(crate) color_selected_hovered: Color,
     /// Margins of background image
-    /// Applies to background/backgorund_hovered/background_clicked etc
-    /// Part of the texture within the margin would not be scaled, wich is usefull
+    /// Applies to background/background_hovered/background_clicked etc
+    /// Part of the texture within the margin would not be scaled, which is useful
     /// for things like element borders
     pub(crate) background_margin: Option<RectOffset>,
     /// Margin that do not affect textures
-    /// Usefull to leave some empty space between element border and element content
+    /// Useful to leave some empty space between element border and element content
     /// Maybe be negative to compensate background_margin when content should overlap the
     /// borders
     pub(crate) margin: Option<RectOffset>,

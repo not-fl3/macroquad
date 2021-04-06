@@ -156,7 +156,7 @@ fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
 pub mod utils {
     use crate::get_context;
 
-    /// Functions in this module should be used by external tools that uses miniquad system, like different UI librarires. User shouldn't use this function.
+    /// Functions in this module should be used by external tools that uses miniquad system, like different UI libraries. User shouldn't use this function.
 
     /// Register input subscriber. Returns subscriber identifier that must be used in `repeat_all_miniquad_input`.
     pub fn register_input_subscriber() -> usize {

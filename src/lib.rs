@@ -1,21 +1,21 @@
 //!
 //! `macroquad` is a simple and easy to use game library for Rust programming language.
-//!  
+//!
 //! `macroquad` attempts to avoid any rust-specific programming concepts like lifetimes/borrowing, making it very friendly for rust beginners.
-//!  
+//!
 //! ## Supported platforms
-//!  
+//!
 //! * PC: Windows/Linux/MacOS
 //! * HTML5
 //! * Android
 //! * IOS
-//!  
+//!
 //! ## Features
-//!  
+//!
 //! * Same code for all supported platforms, no platform dependent defines required
 //! * Efficient 2D rendering with automatic geometry batching
 //! * Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old laptop)
-//! * Immidiate mode UI library included
+//! * Immediate mode UI library included
 //! * Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples)
 //! # Example
 //! ```no_run
@@ -25,12 +25,12 @@
 //! async fn main() {
 //!     loop {
 //!         clear_background(RED);
-//!  
+//!
 //!         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
 //!         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
 //!         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
 //!         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
-//!  
+//!
 //!         next_frame().await
 //!     }
 //! }
@@ -294,7 +294,7 @@ impl EventHandlerFree for Stage {
 
         if context.cursor_grabbed {
             context.mouse_position += Vec2::new(x, y);
-    
+
             let event = MiniquadInputEvent::MouseMotion { x: context.mouse_position.x, y: context.mouse_position.y };
             context
                 .input_events
@@ -309,7 +309,7 @@ impl EventHandlerFree for Stage {
 
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
-            
+
             context
                 .input_events
                 .iter_mut()
@@ -353,7 +353,7 @@ impl EventHandlerFree for Stage {
 
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
-    
+
             context
                 .input_events
                 .iter_mut()

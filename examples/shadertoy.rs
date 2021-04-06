@@ -73,7 +73,7 @@ async fn main() {
         Sphere,
         Cube,
         Plane,
-    };
+    }
     let mut mesh = Mesh::Sphere;
 
     let mut camera = Camera3D {
