@@ -442,28 +442,28 @@ impl Painter {
 }
 
 #[derive(Clone, Debug)]
-pub enum Aligment {
+pub enum Alignment {
     Left,
     Center,
 }
 
-impl Default for Aligment {
-    fn default() -> Aligment {
-        Aligment::Left
+impl Default for Alignment {
+    fn default() -> Alignment {
+        Alignment::Left
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct LabelParams {
     pub color: Color,
-    pub aligment: Aligment,
+    pub alignment: Alignment,
 }
 
 impl Default for LabelParams {
     fn default() -> LabelParams {
         LabelParams {
             color: Color::new(0., 0., 0., 1.),
-            aligment: Aligment::default(),
+            alignment: Alignment::default(),
         }
     }
 }
@@ -484,8 +484,8 @@ impl From<Color> for LabelParams {
         }
     }
 }
-impl From<(Color, Aligment)> for LabelParams {
-    fn from((color, aligment): (Color, Aligment)) -> LabelParams {
-        LabelParams { color, aligment }
+impl From<(Color, Alignment)> for LabelParams {
+    fn from((color, alignment): (Color, Alignment)) -> LabelParams {
+        LabelParams { color, alignment }
     }
 }

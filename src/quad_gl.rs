@@ -259,7 +259,7 @@ impl DrawCall {
     }
 }
 
-struct MagicSnapshoter {
+struct MagicSnapshotter {
     pipeline: Pipeline,
     bindings: Bindings,
     pass: Option<RenderPass>,
@@ -267,7 +267,7 @@ struct MagicSnapshoter {
     screen_texture: Option<Texture2D>,
 }
 
-mod snapshoter_shader {
+mod snapshotter_shader {
     use miniquad::{ShaderMeta, UniformBlockLayout};
 
     pub const VERTEX: &str = r#"#version 100
@@ -302,13 +302,13 @@ mod snapshoter_shader {
     pub struct Uniforms {}
 }
 
-impl MagicSnapshoter {
-    fn new(ctx: &mut Context) -> MagicSnapshoter {
+impl MagicSnapshotter {
+    fn new(ctx: &mut Context) -> MagicSnapshotter {
         let shader = Shader::new(
             ctx,
-            snapshoter_shader::VERTEX,
-            snapshoter_shader::FRAGMENT,
-            snapshoter_shader::meta(),
+            snapshotter_shader::VERTEX,
+            snapshotter_shader::FRAGMENT,
+            snapshotter_shader::meta(),
         )
         .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
@@ -341,7 +341,7 @@ impl MagicSnapshoter {
             images: vec![Texture::empty()],
         };
 
-        MagicSnapshoter {
+        MagicSnapshotter {
             pipeline,
             bindings,
             pass: None,
@@ -418,7 +418,7 @@ struct GlState {
     pipeline: Option<GlPipeline>,
     depth_test_enable: bool,
 
-    snapshoter: MagicSnapshoter,
+    snapshotter: MagicSnapshotter,
 
     render_pass: Option<RenderPass>,
 }
@@ -687,7 +687,7 @@ impl QuadGl {
                 draw_mode: DrawMode::Triangles,
                 pipeline: None,
                 depth_test_enable: false,
-                snapshoter: MagicSnapshoter::new(ctx),
+                snapshotter: MagicSnapshotter::new(ctx),
                 render_pass: None,
             },
             draw_calls: Vec::with_capacity(200),
@@ -800,7 +800,7 @@ impl QuadGl {
             };
 
             if pipeline.wants_screen_texture {
-                self.state.snapshoter.snapshot(ctx, dc.render_pass);
+                self.state.snapshotter.snapshot(ctx, dc.render_pass);
             }
 
             if let Some(render_pass) = dc.render_pass {
@@ -813,7 +813,7 @@ impl QuadGl {
             bindings.index_buffer.update(ctx, dc.indices());
 
             bindings.images[0] = dc.texture;
-            bindings.images[1] = self.state.snapshoter.screen_texture.map_or_else(
+            bindings.images[1] = self.state.snapshotter.screen_texture.map_or_else(
                 || Texture::empty(),
                 |texture| texture.raw_miniquad_texture_handle(),
             );
