@@ -216,7 +216,7 @@ impl EditboxState {
         cursor_tmp - self.cursor
     }
 
-    pub fn word_delimeter(character: char) -> bool {
+    pub fn word_delimiter(character: char) -> bool {
         character == ' '
             || character == '('
             || character == ')'
@@ -230,7 +230,7 @@ impl EditboxState {
 
         while cursor_tmp > 0 {
             let current_char = text.chars().nth(cursor_tmp as usize - 1).unwrap_or(' ');
-            if Self::word_delimeter(current_char) || current_char == '\n' {
+            if Self::word_delimiter(current_char) || current_char == '\n' {
                 break;
             }
             offset += 1;
@@ -246,10 +246,10 @@ impl EditboxState {
 
         while cursor_tmp < text.len() as u32 {
             let current_char = text.chars().nth(cursor_tmp as usize).unwrap_or(' ');
-            if Self::word_delimeter(current_char) || current_char == '\n' {
+            if Self::word_delimiter(current_char) || current_char == '\n' {
                 space_skipping = true;
             }
-            if space_skipping && Self::word_delimeter(current_char) == false {
+            if space_skipping && Self::word_delimiter(current_char) == false {
                 break;
             }
             cursor_tmp += 1;

@@ -109,7 +109,7 @@ pub mod tweens {
         task::{Context, Poll},
     };
 
-    pub struct LinearTweanFuture<T>
+    pub struct LinearTweenFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
     {
@@ -119,12 +119,12 @@ pub mod tweens {
         start_time: f64,
         time: f32,
     }
-    impl<T> Unpin for LinearTweanFuture<T> where
+    impl<T> Unpin for LinearTweenFuture<T> where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>
     {
     }
 
-    impl<T> Future for LinearTweanFuture<T>
+    impl<T> Future for LinearTweenFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
     {
@@ -159,13 +159,13 @@ pub mod tweens {
         from: T,
         to: T,
         time: f32,
-    ) -> LinearTweanFuture<T>
+    ) -> LinearTweenFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
         T1: Node,
         F: for<'r> FnMut(&'r mut T1) -> &'r mut T,
     {
-        LinearTweanFuture {
+        LinearTweenFuture {
             to,
             from,
             lens: handle.lens(lens),

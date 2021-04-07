@@ -3,14 +3,14 @@
 //! ```
 //! use macroquad::experimental::collections::storage;
 //!
-//! struct WorldBoundries(i32);
+//! struct WorldBoundaries(i32);
 //!
 //! fn draw_player() {
-//!   let boundries: i32 = storage::get::<WorldBoundries>().unwrap().0;
-//!   assert_eq!(boundries, 23);
+//!   let boundaries: i32 = storage::get::<WorldBoundaries>().unwrap().0;
+//!   assert_eq!(boundaries, 23);
 //! }
 //!
-//! storage::store(WorldBoundries(23));
+//! storage::store(WorldBoundaries(23));
 //! draw_player();
 //! ```
 
