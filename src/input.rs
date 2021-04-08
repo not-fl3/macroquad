@@ -110,6 +110,13 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
     context.keys_down.contains(&key_code)
 }
 
+/// Detect if the key has been released this frame
+pub fn is_key_released(key_code: KeyCode) -> bool {
+    let context = get_context();
+
+    context.keys_released.contains(&key_code)
+}
+
 /// Return the last pressed char.
 /// Each "get_char_pressed" call will consume a character from the input queue.
 pub fn get_char_pressed() -> Option<char> {
