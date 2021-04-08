@@ -98,6 +98,7 @@ struct Context {
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
+    keys_released: HashSet<KeyCode>,
     mouse_down: HashSet<MouseButton>,
     mouse_pressed: HashSet<MouseButton>,
     mouse_released: HashSet<MouseButton>,
@@ -200,6 +201,7 @@ impl Context {
 
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
+            keys_released: HashSet::new(),
             chars_pressed_queue: Vec::new(),
             mouse_down: HashSet::new(),
             mouse_pressed: HashSet::new(),
@@ -246,6 +248,7 @@ impl Context {
 
         self.mouse_wheel = Vec2::new(0., 0.);
         self.keys_pressed.clear();
+        self.keys_released.clear();
         self.mouse_pressed.clear();
         self.mouse_released.clear();
 
@@ -426,6 +429,7 @@ impl EventHandlerFree for Stage {
     fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
         let context = get_context();
         context.keys_down.remove(&keycode);
+        context.keys_released.insert(keycode);
 
         context
             .input_events
