@@ -16,6 +16,7 @@ pub struct AnimationFrame {
     pub dest_size: Vec2,
 }
 
+#[derive(Clone)]
 pub struct AnimatedSprite {
     tile_width: f32,
     tile_height: f32,
