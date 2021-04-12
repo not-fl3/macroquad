@@ -2,8 +2,8 @@ use macroquad::prelude::*;
 
 #[macroquad::main("3D")]
 async fn main() {
-    let rust_logo = load_texture("examples/rust.png").await;
-    let ferris = load_texture("examples/ferris.png").await;
+    let rust_logo = load_texture("examples/rust.png").await.unwrap();
+    let ferris = load_texture("examples/ferris.png").await.unwrap();
 
     loop {
         clear_background(RED);
