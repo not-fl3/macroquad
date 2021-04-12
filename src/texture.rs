@@ -1,6 +1,10 @@
 //! Loading and rendering textures. Also render textures, per-pixel image manipulations.
 
-use crate::{file::load_file, get_context, math::Rect};
+use crate::{
+    file::{load_file, FileError},
+    get_context,
+    math::Rect,
+};
 
 use crate::quad_gl::{Color, DrawMode, Vertex};
 use glam::{vec2, Vec2};
@@ -168,22 +172,18 @@ impl Image {
 }
 
 /// Load image from file into CPU memory
-pub async fn load_image(path: &str) -> Image {
-    let bytes = load_file(path)
-        .await
-        .unwrap_or_else(|e| panic!("Error loading texture: {}", e));
+pub async fn load_image(path: &str) -> Result<Image, FileError> {
+    let bytes = load_file(path).await?;
 
-    Image::from_file_with_format(&bytes, None)
+    Ok(Image::from_file_with_format(&bytes, None))
 }
 
 /// Load texture from file into GPU memory
-pub async fn load_texture(path: &str) -> Texture2D {
-    let bytes = load_file(path)
-        .await
-        .unwrap_or_else(|e| panic!("Error loading texture: {}", e));
+pub async fn load_texture(path: &str) -> Result<Texture2D, FileError> {
+    let bytes = load_file(path).await?;
     let context = &mut get_context().quad_context;
 
-    Texture2D::from_file_with_format(context, &bytes[..], None)
+    Ok(Texture2D::from_file_with_format(context, &bytes[..], None))
 }
 
 /// Unload texture from GPU memory
