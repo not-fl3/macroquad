@@ -362,8 +362,13 @@ impl<'a> Editbox<'a> {
         let mut y = 0.;
         let mut clicked = false;
 
-        for n in 0..text.len() + 1 {
-            let character = text.chars().nth(n).unwrap_or(' ');
+        for (n, character) in text.chars().chain(std::iter::once(' ')).enumerate() {
+            let character = if character != '\n' && self.password {
+                '*'
+            } else {
+                character
+            };
+            
             let font_size = context.style.editbox_style.font_size;
             if n == state.cursor as usize && input_focused {
                 // caret
@@ -378,11 +383,31 @@ impl<'a> Editbox<'a> {
                 break;
             }
 
-            let mut advance = 1.5; // 1.5 - hack to make cursor on newlines visible
-            if character != '\n' {
-                let mut font = context.style.editbox_style.font.borrow_mut();
-                let font_size = context.style.editbox_style.font_size;
+            let mut font = context.style.editbox_style.font.borrow_mut();
+            let font_size = context.style.editbox_style.font_size;
 
+            let mut advance = 1.5; // 1.5 - hack to make cursor on newlines visible
+
+            if state.in_selected_range(n as u32) {
+                let pos = pos + vec2(x, y);
+
+                context.window.painter.draw_rect(
+                    Rect::new(
+                        pos.x,
+                        pos.y,
+                        context
+                            .window
+                            .painter
+                            .character_advance(character, &font, font_size)
+                            + 1.0,
+                        font_size as f32 - 4.,
+                    ),
+                    None,
+                    context.style.editbox_style.color_selected,
+                );
+            }
+
+            if character != '\n' {
                 let ascent = font.ascent(font_size as f32);
                 let descent = font.descent(font_size as f32);
 
@@ -390,7 +415,7 @@ impl<'a> Editbox<'a> {
                     .window
                     .painter
                     .draw_character(
-                        if self.password { '*' } else { character },
+                        character,
                         pos + vec2(
                             x,
                             y + font_size as f32 / 2. + (ascent - descent) / 2. + descent,
@@ -400,18 +425,6 @@ impl<'a> Editbox<'a> {
                         font_size,
                     )
                     .unwrap_or(0.);
-            }
-            if state.in_selected_range(n as u32) {
-                let pos = pos + vec2(x, y);
-
-                context.window.painter.draw_rect(
-                    Rect::new(pos.x, pos.y, advance, font_size as f32 - 4.),
-                    None,
-                    context.style.editbox_style.color(ElementState {
-                        focused: context.focused,
-                        ..Default::default()
-                    }),
-                );
             }
 
             if clicked == false && hovered && context.input.is_mouse_down() && input_focused {
