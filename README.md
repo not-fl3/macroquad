@@ -70,7 +70,7 @@ async/await in macroquad is used without any external dependencies - no runtime,
 
 ## Community
 
-- [Quads Discord server](https://discord.gg/WfEp6ut)
+- [Quads Discord server](https://discord.gg/WfEp6ut) - a place to chat with the library's devs and other community members.
 - [Awesome Quads](https://github.com/ozkriff/awesome-quads) - a curated list of links to miniquad/macroquad-related code & resources.
 
 # Platinum sponsors
