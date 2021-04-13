@@ -523,7 +523,12 @@ pub fn clear() {
     unsafe { get_scene() }.clear()
 }
 
-pub fn get_node<T: Node>(handle: Handle<T>) -> Option<RefMut<T>> {
+/// Get node and panic if the node is borrowed or deleted
+pub fn get_node<T: Node>(handle: Handle<T>) -> RefMut<T> {
+    unsafe { get_scene() }.get(handle).unwrap()
+}
+
+pub fn try_get_node<T: Node>(handle: Handle<T>) -> Option<RefMut<T>> {
     unsafe { get_scene() }.get(handle)
 }
 
