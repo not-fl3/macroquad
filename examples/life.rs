@@ -23,7 +23,7 @@ async fn main() {
             }
         }
     }
-    let texture = load_texture_from_image(&image);
+    let texture = Texture2D::from_image(&image);
 
     loop {
         clear_background(WHITE);
@@ -86,7 +86,7 @@ async fn main() {
             );
         }
 
-        update_texture(texture, &image);
+        texture.update(&image);
 
         draw_texture(texture, 0., 0., WHITE);
 

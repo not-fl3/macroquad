@@ -40,7 +40,7 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
         }
     }
 
-    (load_texture_from_image(&image), image)
+    (Texture2D::from_image(&image), image)
 }
 
 #[macroquad::main("Shadertoy")]
