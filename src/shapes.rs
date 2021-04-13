@@ -2,8 +2,8 @@
 
 use crate::{color::Color, get_context};
 
-use glam::{vec2, Vec2};
 use crate::quad_gl::{DrawMode, Vertex};
+use glam::{vec2, Vec2};
 
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     let context = &mut get_context().draw_context;

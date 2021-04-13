@@ -368,7 +368,7 @@ impl<'a> Editbox<'a> {
             } else {
                 character
             };
-            
+
             let font_size = context.style.editbox_style.font_size;
             if n == state.cursor as usize && input_focused {
                 // caret
