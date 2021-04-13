@@ -11,7 +11,7 @@ async fn main() {
         // drawing to the texture
 
         // 0..100, 0..100 camera
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             zoom: vec2(0.01, 0.01),
             target: vec2(0.0, 0.0),
             render_target: Some(render_target),

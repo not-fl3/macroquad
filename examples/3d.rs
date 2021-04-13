@@ -10,7 +10,7 @@ async fn main() {
 
         // Going 3d!
 
-        set_camera(Camera3D {
+        set_camera(&Camera3D {
             position: vec3(-20., 15., 0.),
             up: vec3(0., 1., 0.),
             target: vec3(0., 0., 0.),

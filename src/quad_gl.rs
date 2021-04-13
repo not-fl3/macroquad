@@ -164,7 +164,6 @@ struct DrawCall {
     texture: Texture,
 
     model: glam::Mat4,
-    projection: glam::Mat4,
 
     draw_mode: DrawMode,
     pipeline: GlPipeline,
@@ -228,7 +227,6 @@ impl Vertex {
 impl DrawCall {
     fn new(
         texture: Texture,
-        projection: glam::Mat4,
         model: glam::Mat4,
         draw_mode: DrawMode,
         pipeline: GlPipeline,
@@ -242,7 +240,6 @@ impl DrawCall {
             indices_count: 0,
             clip: None,
             texture,
-            projection,
             model,
             draw_mode,
             pipeline,
@@ -413,7 +410,6 @@ struct GlState {
     texture: Texture,
     draw_mode: DrawMode,
     clip: Option<(i32, i32, i32, i32)>,
-    projection: glam::Mat4,
     model_stack: Vec<glam::Mat4>,
     pipeline: Option<GlPipeline>,
     depth_test_enable: bool,
@@ -449,11 +445,9 @@ struct PipelineExt {
 impl PipelineExt {
     fn set_uniform<T>(&mut self, name: &str, uniform: T) {
         let uniform_meta = self.uniforms.iter().find(
-            |
-                Uniform {
-                    name: uniform_name, ..
-                },
-            | uniform_name == name,
+            |Uniform {
+                 name: uniform_name, ..
+             }| uniform_name == name,
         );
         if uniform_meta.is_none() {
             println!("Trying to set non-existing uniform: {}", name);
@@ -682,7 +676,6 @@ impl QuadGl {
             state: GlState {
                 clip: None,
                 texture: white_texture,
-                projection: glam::Mat4::identity(),
                 model_stack: vec![glam::Mat4::identity()],
                 draw_mode: DrawMode::Triangles,
                 pipeline: None,
@@ -753,13 +746,12 @@ impl QuadGl {
     pub fn reset(&mut self) {
         self.state.clip = None;
         self.state.texture = self.white_texture;
-        self.state.projection = glam::Mat4::identity();
         self.state.model_stack = vec![glam::Mat4::identity()];
 
         self.draw_calls_count = 0;
     }
 
-    pub fn draw(&mut self, ctx: &mut miniquad::Context) {
+    pub fn draw(&mut self, ctx: &mut miniquad::Context, projection: glam::Mat4) {
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
             let vertex_buffer = Buffer::stream(
                 ctx,
@@ -834,7 +826,7 @@ impl QuadGl {
             }
             ctx.apply_bindings(&bindings);
 
-            pipeline.set_uniform("Projection", dc.projection);
+            pipeline.set_uniform("Projection", projection);
             pipeline.set_uniform("Model", dc.model);
             pipeline.set_uniform("_Time", time);
             ctx.apply_uniforms_from_bytes(
@@ -853,7 +845,12 @@ impl QuadGl {
     }
 
     pub fn get_projection_matrix(&self) -> glam::Mat4 {
-        self.state.projection
+        // get_projection_matrix is a way plugins used to get macroquad's current projection
+        // back in the days when projection was a part of static batcher
+        // now it is not, so here we go with this hack
+
+        let ctx = crate::get_context();
+        ctx.draw_context.projection_matrix(&mut ctx.quad_context)
     }
 
     pub fn get_active_render_pass(&self) -> Option<RenderPass> {
@@ -874,10 +871,6 @@ impl QuadGl {
 
     pub fn scissor(&mut self, clip: Option<(i32, i32, i32, i32)>) {
         self.state.clip = clip;
-    }
-
-    pub fn set_projection_matrix(&mut self, matrix: glam::Mat4) {
-        self.state.projection = matrix;
     }
 
     pub fn push_model_matrix(&mut self, matrix: glam::Mat4) {
@@ -921,14 +914,12 @@ impl QuadGl {
                 || draw_call.pipeline != pip
                 || draw_call.render_pass != self.state.render_pass
                 || draw_call.draw_mode != self.state.draw_mode
-                || draw_call.projection != self.state.projection
                 || draw_call.vertices_count >= MAX_VERTICES - vertices.len()
                 || draw_call.indices_count >= MAX_INDICES - indices.len()
         }) {
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(
                     self.state.texture,
-                    self.state.projection,
                     self.state.model(),
                     self.state.draw_mode,
                     pip,
@@ -939,7 +930,6 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
             self.draw_calls[self.draw_calls_count].clip = self.state.clip;
-            self.draw_calls[self.draw_calls_count].projection = self.state.projection;
             self.draw_calls[self.draw_calls_count].model = self.state.model();
             self.draw_calls[self.draw_calls_count].pipeline = pip;
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;

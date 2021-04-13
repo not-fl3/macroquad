@@ -84,20 +84,20 @@ async fn main() {
 
         clear_background(WHITE);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             ..Default::default()
         });
         draw_cross(0., 0., RED);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             rotation: smooth_rotation,
             ..Default::default()
         });
         draw_cross(0., 0., GREEN);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             rotation: smooth_rotation,
             zoom: vec2(zoom, zoom * screen_width() / screen_height()),
@@ -105,7 +105,7 @@ async fn main() {
         });
         draw_cross(0., 0., BLUE);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             rotation: smooth_rotation,
             zoom: vec2(zoom, zoom * screen_width() / screen_height()),

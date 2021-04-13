@@ -7,7 +7,7 @@ async fn main() {
 
         // Render some primitives in camera space
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             zoom: vec2(1., screen_width() / screen_height()),
             ..Default::default()
         });
@@ -15,6 +15,10 @@ async fn main() {
         draw_rectangle(-0.3, 0.3, 0.2, 0.2, GREEN);
         draw_circle(0., 0., 0.1, YELLOW);
 
+        Camera2D {
+            zoom: vec2(1., screen_width() / screen_height()),
+            ..Default::default()
+        };
         // Back to screen space, render some text
 
         set_default_camera();

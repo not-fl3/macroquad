@@ -93,7 +93,7 @@ async fn main() {
     loop {
         clear_background(WHITE);
 
-        set_camera(camera);
+        set_camera(&camera);
 
         draw_grid(20, 1.);
 

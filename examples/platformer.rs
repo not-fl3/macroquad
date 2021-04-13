@@ -45,7 +45,7 @@ async fn main() {
     loop {
         clear_background(BLACK);
 
-        set_camera(camera);
+        set_camera(&camera);
 
         tiled_map.draw_tiles("main layer", Rect::new(0.0, 0.0, 320.0, 152.0), None);
 
