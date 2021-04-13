@@ -32,7 +32,7 @@ impl Atlas {
 
     pub fn new(ctx: &mut miniquad::Context) -> Atlas {
         let image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
-        let texture = Texture2D::from_rgba8(ctx, image.width, image.height, &image.bytes);
+        let texture = Texture2D::from_rgba8(image.width, image.height, &image.bytes);
         texture
             .raw_miniquad_texture_handle()
             .set_filter(ctx, miniquad::FilterMode::Nearest);
@@ -74,7 +74,6 @@ impl Atlas {
                 || self.texture.height() != self.image.height as _
             {
                 self.texture = Texture2D::from_rgba8(
-                    ctx,
                     self.image.width,
                     self.image.height,
                     &self.image.bytes[..],
@@ -84,7 +83,7 @@ impl Atlas {
                     .set_filter(ctx, miniquad::FilterMode::Nearest);
             }
 
-            self.texture.update(ctx, &self.image);
+            self.texture.update(&self.image);
         }
 
         self.texture

@@ -9,7 +9,7 @@ use crate::{
 use crate::quad_gl::{Color, DrawMode, Vertex};
 use glam::{vec2, Vec2};
 
-pub use crate::quad_gl::{FilterMode, Texture2D};
+pub use crate::quad_gl::FilterMode;
 
 /// Image, data stored in CPU memory
 #[derive(Clone)]
@@ -181,34 +181,8 @@ pub async fn load_image(path: &str) -> Result<Image, FileError> {
 /// Load texture from file into GPU memory
 pub async fn load_texture(path: &str) -> Result<Texture2D, FileError> {
     let bytes = load_file(path).await?;
-    let context = &mut get_context().quad_context;
 
-    Ok(Texture2D::from_file_with_format(context, &bytes[..], None))
-}
-
-/// Unload texture from GPU memory
-/// Using deleted texture will gives different results on different platforms and is not recommended
-pub fn delete_texture(texture: Texture2D) {
-    texture.raw_miniquad_texture_handle().delete()
-}
-
-pub fn set_texture_filter(texture: Texture2D, filter_mode: FilterMode) {
-    let context = &mut get_context().quad_context;
-
-    texture.set_filter(context, filter_mode);
-}
-
-/// Upload image data to GPU texture
-pub fn update_texture(mut texture: Texture2D, image: &Image) {
-    let context = &mut get_context().quad_context;
-
-    texture.update(context, image);
-}
-
-pub fn load_texture_from_image(image: &Image) -> Texture2D {
-    let context = &mut get_context().quad_context;
-
-    Texture2D::from_rgba8(context, image.width, image.height, &image.bytes)
+    Ok(Texture2D::from_file_with_format(&bytes[..], None))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -389,11 +363,6 @@ pub fn draw_texture_rec(
     );
 }
 
-/// Get pixel data from GPU texture and return an Image
-pub fn get_texture_data(texture: Texture2D) -> Image {
-    texture.get_texture_data()
-}
-
 /// Get pixel data from screen buffer and return an Image (screenshot)
 pub fn get_screen_data() -> Image {
     unsafe {
@@ -413,5 +382,121 @@ pub fn get_screen_data() -> Image {
 
     texture.grab_screen();
 
-    get_texture_data(texture)
+    texture.get_texture_data()
+}
+
+/// Texture, data stored in GPU memory
+#[derive(Clone, Copy, Debug)]
+pub struct Texture2D {
+    pub(crate) texture: miniquad::Texture,
+}
+
+impl Texture2D {
+    pub fn from_miniquad_texture(texture: miniquad::Texture) -> Texture2D {
+        Texture2D { texture }
+    }
+
+    pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
+        let ctx = &mut get_context().quad_context;
+
+        Texture2D {
+            texture: miniquad::Texture::from_rgba8(ctx, width, height, bytes),
+        }
+    }
+
+    pub fn from_image(image: &Image) -> Texture2D {
+        Texture2D::from_rgba8(image.width, image.height, &image.bytes)
+    }
+
+    pub fn from_file_with_format<'a>(
+        bytes: &[u8],
+        format: Option<image::ImageFormat>,
+    ) -> Texture2D {
+        let img = if let Some(fmt) = format {
+            image::load_from_memory_with_format(&bytes, fmt)
+                .unwrap_or_else(|e| panic!("{}", e))
+                .to_rgba8()
+        } else {
+            image::load_from_memory(&bytes)
+                .unwrap_or_else(|e| panic!("{}", e))
+                .to_rgba8()
+        };
+        let width = img.width() as u16;
+        let height = img.height() as u16;
+        let bytes = img.into_raw();
+
+        Self::from_rgba8(width, height, &bytes)
+    }
+
+    pub fn empty() -> Texture2D {
+        Texture2D {
+            texture: miniquad::Texture::empty(),
+        }
+    }
+
+    /// Upload image data to GPU texture
+    pub fn update(&self, image: &Image) {
+        assert_eq!(self.texture.width, image.width as u32);
+        assert_eq!(self.texture.height, image.height as u32);
+
+        let ctx = &mut get_context().quad_context;
+
+        self.texture.update(ctx, &image.bytes);
+    }
+
+    pub fn width(&self) -> f32 {
+        self.texture.width as f32
+    }
+
+    pub fn height(&self) -> f32 {
+        self.texture.height as f32
+    }
+
+    pub fn set_filter(&self, filter_mode: FilterMode) {
+        let ctx = &mut get_context().quad_context;
+
+        self.texture.set_filter(ctx, filter_mode);
+    }
+
+    pub fn raw_miniquad_texture_handle(&self) -> miniquad::Texture {
+        self.texture
+    }
+
+    pub fn grab_screen(&self) {
+        use miniquad::*;
+
+        let (internal_format, _, _) = self.texture.format.into();
+        unsafe {
+            gl::glBindTexture(gl::GL_TEXTURE_2D, self.texture.gl_internal_id());
+            gl::glCopyTexImage2D(
+                gl::GL_TEXTURE_2D,
+                0,
+                internal_format,
+                0,
+                0,
+                self.texture.width as _,
+                self.texture.height as _,
+                0,
+            );
+        }
+    }
+
+    /// Get pixel data from GPU texture and return an Image
+    pub fn get_texture_data(&self) -> Image {
+        let mut image = Image {
+            width: self.texture.width as _,
+            height: self.texture.height as _,
+            bytes: vec![0; self.texture.width as usize * self.texture.height as usize * 4],
+        };
+
+        self.texture.read_pixels(&mut image.bytes);
+
+        image
+    }
+
+    /// Unload texture from GPU memory
+    /// Using deleted texture will gives different results on different platforms and is not recommended
+    pub fn delete(&self) {
+        self.raw_miniquad_texture_handle().delete()
+    }
 }

@@ -2,7 +2,7 @@
 
 use crate::{color::Color, get_context};
 
-use crate::quad_gl::{DrawMode, Texture2D};
+use crate::{quad_gl::DrawMode, texture::Texture2D};
 use glam::{vec2, vec3, Vec2, Vec3};
 
 #[derive(Clone, Debug, Copy)]

@@ -6,7 +6,7 @@ pub use colors::*;
 
 pub use miniquad::{FilterMode, ShaderError};
 
-use crate::texture::Image;
+use crate::texture::Texture2D;
 
 use std::collections::BTreeMap;
 
@@ -976,108 +976,6 @@ impl QuadGl {
             .textures_data
             .entry(name.to_owned())
             .or_insert(texture.texture) = texture.texture;
-    }
-}
-
-/// Texture, data stored in GPU memory
-#[derive(Clone, Copy, Debug)]
-pub struct Texture2D {
-    texture: miniquad::Texture,
-}
-
-impl Texture2D {
-    pub fn from_miniquad_texture(texture: miniquad::Texture) -> Texture2D {
-        Texture2D { texture }
-    }
-
-    pub fn empty() -> Texture2D {
-        Texture2D {
-            texture: miniquad::Texture::empty(),
-        }
-    }
-
-    pub fn update(&mut self, ctx: &mut miniquad::Context, image: &Image) {
-        assert_eq!(self.texture.width, image.width as u32);
-        assert_eq!(self.texture.height, image.height as u32);
-
-        self.texture.update(ctx, &image.bytes);
-    }
-
-    pub fn width(&self) -> f32 {
-        self.texture.width as f32
-    }
-
-    pub fn height(&self) -> f32 {
-        self.texture.height as f32
-    }
-
-    pub fn from_file_with_format<'a>(
-        ctx: &mut miniquad::Context,
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Texture2D {
-        let img = if let Some(fmt) = format {
-            image::load_from_memory_with_format(&bytes, fmt)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
-        } else {
-            image::load_from_memory(&bytes)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
-        };
-        let width = img.width() as u16;
-        let height = img.height() as u16;
-        let bytes = img.into_raw();
-
-        Self::from_rgba8(ctx, width, height, &bytes)
-    }
-
-    pub fn from_rgba8(
-        ctx: &mut miniquad::Context,
-        width: u16,
-        height: u16,
-        bytes: &[u8],
-    ) -> Texture2D {
-        let texture = miniquad::Texture::from_rgba8(ctx, width, height, &bytes);
-
-        Texture2D { texture }
-    }
-
-    pub fn set_filter(&self, ctx: &mut miniquad::Context, filter_mode: FilterMode) {
-        self.texture.set_filter(ctx, filter_mode);
-    }
-
-    pub fn raw_miniquad_texture_handle(&self) -> Texture {
-        self.texture
-    }
-
-    pub fn grab_screen(&self) {
-        let (internal_format, _, _) = self.texture.format.into();
-        unsafe {
-            gl::glBindTexture(gl::GL_TEXTURE_2D, self.texture.gl_internal_id());
-            gl::glCopyTexImage2D(
-                gl::GL_TEXTURE_2D,
-                0,
-                internal_format,
-                0,
-                0,
-                self.texture.width as _,
-                self.texture.height as _,
-                0,
-            );
-        }
-    }
-
-    pub fn get_texture_data(&self) -> Image {
-        let mut image = Image {
-            width: self.texture.width as _,
-            height: self.texture.height as _,
-            bytes: vec![0; self.texture.width as usize * self.texture.height as usize * 4],
-        };
-
-        self.texture.read_pixels(&mut image.bytes);
-
-        image
     }
 }
 
