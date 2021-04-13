@@ -2,8 +2,8 @@
 
 use crate::get_context;
 
-use miniquad::PassAction;
 use crate::quad_gl::Color;
+use miniquad::PassAction;
 
 // miniquad is re-exported for the use in combination with `get_internal_gl`
 pub use miniquad;
