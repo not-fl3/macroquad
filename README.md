@@ -68,6 +68,11 @@ But in Rust we have async/await. Rust's `futures` is basically a continuations -
 async/await in macroquad is used without any external dependencies - no runtime, executor or even futures-rs are involved. It's just a way to preserve `main`'s stack on WASM and keep the code cross platform without any WASM-specific main loop.
 </details>
 
+## Community
+
+- [Quads Discord server](https://discord.gg/WfEp6ut)
+- [Awesome Quads](https://github.com/ozkriff/awesome-quads) - a curated list of links to miniquad/macroquad-related code & resources.
+
 # Platinum sponsors
 
 Macroquad is supported by:
