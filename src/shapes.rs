@@ -2,8 +2,8 @@
 
 use crate::{color::Color, get_context};
 
-use glam::{vec2, Vec2};
 use crate::quad_gl::{DrawMode, Vertex};
+use glam::{vec2, Vec2};
 
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     let context = &mut get_context().draw_context;
@@ -44,12 +44,28 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 }
 
 pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
+    let context = &mut get_context().draw_context;
     let t = thickness / 2.;
 
-    draw_rectangle(x, y, w, t, color);
-    draw_rectangle(x + w - t, y + t, t, h - t, color);
-    draw_rectangle(x, y + h - t, w, t, color);
-    draw_rectangle(x, y + t, t, h - t, color);
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(x    , y    , 0., 0.0, 1.0, color),
+        Vertex::new(x + w, y    , 0., 1.0, 0.0, color),
+        Vertex::new(x + w, y + h, 0., 1.0, 1.0, color),
+        Vertex::new(x    , y + h, 0., 0.0, 0.0, color),
+        //inner rectangle
+        Vertex::new(x + t    , y + t    , 0., 0.0, 0.0, color),
+        Vertex::new(x + w - t, y + t    , 0., 0.0, 0.0, color),
+        Vertex::new(x + w - t, y + h - t, 0., 0.0, 0.0, color),
+        Vertex::new(x + t    , y + h - t, 0., 0.0, 0.0, color),
+    ];
+    let indices: [u16; 24] = [
+        0, 1, 4, 1, 4, 5, 1, 5, 6, 1, 2, 6, 3, 7, 2, 2, 7, 6, 0, 4, 3, 3, 4, 7,
+    ];
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
 }
 
 pub fn draw_hexagon(
