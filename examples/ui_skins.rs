@@ -48,6 +48,7 @@ async fn main() {
             .background_margin(RectOffset::new(0., 0., 0., 0.))
             .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
             .text_color(Color::from_rgba(120, 120, 120, 255))
+            .color_selected(Color::from_rgba(190, 190, 190, 255))
             .font_size(50)
             .build();
 

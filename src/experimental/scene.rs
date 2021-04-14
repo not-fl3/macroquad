@@ -25,7 +25,7 @@ impl<T: Node + 'static> NodeAny for T {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 struct Id {
     id: usize,
     generation: u64,
@@ -119,6 +119,13 @@ impl<T: 'static> RefMut<T> {
         }
     }
 
+    pub fn persist(&self) {
+        unsafe { get_scene() }.nodes[self.handle.id.unwrap().id]
+            .as_mut()
+            .unwrap()
+            .permanent = true;
+    }
+
     pub fn delete(self) {
         assert!(self.handle.id.is_some());
 
@@ -155,9 +162,9 @@ impl<T: 'static> Drop for RefMut<T> {
 
 pub struct RefMutAny<'a> {
     data: *mut (),
+    used: *mut bool,
     vtable: *mut (),
     handle: HandleUntyped,
-    used: *mut bool,
 
     _marker: PhantomData<&'a ()>,
 }
@@ -232,6 +239,7 @@ struct Cell {
     update: *const fn(RefMut<()>),
     draw: *const fn(RefMut<()>),
     data_len: usize,
+    permanent: bool,
     initialized: bool,
     used: *mut bool,
 }
@@ -244,6 +252,7 @@ impl Cell {
             data,
             vtable,
             used,
+            permanent: false,
             ready: unsafe {
                 std::mem::transmute(&(Node::ready as fn(RefMut<T>)) as *const fn(RefMut<T>))
             },
@@ -278,14 +287,18 @@ impl Cell {
         }
         self.id.generation += 1;
         self.initialized = false;
+        self.permanent = false;
 
         std::mem::forget(data);
     }
 }
 
 struct Scene {
+    dense: Vec<Id>,
+    dense_ongoing: Vec<Result<Id, Id>>,
     nodes: Vec<Option<Cell>>,
     arena: bumpalo::Bump,
+    camera: Option<Box<dyn crate::camera::Camera>>,
 
     free_nodes: Vec<Cell>,
 }
@@ -293,22 +306,31 @@ struct Scene {
 impl Scene {
     pub fn new() -> Self {
         Scene {
+            dense: vec![],
+            dense_ongoing: vec![],
             nodes: Vec::new(),
             arena: bumpalo::Bump::new(),
             free_nodes: Vec::new(),
+            camera: None,
         }
     }
 
     pub fn clear(&mut self) {
-        for cell in &self.nodes {
-            if let Some(cell) = cell {
-                assert!(unsafe { *cell.used == false },);
+        for cell in &mut self.nodes {
+            if let Some(Cell {
+                permanent: false, ..
+            }) = cell
+            {
+                if let Some(cell) = cell.take() {
+                    assert!(unsafe { *cell.used == false });
+
+                    let ix = self.dense.iter().position(|i| *i == cell.id).unwrap();
+                    self.dense.remove(ix);
+
+                    self.free_nodes.push(cell);
+                }
             }
         }
-
-        self.arena.reset();
-        self.nodes.clear();
-        self.free_nodes.clear();
     }
 
     pub fn get_any(&self, handle: HandleUntyped) -> Option<RefMutAny> {
@@ -351,7 +373,7 @@ impl Scene {
     fn iter(&self) -> MagicVecIterator {
         MagicVecIterator {
             n: 0,
-            len: self.nodes.len(),
+            len: self.dense.len(),
         }
     }
 
@@ -384,6 +406,8 @@ impl Scene {
                 .push(Some(Cell::new::<T>(id, data, vtable, used)));
         }
 
+        self.dense.push(id);
+
         Handle {
             id: Some(id),
             _marker: PhantomData,
@@ -393,6 +417,8 @@ impl Scene {
     pub fn delete(&mut self, id: Id) {
         if let Some(node) = self.nodes[id.id].take() {
             assert_eq!(node.id.generation, id.generation);
+
+            self.dense_ongoing.push(Err(id));
 
             self.free_nodes.push(node);
         }
@@ -415,10 +441,28 @@ impl Scene {
             unsafe { (*cell.update)(node) };
         }
 
+        if let Some(ref camera) = self.camera {
+            crate::prelude::set_camera(&**camera);
+        }
         for node in &mut self.iter() {
             let cell = self.nodes[node.handle.0.id].as_mut().unwrap();
             let node: RefMut<()> = node.to_typed::<()>();
             unsafe { (*cell.draw)(node) };
+        }
+        if self.camera.is_some() {
+            crate::prelude::set_default_camera();
+        }
+
+        for id in self.dense_ongoing.drain(0..) {
+            match id {
+                Ok(id) => {
+                    self.dense.push(id);
+                }
+                Err(id) => {
+                    let ix = self.dense.iter().position(|i| *i == id).unwrap();
+                    self.dense.remove(ix);
+                }
+            }
         }
     }
 }
@@ -432,11 +476,14 @@ impl Iterator for MagicVecIterator {
     type Item = RefMutAny<'static>;
 
     fn next(&mut self) -> Option<RefMutAny<'static>> {
-        let nodes = &mut unsafe { get_scene() }.nodes;
+        let scene = unsafe { get_scene() };
+        let nodes = &mut scene.nodes;
+        let dense = &scene.dense;
         if self.n >= self.len {
             return None;
         }
-        let cell = &nodes[self.n];
+        let ix = dense[self.n];
+        let cell = &nodes[ix.id];
         self.n += 1;
 
         if cell.is_none() {
@@ -476,7 +523,12 @@ pub fn clear() {
     unsafe { get_scene() }.clear()
 }
 
-pub fn get_node<T: Node>(handle: Handle<T>) -> Option<RefMut<T>> {
+/// Get node and panic if the node is borrowed or deleted
+pub fn get_node<T: Node>(handle: Handle<T>) -> RefMut<T> {
+    unsafe { get_scene() }.get(handle).unwrap()
+}
+
+pub fn try_get_node<T: Node>(handle: Handle<T>) -> Option<RefMut<T>> {
     unsafe { get_scene() }.get(handle)
 }
 
@@ -484,11 +536,15 @@ pub(crate) fn get_untyped_node(handle: HandleUntyped) -> Option<RefMutAny<'stati
     unsafe { get_scene() }.get_any(handle)
 }
 
+pub fn set_camera(camera: impl crate::camera::Camera + Clone + 'static) {
+    unsafe { get_scene() }.camera = Some(Box::new(camera.clone()));
+}
+
 pub fn add_node<T: Node>(node: T) -> Handle<T> {
     unsafe { get_scene() }.add_node(node)
 }
 
-pub fn update() {
+pub(crate) fn update() {
     unsafe { get_scene() }.update()
 }
 

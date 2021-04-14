@@ -34,7 +34,7 @@ async fn main() {
         ..Default::default()
     };
 
-    set_camera(camera);
+    set_camera(&camera);
     loop {
         clear_background(GREEN);
 

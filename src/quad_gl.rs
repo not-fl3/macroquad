@@ -6,7 +6,7 @@ pub use colors::*;
 
 pub use miniquad::{FilterMode, ShaderError};
 
-use crate::texture::Image;
+use crate::texture::Texture2D;
 
 use std::collections::BTreeMap;
 
@@ -164,7 +164,6 @@ struct DrawCall {
     texture: Texture,
 
     model: glam::Mat4,
-    projection: glam::Mat4,
 
     draw_mode: DrawMode,
     pipeline: GlPipeline,
@@ -228,7 +227,6 @@ impl Vertex {
 impl DrawCall {
     fn new(
         texture: Texture,
-        projection: glam::Mat4,
         model: glam::Mat4,
         draw_mode: DrawMode,
         pipeline: GlPipeline,
@@ -242,7 +240,6 @@ impl DrawCall {
             indices_count: 0,
             clip: None,
             texture,
-            projection,
             model,
             draw_mode,
             pipeline,
@@ -413,7 +410,6 @@ struct GlState {
     texture: Texture,
     draw_mode: DrawMode,
     clip: Option<(i32, i32, i32, i32)>,
-    projection: glam::Mat4,
     model_stack: Vec<glam::Mat4>,
     pipeline: Option<GlPipeline>,
     depth_test_enable: bool,
@@ -449,11 +445,9 @@ struct PipelineExt {
 impl PipelineExt {
     fn set_uniform<T>(&mut self, name: &str, uniform: T) {
         let uniform_meta = self.uniforms.iter().find(
-            |
-                Uniform {
-                    name: uniform_name, ..
-                },
-            | uniform_name == name,
+            |Uniform {
+                 name: uniform_name, ..
+             }| uniform_name == name,
         );
         if uniform_meta.is_none() {
             println!("Trying to set non-existing uniform: {}", name);
@@ -682,7 +676,6 @@ impl QuadGl {
             state: GlState {
                 clip: None,
                 texture: white_texture,
-                projection: glam::Mat4::identity(),
                 model_stack: vec![glam::Mat4::identity()],
                 draw_mode: DrawMode::Triangles,
                 pipeline: None,
@@ -753,13 +746,12 @@ impl QuadGl {
     pub fn reset(&mut self) {
         self.state.clip = None;
         self.state.texture = self.white_texture;
-        self.state.projection = glam::Mat4::identity();
         self.state.model_stack = vec![glam::Mat4::identity()];
 
         self.draw_calls_count = 0;
     }
 
-    pub fn draw(&mut self, ctx: &mut miniquad::Context) {
+    pub fn draw(&mut self, ctx: &mut miniquad::Context, projection: glam::Mat4) {
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
             let vertex_buffer = Buffer::stream(
                 ctx,
@@ -834,7 +826,7 @@ impl QuadGl {
             }
             ctx.apply_bindings(&bindings);
 
-            pipeline.set_uniform("Projection", dc.projection);
+            pipeline.set_uniform("Projection", projection);
             pipeline.set_uniform("Model", dc.model);
             pipeline.set_uniform("_Time", time);
             ctx.apply_uniforms_from_bytes(
@@ -853,7 +845,12 @@ impl QuadGl {
     }
 
     pub fn get_projection_matrix(&self) -> glam::Mat4 {
-        self.state.projection
+        // get_projection_matrix is a way plugins used to get macroquad's current projection
+        // back in the days when projection was a part of static batcher
+        // now it is not, so here we go with this hack
+
+        let ctx = crate::get_context();
+        ctx.draw_context.projection_matrix(&mut ctx.quad_context)
     }
 
     pub fn get_active_render_pass(&self) -> Option<RenderPass> {
@@ -874,10 +871,6 @@ impl QuadGl {
 
     pub fn scissor(&mut self, clip: Option<(i32, i32, i32, i32)>) {
         self.state.clip = clip;
-    }
-
-    pub fn set_projection_matrix(&mut self, matrix: glam::Mat4) {
-        self.state.projection = matrix;
     }
 
     pub fn push_model_matrix(&mut self, matrix: glam::Mat4) {
@@ -921,14 +914,12 @@ impl QuadGl {
                 || draw_call.pipeline != pip
                 || draw_call.render_pass != self.state.render_pass
                 || draw_call.draw_mode != self.state.draw_mode
-                || draw_call.projection != self.state.projection
                 || draw_call.vertices_count >= MAX_VERTICES - vertices.len()
                 || draw_call.indices_count >= MAX_INDICES - indices.len()
         }) {
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(
                     self.state.texture,
-                    self.state.projection,
                     self.state.model(),
                     self.state.draw_mode,
                     pip,
@@ -939,7 +930,6 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
             self.draw_calls[self.draw_calls_count].clip = self.state.clip;
-            self.draw_calls[self.draw_calls_count].projection = self.state.projection;
             self.draw_calls[self.draw_calls_count].model = self.state.model();
             self.draw_calls[self.draw_calls_count].pipeline = pip;
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
@@ -986,108 +976,6 @@ impl QuadGl {
             .textures_data
             .entry(name.to_owned())
             .or_insert(texture.texture) = texture.texture;
-    }
-}
-
-/// Texture, data stored in GPU memory
-#[derive(Clone, Copy, Debug)]
-pub struct Texture2D {
-    texture: miniquad::Texture,
-}
-
-impl Texture2D {
-    pub fn from_miniquad_texture(texture: miniquad::Texture) -> Texture2D {
-        Texture2D { texture }
-    }
-
-    pub fn empty() -> Texture2D {
-        Texture2D {
-            texture: miniquad::Texture::empty(),
-        }
-    }
-
-    pub fn update(&mut self, ctx: &mut miniquad::Context, image: &Image) {
-        assert_eq!(self.texture.width, image.width as u32);
-        assert_eq!(self.texture.height, image.height as u32);
-
-        self.texture.update(ctx, &image.bytes);
-    }
-
-    pub fn width(&self) -> f32 {
-        self.texture.width as f32
-    }
-
-    pub fn height(&self) -> f32 {
-        self.texture.height as f32
-    }
-
-    pub fn from_file_with_format<'a>(
-        ctx: &mut miniquad::Context,
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Texture2D {
-        let img = if let Some(fmt) = format {
-            image::load_from_memory_with_format(&bytes, fmt)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
-        } else {
-            image::load_from_memory(&bytes)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
-        };
-        let width = img.width() as u16;
-        let height = img.height() as u16;
-        let bytes = img.into_raw();
-
-        Self::from_rgba8(ctx, width, height, &bytes)
-    }
-
-    pub fn from_rgba8(
-        ctx: &mut miniquad::Context,
-        width: u16,
-        height: u16,
-        bytes: &[u8],
-    ) -> Texture2D {
-        let texture = miniquad::Texture::from_rgba8(ctx, width, height, &bytes);
-
-        Texture2D { texture }
-    }
-
-    pub fn set_filter(&self, ctx: &mut miniquad::Context, filter_mode: FilterMode) {
-        self.texture.set_filter(ctx, filter_mode);
-    }
-
-    pub fn raw_miniquad_texture_handle(&self) -> Texture {
-        self.texture
-    }
-
-    pub fn grab_screen(&self) {
-        let (internal_format, _, _) = self.texture.format.into();
-        unsafe {
-            gl::glBindTexture(gl::GL_TEXTURE_2D, self.texture.gl_internal_id());
-            gl::glCopyTexImage2D(
-                gl::GL_TEXTURE_2D,
-                0,
-                internal_format,
-                0,
-                0,
-                self.texture.width as _,
-                self.texture.height as _,
-                0,
-            );
-        }
-    }
-
-    pub fn get_texture_data(&self) -> Image {
-        let mut image = Image {
-            width: self.texture.width as _,
-            height: self.texture.height as _,
-            bytes: vec![0; self.texture.width as usize * self.texture.height as usize * 4],
-        };
-
-        self.texture.read_pixels(&mut image.bytes);
-
-        image
     }
 }
 

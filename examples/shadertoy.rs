@@ -40,12 +40,12 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
         }
     }
 
-    (load_texture_from_image(&image), image)
+    (Texture2D::from_image(&image), image)
 }
 
 #[macroquad::main("Shadertoy")]
 async fn main() {
-    let ferris = load_texture("examples/rust.png").await;
+    let ferris = load_texture("examples/rust.png").await.unwrap();
     let (_color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
     //set_megaui_texture(0, color_picker_texture);
 
@@ -93,7 +93,7 @@ async fn main() {
     loop {
         clear_background(WHITE);
 
-        set_camera(camera);
+        set_camera(&camera);
 
         draw_grid(20, 1.);
 

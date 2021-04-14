@@ -232,11 +232,11 @@ impl Context {
 
         self.ui_context.process_input();
         self.clear(Self::DEFAULT_BG_COLOR);
-        self.draw_context
-            .update_projection_matrix(&mut self.quad_context);
     }
 
     fn end_frame(&mut self) {
+        crate::experimental::scene::update();
+
         self.ui_context.draw();
 
         self.draw_context
@@ -270,8 +270,6 @@ impl Context {
         self.quad_context
             .clear(Some((color.r, color.g, color.b, color.a)), None, None);
         self.draw_context.gl.reset();
-        self.draw_context
-            .update_projection_matrix(&mut self.quad_context);
     }
 }
 
@@ -298,13 +296,15 @@ impl EventHandlerFree for Stage {
         if context.cursor_grabbed {
             context.mouse_position += Vec2::new(x, y);
 
-            let event = MiniquadInputEvent::MouseMotion { x: context.mouse_position.x, y: context.mouse_position.y };
+            let event = MiniquadInputEvent::MouseMotion {
+                x: context.mouse_position.x,
+                y: context.mouse_position.y,
+            };
             context
                 .input_events
                 .iter_mut()
                 .for_each(|arr| arr.push(event.clone()));
         }
-
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
@@ -514,9 +514,7 @@ impl Window {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
-                unsafe {
-                    CONTEXT = Some(Context::new(ctx))
-                };
+                unsafe { CONTEXT = Some(Context::new(ctx)) };
                 UserData::free(Stage {})
             },
         );

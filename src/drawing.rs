@@ -2,7 +2,8 @@
 
 use crate::quad_gl::QuadGl;
 
-pub use crate::quad_gl::{colors::*, Color, DrawMode, FilterMode, Texture2D};
+pub use crate::quad_gl::{colors::*, Color, DrawMode, FilterMode};
+pub use crate::texture::Texture2D;
 
 use glam::Mat4;
 
@@ -14,30 +15,26 @@ pub struct DrawContext {
 
 impl DrawContext {
     pub fn new(ctx: &mut miniquad::Context) -> DrawContext {
-        let mut draw_context = DrawContext {
+        DrawContext {
             camera_matrix: None,
             gl: QuadGl::new(ctx),
             current_pass: None,
-        };
-
-        draw_context.update_projection_matrix(ctx);
-
-        draw_context
+        }
     }
 
-    pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
-        self.gl.draw(ctx);
-    }
-
-    pub(crate) fn update_projection_matrix(&mut self, ctx: &mut miniquad::Context) {
+    pub(crate) fn projection_matrix(&self, ctx: &mut miniquad::Context) -> glam::Mat4 {
         let (width, height) = ctx.screen_size();
 
-        let projection = if let Some(matrix) = self.camera_matrix {
+        if let Some(matrix) = self.camera_matrix {
             matrix
         } else {
             glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
-        };
+        }
+    }
 
-        self.gl.set_projection_matrix(projection);
+    pub(crate) fn perform_render_passes(&mut self, ctx: &mut miniquad::Context) {
+        let matrix = self.projection_matrix(ctx);
+
+        self.gl.draw(ctx, matrix);
     }
 }

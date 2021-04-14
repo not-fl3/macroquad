@@ -167,6 +167,7 @@ impl Camera3D {
     const Z_NEAR: f32 = 0.01;
     const Z_FAR: f32 = 10000.0;
 }
+
 impl Camera for Camera3D {
     fn matrix(&self) -> Mat4 {
         let aspect = self.aspect.unwrap_or(screen_width() / screen_height());
@@ -196,7 +197,7 @@ impl Camera for Camera3D {
 }
 
 /// Set active 2D or 3D camera
-pub fn set_camera<T: Camera>(camera: T) {
+pub fn set_camera(camera: &dyn Camera) {
     let context = get_context();
 
     // flush previous camera draw calls
@@ -208,9 +209,6 @@ pub fn set_camera<T: Camera>(camera: T) {
     context.draw_context.gl.render_pass(camera.render_pass());
     context.draw_context.gl.depth_test(camera.depth_enabled());
     context.draw_context.camera_matrix = Some(camera.matrix());
-    context
-        .draw_context
-        .update_projection_matrix(&mut context.quad_context);
 }
 
 /// Reset default 2D camera mode
@@ -226,7 +224,4 @@ pub fn set_default_camera() {
     context.draw_context.gl.render_pass(None);
     context.draw_context.gl.depth_test(false);
     context.draw_context.camera_matrix = None;
-    context
-        .draw_context
-        .update_projection_matrix(&mut context.quad_context);
 }

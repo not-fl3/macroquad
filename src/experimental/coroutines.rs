@@ -174,12 +174,8 @@ pub mod tweens {
         }
     }
 
-    pub async fn follow_path<T, T1, F>(
-        handle: Handle<T1>,
-        mut lens: F,
-        path: Vec<T>,
-        time: f32,
-    ) where
+    pub async fn follow_path<T, T1, F>(handle: Handle<T1>, mut lens: F, path: Vec<T>, time: f32)
+    where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
         T1: Node,
         F: for<'r> FnMut(&'r mut T1) -> &'r mut T,
