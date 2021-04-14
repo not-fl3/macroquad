@@ -30,6 +30,34 @@ impl std::fmt::Debug for Image {
 }
 
 impl Image {
+    /// Creates an empty Image.
+    ///
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// let image = Image::empty();
+    /// ```
+    pub fn empty() -> Image {
+        Image {
+            width: 0,
+            height: 0,
+            bytes: vec![],
+        }
+    }
+
+    /// Creates an Image from a slice of bytes that contains an encoded image.
+    ///
+    /// If `format` is None, it will make an educated guess on the
+    /// [ImageFormat][image::ImageFormat].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// let icon = Image::from_file_with_format(
+    ///     include_bytes!("../examples/rust.png"),
+    ///     Some(ImageFormat::Png),
+    ///     );
+    /// ```
     pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Image {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(&bytes, fmt)
@@ -51,14 +79,7 @@ impl Image {
         }
     }
 
-    pub fn empty() -> Image {
-        Image {
-            width: 0,
-            height: 0,
-            bytes: vec![],
-        }
-    }
-
+    /// Creates an Image filled with the provided [Color].
     pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
         let mut bytes = vec![0; width as usize * height as usize * 4];
         for i in 0..width as usize * height as usize {
@@ -74,6 +95,7 @@ impl Image {
         }
     }
 
+    /// Updates this image from a slice of [Color]s.
     pub fn update(&mut self, colors: &[Color]) {
         assert!(self.width as usize * self.height as usize == colors.len());
 
@@ -85,14 +107,17 @@ impl Image {
         }
     }
 
+    /// Returns the width of this image.
     pub fn width(&self) -> usize {
         self.width as usize
     }
 
+    /// Returns the height of this image.
     pub fn height(&self) -> usize {
         self.height as usize
     }
 
+    /// Returns this image's data as a slice of 4-byte arrays.
     pub fn get_image_data(&self) -> &[[u8; 4]] {
         use std::slice;
 
@@ -104,6 +129,7 @@ impl Image {
         }
     }
 
+    /// Returns this image's data as a mutable slice of 4-byte arrays.
     pub fn get_image_data_mut(&mut self) -> &mut [[u8; 4]] {
         use std::slice;
 
@@ -115,16 +141,19 @@ impl Image {
         }
     }
 
+    /// Modifies a pixel [Color] in this image.
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
         let width = self.width;
 
         self.get_image_data_mut()[(y * width as u32 + x) as usize] = color.into();
     }
 
+    /// Returns a pixel [Color] from this image.
     pub fn get_pixel(&self, x: u32, y: u32) -> Color {
         self.get_image_data()[(y * self.width as u32 + x) as usize].into()
     }
 
+    /// Returns an Image from a rect inside this image.
     pub fn sub_image(&self, rect: Rect) -> Image {
         let width = rect.w as usize;
         let height = rect.h as usize;
@@ -149,6 +178,7 @@ impl Image {
         }
     }
 
+    /// Saves this image as a PNG file.
     pub fn export_png(&self, path: &str) {
         let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
 
@@ -171,14 +201,14 @@ impl Image {
     }
 }
 
-/// Load image from file into CPU memory
+/// Loads an [Image] from a file into CPU memory.
 pub async fn load_image(path: &str) -> Result<Image, FileError> {
     let bytes = load_file(path).await?;
 
     Ok(Image::from_file_with_format(&bytes, None))
 }
 
-/// Load texture from file into GPU memory
+/// Loads a [Texture2D] from a file into GPU memory.
 pub async fn load_texture(path: &str) -> Result<Texture2D, FileError> {
     let bytes = load_file(path).await?;
 
@@ -392,22 +422,38 @@ pub struct Texture2D {
 }
 
 impl Texture2D {
-    pub fn from_miniquad_texture(texture: miniquad::Texture) -> Texture2D {
-        Texture2D { texture }
-    }
-
-    pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
-        let ctx = &mut get_context().quad_context;
-
+    /// Creates an empty Texture2D.
+    ///
+    /// # Example
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// # #[macroquad::main("test")]
+    /// # async fn main() {
+    /// let texture = Texture2D::empty();
+    /// # }
+    /// ```
+    pub fn empty() -> Texture2D {
         Texture2D {
-            texture: miniquad::Texture::from_rgba8(ctx, width, height, bytes),
+            texture: miniquad::Texture::empty(),
         }
     }
 
-    pub fn from_image(image: &Image) -> Texture2D {
-        Texture2D::from_rgba8(image.width, image.height, &image.bytes)
-    }
-
+    /// Creates a Texture2D from a slice of bytes that contains an encoded image.
+    ///
+    /// If `format` is None, it will make an educated guess on the
+    /// [ImageFormat][image::ImageFormat].
+    ///
+    /// # Example
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// # #[macroquad::main("test")]
+    /// # async fn main() {
+    /// let texture = Texture2D::from_file_with_format(
+    ///     include_bytes!("../examples/rust.png"),
+    ///     None,
+    ///     );
+    /// # }
+    /// ```
     pub fn from_file_with_format<'a>(
         bytes: &[u8],
         format: Option<image::ImageFormat>,
@@ -428,13 +474,40 @@ impl Texture2D {
         Self::from_rgba8(width, height, &bytes)
     }
 
-    pub fn empty() -> Texture2D {
+    /// Creates a Texture2D from an [Image].
+    pub fn from_image(image: &Image) -> Texture2D {
+        Texture2D::from_rgba8(image.width, image.height, &image.bytes)
+    }
+
+    /// Creates a Texture2D from a miniquad
+    /// [Texture](https://docs.rs/miniquad/0.3.0-alpha/miniquad/graphics/struct.Texture.html)
+    pub fn from_miniquad_texture(texture: miniquad::Texture) -> Texture2D {
+        Texture2D { texture }
+    }
+
+    /// Creates a Texture2D from a slice of bytes in an R,G,B,A sequence,
+    /// with the given width and height.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// # #[macroquad::main("test")]
+    /// # async fn main() {
+    /// // Create a 2x2 texture from a byte slice with 4 rgba pixels
+    /// let bytes: Vec<u8> = vec![255, 0, 0, 192, 0, 255, 0, 192, 0, 0, 255, 192, 255, 255, 255, 192];
+    /// let texture = Texture2D::from_rgba8(2, 2, &bytes);
+    /// # }
+    /// ```
+    pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
+        let ctx = &mut get_context().quad_context;
+
         Texture2D {
-            texture: miniquad::Texture::empty(),
+            texture: miniquad::Texture::from_rgba8(ctx, width, height, bytes),
         }
     }
 
-    /// Upload image data to GPU texture
+    /// Uploads [Image] data to this texture.
     pub fn update(&self, image: &Image) {
         assert_eq!(self.texture.width, image.width as u32);
         assert_eq!(self.texture.height, image.height as u32);
@@ -444,24 +517,41 @@ impl Texture2D {
         self.texture.update(ctx, &image.bytes);
     }
 
+    /// Returns the width of this texture.
     pub fn width(&self) -> f32 {
         self.texture.width as f32
     }
 
+    /// Returns the height of this texture.
     pub fn height(&self) -> f32 {
         self.texture.height as f32
     }
 
+    /// Sets the [FilterMode] of this texture.
+    ///
+    /// Use Nearest if you need integer-ratio scaling for pixel art, for example.
+    ///
+    /// # Example
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// # #[macroquad::main("test")]
+    /// # async fn main() {
+    /// let texture = Texture2D::empty();
+    /// texture.set_filter(FilterMode::Linear);
+    /// # }
+    /// ```
     pub fn set_filter(&self, filter_mode: FilterMode) {
         let ctx = &mut get_context().quad_context;
 
         self.texture.set_filter(ctx, filter_mode);
     }
 
+    /// Returns the handle for this texture.
     pub fn raw_miniquad_texture_handle(&self) -> miniquad::Texture {
         self.texture
     }
 
+    /// Updates this texture from the screen.
     pub fn grab_screen(&self) {
         use miniquad::*;
 
@@ -481,7 +571,9 @@ impl Texture2D {
         }
     }
 
-    /// Get pixel data from GPU texture and return an Image
+    /// Returns an [Image] from the pixel data in this texture.
+    ///
+    /// This operation can be expensive.
     pub fn get_texture_data(&self) -> Image {
         let mut image = Image {
             width: self.texture.width as _,
@@ -494,8 +586,10 @@ impl Texture2D {
         image
     }
 
-    /// Unload texture from GPU memory
-    /// Using deleted texture will gives different results on different platforms and is not recommended
+    /// Unloads texture from GPU memory.
+    ///
+    /// Using a deleted texture could give different results on different
+    /// platforms and is not recommended.
     pub fn delete(&self) {
         self.raw_miniquad_texture_handle().delete()
     }
