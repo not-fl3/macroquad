@@ -1,3 +1,5 @@
+use crate::ui::{Key, FocusOverride};
+use crate::ui::input::KeyCode;
 use crate::{
     math::{Rect, Vec2},
     ui::{ElementState, Layout, Ui},
@@ -51,7 +53,14 @@ impl<'a> Button<'a> {
             .cursor
             .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
         let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
-        let (hovered, clicked) = context.register_click_intention(rect);
+        let (hovered, mut clicked) = context.register_click_intention(rect);
+
+        let selected = context.tab_selector.register_selectable_widget(FocusOverride::None, hovered, context.input);
+        if selected {
+            if context.input.input_buffer.iter().any(|inp| inp.key == Key::KeyCode(KeyCode::Enter)) {
+                clicked = true;
+            }
+        }
 
         context.window.painter.draw_element_background(
             &context.style.button_style,
@@ -59,7 +68,7 @@ impl<'a> Button<'a> {
             size,
             ElementState {
                 focused: context.focused,
-                hovered,
+                hovered: hovered || selected,
                 clicked: hovered && context.input.is_mouse_down,
                 selected: false,
             },
@@ -71,7 +80,7 @@ impl<'a> Button<'a> {
             &self.label,
             ElementState {
                 focused: context.focused,
-                hovered,
+                hovered: hovered || selected,
                 clicked: hovered && context.input.is_mouse_down,
                 selected: false,
             },
