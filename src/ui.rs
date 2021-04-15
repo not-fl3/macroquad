@@ -201,6 +201,78 @@ impl StyleStack {
     }
 }
 
+pub(crate) struct TabSelector {
+    counter: isize,
+    wants: Option<isize>,
+    to_change: Option<isize>,
+}
+
+impl TabSelector {
+    fn new() -> Self {
+        TabSelector {
+            counter: 0,
+            wants: None,
+            to_change: None,
+        }
+    }
+
+    fn new_frame(&mut self) {
+        self.to_change = if self.wants == Some(-1) {
+            Some(self.counter - 1)
+        } else if self.wants == Some(self.counter) {
+            Some(0)
+        } else {
+            self.wants
+        };
+        self.wants = None;
+        self.counter = 0;
+    }
+
+    /// Returns true if this widget should gain focus, because user pressed `Tab` or `Shift + Tab`.
+    pub(crate) fn register_selectable_widget(&mut self, has_focus: bool, input: &Input) -> bool {
+        if has_focus {
+            enum PressedTabKey {
+                Tab,
+                ShiftTab,
+                Other,
+            }
+
+            let key = if input
+                .input_buffer
+                .iter()
+                .any(|inp| inp.key == Key::KeyCode(KeyCode::Tab) && inp.modifier_shift)
+            {
+                PressedTabKey::ShiftTab
+            } else if input
+                .input_buffer
+                .iter()
+                .any(|inp| inp.key == Key::KeyCode(KeyCode::Tab))
+            {
+                PressedTabKey::Tab
+            } else {
+                PressedTabKey::Other
+            };
+
+            match key {
+                PressedTabKey::Tab => self.wants = Some(self.counter + 1),
+                PressedTabKey::ShiftTab => self.wants = Some(self.counter - 1),
+                PressedTabKey::Other => {}
+            }
+        }
+
+        let result = if self.to_change.map(|id| id == self.counter).unwrap_or(false) {
+            self.to_change = None;
+            true
+        } else {
+            false
+        };
+
+        self.counter += 1;
+
+        result
+    }
+}
+
 pub struct Ui {
     input: Input,
     skin_stack: StyleStack,
@@ -240,6 +312,8 @@ pub struct Ui {
     clipboard: Box<dyn crate::ui::ClipboardObject>,
 
     key_repeat: key_repeat::KeyRepeat,
+
+    tab_selector: TabSelector,
 }
 
 #[derive(Default)]
@@ -282,6 +356,7 @@ pub(crate) struct WindowContext<'a> {
     pub focused: bool,
     pub last_item_clicked: &'a mut bool,
     pub last_item_hovered: &'a mut bool,
+    pub tab_selector: &'a mut TabSelector,
 }
 
 impl<'a> WindowContext<'a> {
@@ -568,6 +643,7 @@ impl Ui {
             key_repeat: key_repeat::KeyRepeat::new(),
             last_item_clicked: false,
             last_item_hovered: false,
+            tab_selector: TabSelector::new(),
         }
     }
 
@@ -674,6 +750,7 @@ impl Ui {
             clipboard: &mut *self.clipboard,
             last_item_clicked: &mut self.last_item_clicked,
             last_item_hovered: &mut self.last_item_hovered,
+            tab_selector: &mut self.tab_selector,
         }
     }
 
@@ -719,6 +796,7 @@ impl Ui {
             clipboard: &mut *self.clipboard,
             last_item_clicked: &mut self.last_item_clicked,
             last_item_hovered: &mut self.last_item_hovered,
+            tab_selector: &mut self.tab_selector,
         }
     }
 
@@ -764,6 +842,7 @@ impl Ui {
             clipboard: &mut *self.clipboard,
             last_item_clicked: &mut self.last_item_clicked,
             last_item_hovered: &mut self.last_item_hovered,
+            tab_selector: &mut self.tab_selector,
         }
     }
 
@@ -915,6 +994,8 @@ impl Ui {
         self.drag_hovered = None;
         self.input.reset();
         self.input.window_active = self.hovered_window == 0;
+
+        self.tab_selector.new_frame();
 
         self.key_repeat.new_frame(self.time);
 

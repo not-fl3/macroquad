@@ -2,7 +2,7 @@ use crate::math::Vec2;
 
 pub use crate::ui::input_handler::KeyCode;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Key {
     Char(char),
     KeyCode(KeyCode),
