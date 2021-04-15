@@ -201,32 +201,74 @@ impl StyleStack {
     }
 }
 
-pub struct TabSelector {
+pub struct FocusManager {
     counter: isize,
     wants: Option<isize>,
+    focused: Option<isize>,
+    // TODO: work by enum {Continuous(isize), Id(id)}, memorize previous, first, last widget id.
 }
 
-impl TabSelector {
+#[derive(PartialEq)]
+pub enum FocusOverride {
+    Gain,
+    Lost,
+    None,
+}
+
+impl FocusOverride {
+    fn gain_by(condition: bool) -> FocusOverride {
+        if condition {
+            FocusOverride::Gain
+        } else {
+            FocusOverride::None
+        }
+    }
+}
+
+impl FocusManager {
     fn new() -> Self {
-        TabSelector {
+        FocusManager {
             counter: 0,
             wants: None,
+            focused: None,
         }
     }
 
     fn new_frame(&mut self) {
-        if self.wants == Some(-1) {
-            self.wants = Some(self.counter - 1);
-        }
         if self.wants == Some(self.counter) {
             self.wants = Some(0);
+        } else if self.wants == Some(-1) {
+            self.wants = Some(self.counter - 1);
         }
         self.counter = 0;
     }
 
+    fn current_focused(&self) -> bool {
+        self.focused.map(|id| self.counter == id).unwrap_or(false)
+    } 
+
+    fn wants_current(&self) -> bool {
+        self.wants.map(|id| id == self.counter).unwrap_or(false)
+    }
+
     /// Returns true if this widget should gain focus, because user pressed `Tab` or `Shift + Tab`.
-    pub fn register_selectable_widget(&mut self, has_focus: bool, input: &Input) -> bool {
-        if has_focus {
+    /// `has_focus` should be `Some(...)` when you has state and you know when your widget has focus (e.g. EditBox), it should be `None` where you have no state and don't know when your widget has focus.
+    /// `hovered` is needed to lose focus for this widget if user clicks anywhere else.
+    /// Returns is current widget has focus.
+    pub fn register_selectable_widget(&mut self, focus_override: FocusOverride, hovered: bool, input: &Input) -> bool {
+        match focus_override {
+            FocusOverride::Gain => {
+                self.focused = Some(self.counter);
+            },
+            FocusOverride::Lost => {
+                if self.current_focused() {
+                    self.focused = None;
+                }
+            },
+            FocusOverride::None => {},
+        }
+
+        if self.current_focused() {
             enum PressedTabKey {
                 Tab,
                 ShiftTab,
@@ -254,14 +296,18 @@ impl TabSelector {
                 PressedTabKey::ShiftTab => self.wants = Some(self.counter - 1),
                 PressedTabKey::Other => {}
             }
+
+            if input.click_down() && !hovered {
+                self.focused = None;
+            }
         }
 
-        let result = if self.wants.map(|id| id == self.counter).unwrap_or(false) {
+        if self.wants_current() {
             self.wants = None;
-            true
-        } else {
-            false
-        };
+            self.focused = Some(self.counter);
+        }
+
+        let result = self.current_focused();
 
         self.counter += 1;
 
@@ -309,7 +355,7 @@ pub struct Ui {
 
     key_repeat: key_repeat::KeyRepeat,
 
-    tab_selector: TabSelector,
+    tab_selector: FocusManager,
 }
 
 #[derive(Default)]
@@ -352,7 +398,7 @@ pub(crate) struct WindowContext<'a> {
     pub focused: bool,
     pub last_item_clicked: &'a mut bool,
     pub last_item_hovered: &'a mut bool,
-    pub tab_selector: &'a mut TabSelector,
+    pub tab_selector: &'a mut FocusManager,
 }
 
 impl<'a> WindowContext<'a> {
@@ -639,7 +685,7 @@ impl Ui {
             key_repeat: key_repeat::KeyRepeat::new(),
             last_item_clicked: false,
             last_item_hovered: false,
-            tab_selector: TabSelector::new(),
+            tab_selector: FocusManager::new(),
         }
     }
 

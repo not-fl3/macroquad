@@ -1,3 +1,4 @@
+use crate::ui::FocusOverride;
 use crate::{
     math::{vec2, Rect, Vec2},
     ui::{ElementState, Id, InputCharacter, Key, KeyCode, Layout, Ui},
@@ -261,13 +262,6 @@ impl<'a> Editbox<'a> {
 
         let hovered = rect.contains(context.input.mouse_position);
 
-        if context.input.click_down() && hovered {
-            context.window.input_focus = Some(self.id);
-        }
-        if context.window.input_focused(self.id) && context.input.click_down() && hovered == false {
-            context.window.input_focus = None;
-        }
-
         let mut state = context
             .storage_any
             .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
@@ -287,14 +281,10 @@ impl<'a> Editbox<'a> {
             state.cursor = text.len() as u32;
         }
 
-        let input_focused = context.window.input_focused(self.id) && context.focused;
-
-        let is_tab_selected = context
+        let focus_override = FocusOverride::gain_by(context.input.click_down() && hovered);
+        let input_focused = context
             .tab_selector
-            .register_selectable_widget(input_focused, context.input);
-        if is_tab_selected {
-            context.window.input_focus = Some(self.id);
-        }
+            .register_selectable_widget(focus_override, hovered, context.input);
 
         // reset selection state when lost focus
         if context.focused == false || input_focused == false {
