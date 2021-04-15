@@ -289,6 +289,13 @@ impl<'a> Editbox<'a> {
 
         let input_focused = context.window.input_focused(self.id) && context.focused;
 
+        let is_tab_selected = context
+            .tab_selector
+            .register_selectable_widget(input_focused, context.input);
+        if is_tab_selected {
+            context.window.input_focus = Some(self.id);
+        }
+
         // reset selection state when lost focus
         if context.focused == false || input_focused == false {
             state.deselect();
