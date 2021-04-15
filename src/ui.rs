@@ -83,7 +83,6 @@ pub(crate) struct Window {
     pub cursor: Cursor,
     pub childs: Vec<Id>,
     pub want_close: bool,
-    pub input_focus: Option<Id>,
     pub force_focus: bool,
 }
 
@@ -123,14 +122,8 @@ impl Window {
             childs: vec![],
             want_close: false,
             movable,
-            input_focus: None,
             force_focus,
         }
-    }
-
-    pub fn input_focused(&self, id: Id) -> bool {
-        self.input_focus
-            .map_or(false, |input_focus| input_focus == id)
     }
 
     pub fn top_level(&self) -> bool {
@@ -249,6 +242,10 @@ impl FocusManager {
 
     fn wants_current(&self) -> bool {
         self.wants.map(|id| id == self.counter).unwrap_or(false)
+    }
+
+    pub fn is_next_focused(&self) -> bool {
+        self.focused.map(|id| self.counter == id).unwrap_or(false)
     }
 
     /// Returns true if this widget should gain focus, because user pressed `Tab` or `Shift + Tab`.

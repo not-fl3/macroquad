@@ -152,7 +152,6 @@ impl<'a> Drag<'a> {
                     s.drag = None;
                     context.input.cursor_grabbed = false;
                     if !hovered {
-                        context.window.input_focus = None;
                     }
                 } else {
                     let mouse_delta =
@@ -179,7 +178,6 @@ impl<'a> Drag<'a> {
                         start_mouse: context.input.mouse_position.x,
                         start_value: (*data).into(),
                     });
-                    context.window.input_focus = Some(self.id);
                     context.input.cursor_grabbed = true;
                 }
             }
