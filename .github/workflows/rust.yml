@@ -17,7 +17,7 @@ jobs:
           - { os: windows-latest, target: 'x86_64-pc-windows-msvc' }
         include:
           - os: ubuntu-latest
-            packages: libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64
+            packages: libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64 libasound2-dev
 
     steps:
       - uses: actions/checkout@v2
