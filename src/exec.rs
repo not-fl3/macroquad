@@ -51,6 +51,12 @@ impl FileError {
 pub struct FileLoadingFuture {
     pub contents: std::rc::Rc<std::cell::RefCell<Option<FileResult<Vec<u8>>>>>,
 }
+// TODO: use mutex(?) instead of refcell here
+// this is still safe tho - macroquad's executor is refcell-safe
+// but this just look too bad
+unsafe impl Send for FileLoadingFuture {}
+unsafe impl Sync for FileLoadingFuture {}
+
 impl Unpin for FileLoadingFuture {}
 impl Future for FileLoadingFuture {
     type Output = FileResult<Vec<u8>>;
