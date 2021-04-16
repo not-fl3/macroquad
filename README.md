@@ -9,13 +9,6 @@
 
 `macroquad` attempts to avoid any Rust-specific programming concepts like lifetimes/borrowing, making it very friendly for Rust beginners. See the [docs](https://docs.rs/macroquad/0.3.0-alpha/macroquad/index.html).
 
-## Supported platforms
-
-* PC: Windows/Linux/MacOs
-* HTML5
-* Android
-* IOS
-
 ## Features
 
 * Same code for all supported platforms, no platform dependent defines required
@@ -37,22 +30,21 @@
 
 ### Setting up a macroquad project
 
-Macroquad is a normal rust dependencie, therefore an empty macroquad project may be created with:
+Macroquad is a normal rust dependency, therefore an empty macroquad project may be created with:
 
 ```bash
 # Create empty cargo project
 cargo init --bin
 ```
 
-Add macroquad as a dependencie to Cargo.toml:
+Add macroquad as a dependency to Cargo.toml:
 ```toml
 
 [dependencies]
 macroquad = "0.3"
 ```
 
-Put some macroquad code to `main.rs`:
-`src/main.rs`:
+Put some macroquad code in `src/main.rs`:
 ```rust
 use macroquad::prelude::*;
 
@@ -92,7 +84,7 @@ On windows both MSVC and GNU target are supported, no additional dependencies re
 
 Also cross-compilation to windows from linux is supported:
 
-```bash
+```sh
 rustup target add x86_64-pc-windows-gnu
 
 cargo run --target x86_64-pc-windows-gnu
@@ -100,7 +92,7 @@ cargo run --target x86_64-pc-windows-gnu
 
 ### wasm
 
-```bash
+```sh
 rustup target add wasm32-unknown-unknown
 cargo build --target wasm32-unknown-unknown
 ```
@@ -146,7 +138,7 @@ And then use the following .html to load it:
 
 One of the ways to server static .wasm and .html:
 
-```
+```sh
 cargo install basic-http-server
 basic-http-server .
 ```
@@ -170,7 +162,7 @@ Rust's `async/await` is used to solve just one problem - cross platform main loo
 <summary>details</summary>
 
 
-The problem: on WASM and android its not really easy to organize main loop like this:
+The problem: on WASM and android it's not really easy to organize the main loop like this:
 ```
 fn main() {
     // do some initialization
