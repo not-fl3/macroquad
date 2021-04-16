@@ -27,6 +27,9 @@ macroquad_macro = { version = "0.1.2", path = "macroquad_macro" }
 fontdue = "0.4.0"
 bumpalo = "3.4"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rodio = { version = "0.13.0", default-features = false, features = ["wav", "vorbis"] }
+
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
 macroquad-tiled = { path = "./tiled" }

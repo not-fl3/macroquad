@@ -47,6 +47,7 @@ mod drawing;
 mod exec;
 mod quad_gl;
 
+pub mod audio;
 pub mod camera;
 pub mod color;
 pub mod file;
@@ -90,6 +91,7 @@ use ui::ui_context::UiContext;
 
 struct Context {
     quad_context: QuadContext,
+    audio_context: audio::AudioContext,
 
     screen_width: f32,
     screen_height: f32,
@@ -219,6 +221,7 @@ impl Context {
             fonts_storage: text::FontsStorage::new(&mut ctx),
 
             quad_context: ctx,
+            audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
 
             start_time: miniquad::date::now(),
