@@ -676,7 +676,7 @@ impl QuadGl {
             state: GlState {
                 clip: None,
                 texture: white_texture,
-                model_stack: vec![glam::Mat4::identity()],
+                model_stack: vec![glam::Mat4::IDENTITY],
                 draw_mode: DrawMode::Triangles,
                 pipeline: None,
                 depth_test_enable: false,
@@ -746,7 +746,7 @@ impl QuadGl {
     pub fn reset(&mut self) {
         self.state.clip = None;
         self.state.texture = self.white_texture;
-        self.state.model_stack = vec![glam::Mat4::identity()];
+        self.state.model_stack = vec![glam::Mat4::IDENTITY];
 
         self.draw_calls_count = 0;
     }
