@@ -262,10 +262,10 @@ impl<'a> Editbox<'a> {
         let hovered = rect.contains(context.input.mouse_position);
 
         if context.input.click_down() && hovered {
-            context.window.input_focus = Some(self.id);
+            *context.input_focus = Some(self.id);
         }
-        if context.window.input_focused(self.id) && context.input.click_down() && hovered == false {
-            context.window.input_focus = None;
+        if context.input_focused(self.id) && context.input.click_down() && hovered == false {
+            *context.input_focus = None;
         }
 
         let mut state = context
@@ -287,13 +287,14 @@ impl<'a> Editbox<'a> {
             state.cursor = text.len() as u32;
         }
 
-        let input_focused = context.window.input_focused(self.id) && context.focused;
+        let input_focused =
+            context.input_focus.map_or(false, |id| id == self.id) && context.focused;
 
         let is_tab_selected = context
             .tab_selector
             .register_selectable_widget(input_focused, context.input);
         if is_tab_selected {
-            context.window.input_focus = Some(self.id);
+            *context.input_focus = Some(self.id);
         }
 
         // reset selection state when lost focus

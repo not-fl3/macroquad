@@ -48,7 +48,7 @@ impl<'a> Slider<'a> {
             .clone();
 
         let editbox_id = hash!(self.id, "editbox");
-        if context.window.input_focused(editbox_id) == false {
+        if context.input_focused(editbox_id) == false {
             use std::fmt::Write;
 
             temp_string.clear();
@@ -90,14 +90,14 @@ impl<'a> Slider<'a> {
 
         if hovered && context.input.is_mouse_down() {
             *dragging = 1;
-            context.window.input_focus = Some(self.id);
+            *context.input_focus = Some(self.id);
             context.input.cursor_grabbed = true;
         }
 
         if *dragging == 1 && context.input.is_mouse_down == false {
             context.input.cursor_grabbed = false;
             *dragging = 0;
-            context.window.input_focus = None;
+            *context.input_focus = None;
         }
 
         if *dragging == 1 {
