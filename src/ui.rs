@@ -83,7 +83,6 @@ pub(crate) struct Window {
     pub cursor: Cursor,
     pub childs: Vec<Id>,
     pub want_close: bool,
-    pub input_focus: Option<Id>,
     pub force_focus: bool,
 }
 
@@ -123,14 +122,8 @@ impl Window {
             childs: vec![],
             want_close: false,
             movable,
-            input_focus: None,
             force_focus,
         }
-    }
-
-    pub fn input_focused(&self, id: Id) -> bool {
-        self.input_focus
-            .map_or(false, |input_focus| input_focus == id)
     }
 
     pub fn top_level(&self) -> bool {
@@ -314,6 +307,7 @@ pub struct Ui {
     key_repeat: key_repeat::KeyRepeat,
 
     tab_selector: TabSelector,
+    input_focus: Option<Id>,
 }
 
 #[derive(Default)]
@@ -357,6 +351,7 @@ pub(crate) struct WindowContext<'a> {
     pub last_item_clicked: &'a mut bool,
     pub last_item_hovered: &'a mut bool,
     pub tab_selector: &'a mut TabSelector,
+    pub input_focus: &'a mut Option<Id>,
 }
 
 impl<'a> WindowContext<'a> {
@@ -458,6 +453,11 @@ impl<'a> WindowContext<'a> {
         *self.last_item_clicked = *self.last_item_hovered && self.input.click_down();
 
         (*self.last_item_hovered, *self.last_item_clicked)
+    }
+
+    pub fn input_focused(&self, id: Id) -> bool {
+        self.input_focus
+            .map_or(false, |input_focus| input_focus == id)
     }
 }
 
@@ -644,6 +644,7 @@ impl Ui {
             last_item_clicked: false,
             last_item_hovered: false,
             tab_selector: TabSelector::new(),
+            input_focus: None,
         }
     }
 
@@ -751,6 +752,7 @@ impl Ui {
             last_item_clicked: &mut self.last_item_clicked,
             last_item_hovered: &mut self.last_item_hovered,
             tab_selector: &mut self.tab_selector,
+            input_focus: &mut self.input_focus,
         }
     }
 
@@ -797,6 +799,7 @@ impl Ui {
             last_item_clicked: &mut self.last_item_clicked,
             last_item_hovered: &mut self.last_item_hovered,
             tab_selector: &mut self.tab_selector,
+            input_focus: &mut self.input_focus,
         }
     }
 
@@ -843,6 +846,7 @@ impl Ui {
             last_item_clicked: &mut self.last_item_clicked,
             last_item_hovered: &mut self.last_item_hovered,
             tab_selector: &mut self.tab_selector,
+            input_focus: &mut self.input_focus,
         }
     }
 
