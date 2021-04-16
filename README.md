@@ -19,12 +19,10 @@
 
 ## Supported platforms
 
-* Windows, OpenGl 3
-* Linux, OpenGl 3
-* macOS, OpenGL 3
-* iOS, GLES 3
-* WASM, WebGl1 - tested on ios safari, ff, chrome
-* Android, GLES3
+* PC: Windows/Linux/MacOs
+* HTML5
+* Android
+* IOS
 
 ## Build instructions
 
