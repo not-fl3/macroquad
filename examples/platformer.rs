@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 
 use macroquad_tiled as tiled;
 
-use physics_platformer::*;
+use macroquad_platformer::*;
 
 struct Player {
     collider: Actor,

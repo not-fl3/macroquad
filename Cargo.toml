@@ -33,7 +33,7 @@ rodio = { version = "0.13.0", default-features = false, features = ["wav", "vorb
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
 macroquad-tiled = { path = "./tiled" }
-physics-platformer = { path = "./physics-platformer" }
+macroquad-platformer = { path = "./physics-platformer" }
 
 # workaround to fix the examples
 # this allows to use macroquad-particles in examples without two versions of macroquad
