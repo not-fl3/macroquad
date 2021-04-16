@@ -1,8 +1,12 @@
 [package]
-name = "physics-platformer"
-version = "0.1.0"
+name = "macroquad-platformer"
+version = "0.1.1"
 authors = ["Fedor Logachev <not.fl3@gmail.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+description = """
+Platformer physics for macroquad
+"""
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
