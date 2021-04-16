@@ -24,6 +24,133 @@
 * Immediate mode UI library included
 * Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples)
 
+## Supported platforms
+
+* Windows, OpenGl 3
+* Linux, OpenGl 3
+* macOS, OpenGL 3
+* iOS, GLES 3
+* WASM, WebGl1 - tested on ios safari, ff, chrome
+* Android, GLES3
+
+## Build instructions
+
+### Setting up a macroquad project
+
+Macroquad is a normal rust dependencie, therefore an empty macroquad project may be created with:
+
+```bash
+# Create empty cargo project
+cargo init --bin
+```
+
+Add macroquad as a dependencie to Cargo.toml:
+```toml
+
+[dependencies]
+macroquad = "0.3"
+```
+
+Put some macroquad code to `main.rs`:
+`src/main.rs`:
+```rust
+use macroquad::prelude::*;
+
+#[macroquad::main("BasicShapes")]
+async fn main() {
+    loop {
+        clear_background(RED);
+
+        draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
+        draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
+        draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
+
+        draw_text("IT WORKS!", 20.0, 20.0, 30.0, DARKGRAY);
+
+        next_frame().await
+    }
+}
+```
+
+And to run it natively: 
+```bash
+cargo run
+```
+
+For more examples take a look on [Macroquad examples folder](https://github.com/not-fl3/macroquad/tree/master/examples)
+
+### linux
+
+```bash
+# ubuntu system dependencies
+apt install libx11-dev libxi-dev libgl1-mesa-dev libasound2-dev
+```
+
+### windows
+
+On windows both MSVC and GNU target are supported, no additional dependencies required. 
+
+Also cross-compilation to windows from linux is supported:
+
+```bash
+rustup target add x86_64-pc-windows-gnu
+
+cargo run --target x86_64-pc-windows-gnu
+```
+
+### wasm
+
+```bash
+rustup target add wasm32-unknown-unknown
+cargo build --target wasm32-unknown-unknown
+```
+
+This will produce .wasm file in `target/debug/wasm32-unknown-unknown/CRATENAME.wasm` or in `target/release/wasm32-unknown-unknown/CRATENAME.wasm` if built with `--release`. 
+
+And then use the following .html to load it:
+
+<details><summary>index.html</summary>
+
+```html
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>TITLE</title>
+    <style>
+        html,
+        body,
+        canvas {
+            margin: 0px;
+            padding: 0px;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            position: absolute;
+            background: black;
+            z-index: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="glcanvas" tabindex='1'></canvas>
+    <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/native/js/mq_js_bundle.js -->
+    <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle_0.3.0.js.js"></script>
+    <script>load("CRATENAME.wasm");</script> <!-- Your compiled wasm file -->
+</body>
+
+</html>
+```
+</details>
+
+One of the ways to server static .wasm and .html:
+
+```
+cargo install basic-http-server
+basic-http-server .
+```
+
 <details>
 <summary>tips</summary>
 Adding the following snippet to your Cargo.toml ensures that all dependencies compile in release even in debug mode. In macroquad, this has the effect of making images load several times faster and your applications much more performant, while keeping compile times miraculously low.
