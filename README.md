@@ -126,7 +126,7 @@ And then use the following .html to load it:
 <body>
     <canvas id="glcanvas" tabindex='1'></canvas>
     <!-- Minified and statically hosted version of https://github.com/not-fl3/macroquad/blob/master/native/js/mq_js_bundle.js -->
-    <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle_0.3.0.js.js"></script>
+    <script src="https://not-fl3.github.io/miniquad-samples/mq_js_bundle_0.3.0.js"></script>
     <script>load("CRATENAME.wasm");</script> <!-- Your compiled wasm file -->
 </body>
 
