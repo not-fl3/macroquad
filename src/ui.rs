@@ -58,12 +58,6 @@ use input::{InputCharacter, Key};
 
 pub type Id = u64;
 
-pub struct Texture2D {
-    pub width: u32,
-    pub height: u32,
-    pub data: Vec<u8>,
-}
-
 pub(crate) struct Window {
     pub id: Id,
     pub parent: Option<Id>,
