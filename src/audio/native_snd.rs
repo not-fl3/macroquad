@@ -34,8 +34,9 @@ impl Sound {
         let decoder = rodio::Decoder::new(std::io::Cursor::new(data.to_vec())).unwrap();
         sink_once.append(decoder);
 
-        let decoder = rodio::Decoder::new(std::io::Cursor::new(data.to_vec())).unwrap();
+        let decoder = rodio::Decoder::new_looped(std::io::Cursor::new(data.to_vec())).unwrap();
         sink_looped.append(decoder);
+
         Sound {
             sink_once,
             sink_looped,
@@ -70,7 +71,8 @@ impl Sound {
         let decoder = rodio::Decoder::new(std::io::Cursor::new(self.source.clone())).unwrap();
         sink_once.append(decoder);
 
-        let decoder = rodio::Decoder::new(std::io::Cursor::new(self.source.clone())).unwrap();
+        let decoder =
+            rodio::Decoder::new_looped(std::io::Cursor::new(self.source.clone())).unwrap();
         sink_looped.append(decoder);
 
         self.sink_once = sink_once;

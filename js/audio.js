@@ -138,7 +138,7 @@ function audio_source_stop(sound_key) {
     delete sounds[sound_key].gains;
 }
 
-register_plugin = function (importObject) {
+function register_plugin(importObject) {
     importObject.env.audio_init = audio_init;
     importObject.env.audio_add_buffer = audio_add_buffer;
     importObject.env.audio_play_buffer = audio_play_buffer;
