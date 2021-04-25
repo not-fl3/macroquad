@@ -94,7 +94,12 @@ async fn main() {
 
         set_camera(&camera);
 
-        draw_grid(20, 1.);
+        draw_grid(
+            20,
+            1.,
+            Color::new(0.55, 0.55, 0.55, 0.75),
+            Color::new(0.75, 0.75, 0.75, 0.75),
+        );
 
         gl_use_material(material);
         match mesh {
