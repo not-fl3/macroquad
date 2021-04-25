@@ -147,4 +147,4 @@ function register_plugin(importObject) {
     importObject.env.audio_source_stop = audio_source_stop;
 }
 
-miniquad_add_plugin({ register_plugin, on_init, version: "0.1.0", name: "macroquad_audio" });
+miniquad_add_plugin({ register_plugin, version: "0.1.0", name: "macroquad_audio" });
