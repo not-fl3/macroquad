@@ -17,7 +17,7 @@ async fn main() {
             ..Default::default()
         });
 
-        draw_grid(20, 1.);
+        draw_grid(20, 1., BLACK, GRAY);
 
         draw_cube_wires(vec3(0., 1., -6.), vec3(2., 2., 2.), DARKGREEN);
         draw_cube_wires(vec3(0., 1., 6.), vec3(2., 2., 2.), DARKBLUE);
