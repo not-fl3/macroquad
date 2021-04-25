@@ -121,6 +121,9 @@ struct Context {
     start_time: f64,
     last_frame_time: f64,
     frame_time: f64,
+
+    #[cfg(one_screenshot)]
+    counter: usize,
 }
 
 #[derive(Clone)]
@@ -227,6 +230,9 @@ impl Context {
             start_time: miniquad::date::now(),
             last_frame_time: miniquad::date::now(),
             frame_time: 1. / 60.,
+
+            #[cfg(one_screenshot)]
+            counter: 0,
         }
     }
 
@@ -246,6 +252,15 @@ impl Context {
             .perform_render_passes(&mut self.quad_context);
 
         self.quad_context.commit_frame();
+
+        #[cfg(one_screenshot)]
+        {
+            get_context().counter += 1;
+            if get_context().counter == 3 {
+                crate::prelude::get_screen_data().export_png("screenshot.png");
+                panic!("screenshot successfully saved to `screenshot.png`");
+            }
+        }
 
         telemetry::end_gpu_query();
 
