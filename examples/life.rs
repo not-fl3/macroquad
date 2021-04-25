@@ -80,8 +80,8 @@ async fn main() {
                 (i % w) as u32,
                 (i / w) as u32,
                 match buffer[i as usize] {
-                    CellState::Alive => RED,
-                    CellState::Dead => GREEN,
+                    CellState::Alive => BLACK,
+                    CellState::Dead => WHITE,
                 },
             );
         }

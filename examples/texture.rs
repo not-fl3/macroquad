@@ -5,7 +5,7 @@ async fn main() {
     let texture: Texture2D = load_texture("examples/ferris.png").await.unwrap();
 
     loop {
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
         draw_texture(
             texture,
             screen_width() / 2. - texture.width() / 2.,

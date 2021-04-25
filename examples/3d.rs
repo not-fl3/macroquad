@@ -6,7 +6,7 @@ async fn main() {
     let ferris = load_texture("examples/ferris.png").await.unwrap();
 
     loop {
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
 
         // Going 3d!
 

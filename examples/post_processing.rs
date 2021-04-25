@@ -19,7 +19,7 @@ async fn main() {
             ..Default::default()
         });
 
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
         draw_line(-30.0, 45.0, 30.0, 45.0, 3.0, BLUE);
         draw_circle(-45.0, -35.0, 20.0, YELLOW);
         draw_circle(45.0, -35.0, 20.0, GREEN);
@@ -28,7 +28,7 @@ async fn main() {
 
         set_default_camera();
 
-        clear_background(RED);
+        clear_background(WHITE);
         gl_use_material(material);
         draw_texture_ex(
             render_target.texture,

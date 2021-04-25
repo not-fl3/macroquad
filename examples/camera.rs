@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 #[macroquad::main("Camera")]
 async fn main() {
     loop {
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
 
         // Render some primitives in camera space
 
