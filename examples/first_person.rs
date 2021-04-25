@@ -21,7 +21,7 @@ async fn main() {
     let bounds = 8.0;
 
     let world_up = vec3(0.0, 1.0, 0.0);
-    let mut yaw: f32 = 0.0;
+    let mut yaw: f32 = 1.18;
     let mut pitch: f32 = 0.0;
 
     let mut front = vec3(
@@ -90,7 +90,7 @@ async fn main() {
             switch = !switch;
         }
 
-        clear_background(Color::new(1.0, 0.7, 0.0, 1.0));
+        clear_background(LIGHTGRAY);
 
         // Going 3d!
 
@@ -101,7 +101,7 @@ async fn main() {
             ..Default::default()
         });
 
-        draw_grid(20, 1.);
+        draw_grid(20, 1., BLACK, GRAY);
 
         draw_line_3d(
             vec3(x, 0.0, x),
@@ -109,8 +109,8 @@ async fn main() {
             Color::new(1.0, 1.0, 0.0, 1.0),
         );
 
-        draw_cube_wires(vec3(0., 1., -6.), vec3(2., 2., 2.), DARKGREEN);
-        draw_cube_wires(vec3(0., 1., 6.), vec3(2., 2., 2.), DARKBLUE);
+        draw_cube_wires(vec3(0., 1., -6.), vec3(2., 2., 2.), GREEN);
+        draw_cube_wires(vec3(0., 1., 6.), vec3(2., 2., 2.), BLUE);
         draw_cube_wires(vec3(2., 1., 2.), vec3(2., 2., 2.), RED);
 
         // Back to screen space, render some text

@@ -6,7 +6,7 @@ fn tree(gl: &mut QuadGl, time: f64, deep: u32, angle: f32, tall: f32) {
     }
 
     // we can use normal macroquad drawing API here
-    draw_rectangle(-0.01 / 2., 0., 0.01, tall, RED);
+    draw_rectangle(-0.01 / 2., 0., 0.01, tall, DARKGRAY);
 
     // and we can also modify internal macroquad render state with "gl" reference
     gl.push_model_matrix(glam::Mat4::from_translation(glam::vec3(0., tall, 0.)));
@@ -36,9 +36,9 @@ async fn main() {
 
     set_camera(&camera);
     loop {
-        clear_background(GREEN);
+        clear_background(LIGHTGRAY);
 
-        draw_circle(0., 0., 0.03, RED);
+        draw_circle(0., 0., 0.03, DARKGRAY);
         tree(unsafe { get_internal_gl().quad_gl }, get_time(), 0, 1., 0.3);
 
         next_frame().await

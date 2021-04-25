@@ -82,7 +82,7 @@ async fn main() {
 
         smooth_rotation = angle_lerp(smooth_rotation, rotation, 0.1);
 
-        clear_background(WHITE);
+        clear_background(LIGHTGRAY);
 
         set_camera(&Camera2D {
             target: vec2(target.0, target.1),
