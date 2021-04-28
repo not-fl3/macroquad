@@ -91,6 +91,7 @@ use ui::ui_context::UiContext;
 
 struct Context {
     quad_context: QuadContext,
+    #[cfg(feature="audio")]
     audio_context: audio::AudioContext,
 
     screen_width: f32,
@@ -224,6 +225,7 @@ impl Context {
             fonts_storage: text::FontsStorage::new(&mut ctx),
 
             quad_context: ctx,
+            #[cfg(feature="audio")]
             audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
 

@@ -1,16 +1,12 @@
-
-#[cfg(feature="audio")]
 use rodio::{OutputStream, OutputStreamHandle, Sink};
 
 use crate::audio::PlaySoundParams;
 
-#[cfg(feature="audio")]
 pub struct AudioContext {
     _stream: OutputStream,
     handle: OutputStreamHandle,
 }
 
-#[cfg(feature="audio")]
 impl AudioContext {
     pub fn new() -> AudioContext {
         let (_stream, handle) = OutputStream::try_default().unwrap();
@@ -19,7 +15,6 @@ impl AudioContext {
     }
 }
 
-#[cfg(feature="audio")]
 pub struct Sound {
     // the only way to play the same sound looped or once in rodio :/
     sink_once: Sink,
@@ -29,7 +24,6 @@ pub struct Sound {
     source: Vec<u8>,
 }
 
-#[cfg(feature="audio")]
 impl Sound {
     pub fn load(ctx: &mut AudioContext, data: &[u8]) -> Sound {
         let sink_once = Sink::try_new(&ctx.handle).unwrap();
