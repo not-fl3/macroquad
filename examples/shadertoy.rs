@@ -1,13 +1,11 @@
 use macroquad::prelude::*;
 
-use megaui_macroquad::{
-    draw_megaui, draw_window,
-    megaui::{
-        self, hash,
-        widgets::{Label, TreeNode},
-    },
-    set_megaui_texture, WindowParams,
+use macroquad::ui::{
+    hash, root_ui,
+    widgets::{self, Label, TreeNode},
 };
+
+use macroquad::color;
 
 enum Uniform {
     Float1(String),
@@ -38,18 +36,18 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
             let lightness = 1.0 - i as f32 * ratio;
             let hue = j as f32 * ratio;
 
-            image_data[i + j * w] = Color::from_hsl(hue, 1.0, lightness).into();
+            image_data[i + j * w] = color::hsl_to_rgb(hue, 1.0, lightness).into();
         }
     }
 
-    (load_texture_from_image(&image), image)
+    (Texture2D::from_image(&image), image)
 }
 
 #[macroquad::main("Shadertoy")]
 async fn main() {
-    let ferris = load_texture("examples/rust.png").await;
-    let (color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
-    set_megaui_texture(0, color_picker_texture);
+    let ferris = load_texture("examples/rust.png").await.unwrap();
+    let (_color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
+    //set_megaui_texture(0, color_picker_texture);
 
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
     let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
@@ -75,7 +73,7 @@ async fn main() {
         Sphere,
         Cube,
         Plane,
-    };
+    }
     let mut mesh = Mesh::Sphere;
 
     let mut camera = Camera3D {
@@ -95,7 +93,7 @@ async fn main() {
     loop {
         clear_background(WHITE);
 
-        set_camera(camera);
+        set_camera(&camera);
 
         draw_grid(20, 1.);
 
@@ -111,16 +109,9 @@ async fn main() {
 
         let mut need_update = false;
 
-        draw_window(
-            hash!(),
-            vec2(20., 20.),
-            vec2(450., 650.),
-            WindowParams {
-                label: "Shader".to_string(),
-                close_button: false,
-                ..Default::default()
-            },
-            |ui| {
+        widgets::Window::new(hash!(), vec2(20., 20.), vec2(450., 650.))
+            .label("Shader")
+            .ui(&mut *root_ui(), |ui| {
                 ui.label(None, "Camera: ");
                 ui.same_line(0.0);
                 if ui.button(None, "Ortho") {
@@ -153,8 +144,8 @@ async fn main() {
 
                     match uniform {
                         Uniform::Float1(x) => {
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(200.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(200.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
@@ -163,15 +154,15 @@ async fn main() {
                             }
                         }
                         Uniform::Float2(x, y) => {
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(99.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(99.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(99.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(99.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, y);
 
@@ -180,22 +171,22 @@ async fn main() {
                             }
                         }
                         Uniform::Float3(x, y, z) => {
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(65.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, x);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(65.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, y);
 
                             ui.same_line(0.0);
 
-                            megaui::widgets::InputField::new(hash!(hash!(), i))
-                                .size(megaui::Vector2::new(65.0, 19.0))
+                            widgets::InputText::new(hash!(hash!(), i))
+                                .size(vec2(65.0, 19.0))
                                 .filter_numbers()
                                 .ui(ui, z);
 
@@ -212,16 +203,16 @@ async fn main() {
                             let cursor = canvas.cursor();
 
                             canvas.rect(
-                                megaui::Rect::new(cursor.x + 20.0, cursor.y, 50.0, 18.0),
-                                megaui::Color::new(0.2, 0.2, 0.2, 1.0),
-                                megaui::Color::new(color.x(), color.y(), color.z(), 1.0),
+                                Rect::new(cursor.x + 20.0, cursor.y, 50.0, 18.0),
+                                Color::new(0.2, 0.2, 0.2, 1.0),
+                                Color::new(color.x, color.y, color.z, 1.0),
                             );
 
                             if ui.button(None, "change") {
                                 colorpicker_window = true;
                                 color_picking_uniform = Some(name.to_owned());
                             }
-                            material.set_uniform(name, (color.x(), color.y(), color.z()));
+                            material.set_uniform(name, (color.x, color.y, color.z));
                         }
                     }
                 }
@@ -232,20 +223,12 @@ async fn main() {
                 TreeNode::new(hash!(), "Fragment shader")
                     .init_unfolded()
                     .ui(ui, |ui| {
-                        if ui.editbox(
-                            hash!(),
-                            megaui::Vector2::new(440., 200.),
-                            &mut fragment_shader,
-                        ) {
+                        if ui.editbox(hash!(), vec2(440., 200.), &mut fragment_shader) {
                             need_update = true;
                         };
                     });
                 ui.tree_node(hash!(), "Vertex shader", |ui| {
-                    if ui.editbox(
-                        hash!(),
-                        megaui::Vector2::new(440., 300.),
-                        &mut vertex_shader,
-                    ) {
+                    if ui.editbox(hash!(), vec2(440., 300.), &mut vertex_shader) {
                         need_update = true;
                     };
                 });
@@ -253,26 +236,22 @@ async fn main() {
                 if let Some(ref error) = error {
                     Label::new(error).multiline(14.0).ui(ui);
                 }
-            },
-        );
+            });
 
         if new_uniform_window {
-            draw_window(
-                hash!(),
-                vec2(100., 100.),
-                vec2(200., 80.),
-                WindowParams {
-                    label: "New uniform".to_string(),
-                    close_button: false,
-                    ..Default::default()
-                },
-                |ui| {
+            widgets::Window::new(hash!(), vec2(100., 100.), vec2(200., 80.))
+                .label("New uniform")
+                .ui(&mut *root_ui(), |ui| {
                     if ui.active_window_focused() == false {
                         new_uniform_window = false;
                     }
-                    ui.input_field(hash!(), "Name", &mut new_uniform_name);
-                    let uniform_type =
-                        ui.combo_box(hash!(), "Type", &["Float1", "Float2", "Float3", "Color"]);
+                    ui.input_text(hash!(), "Name", &mut new_uniform_name);
+                    let uniform_type = ui.combo_box(
+                        hash!(),
+                        "Type",
+                        &["Float1", "Float2", "Float3", "Color"],
+                        None,
+                    );
 
                     if ui.button(None, "Add") {
                         if new_uniform_name.is_empty() == false {
@@ -298,21 +277,13 @@ async fn main() {
                     if ui.button(None, "Cancel") {
                         new_uniform_window = false;
                     }
-                },
-            );
+                });
         }
 
         if colorpicker_window {
-            colorpicker_window &= draw_window(
-                hash!(),
-                vec2(140., 100.),
-                vec2(210., 240.),
-                WindowParams {
-                    label: "Colorpicker".to_string(),
-                    close_button: true,
-                    ..Default::default()
-                },
-                |ui| {
+            colorpicker_window &= widgets::Window::new(hash!(), vec2(140., 100.), vec2(210., 240.))
+                .label("Colorpicker")
+                .ui(&mut *root_ui(), |ui| {
                     if ui.active_window_focused() == false {
                         colorpicker_window = false;
                     }
@@ -327,20 +298,17 @@ async fn main() {
                         .get_pixel(x.max(0).min(199) as u32, y.max(0).min(199) as u32);
 
                     canvas.rect(
-                        megaui::Rect::new(cursor.x, cursor.y, 200.0, 18.0),
-                        megaui::Color::new(0.0, 0.0, 0.0, 1.0),
-                        megaui::Color::new(color.r, color.g, color.b, 1.0),
+                        Rect::new(cursor.x, cursor.y, 200.0, 18.0),
+                        Color::new(0.0, 0.0, 0.0, 1.0),
+                        Color::new(color.r, color.g, color.b, 1.0),
                     );
-                    canvas.image(
-                        megaui::Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0),
-                        0,
-                    );
+                    canvas.image(Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0), 0);
 
                     if x >= 0 && x < 200 && y >= 0 && y < 200 {
                         canvas.rect(
-                            megaui::Rect::new(mouse.0 - 3.5, mouse.1 - 3.5, 7.0, 7.0),
-                            megaui::Color::new(0.3, 0.3, 0.3, 1.0),
-                            megaui::Color::new(1.0, 1.0, 1.0, 1.0),
+                            Rect::new(mouse.0 - 3.5, mouse.1 - 3.5, 7.0, 7.0),
+                            Color::new(0.3, 0.3, 0.3, 1.0),
+                            Color::new(1.0, 1.0, 1.0, 1.0),
                         );
 
                         if is_mouse_button_down(MouseButton::Left) {
@@ -354,8 +322,7 @@ async fn main() {
                                 .1 = Uniform::Color(vec3(color.r, color.g, color.b));
                         }
                     }
-                },
-            );
+                });
         }
 
         if need_update {
@@ -370,6 +337,7 @@ async fn main() {
                 MaterialParams {
                     pipeline_params,
                     uniforms,
+                    textures: vec![],
                 },
             ) {
                 Ok(new_material) => {
@@ -383,8 +351,6 @@ async fn main() {
                 }
             }
         }
-
-        draw_megaui();
 
         next_frame().await
     }

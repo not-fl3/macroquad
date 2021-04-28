@@ -7,21 +7,26 @@ use std::collections::HashMap;
 mod error;
 mod tiled;
 
+pub use tiled::layer::Property;
+
 #[derive(Debug)]
-pub enum Object {
-    Rect {
-        world_x: f32,
-        world_y: f32,
-        world_w: f32,
-        world_h: f32,
+pub struct Object {
+    /// If not null - the object is (probably) a tile
+    pub gid: Option<u32>,
 
-        tile_x: u32,
-        tile_y: u32,
-        tile_w: u32,
-        tile_h: u32,
+    pub world_x: f32,
+    pub world_y: f32,
+    pub world_w: f32,
+    pub world_h: f32,
 
-        name: String,
-    },
+    pub tile_x: u32,
+    pub tile_y: u32,
+    pub tile_w: u32,
+    pub tile_h: u32,
+
+    pub name: String,
+
+    pub properties: HashMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -60,7 +65,8 @@ impl TileSet {
         let sx = (ix % self.columns) as f32 * (sw + self.spacing as f32) + self.margin as f32;
         let sy = (ix / self.columns) as f32 * (sh + self.spacing as f32) + self.margin as f32;
 
-        Rect::new(sx + 1., sy + 1., sw - 2., sh - 2.)
+        // TODO: configure tiles margin
+        Rect::new(sx + 1.1, sy + 1.1, sw - 2.2, sh - 2.2)
     }
 }
 
@@ -75,6 +81,13 @@ pub struct Map {
 
 impl Map {
     pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
+        if self.tilesets.contains_key(tileset) == false {
+            panic!(
+                "No such tileset: {}, tilesets available: {:?}",
+                tileset,
+                self.tilesets.keys()
+            )
+        }
         let tileset = &self.tilesets[tileset];
         let spr_rect = tileset.sprite_rect(sprite);
 
@@ -85,41 +98,84 @@ impl Map {
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(dest.w, dest.h)),
-                source: Some(Rect::new(spr_rect.x, spr_rect.y, spr_rect.w, spr_rect.h)),
+                source: Some(Rect::new(
+                    spr_rect.x - 1.0,
+                    spr_rect.y - 1.0,
+                    spr_rect.w + 2.0,
+                    spr_rect.h + 2.0,
+                )),
                 ..Default::default()
             },
         );
     }
 
-    pub fn draw_tiles(&self, layer: &str, dest: Rect, source: Rect) {
+    pub fn spr_ex(&self, tileset: &str, source: Rect, dest: Rect) {
+        let tileset = &self.tilesets[tileset];
+
+        draw_texture_ex(
+            tileset.texture,
+            dest.x,
+            dest.y,
+            WHITE,
+            DrawTextureParams {
+                dest_size: Some(vec2(dest.w, dest.h)),
+                source: Some(source),
+                ..Default::default()
+            },
+        );
+    }
+
+    pub fn contains_layer(&self, layer: &str) -> bool {
+        self.layers.contains_key(layer)
+    }
+
+    pub fn draw_tiles(&self, layer: &str, dest: Rect, source: impl Into<Option<Rect>>) {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+
+        let source = source.into().unwrap_or(Rect::new(
+            0.,
+            0.,
+            self.raw_tiled_map.width as f32,
+            self.raw_tiled_map.height as f32,
+        ));
         let layer = &self.layers[layer];
 
-        let spr_width = dest.w / (source.w + 1.);
-        let spr_height = dest.h / (source.h + 1.);
+        let spr_width = dest.w / source.w;
+        let spr_height = dest.h / source.h;
 
-        for y in source.y as u32..source.y as u32 + source.h as u32 + 1 {
-            for x in source.x as u32..source.x as u32 + source.w as u32 + 1 {
+        for y in source.y as u32..source.y as u32 + source.h as u32 {
+            for x in source.x as u32..source.x as u32 + source.w as u32 {
                 let pos = vec2(
-                    (x - source.x as u32) as f32 / (source.w + 1.) * dest.w + dest.x,
-                    (y - source.y as u32) as f32 / (source.h + 1.) * dest.h + dest.y,
+                    (x - source.x as u32) as f32 / source.w * dest.w + dest.x,
+                    (y - source.y as u32) as f32 / source.h * dest.h + dest.y,
                 );
 
                 if let Some(tile) = &layer.data[(y * layer.width + x) as usize] {
                     self.spr(
                         &tile.tileset,
                         tile.id,
-                        Rect::new(pos.x(), pos.y(), spr_width, spr_height),
+                        Rect::new(pos.x, pos.y, spr_width, spr_height),
                     );
                 }
             }
         }
     }
 
-    pub fn tiles(&self, layer: &str, rect: Rect) -> TilesIterator {
+    pub fn tiles(&self, layer: &str, rect: impl Into<Option<Rect>>) -> TilesIterator {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+
+        let rect = rect.into().unwrap_or(Rect::new(
+            0.,
+            0.,
+            self.raw_tiled_map.width as f32,
+            self.raw_tiled_map.height as f32,
+        ));
         TilesIterator::new(&self.layers[layer], rect)
     }
 
     pub fn get_tile(&self, layer: &str, x: u32, y: u32) -> &Option<Tile> {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+
         let layer = &self.layers[layer];
 
         if x >= layer.width || y >= layer.height {
@@ -162,28 +218,50 @@ impl<'a> Iterator for TilesIterator<'a> {
             next_x = self.current.0 + 1;
             next_y = self.current.1;
         }
-        self.current = (next_x, next_y);
 
-        if next_y > self.rect.y as u32 + self.rect.h as u32 {
-            None
-        } else {
-            Some((
-                next_x,
-                next_y,
-                &self.layer.data[(next_y * self.layer.width + next_x) as usize],
-            ))
+        if next_y >= self.rect.y as u32 + self.rect.h as u32 {
+            return None;
         }
+
+        let res = Some((
+            self.current.0,
+            self.current.1,
+            &self.layer.data[(self.current.1 * self.layer.width + self.current.0) as usize],
+        ));
+        self.current = (next_x, next_y);
+        res
     }
 }
 
-/// Load Tiled tileset from given json string
-pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error::Error> {
+/// Load Tiled tile map from given json string.
+/// "data" is a tiled json content.
+/// "textures" is a map from the name used in the json to macroquad texture.
+/// "external_tilesets" is a map of tileset name to tileset json content.
+/// "external_tilesets" is used when in tiled the "source" field is used instead of embedded tileset.
+pub fn load_map(
+    data: &str,
+    textures: &[(&str, Texture2D)],
+    external_tilesets: &[(&str, &str)],
+) -> Result<Map, error::Error> {
     let map: tiled::Map = DeJson::deserialize_json(data)?;
 
     let mut layers = HashMap::new();
     let mut tilesets = HashMap::new();
+    let mut map_tilesets = vec![];
 
     for tileset in &map.tilesets {
+        let tileset = if tileset.source.is_empty() {
+            tileset.clone()
+        } else {
+            let tileset_data = external_tilesets
+                .iter()
+                .find(|(name, _)| *name == &tileset.source)
+                .unwrap();
+            let mut map_tileset: tiled::Tileset = DeJson::deserialize_json(&tileset_data.1)?;
+            map_tileset.firstgid = tileset.firstgid;
+            map_tileset
+        };
+
         let texture = textures
             .iter()
             .find(|(name, _)| *name == tileset.image)
@@ -203,6 +281,8 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
                 tileheight: tileset.tileheight,
             },
         );
+
+        map_tilesets.push(tileset);
     }
 
     for layer in &map.layers {
@@ -217,7 +297,8 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
 
         let mut objects = vec![];
         for object in &layer.objects {
-            objects.push(Object::Rect {
+            objects.push(Object {
+                gid: object.gid,
                 world_x: object.x,
                 world_y: object.y,
                 world_w: object.width,
@@ -228,11 +309,16 @@ pub fn load_map(data: &str, textures: &[(&str, Texture2D)]) -> Result<Map, error
                 tile_w: (object.width / tile_width) as u32,
                 tile_h: (object.height / tile_height) as u32,
                 name: object.name.clone(),
+                properties: object
+                    .properties
+                    .iter()
+                    .map(|property| (property.name.to_string(), property.value.to_string()))
+                    .collect(),
             });
         }
 
         let find_tileset = |tile: u32| {
-            map.tilesets.iter().find(|tileset| {
+            map_tilesets.iter().find(|tileset| {
                 tile >= tileset.firstgid && tile < tileset.firstgid + tileset.tilecount
             })
         };

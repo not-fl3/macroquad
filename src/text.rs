@@ -3,148 +3,145 @@
 use std::collections::HashMap;
 
 use crate::{
+    color::Color,
     get_context,
-    types::{Color, Rect},
+    math::Rect,
+    texture::Image,
+    window::{get_internal_gl, InternalGlContext},
 };
 
+use crate::quad_gl::WHITE;
 use glam::vec2;
-use quad_gl::Image;
-use quad_gl::Texture2D;
-use quad_gl::WHITE;
+
+use std::cell::RefCell;
+use std::rc::Rc;
+
+pub(crate) mod atlas;
+
+use atlas::Atlas;
 
 #[derive(Debug)]
-struct CharacterInfo {
-    offset_x: i32,
-    offset_y: i32,
-    advance: f32,
-
-    glyph_x: u32,
-    glyph_y: u32,
-    glyph_w: u32,
-    glyph_h: u32,
+pub(crate) struct CharacterInfo {
+    pub offset_x: i32,
+    pub offset_y: i32,
+    pub advance: f32,
+    pub sprite: u64,
 }
 
-struct FontInternal {
+pub(crate) struct FontInternal {
     font: fontdue::Font,
-    font_texture: Texture2D,
-    font_image: Image,
+    atlas: Rc<RefCell<Atlas>>,
     characters: HashMap<(char, u16), CharacterInfo>,
-    cursor_x: u16,
-    cursor_y: u16,
-    max_line_height: u16,
 }
 
 impl std::fmt::Debug for FontInternal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Font")
             .field("font", &"fontdue::Font")
-            .field("font_texture", &self.font_texture)
-            .field("font_image", &"macroquad::Image")
             .finish()
     }
 }
 
 impl FontInternal {
-    // pixel gap between glyphs in the atlas
-    const GAP: u16 = 2;
-
-    fn load_from_bytes(ctx: &mut miniquad::Context, bytes: &[u8]) -> FontInternal {
-        let font_image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
-        let font_texture =
-            Texture2D::from_rgba8(ctx, font_image.width, font_image.height, &font_image.bytes);
-
+    pub(crate) fn load_from_bytes(atlas: Rc<RefCell<Atlas>>, bytes: &[u8]) -> FontInternal {
         FontInternal {
             font: fontdue::Font::from_bytes(&bytes[..], fontdue::FontSettings::default()).unwrap(),
-            font_image,
-            font_texture,
             characters: HashMap::new(),
-            cursor_x: 0,
-            cursor_y: 0,
-            max_line_height: 0,
+            atlas,
         }
     }
 
-    fn cache_glyph(&mut self, character: char, size: u16) {
+    pub(crate) fn ascent(&self, font_size: f32) -> f32 {
+        self.font.horizontal_line_metrics(font_size).unwrap().ascent
+    }
+
+    pub(crate) fn descent(&self, font_size: f32) -> f32 {
+        self.font
+            .horizontal_line_metrics(font_size)
+            .unwrap()
+            .descent
+    }
+
+    pub(crate) fn cache_glyph(&mut self, character: char, size: u16) {
+        if self.characters.contains_key(&(character, size)) {
+            return;
+        }
+
         let (metrics, bitmap) = self.font.rasterize(character, size as f32);
 
         if metrics.advance_height != 0.0 {
             panic!("Vertical fonts are not supported");
         }
 
-        let (width, height) = (metrics.width, metrics.height);
+        let (width, height) = (metrics.width as u16, metrics.height as u16);
 
+        let sprite = self.atlas.borrow_mut().new_unique_id();
+        self.atlas.borrow_mut().cache_sprite(
+            sprite,
+            Image {
+                bytes: bitmap
+                    .iter()
+                    .flat_map(|coverage| vec![255, 255, 255, *coverage])
+                    .collect(),
+                width,
+                height,
+            },
+        );
         let advance = metrics.advance_width;
 
         let (offset_x, offset_y) = (metrics.xmin, metrics.ymin);
-        let x = if self.cursor_x + (width as u16) < self.font_image.width {
-            if height as u16 > self.max_line_height {
-                self.max_line_height = height as u16;
-            }
-            let res = self.cursor_x;
-            self.cursor_x += width as u16 + Self::GAP;
-            res
-        } else {
-            self.cursor_y += self.max_line_height + Self::GAP;
-            self.cursor_x = width as u16 + Self::GAP;
-            self.max_line_height = height as u16;
-            Self::GAP
-        };
-
-        let y = self.cursor_y;
 
         let character_info = CharacterInfo {
-            glyph_x: x as _,
-            glyph_y: y as _,
-            glyph_w: width as _,
-            glyph_h: height as _,
-
             advance,
             offset_x,
             offset_y,
+            sprite,
         };
 
         self.characters.insert((character, size), character_info);
+    }
 
-        // texture bounds exceeded
-        if self.cursor_y + height as u16 > self.font_image.height {
-            // reset glyph cache state
-            let characters = self.characters.drain().collect::<Vec<_>>();
-            self.cursor_x = 0;
-            self.cursor_y = 0;
-            self.max_line_height = 0;
+    pub(crate) fn get(&self, character: char, size: u16) -> Option<&CharacterInfo> {
+        self.characters.get(&(character, size))
+    }
 
-            // increase font texture size
-            self.font_image = Image::gen_image_color(
-                self.font_image.width * 2,
-                self.font_image.height * 2,
-                Color::new(0.0, 0.0, 0.0, 0.0),
-            );
-            let ctx = &mut get_context().quad_context;
-            self.font_texture = Texture2D::from_rgba8(
-                ctx,
-                self.font_image.width,
-                self.font_image.height,
-                &self.font_image.bytes[..],
-            );
-
-            // recache all previously cached symbols
-            for ((character, size), _) in characters {
-                self.cache_glyph(character, size);
+    pub(crate) fn measure_text(
+        &mut self,
+        text: &str,
+        font_size: u16,
+        font_scale: f32,
+    ) -> TextDimensions {
+        for character in text.chars() {
+            if self.characters.contains_key(&(character, font_size)) == false {
+                self.cache_glyph(character, font_size);
             }
-        } else {
-            for j in 0..height {
-                for i in 0..width {
-                    let coverage = bitmap[j * width + i] as f32 / 255.0;
-                    self.font_image.set_pixel(
-                        x as u32 + i as u32,
-                        y as u32 + j as u32,
-                        Color::new(1.0, 1.0, 1.0, coverage),
-                    );
+        }
+
+        let mut width = 0.;
+        let mut min_y = std::f32::MAX;
+        let mut max_y = -std::f32::MAX;
+
+        let atlas = self.atlas.borrow();
+
+        for character in text.chars() {
+            if let Some(font_data) = self.characters.get(&(character, font_size)) {
+                let glyph = atlas.get(font_data.sprite).unwrap().rect;
+                width += font_data.advance * font_scale;
+
+                if min_y > font_data.offset_y as f32 * font_scale {
+                    min_y = font_data.offset_y as f32 * font_scale;
+                }
+                if max_y < glyph.h as f32 * font_scale + font_data.offset_y as f32 * font_scale {
+                    max_y = glyph.h as f32 * font_scale + font_data.offset_y as f32 * font_scale;
                 }
             }
-            let ctx = &mut get_context().quad_context;
+        }
 
-            self.font_texture.update(ctx, &self.font_image);
+        let height = max_y - min_y;
+        TextDimensions {
+            width,
+            height: height,
+            offset_y: max_y,
         }
     }
 }
@@ -160,7 +157,7 @@ impl Default for Font {
 }
 
 impl Font {
-    /// List of ascii characters, may be helpfull in combination with "populate_font_cache"
+    /// List of ascii characters, may be helpful in combination with "populate_font_cache"
     pub fn ascii_character_list() -> Vec<char> {
         (0..255).filter_map(::std::char::from_u32).collect()
     }
@@ -173,11 +170,11 @@ impl Font {
         }
     }
 
-    pub fn texture(&self) -> Texture2D {
-        let font = get_context().fonts_storage.get_font(*self);
+    // pub fn texture(&self) -> Texture2D {
+    //     let font = get_context().fonts_storage.get_font(*self);
 
-        font.font_texture
-    }
+    //     font.font_texture
+    // }
 }
 
 /// Arguments for "draw_text_ex" function such as font, font_size etc
@@ -203,7 +200,7 @@ impl Default for TextParams {
     }
 }
 
-/// Load font from file with "path"   
+/// Load font from file with "path"
 pub async fn load_ttf_font(path: &str) -> Font {
     let bytes = crate::file::load_file(path).await.unwrap();
 
@@ -215,12 +212,12 @@ pub async fn load_ttf_font(path: &str) -> Font {
 /// let font = load_ttf_font_from_bytes(include_bytes!("font.ttf"));
 /// ```
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Font {
-    let font = get_context()
+    let context = get_context();
+    let atlas = Rc::new(RefCell::new(Atlas::new(&mut get_context().quad_context)));
+
+    let font = context
         .fonts_storage
-        .make_font(FontInternal::load_from_bytes(
-            &mut get_context().quad_context,
-            bytes,
-        ));
+        .make_font(FontInternal::load_from_bytes(atlas.clone(), bytes));
 
     font.populate_font_cache(&Font::ascii_character_list(), 15);
 
@@ -245,83 +242,87 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
 /// Draw text with custom params such as font, font size and font scale.
 pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     let font = get_context().fonts_storage.get_font_mut(params.font);
+    let InternalGlContext {
+        quad_context: ctx, ..
+    } = unsafe { get_internal_gl() };
 
     let mut total_width = 0.;
     for character in text.chars() {
         if font.characters.contains_key(&(character, params.font_size)) == false {
             font.cache_glyph(character, params.font_size);
         }
+        let mut atlas = font.atlas.borrow_mut();
         let font_data = &font.characters[&(character, params.font_size)];
-        {
-            let left_coord = font_data.offset_x as f32 * params.font_scale + total_width;
-            let top_coord = params.font_size as f32 * params.font_scale
-                - font_data.glyph_h as f32 * params.font_scale
-                - font_data.offset_y as f32 * params.font_scale;
+        let glyph = atlas.get(font_data.sprite).unwrap().rect;
+        let left_coord = font_data.offset_x as f32 * params.font_scale + total_width;
+        let top_coord = 0.0
+            - glyph.h as f32 * params.font_scale
+            - font_data.offset_y as f32 * params.font_scale;
 
-            total_width += font_data.advance * params.font_scale;
+        total_width += font_data.advance * params.font_scale;
 
-            let dest = Rect::new(
-                left_coord + x,
-                top_coord + y,
-                font_data.glyph_w as f32 * params.font_scale,
-                font_data.glyph_h as f32 * params.font_scale,
-            );
+        let dest = Rect::new(
+            left_coord + x,
+            top_coord + y,
+            glyph.w as f32 * params.font_scale,
+            glyph.h as f32 * params.font_scale,
+        );
 
-            let source = Rect::new(
-                font_data.glyph_x as f32,
-                font_data.glyph_y as f32,
-                font_data.glyph_w as f32,
-                font_data.glyph_h as f32,
-            );
+        let source = Rect::new(
+            glyph.x as f32,
+            glyph.y as f32,
+            glyph.w as f32,
+            glyph.h as f32,
+        );
 
-            crate::texture::draw_texture_ex(
-                font.font_texture,
-                dest.x,
-                dest.y,
-                params.color,
-                crate::texture::DrawTextureParams {
-                    dest_size: Some(vec2(dest.w, dest.h)),
-                    source: Some(source),
-                    ..Default::default()
-                },
-            );
-        }
+        crate::texture::draw_texture_ex(
+            atlas.texture(ctx),
+            dest.x,
+            dest.y,
+            params.color,
+            crate::texture::DrawTextureParams {
+                dest_size: Some(vec2(dest.w, dest.h)),
+                source: Some(source),
+                ..Default::default()
+            },
+        );
     }
 }
 
-pub fn measure_text(text: &str, font: Option<Font>, font_size: u16, font_scale: f32) -> (f32, f32) {
-    let context = get_context();
-    let font = context
+/// World space dimensions of the text, measured by "measure_text" function
+pub struct TextDimensions {
+    /// Distance from very left to very right of the rasterized text
+    pub width: f32,
+    /// Distance from the bottom to the top of the text.
+    pub height: f32,
+    /// Height offset from the baseline of the text.
+    /// "draw_text(.., X, Y, ..)" will be rendered in a "Rect::new(X, Y - dimensions.offset_y, dimensions.width, dimensions.height)"
+    /// For reference check "text_dimensions" example.
+    pub offset_y: f32,
+}
+
+pub fn measure_text(
+    text: &str,
+    font: Option<Font>,
+    font_size: u16,
+    font_scale: f32,
+) -> TextDimensions {
+    let font = get_context()
         .fonts_storage
         .get_font_mut(font.unwrap_or(Font::default()));
 
-    for character in text.chars() {
-        if font.characters.contains_key(&(character, font_size)) == false {
-            font.cache_glyph(character, font_size);
-        }
-    }
-
-    let mut width = 0.;
-    let mut height: f32 = 0.;
-
-    for character in text.chars() {
-        if let Some(font_data) = font.characters.get(&(character, font_size)) {
-            width += font_data.advance * font_scale;
-
-            if height < font_data.glyph_h as f32 * font_scale {
-                height = font_data.glyph_h as f32 * font_scale;
-            }
-        }
-    }
-    return (width, height);
+    font.measure_text(text, font_size, font_scale)
 }
 
 pub(crate) struct FontsStorage {
     fonts: Vec<FontInternal>,
 }
+
 impl FontsStorage {
     pub(crate) fn new(ctx: &mut miniquad::Context) -> FontsStorage {
-        let default_font = FontInternal::load_from_bytes(ctx, include_bytes!("ProggyClean.ttf"));
+        let atlas = Rc::new(RefCell::new(Atlas::new(ctx)));
+
+        let default_font = FontInternal::load_from_bytes(atlas, include_bytes!("ProggyClean.ttf"));
         FontsStorage {
             fonts: vec![default_font],
         }
@@ -331,10 +332,6 @@ impl FontsStorage {
         self.fonts.push(font_internal);
 
         Font(self.fonts.len() - 1)
-    }
-
-    fn get_font(&self, font: Font) -> &FontInternal {
-        &self.fonts[font.0]
     }
 
     fn get_font_mut(&mut self, font: Font) -> &mut FontInternal {

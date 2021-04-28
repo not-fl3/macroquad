@@ -1,5 +1,5 @@
 use macroquad::prelude::*;
-use macroquad_particles::{self as particles, AtlasConfig, Emitter, EmitterConfig, BlendMode};
+use macroquad_particles::{self as particles, AtlasConfig, BlendMode, Emitter, EmitterConfig};
 
 fn explosion() -> particles::EmitterConfig {
     particles::EmitterConfig {
@@ -11,7 +11,7 @@ fn explosion() -> particles::EmitterConfig {
         amount: 30,
         initial_direction_spread: 2.0 * std::f32::consts::PI,
         initial_velocity: 200.0,
-        initial_size: 30.0,
+        size: 30.0,
         gravity: vec2(0.0, -1000.0),
         atlas: Some(AtlasConfig::new(4, 4, 8..)),
         blend_mode: BlendMode::Additive,
@@ -37,7 +37,7 @@ fn fire() -> particles::EmitterConfig {
         initial_direction_spread: 0.5,
         initial_velocity: 300.0,
         atlas: Some(AtlasConfig::new(4, 4, 8..)),
-        initial_size: 20.0,
+        size: 20.0,
         blend_mode: BlendMode::Additive,
         ..Default::default()
     }
@@ -89,15 +89,15 @@ async fn main() {
             (get_time() * 0.5).cos() as f32 * screen_height() / 2.5 + screen_height() / 2.0,
         );
         flying_emitter_local.draw(local_emitter_pos);
-        draw_circle(local_emitter_pos.x(), local_emitter_pos.y(), 15.0, RED);
+        draw_circle(local_emitter_pos.x, local_emitter_pos.y, 15.0, RED);
 
         let world_emitter_pos = vec2(
-            (get_time() * 0.6  + 1.0).sin() as f32 * screen_width() / 2.5 + screen_width() / 2.0,
+            (get_time() * 0.6 + 1.0).sin() as f32 * screen_width() / 2.5 + screen_width() / 2.0,
             (get_time() * 0.4 + 1.0).cos() as f32 * screen_height() / 2.5 + screen_height() / 2.0,
         );
 
         flying_emitter_world.draw(world_emitter_pos);
-        draw_circle(world_emitter_pos.x(), world_emitter_pos.y(), 15.0, GREEN);
+        draw_circle(world_emitter_pos.x, world_emitter_pos.y, 15.0, GREEN);
 
         next_frame().await
     }

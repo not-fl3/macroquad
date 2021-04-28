@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.3.0-alpha.12"
+version = "0.3.1"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -19,21 +19,27 @@ log-impl = ["miniquad/log-impl"]
 all-features = true
 
 [dependencies]
-miniquad = "0.3.0-alpha.22"
-quad-gl = { version = "=0.2.12", path = "./quad-gl" }
-quad-rand = "0.1"
-glam = {version = "0.9", features = ["scalar-math"] }
-image = { version = "0.22", default-features = false, features = ["png_codec", "tga"] }
+miniquad = "0.3.0-alpha.30"
+quad-rand = "0.2.1"
+glam = {version = "0.14", features = ["scalar-math"] }
+image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
 macroquad_macro = { version = "0.1.2", path = "macroquad_macro" }
-fontdue = "0.3.2"
+fontdue = "0.4.0"
+bumpalo = "3.4"
 
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rodio = { version = "0.13.0", default-features = false, features = ["wav", "vorbis"] }
 
 [dev-dependencies]
-megaui-macroquad = "0.1.2"
+macroquad-particles = { path = "./particles" }
+macroquad-tiled = { path = "./tiled" }
+macroquad-platformer = { path = "./physics-platformer" }
 
 # workaround to fix the examples
-# this allows to use megaui-macroquad in examples without two versions of macroquad
+# this allows to use macroquad-particles in examples without two versions of macroquad
 [patch.crates-io]
 macroquad = { path = './' }
 
 #miniquad = { path = '../miniquad' }
+#quad-gl = {path = './quad-gl'}
+

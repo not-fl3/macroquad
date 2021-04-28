@@ -1,32 +1,63 @@
 //! 3D shapes and models, loading 3d models from files, drawing 3D primitives.
 
-use crate::{get_context, types::Color};
+use crate::{color::Color, get_context};
 
+use crate::{quad_gl::DrawMode, texture::Texture2D};
 use glam::{vec2, vec3, Vec2, Vec3};
-use quad_gl::{DrawMode, Texture2D};
+
+#[derive(Clone, Debug, Copy)]
+pub struct Vertex {
+    pub position: Vec3,
+    pub uv: Vec2,
+    pub color: Color,
+}
+
+impl From<Vertex> for crate::quad_gl::VertexInterop {
+    fn from(vertex: Vertex) -> crate::quad_gl::VertexInterop {
+        (
+            vertex.position.into(),
+            vertex.uv.into(),
+            vertex.color.into(),
+        )
+    }
+}
+
+pub struct Mesh {
+    pub vertices: Vec<Vertex>,
+    pub indices: Vec<u16>,
+    pub texture: Option<Texture2D>,
+}
+
+pub fn draw_mesh(mesh: &Mesh) {
+    let context = &mut get_context().draw_context;
+
+    context.gl.texture(mesh.texture);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
+}
 
 fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
     let context = &mut get_context().draw_context;
     let indices = [0, 1, 2, 0, 2, 3];
     let quad = [
         (
-            [vertices[0].0.x(), vertices[0].0.y(), vertices[0].0.z()],
-            [vertices[0].1.x(), vertices[0].1.y()],
+            [vertices[0].0.x, vertices[0].0.y, vertices[0].0.z],
+            [vertices[0].1.x, vertices[0].1.y],
             vertices[0].2.into(),
         ),
         (
-            [vertices[1].0.x(), vertices[1].0.y(), vertices[1].0.z()],
-            [vertices[1].1.x(), vertices[1].1.y()],
+            [vertices[1].0.x, vertices[1].0.y, vertices[1].0.z],
+            [vertices[1].1.x, vertices[1].1.y],
             vertices[1].2.into(),
         ),
         (
-            [vertices[2].0.x(), vertices[2].0.y(), vertices[2].0.z()],
-            [vertices[2].1.x(), vertices[2].1.y()],
+            [vertices[2].0.x, vertices[2].0.y, vertices[2].0.z],
+            [vertices[2].1.x, vertices[2].1.y],
             vertices[2].2.into(),
         ),
         (
-            [vertices[3].0.x(), vertices[3].0.y(), vertices[3].0.z()],
-            [vertices[3].1.x(), vertices[3].1.y()],
+            [vertices[3].0.x, vertices[3].0.y, vertices[3].0.z],
+            [vertices[3].1.x, vertices[3].1.y],
             vertices[3].2.into(),
         ),
     ];
@@ -42,8 +73,8 @@ pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
     let indices = [0, 1];
 
     let line = [
-        ([start.x(), start.y(), start.z()], uv, color),
-        ([end.x(), end.y(), end.z()], uv, color),
+        ([start.x, start.y, start.z], uv, color),
+        ([end.x, end.y, end.z], uv, color),
     ];
     context.gl.texture(None);
     context.gl.draw_mode(DrawMode::Lines);
@@ -75,22 +106,22 @@ pub fn draw_grid(slices: u32, spacing: f32) {
 
 pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>>, color: Color) {
     let v1 = (
-        (center + vec3(-size.x(), 0., -size.y())).into(),
+        (center + vec3(-size.x, 0., -size.y)).into(),
         vec2(0., 0.),
         color,
     );
     let v2 = (
-        (center + vec3(-size.x(), 0., size.y())).into(),
+        (center + vec3(-size.x, 0., size.y)).into(),
         vec2(0., 1.),
         color,
     );
     let v3 = (
-        (center + vec3(size.x(), 0., size.y())).into(),
+        (center + vec3(size.x, 0., size.y)).into(),
         vec2(1., 1.),
         color,
     );
     let v4 = (
-        (center + vec3(size.x(), 0., -size.y())).into(),
+        (center + vec3(size.x, 0., -size.y)).into(),
         vec2(1., 0.),
         color,
     );
@@ -106,8 +137,8 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let context = &mut get_context().draw_context;
     context.gl.texture(texture.into());
 
-    let (x, y, z) = (position.x(), position.y(), position.z());
-    let (width, height, length) = (size.x(), size.y(), size.z());
+    let (x, y, z) = (position.x, position.y, position.z);
+    let (width, height, length) = (size.x, size.y, size.z);
 
     // Front face
     let bl_pos = vec3(x - width / 2., y - height / 2., z + length / 2.);
@@ -225,8 +256,8 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
 }
 
 pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
-    let (x, y, z) = (position.x(), position.y(), position.z());
-    let (width, height, length) = (size.x(), size.y(), size.z());
+    let (x, y, z) = (position.x, position.y, position.z);
+    let (width, height, length) = (size.x, size.y, size.z);
 
     // Front Face
 
@@ -318,17 +349,57 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
     );
 }
 
+#[derive(Debug, Clone)]
+pub struct DrawSphereParams {
+    pub rings: usize,
+    pub slices: usize,
+    pub draw_mode: DrawMode,
+}
+
+impl Default for DrawSphereParams {
+    fn default() -> DrawSphereParams {
+        DrawSphereParams {
+            rings: 16,
+            slices: 16,
+            draw_mode: DrawMode::Triangles,
+        }
+    }
+}
+
 pub fn draw_sphere(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
+    draw_sphere_ex(center, radius, texture, color, Default::default());
+}
+
+pub fn draw_sphere_wires(
+    center: Vec3,
+    radius: f32,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+) {
+    let params = DrawSphereParams {
+        draw_mode: DrawMode::Lines,
+        ..Default::default()
+    };
+    draw_sphere_ex(center, radius, texture, color, params);
+}
+
+pub fn draw_sphere_ex(
+    center: Vec3,
+    radius: f32,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+    params: DrawSphereParams,
+) {
     let context = &mut get_context().draw_context;
 
-    let rings: usize = 16;
-    let slices: usize = 16;
+    let rings = params.rings;
+    let slices = params.slices;
 
     let color: [f32; 4] = color.into();
     let scale = vec3(radius, radius, radius);
 
     context.gl.texture(texture.into());
-    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.draw_mode(params.draw_mode);
 
     for i in 0..rings + 1 {
         for j in 0..slices {

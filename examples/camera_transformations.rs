@@ -57,7 +57,7 @@ async fn main() {
 
         match mouse_wheel() {
             (_x, y) if y != 0.0 => {
-                // Normalise mouse wheel values is browser (chromium: 53, firefox: 3)
+                // Normalize mouse wheel values is browser (chromium: 53, firefox: 3)
                 #[cfg(target_arch = "wasm32")]
                 let y = if y < 0.0 {
                     -1.0
@@ -84,20 +84,20 @@ async fn main() {
 
         clear_background(WHITE);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             ..Default::default()
         });
         draw_cross(0., 0., RED);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             rotation: smooth_rotation,
             ..Default::default()
         });
         draw_cross(0., 0., GREEN);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             rotation: smooth_rotation,
             zoom: vec2(zoom, zoom * screen_width() / screen_height()),
@@ -105,7 +105,7 @@ async fn main() {
         });
         draw_cross(0., 0., BLUE);
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             target: vec2(target.0, target.1),
             rotation: smooth_rotation,
             zoom: vec2(zoom, zoom * screen_width() / screen_height()),
@@ -120,10 +120,34 @@ async fn main() {
 
         // Back to screen space, render some text
         set_default_camera();
-        draw_text(format!("target (WASD keys) = ({:+.2}, {:+.2})", target.0, target.1).as_str(), 10.0, 10.0, 15.0, BLACK);
-        draw_text(format!("rotation (mouse wheel) = {} degrees", rotation).as_str(), 10.0, 25.0, 15.0, BLACK);
-        draw_text(format!("zoom (ctrl + mouse wheel) = {:.2}", zoom).as_str(), 10.0, 40.0, 15.0, BLACK);
-        draw_text(format!("offset (arrow keys) = ({:+.2}, {:+.2})", offset.0, offset.1).as_str(), 10.0, 55.0, 15.0, BLACK);
+        draw_text(
+            format!("target (WASD keys) = ({:+.2}, {:+.2})", target.0, target.1).as_str(),
+            10.0,
+            10.0,
+            15.0,
+            BLACK,
+        );
+        draw_text(
+            format!("rotation (mouse wheel) = {} degrees", rotation).as_str(),
+            10.0,
+            25.0,
+            15.0,
+            BLACK,
+        );
+        draw_text(
+            format!("zoom (ctrl + mouse wheel) = {:.2}", zoom).as_str(),
+            10.0,
+            40.0,
+            15.0,
+            BLACK,
+        );
+        draw_text(
+            format!("offset (arrow keys) = ({:+.2}, {:+.2})", offset.0, offset.1).as_str(),
+            10.0,
+            55.0,
+            15.0,
+            BLACK,
+        );
         draw_text("HELLO", 30.0, 200.0, 30.0, BLACK);
 
         next_frame().await

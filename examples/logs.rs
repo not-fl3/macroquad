@@ -13,7 +13,7 @@ async fn main() {
 
     loop {
         clear_background(RED);
-        
+
         debug!("Still alive!");
 
         next_frame().await

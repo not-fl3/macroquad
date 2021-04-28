@@ -1,8 +1,13 @@
 [package]
 name = "macroquad-particles"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Fedor Logachev <not.fl3@gmail.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+description = """
+Visual effects editor based on macroquad and megaui.
+"""
 
 [dependencies]
-macroquad = { path = "../", version = "0.3.0-alpha" }
+macroquad = { path = "../", version = "0.3.0" }
+nanoserde = { version = "0.1", optional = true }

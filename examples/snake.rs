@@ -25,16 +25,21 @@ async fn main() {
     let mut last_update = get_time();
     let mut game_over = false;
 
+    let up = (0, -1);
+    let down = (0, 1);
+    let right = (1, 0);
+    let left = (-1, 0);
+
     loop {
         if !game_over {
-            if is_key_down(KeyCode::Right) {
-                snake.dir = (1, 0);
-            } else if is_key_down(KeyCode::Left) {
-                snake.dir = (-1, 0);
-            } else if is_key_down(KeyCode::Up) {
-                snake.dir = (0, -1);
-            } else if is_key_down(KeyCode::Down) {
-                snake.dir = (0, 1);
+            if is_key_down(KeyCode::Right) && snake.dir != left {
+                snake.dir = right;
+            } else if is_key_down(KeyCode::Left) && snake.dir != right {
+                snake.dir = left;
+            } else if is_key_down(KeyCode::Up) && snake.dir != down {
+                snake.dir = up;
+            } else if is_key_down(KeyCode::Down) && snake.dir != up {
+                snake.dir = down;
             }
 
             if get_time() - last_update > speed {
@@ -135,8 +140,8 @@ async fn main() {
 
             draw_text(
                 text,
-                screen_width() / 2. - text_size.0 / 2.,
-                screen_height() / 2. - text_size.1 / 2.,
+                screen_width() / 2. - text_size.width / 2.,
+                screen_height() / 2. - text_size.height / 2.,
                 font_size,
                 DARKGRAY,
             );

@@ -26,18 +26,18 @@ struct Asteroid {
 }
 
 fn wrap_around(v: &Vec2) -> Vec2 {
-    let mut vr = Vec2::new(v.x(), v.y());
-    if vr.x() > screen_width() {
-        vr.set_x(0.);
+    let mut vr = Vec2::new(v.x, v.y);
+    if vr.x > screen_width() {
+        vr.x = 0.;
     }
-    if vr.x() < 0. {
-        vr.set_x(screen_width())
+    if vr.x < 0. {
+        vr.x = screen_width()
     }
-    if vr.y() > screen_height() {
-        vr.set_y(0.);
+    if vr.y > screen_height() {
+        vr.y = 0.;
     }
-    if vr.y() < 0. {
-        vr.set_y(screen_height())
+    if vr.y < 0. {
+        vr.y = screen_height()
     }
     return vr;
 }
@@ -59,9 +59,9 @@ async fn main() {
     for _ in 0..10 {
         asteroids.push(Asteroid {
             pos: screen_center
-                + Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.))
-                    .normalize()
-                    * screen_width().min(screen_height()) / 2.,
+                + Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)).normalize()
+                    * screen_width().min(screen_height())
+                    / 2.,
             vel: Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)),
             rot: 0.,
             rot_speed: rand::gen_range(-2., 2.),
@@ -83,8 +83,8 @@ async fn main() {
             let text_size = measure_text(text, None, font_size as _, 1.0);
             draw_text(
                 text,
-                screen_width() / 2. - text_size.0 / 2.,
-                screen_height() / 2. - text_size.1 / 2.,
+                screen_width() / 2. - text_size.width / 2.,
+                screen_height() / 2. - text_size.height / 2.,
                 font_size,
                 DARKGRAY,
             );
@@ -103,7 +103,8 @@ async fn main() {
                         pos: screen_center
                             + Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.))
                                 .normalize()
-                                * screen_width().min(screen_height()) / 2.,
+                                * screen_width().min(screen_height())
+                                / 2.,
                         vel: Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)),
                         rot: 0.,
                         rot_speed: rand::gen_range(-2., 2.),
@@ -159,7 +160,7 @@ async fn main() {
 
         let mut new_asteroids = Vec::new();
         for asteroid in asteroids.iter_mut() {
-            if (asteroid.pos - ship.pos).length() < asteroid.size + SHIP_HEIGHT/3. {
+            if (asteroid.pos - ship.pos).length() < asteroid.size + SHIP_HEIGHT / 3. {
                 gameover = true;
                 break;
             }
@@ -170,7 +171,7 @@ async fn main() {
                     if asteroid.sides > 4 {
                         new_asteroids.push(Asteroid {
                             pos: asteroid.pos,
-                            vel: Vec2::new(bullet.vel.y(), -bullet.vel.x()).normalize()
+                            vel: Vec2::new(bullet.vel.y, -bullet.vel.x).normalize()
                                 * rand::gen_range(1., 3.),
                             rot: rand::gen_range(0., 360.),
                             rot_speed: rand::gen_range(-2., 2.),
@@ -180,7 +181,7 @@ async fn main() {
                         });
                         new_asteroids.push(Asteroid {
                             pos: asteroid.pos,
-                            vel: Vec2::new(-bullet.vel.y(), bullet.vel.x()).normalize()
+                            vel: Vec2::new(-bullet.vel.y, bullet.vel.x).normalize()
                                 * rand::gen_range(1., 3.),
                             rot: rand::gen_range(0., 360.),
                             rot_speed: rand::gen_range(-2., 2.),
@@ -208,13 +209,13 @@ async fn main() {
 
         clear_background(LIGHTGRAY);
         for bullet in bullets.iter() {
-            draw_circle(bullet.pos.x(), bullet.pos.y(), 2., BLACK);
+            draw_circle(bullet.pos.x, bullet.pos.y, 2., BLACK);
         }
 
         for asteroid in asteroids.iter() {
             draw_poly_lines(
-                asteroid.pos.x(),
-                asteroid.pos.y(),
+                asteroid.pos.x,
+                asteroid.pos.y,
                 asteroid.sides,
                 asteroid.size,
                 asteroid.rot,
@@ -224,16 +225,16 @@ async fn main() {
         }
 
         let v1 = Vec2::new(
-            ship.pos.x() + rotation.sin() * SHIP_HEIGHT / 2.,
-            ship.pos.y() - rotation.cos() * SHIP_HEIGHT / 2.,
+            ship.pos.x + rotation.sin() * SHIP_HEIGHT / 2.,
+            ship.pos.y - rotation.cos() * SHIP_HEIGHT / 2.,
         );
         let v2 = Vec2::new(
-            ship.pos.x() - rotation.cos() * SHIP_BASE / 2. - rotation.sin() * SHIP_HEIGHT / 2.,
-            ship.pos.y() - rotation.sin() * SHIP_BASE / 2. + rotation.cos() * SHIP_HEIGHT / 2.,
+            ship.pos.x - rotation.cos() * SHIP_BASE / 2. - rotation.sin() * SHIP_HEIGHT / 2.,
+            ship.pos.y - rotation.sin() * SHIP_BASE / 2. + rotation.cos() * SHIP_HEIGHT / 2.,
         );
         let v3 = Vec2::new(
-            ship.pos.x() + rotation.cos() * SHIP_BASE / 2. - rotation.sin() * SHIP_HEIGHT / 2.,
-            ship.pos.y() + rotation.sin() * SHIP_BASE / 2. + rotation.cos() * SHIP_HEIGHT / 2.,
+            ship.pos.x + rotation.cos() * SHIP_BASE / 2. - rotation.sin() * SHIP_HEIGHT / 2.,
+            ship.pos.y + rotation.sin() * SHIP_BASE / 2. + rotation.cos() * SHIP_HEIGHT / 2.,
         );
         draw_triangle_lines(v1, v2, v3, 2., BLACK);
         next_frame().await

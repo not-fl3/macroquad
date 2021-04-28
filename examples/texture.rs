@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 
 #[macroquad::main("Texture")]
 async fn main() {
-    let texture: Texture2D = load_texture("examples/ferris.png").await;
+    let texture: Texture2D = load_texture("examples/ferris.png").await.unwrap();
 
     loop {
         clear_background(RED);

@@ -15,7 +15,7 @@ async fn main() {
 
         // Render some primitives in camera space
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             zoom: vec2(1., screen_width() / screen_height()),
             ..Default::default()
         });
@@ -26,7 +26,7 @@ async fn main() {
         {
             let mut gl = unsafe { get_internal_gl() };
 
-            // Ensure that macroquad's shapes are not goint to be lost
+            // Ensure that macroquad's shapes are not going to be lost
             gl.flush();
 
             let t = get_time();

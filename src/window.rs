@@ -2,8 +2,8 @@
 
 use crate::get_context;
 
+use crate::quad_gl::Color;
 use miniquad::PassAction;
-use quad_gl::Color;
 
 // miniquad is re-exported for the use in combination with `get_internal_gl`
 pub use miniquad;
@@ -32,12 +32,12 @@ pub fn clear_background(color: Color) {
 
 pub struct InternalGlContext<'a> {
     pub quad_context: &'a mut miniquad::Context,
-    pub quad_gl: &'a mut quad_gl::QuadGl,
+    pub quad_gl: &'a mut crate::quad_gl::QuadGl,
 }
 
 impl<'a> InternalGlContext<'a> {
     /// Draw all the batched stuff and reset the internal state cache
-    /// May be helpfull for combining macroquad's drawing with raw miniquad/opengl calls
+    /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
     pub fn flush(&mut self) {
         let context = get_context();
 
