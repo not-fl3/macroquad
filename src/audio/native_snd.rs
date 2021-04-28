@@ -4,42 +4,33 @@ use rodio::{OutputStream, OutputStreamHandle, Sink};
 
 use crate::audio::PlaySoundParams;
 
+#[cfg(feature="audio")]
 pub struct AudioContext {
-    #[cfg(feature="audio")]
     _stream: OutputStream,
-    #[cfg(feature="audio")]
     handle: OutputStreamHandle,
 }
 
+#[cfg(feature="audio")]
 impl AudioContext {
-    #[cfg(feature="audio")]
     pub fn new() -> AudioContext {
         let (_stream, handle) = OutputStream::try_default().unwrap();
 
         AudioContext { _stream, handle }
     }
-
-    #[cfg(not(feature="audio"))]
-    pub fn new() -> AudioContext {
-        AudioContext {  }
-    }
 }
 
+#[cfg(feature="audio")]
 pub struct Sound {
     // the only way to play the same sound looped or once in rodio :/
-    #[cfg(feature="audio")]
     sink_once: Sink,
-    #[cfg(feature="audio")]
     sink_looped: Sink,
-    #[cfg(feature="audio")]
     looped: bool,
     // and also rodio cant really reset sound, so we need to recreate it after each stop :/
-    #[cfg(feature="audio")]
     source: Vec<u8>,
 }
 
+#[cfg(feature="audio")]
 impl Sound {
-    #[cfg(feature="audio")]
     pub fn load(ctx: &mut AudioContext, data: &[u8]) -> Sound {
         let sink_once = Sink::try_new(&ctx.handle).unwrap();
         let sink_looped = Sink::try_new(&ctx.handle).unwrap();
@@ -60,13 +51,6 @@ impl Sound {
         }
     }
 
-    #[cfg(not(feature="audio"))]
-    pub fn load(_ctx: &mut AudioContext, _data: &[u8]) -> Sound {   
-
-        Sound {}
-    }
-
-    #[cfg(feature="audio")]
     pub fn play(&mut self, ctx: &mut AudioContext, params: PlaySoundParams) {
         self.stop(ctx);
 
@@ -81,10 +65,6 @@ impl Sound {
         }
     }
 
-    #[cfg(not(feature="audio"))]
-    pub fn play(&mut self, _ctx: &mut AudioContext, _params: PlaySoundParams) {}
-
-    #[cfg(feature="audio")]
     pub fn stop(&mut self, ctx: &mut AudioContext) {
         self.sink_once.stop();
         self.sink_looped.stop();
@@ -105,10 +85,6 @@ impl Sound {
         self.sink_looped = sink_looped;
     }
 
-    #[cfg(not(feature="audio"))]
-    pub fn stop(&mut self, _ctx: &mut AudioContext) {}
-
-    #[cfg(feature="audio")]
     pub fn set_volume(&mut self, volume: f32) {
         if self.looped {
             self.sink_looped.set_volume(volume);
@@ -116,7 +92,4 @@ impl Sound {
             self.sink_once.set_volume(volume);
         }
     }
-
-    #[cfg(not(feature="audio"))]
-    pub fn set_volume(&mut self, _volume: f32) {}
 }
