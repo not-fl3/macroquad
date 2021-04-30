@@ -1,14 +1,19 @@
 //! Loading and playing sounds.
 
 use crate::{file::load_file, get_context};
-
 use std::collections::HashMap;
 
+#[cfg(not(feature = "audio"))]
+#[path = "audio/no_sound.rs"]
+mod snd;
+
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "audio")]
 #[path = "audio/native_snd.rs"]
 mod snd;
 
 #[cfg(target_arch = "wasm32")]
+#[cfg(feature = "audio")]
 #[path = "audio/web_snd.rs"]
 mod snd;
 
@@ -46,17 +51,26 @@ pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
     Ok(Sound(id))
 }
 
+#[cfg(not(feature = "audio"))]
+async fn load_native_snd(data: &[u8]) -> snd::Sound {
+    let ctx = &mut get_context().audio_context.native_ctx;
+    snd::Sound::load(ctx, &data)
+}
+
+#[cfg(feature = "audio")]
 #[cfg(target_arch = "wasm32")]
 async fn load_native_snd(data: &[u8]) -> snd::Sound {
     snd::Sound::load(&data).await
 }
 
+#[cfg(feature = "audio")]
 #[cfg(not(target_arch = "wasm32"))]
 async fn load_native_snd(data: &[u8]) -> snd::Sound {
     let ctx = &mut get_context().audio_context.native_ctx;
 
     snd::Sound::load(ctx, &data)
 }
+
 pub fn play_sound_once(sound: Sound) {
     let ctx = &mut get_context().audio_context;
     let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
