@@ -45,7 +45,7 @@ fn fire() -> particles::EmitterConfig {
 
 #[macroquad::main("Fountain")]
 async fn main() {
-    let texture = load_texture("examples/smoke_fire.png").await;
+    let texture = load_texture("examples/smoke_fire.png").await.unwrap();
 
     let mut one_shot_emitter = particles::Emitter::new(EmitterConfig {
         texture: Some(texture),
