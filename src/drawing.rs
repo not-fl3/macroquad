@@ -2,7 +2,7 @@
 
 use crate::quad_gl::QuadGl;
 
-pub use crate::quad_gl::{colors::*, Color, DrawMode, FilterMode};
+pub use crate::quad_gl::{DrawMode, FilterMode};
 pub use crate::texture::Texture2D;
 
 use glam::Mat4;

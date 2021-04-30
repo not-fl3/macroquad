@@ -10,7 +10,7 @@ use crate::{
     window::{get_internal_gl, InternalGlContext},
 };
 
-use crate::quad_gl::WHITE;
+use crate::color::WHITE;
 use glam::vec2;
 
 use std::cell::RefCell;
