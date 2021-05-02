@@ -68,10 +68,10 @@ impl<'a> InputText<'a> {
             .painter
             .element_size(&context.style.editbox_style, &self.label);
 
-        let size = vec2(
+        let size = self.size.unwrap_or(vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
             label_size.y.max(19.),
-        );
+        ));
 
         let pos = context.window.cursor.fit(size, Layout::Vertical);
 

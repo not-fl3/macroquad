@@ -1,7 +1,8 @@
-// TODO
-#![allow(warnings)]
-
-use crate::ui::{Id, Ui};
+use crate::{
+    color::Color,
+    math::{vec2, Rect, Vec2},
+    ui::{ElementState, Id, Layout, Ui},
+};
 
 pub struct ComboBox<'a, 'b, 'c> {
     id: Id,
@@ -26,173 +27,177 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
         }
     }
 
-    pub fn ui(self, _ui: &mut Ui, _data: &mut usize) -> usize {
-        // let mut context = ui.get_active_window_context();
+    pub fn ui(self, ui: &mut Ui, data: &mut usize) -> usize {
+        let mut context = ui.get_active_window_context();
 
-        // let window_margin = context
-        //     .style
-        //     .window_style
-        //     .background_margin
-        //     .map_or(0.0, |x| x.left);
+        let window_margin = context
+            .style
+            .window_style
+            .background_margin
+            .map_or(0.0, |x| x.left);
 
-        // let size = Vec2::new(
-        //     context.window.cursor.area.w
-        //         - context.style.margin * 2.
-        //         - context.window.cursor.ident
-        //         - window_margin,
-        //     19.,
-        // );
-        // let pos = context.window.cursor.fit(size, Layout::Vertical) + vec2(window_margin / 2., 0.0);
+        let size = Vec2::new(
+            context.window.cursor.area.w
+                - context.style.margin * 2.
+                - context.window.cursor.ident
+                - window_margin,
+            19.,
+        );
+        let pos = context.window.cursor.fit(size, Layout::Vertical) + vec2(window_margin / 2., 0.0);
 
-        // let active_area_w = size.x / 2.;
-        // let triangle_area_w = 19.;
+        let active_area_w = size.x / 2.;
+        let triangle_area_w = 19.;
 
-        // let text_measures = {
-        //     let font = &mut *context.style.label_style.font.borrow_mut();
-        //     let font_size = context.style.label_style.font_size;
+        let text_measures = {
+            let font = &mut *context.style.label_style.font.borrow_mut();
+            let font_size = context.style.label_style.font_size;
 
-        //     context
-        //         .window
-        //         .painter
-        //         .label_size(&self.label, None, font, font_size)
-        // };
+            context
+                .window
+                .painter
+                .label_size(&self.label, None, font, font_size)
+        };
 
-        // let clickable_rect = Rect::new(pos.x, pos.y, active_area_w, size.y);
+        let clickable_rect = Rect::new(pos.x, pos.y, active_area_w, size.y);
 
-        // let (hovered, _) = context.register_click_intention(clickable_rect);
+        let (hovered, _) = context.register_click_intention(clickable_rect);
 
-        // let state = context
-        //     .storage_any
-        //     .get_or_default::<bool>(hash!(self.id, "combobox_state"));
+        let state = context
+            .storage_any
+            .get_or_default::<bool>(hash!(self.id, "combobox_state"));
 
-        // if context.window.was_active == false {
-        //     *state = false;
-        // }
-        // context.window.painter.draw_rect(
-        //     clickable_rect,
-        //     context.style.editbox_background(context.focused),
-        //     None,
-        // );
-        // {
-        //     let font = &mut *context.style.label_style.font.borrow_mut();
-        //     let font_size = context.style.label_style.font_size;
+        if context.window.was_active == false {
+            *state = false;
+        }
 
-        //     context.window.painter.draw_label(
-        //         self.variants[*data],
-        //         Vec2::new(pos.x, pos.y + text_measures.offset_y),
-        //         context.style.label_style.text_color,
-        //         font,
-        //         font_size,
-        //     );
-        // }
+        // TODO: not checkbox!
+        let color = context.style.checkbox_style.color(ElementState {
+            focused: context.focused,
+            hovered,
+            clicked: hovered && context.input.is_mouse_down,
+            selected: false,
+        });
 
-        // context.window.painter.draw_rect(
-        //     Rect::new(
-        //         pos.x + active_area_w - triangle_area_w,
-        //         pos.y,
-        //         triangle_area_w,
-        //         size.y,
-        //     ),
-        //     context.style.editbox_background(context.focused),
-        //     None,
-        // );
-        // context.window.painter.draw_triangle(
-        //     Vec2::new(pos.x + active_area_w - triangle_area_w + 4.0, pos.y + 4.0),
-        //     Vec2::new(pos.x + active_area_w - 4.0, pos.y + 4.0),
-        //     Vec2::new(pos.x + active_area_w - triangle_area_w / 2.0, pos.y + 15.0),
-        //     Color::new(0.7, 0.7, 0.7, 1.0),
-        // );
+        context
+            .window
+            .painter
+            .draw_rect(clickable_rect, color, None);
 
-        // {
-        //     let font = &mut *context.style.label_style.font.borrow_mut();
-        //     let font_size = context.style.label_style.font_size;
+        context.window.painter.draw_element_label(
+            &context.style.label_style,
+            Vec2::new(pos.x, pos.y),
+            self.variants[*data],
+            ElementState {
+                focused: context.focused,
+                hovered,
+                clicked: hovered && context.input.is_mouse_down,
+                selected: false,
+            },
+        );
 
-        //     context.window.painter.draw_label(
-        //         self.label,
-        //         Vec2::new(pos.x + size.x / 2. + 5., pos.y + text_measures.offset_y),
-        //         context.style.label_style.text_color,
-        //         font,
-        //         font_size,
-        //     );
-        // }
+        context.window.painter.draw_rect(
+            Rect::new(
+                pos.x + active_area_w - triangle_area_w,
+                pos.y,
+                triangle_area_w,
+                size.y,
+            ),
+            color,
+            None,
+        );
+        context.window.painter.draw_triangle(
+            Vec2::new(pos.x + active_area_w - triangle_area_w + 4.0, pos.y + 4.0),
+            Vec2::new(pos.x + active_area_w - 4.0, pos.y + 4.0),
+            Vec2::new(pos.x + active_area_w - triangle_area_w / 2.0, pos.y + 15.0),
+            Color::new(0.7, 0.7, 0.7, 1.0),
+        );
 
-        // let modal_size = Vec2::new(200.0, self.variants.len() as f32 * 20.0);
-        // let modal_rect = Rect::new(pos.x, pos.y + 20.0, modal_size.x, modal_size.y);
+        {
+            let font = &mut *context.style.label_style.font.borrow_mut();
+            let font_size = context.style.label_style.font_size;
 
-        // if *state == false && context.focused && hovered && context.input.click_down {
-        //     *state = true;
-        // } else if *state
-        //     && (context.input.escape
-        //         || context.input.enter
-        //         || (modal_rect.contains(context.input.mouse_position) == false
-        //             && context.input.click_down))
-        // {
-        //     *state = false;
-        // }
+            context.window.painter.draw_label(
+                self.label,
+                Vec2::new(pos.x + size.x / 2. + 5., pos.y + text_measures.offset_y),
+                context.style.label_style.text_color,
+                font,
+                font_size,
+            );
+        }
 
-        // if *state {
-        //     let context = ui.begin_modal(
-        //         hash!("combobox", self.id),
-        //         pos + Vec2::new(0., 20.),
-        //         modal_size,
-        //     );
+        let modal_size = Vec2::new(200.0, self.variants.len() as f32 * 20.0);
+        let modal_rect = Rect::new(pos.x, pos.y + 20.0, modal_size.x, modal_size.y);
 
-        //     let state = context
-        //         .storage_any
-        //         .get_or_default::<bool>(hash!(self.id, "combobox_state"));
+        if *state == false && context.focused && hovered && context.input.click_down {
+            *state = true;
+        } else if *state
+            && (context.input.escape
+                || context.input.enter
+                || (modal_rect.contains(context.input.mouse_position) == false
+                    && context.input.click_down))
+        {
+            *state = false;
+        }
 
-        //     for (i, variant) in self.variants.iter().enumerate() {
-        //         let rect = Rect::new(
-        //             pos.x + 5.0,
-        //             pos.y + i as f32 * 20.0 + 20.0,
-        //             active_area_w - 5.0,
-        //             20.0,
-        //         );
-        //         let hovered = rect.contains(context.input.mouse_position);
+        if *state {
+            let context = ui.begin_modal(
+                hash!("combobox", self.id),
+                pos + Vec2::new(0., 20.),
+                modal_size,
+            );
 
-        //         context.window.painter.draw_rect(
-        //             rect,
-        //             context.style.combobox_variant_border(hovered, *data == i),
-        //             context
-        //                 .style
-        //                 .combobox_variant_background(hovered, *data == i),
-        //         );
+            let state = context
+                .storage_any
+                .get_or_default::<bool>(hash!(self.id, "combobox_state"));
 
-        //         let font = &mut *context.style.label_style.font.borrow_mut();
-        //         let font_size = context.style.label_style.font_size;
+            for (i, variant) in self.variants.iter().enumerate() {
+                let rect = Rect::new(
+                    pos.x + 5.0,
+                    pos.y + i as f32 * 20.0 + 20.0,
+                    active_area_w - 5.0,
+                    20.0,
+                );
+                let hovered = rect.contains(context.input.mouse_position);
 
-        //         let text_measures = {
-        //             context
-        //                 .window
-        //                 .painter
-        //                 .label_size(variant, None, font, font_size)
-        //         };
+                let color = context.style.checkbox_style.color(ElementState {
+                    focused: context.focused,
+                    hovered,
+                    clicked: hovered && context.input.is_mouse_down,
+                    selected: false,
+                });
 
-        //         context.window.painter.draw_label(
-        //             variant,
-        //             Vec2::new(
-        //                 pos.x + 7.,
-        //                 pos.y
-        //                     + i as f32 * text_measures.height
-        //                     + 20.0
-        //                     + 2.0
-        //                     + text_measures.offset_y,
-        //             ),
-        //             context.style.label_style.text_color,
-        //             font,
-        //             font_size,
-        //         );
+                context.window.painter.draw_rect(
+                    rect, //context.style.combobox_variant_border(hovered, *data == i),
+                    color,
+                    // context
+                    //     .style
+                    //     .combobox_variant_background(hovered, *data == i),
+                    color,
+                );
 
-        //         if hovered && context.input.click_up {
-        //             *data = i;
-        //             *state = false;
-        //         }
-        //     }
-        //     ui.end_modal();
-        // }
+                let font = &mut *context.style.label_style.font.borrow_mut();
+                let font_size = context.style.label_style.font_size;
 
-        // *data
-        unimplemented!()
+                context.window.painter.draw_label(
+                    variant,
+                    Vec2::new(
+                        pos.x + 7.,
+                        pos.y + i as f32 * 20. + 20.0 + 2.0 + text_measures.offset_y,
+                    ),
+                    context.style.label_style.text_color,
+                    font,
+                    font_size,
+                );
+
+                if hovered && context.input.click_up {
+                    *data = i;
+                    *state = false;
+                }
+            }
+            ui.end_modal();
+        }
+
+        *data
     }
 }
 

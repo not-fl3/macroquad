@@ -417,7 +417,7 @@ pub fn get_screen_data() -> Image {
 }
 
 /// Texture, data stored in GPU memory
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Texture2D {
     pub(crate) texture: miniquad::Texture,
 }

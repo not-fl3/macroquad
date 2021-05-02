@@ -46,8 +46,7 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
 #[macroquad::main("Shadertoy")]
 async fn main() {
     let ferris = load_texture("examples/rust.png").await.unwrap();
-    let (_color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
-    //set_megaui_texture(0, color_picker_texture);
+    let (color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
 
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
     let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
@@ -109,7 +108,7 @@ async fn main() {
 
         let mut need_update = false;
 
-        widgets::Window::new(hash!(), vec2(20., 20.), vec2(450., 650.))
+        widgets::Window::new(hash!(), vec2(20., 20.), vec2(470., 650.))
             .label("Shader")
             .ui(&mut *root_ui(), |ui| {
                 ui.label(None, "Camera: ");
@@ -302,7 +301,10 @@ async fn main() {
                         Color::new(0.0, 0.0, 0.0, 1.0),
                         Color::new(color.r, color.g, color.b, 1.0),
                     );
-                    canvas.image(Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0), 0);
+                    canvas.image(
+                        Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0),
+                        color_picker_texture,
+                    );
 
                     if x >= 0 && x < 200 && y >= 0 && y < 200 {
                         canvas.rect(

@@ -363,6 +363,7 @@ impl Skin {
             },
             editbox_style: Style {
                 text_color: Color::from_rgba(0, 0, 0, 255),
+                color_selected: Color::from_rgba(200, 200, 200, 255),
                 ..Style::default(default_font.clone())
             },
 

@@ -1107,8 +1107,6 @@ impl Ui {
 }
 
 pub(crate) mod ui_context {
-    use std::collections::HashMap;
-
     use crate::prelude::*;
     use crate::window::miniquad::*;
 
@@ -1120,7 +1118,6 @@ pub(crate) mod ui_context {
     pub(crate) struct UiContext {
         pub ui: Rc<RefCell<megaui::Ui>>,
         ui_draw_list: Vec<megaui::DrawList>,
-        megaui_textures: HashMap<u32, Texture2D>,
         material: Option<Material>,
     }
 
@@ -1133,7 +1130,6 @@ pub(crate) mod ui_context {
             UiContext {
                 ui: Rc::new(RefCell::new(ui)),
                 ui_draw_list: vec![],
-                megaui_textures: HashMap::new(),
                 material: None,
             }
         }
@@ -1242,7 +1238,7 @@ pub(crate) mod ui_context {
 
             for draw_command in &ui_draw_list {
                 if let Some(texture) = draw_command.texture {
-                    quad_gl.texture(Some(self.megaui_textures[&texture]));
+                    quad_gl.texture(Some(texture));
                 } else {
                     quad_gl.texture(Some(font_texture));
                 }

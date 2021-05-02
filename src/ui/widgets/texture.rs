@@ -1,5 +1,6 @@
 use crate::{
     math::{Rect, Vec2},
+    texture::Texture2D,
     ui::{Layout, Ui},
 };
 
@@ -7,11 +8,11 @@ pub struct Texture {
     position: Option<Vec2>,
     w: f32,
     h: f32,
-    texture: u32,
+    texture: Texture2D,
 }
 
 impl Texture {
-    pub fn new(texture: u32) -> Texture {
+    pub fn new(texture: Texture2D) -> Texture {
         Texture {
             position: None,
             w: 100.,
@@ -52,7 +53,7 @@ impl Texture {
 }
 
 impl Ui {
-    pub fn texture(&mut self, texture: u32, w: f32, h: f32) -> bool {
+    pub fn texture(&mut self, texture: Texture2D, w: f32, h: f32) -> bool {
         Texture::new(texture).size(w, h).ui(self)
     }
 }

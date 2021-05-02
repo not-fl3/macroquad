@@ -408,7 +408,7 @@ impl<'a> Editbox<'a> {
                             .painter
                             .character_advance(character, &font, font_size)
                             + 1.0,
-                        font_size as f32 - 4.,
+                        font_size as f32 - 1.,
                     ),
                     None,
                     context.style.editbox_style.color_selected,
