@@ -36,6 +36,7 @@ struct DrawCall {
 
     draw_mode: DrawMode,
     pipeline: GlPipeline,
+    uniforms: Option<Vec<u8>>,
     render_pass: Option<RenderPass>,
 }
 
@@ -99,6 +100,7 @@ impl DrawCall {
         model: glam::Mat4,
         draw_mode: DrawMode,
         pipeline: GlPipeline,
+        uniforms: Option<Vec<u8>>,
         render_pass: Option<RenderPass>,
     ) -> DrawCall {
         DrawCall {
@@ -112,6 +114,7 @@ impl DrawCall {
             model,
             draw_mode,
             pipeline,
+            uniforms,
             render_pass,
         }
     }
@@ -283,6 +286,7 @@ struct GlState {
     pipeline: Option<GlPipeline>,
     depth_test_enable: bool,
 
+    break_batching: bool,
     snapshotter: MagicSnapshotter,
 
     render_pass: Option<RenderPass>,
@@ -548,6 +552,7 @@ impl QuadGl {
                 model_stack: vec![glam::Mat4::IDENTITY],
                 draw_mode: DrawMode::Triangles,
                 pipeline: None,
+                break_batching: false,
                 depth_test_enable: false,
                 snapshotter: MagicSnapshotter::new(ctx),
                 render_pass: None,
@@ -695,6 +700,11 @@ impl QuadGl {
             }
             ctx.apply_bindings(&bindings);
 
+            if let Some(ref uniforms) = dc.uniforms {
+                for i in 0..uniforms.len() {
+                    pipeline.uniforms_data[i] = uniforms[i];
+                }
+            }
             pipeline.set_uniform("Projection", projection);
             pipeline.set_uniform("Model", dc.model);
             pipeline.set_uniform("_Time", time);
@@ -753,6 +763,7 @@ impl QuadGl {
     }
 
     pub fn pipeline(&mut self, pipeline: Option<GlPipeline>) {
+        self.state.break_batching = true;
         self.state.pipeline = pipeline;
     }
 
@@ -785,17 +796,29 @@ impl QuadGl {
                 || draw_call.draw_mode != self.state.draw_mode
                 || draw_call.vertices_count >= MAX_VERTICES - vertices.len()
                 || draw_call.indices_count >= MAX_INDICES - indices.len()
+                || self.state.break_batching
         }) {
+            let uniforms = self.state.pipeline.map_or(None, |pipeline| {
+                Some(
+                    self.pipelines
+                        .get_quad_pipeline_mut(pipeline)
+                        .uniforms_data
+                        .clone(),
+                )
+            });
+
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(
                     self.state.texture,
                     self.state.model(),
                     self.state.draw_mode,
                     pip,
+                    uniforms.clone(),
                     self.state.render_pass,
                 ));
             }
             self.draw_calls[self.draw_calls_count].texture = self.state.texture;
+            self.draw_calls[self.draw_calls_count].uniforms = uniforms;
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
             self.draw_calls[self.draw_calls_count].clip = self.state.clip;
@@ -804,6 +827,7 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
 
             self.draw_calls_count += 1;
+            self.state.break_batching = false;
         };
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
@@ -824,6 +848,8 @@ impl QuadGl {
     }
 
     pub fn set_uniform<T>(&mut self, pipeline: GlPipeline, name: &str, uniform: T) {
+        self.state.break_batching = true;
+
         self.pipelines
             .get_quad_pipeline_mut(pipeline)
             .set_uniform(name, uniform);
