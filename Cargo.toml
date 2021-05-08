@@ -12,7 +12,7 @@ Simple and easy to use graphics library
 readme="README.md"
 
 [features]
-default = ["log-impl","audio"]
+default = ["log-impl", "audio"]
 log-impl = ["miniquad/log-impl"]
 audio = ["rodio"]
 
@@ -28,7 +28,7 @@ macroquad_macro = { version = "0.1.2", path = "macroquad_macro" }
 fontdue = "0.4.0"
 bumpalo = "3.4"
 
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+[target.'cfg(not(any(target_arch = "wasm32", target_os = "android")))'.dependencies]
 rodio = { version = "0.13.0", optional=true, default-features = false, features = ["wav", "vorbis"] }
 
 [dev-dependencies]

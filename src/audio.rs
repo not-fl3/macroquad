@@ -3,11 +3,11 @@
 use crate::{file::load_file, get_context};
 use std::collections::HashMap;
 
-#[cfg(not(feature = "audio"))]
+#[cfg(any(not(feature = "audio"), target_os = "android"))]
 #[path = "audio/no_sound.rs"]
 mod snd;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
 #[cfg(feature = "audio")]
 #[path = "audio/native_snd.rs"]
 mod snd;
