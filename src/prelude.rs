@@ -14,7 +14,7 @@ pub use crate::window::*;
 
 pub use crate::quad_gl::{colors::*, Color, DrawMode, GlPipeline, QuadGl, Vertex};
 pub use glam;
-pub use miniquad::{conf::Conf, Comparison, PipelineParams, UniformType};
+pub use miniquad::{conf::Conf, Comparison, PipelineParams, ShaderError, UniformType};
 pub use quad_rand as rand;
 
 pub use crate::experimental::*;
