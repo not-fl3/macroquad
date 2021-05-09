@@ -72,8 +72,8 @@ impl Atlas {
     pub fn texture(&mut self, _ctx: &mut miniquad::Context) -> Texture2D {
         if self.dirty {
             self.dirty = false;
-            if self.texture.width() != self.image.width as _
-                || self.texture.height() != self.image.height as _
+            if (self.texture.width() - self.image.width as f32).abs() > 1e-6
+                || (self.texture.height() - self.image.height as f32).abs() > 1e-6
             {
                 self.texture = Texture2D::from_rgba8(
                     self.image.width,

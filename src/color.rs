@@ -210,8 +210,8 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
     let b2 = (((max - b) / 6.0) + (delta / 2.0)) / delta;
 
     h = match max {
-        x if x == r => b2 - g2,
-        x if x == g => (1.0 / 3.0) + r2 - b2,
+        x if (x - r).abs() < 1e-6 => b2 - g2,
+        x if (x - g).abs() < 1e-6 => (1.0 / 3.0) + r2 - b2,
         _ => (2.0 / 3.0) + g2 - r2,
     };
 

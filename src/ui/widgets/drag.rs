@@ -184,7 +184,7 @@ impl<'a> Drag<'a> {
                 }
             }
         } else {
-            if s.string_represents != (*data).into() {
+            if (s.string_represents - (*data).into()).abs() > 1e-6 {
                 s.string = data.to_string();
             }
 

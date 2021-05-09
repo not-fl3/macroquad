@@ -107,7 +107,7 @@ impl<'a> Slider<'a> {
             let old_data = *data;
             *data = self.range.start + (self.range.end - self.range.start) * mouse_position;
 
-            if old_data != *data {
+            if (old_data - *data).abs() > 1e-6 {
                 use std::fmt::Write;
 
                 temp_string.clear();

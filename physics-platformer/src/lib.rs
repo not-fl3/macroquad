@@ -320,10 +320,11 @@ impl World {
             if width > *tile_width as i32 {
                 let mut x = pos.x;
 
-                while {
+                loop {
                     x += tile_width;
-                    x < pos.x + width as f32 - 1.
-                } {
+                    if x > pos.x + width as f32 - 1. {
+                        break;
+                    }
                     if check(vec2(x, pos.y)) || check(vec2(x, pos.y + height as f32 - 1.0)) {
                         return true;
                     }
@@ -333,10 +334,11 @@ impl World {
             if height > *tile_height as i32 {
                 let mut y = pos.y;
 
-                while {
+                loop {
                     y += tile_height;
-                    y < pos.y + height as f32 - 1.
-                } {
+                    if y > pos.y + height as f32 - 1. {
+                        break;
+                    }
                     if check(vec2(pos.x, y)) || check(vec2(pos.x + width as f32 - 1., y)) {
                         return true;
                     }
