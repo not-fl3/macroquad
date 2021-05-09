@@ -7,6 +7,7 @@ use std::collections::HashMap;
 mod error;
 mod tiled;
 
+pub use error::Error;
 pub use tiled::layer::Property;
 
 #[derive(Debug)]
