@@ -92,6 +92,16 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     } else {
         panic!("[macroquad::main] expecting main function");
     }
+
+    modified.extend(std::iter::once(source.next().unwrap()));
+
+    let next = source.next().unwrap();
+    let use_result = if let TokenTree::Punct(punct) = &next {
+        *punct == '-' // Start of `-> Result<(), ...>`
+    } else {
+        false
+    };
+    modified.extend(std::iter::once(next));
     modified.extend(source);
 
     let (method, ident) = match attr.into_iter().next() {
@@ -107,12 +117,21 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     let mut prelude: TokenStream = format!(
         "
     fn main() {{
-        {crate_name}::Window::{method}({ident}, amain());
+        {crate_name}::Window::{method}({ident}, {main});
     }}
     ",
         crate_name = crate_rename.unwrap_or_else(|| "macroquad".to_string()),
         method = method,
-        ident = ident
+        ident = ident,
+        main = if use_result {
+            "async {
+                if let Err(err) = amain().await {
+                    error!(\"Error: {:?}\", err);
+                }
+            }"
+        } else {
+            "amain()"
+        }
     )
     .parse()
     .unwrap();

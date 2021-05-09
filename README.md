@@ -62,6 +62,11 @@ async fn main() {
 }
 ```
 
+You can use any of these main functions:
+* `async fn main() {`
+* `async fn main() -> Result<(), ...> {` (then your error must implement `Debug`)
+* `async fn main() -> anyhow::Result<()> {`
+
 And to run it natively: 
 ```bash
 cargo run
