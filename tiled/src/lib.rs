@@ -1,3 +1,11 @@
+#![allow(
+    clippy::many_single_char_names,
+    clippy::collapsible_else_if,
+    clippy::new_without_default,
+    clippy::transmute_ptr_to_ptr,
+    clippy::transmute_ptr_to_ref
+)]
+
 use nanoserde::DeJson;
 
 use macroquad::prelude::*;
@@ -81,7 +89,7 @@ pub struct Map {
 
 impl Map {
     pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
-        if self.tilesets.contains_key(tileset) == false {
+        if !self.tilesets.contains_key(tileset) {
             panic!(
                 "No such tileset: {}, tilesets available: {:?}",
                 tileset,
@@ -132,12 +140,14 @@ impl Map {
     pub fn draw_tiles(&self, layer: &str, dest: Rect, source: impl Into<Option<Rect>>) {
         assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
 
-        let source = source.into().unwrap_or(Rect::new(
-            0.,
-            0.,
-            self.raw_tiled_map.width as f32,
-            self.raw_tiled_map.height as f32,
-        ));
+        let source = source.into().unwrap_or_else(|| {
+            Rect::new(
+                0.,
+                0.,
+                self.raw_tiled_map.width as f32,
+                self.raw_tiled_map.height as f32,
+            )
+        });
         let layer = &self.layers[layer];
 
         let spr_width = dest.w / source.w;
@@ -164,12 +174,14 @@ impl Map {
     pub fn tiles(&self, layer: &str, rect: impl Into<Option<Rect>>) -> TilesIterator {
         assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
 
-        let rect = rect.into().unwrap_or(Rect::new(
-            0.,
-            0.,
-            self.raw_tiled_map.width as f32,
-            self.raw_tiled_map.height as f32,
-        ));
+        let rect = rect.into().unwrap_or_else(|| {
+            Rect::new(
+                0.,
+                0.,
+                self.raw_tiled_map.width as f32,
+                self.raw_tiled_map.height as f32,
+            )
+        });
         TilesIterator::new(&self.layers[layer], rect)
     }
 
@@ -255,7 +267,7 @@ pub fn load_map(
         } else {
             let tileset_data = external_tilesets
                 .iter()
-                .find(|(name, _)| *name == &tileset.source)
+                .find(|(name, _)| *name == tileset.source)
                 .unwrap();
             let mut map_tileset: tiled::Tileset = DeJson::deserialize_json(&tileset_data.1)?;
             map_tileset.firstgid = tileset.firstgid;
@@ -339,7 +351,7 @@ pub fn load_map(
                                 .iter()
                                 .find(|t| t.id as u32 == *tile - tileset.firstgid)
                                 .and_then(|tile| tile.ty.clone())
-                                .unwrap_or("".to_owned());
+                                .unwrap_or_else(|| "".to_owned());
 
                             Tile {
                                 id: *tile - tileset.firstgid,

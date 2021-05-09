@@ -18,7 +18,7 @@ async fn main() {
                 .ui(ui, |ui| {
                     ui.label(None, "Pressed kbd keys");
 
-                    for key_code in (0..1000).map(|key_code| From::from(key_code)) {
+                    for key_code in (0..1000).map(From::from) {
                         if is_key_down(key_code) {
                             ui.label(None, &format!("{:?}", key_code))
                         }

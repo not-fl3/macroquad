@@ -47,6 +47,7 @@ impl<'a> InternalGlContext<'a> {
     }
 }
 
+#[allow(clippy::missing_safety_doc)] // TODO: add safety instruction (important!)
 pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
     let context = get_context();
 

@@ -73,7 +73,7 @@ impl Window {
 
         // TODO: this will make each new window focused(appeared on the top) always
         // consider adding some configuration to be able to spawn background windows
-        if context.window.was_active == false {
+        if !context.window.was_active {
             ui.focus_window(self.id);
         }
 
@@ -170,7 +170,7 @@ impl WindowToken {
         let context = ui.get_active_window_context();
         context.window.painter.clip(None);
 
-        let opened = context.window.want_close == false;
+        let opened = !context.window.want_close;
 
         ui.end_window();
 

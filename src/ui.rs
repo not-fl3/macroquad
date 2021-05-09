@@ -81,6 +81,7 @@ pub(crate) struct Window {
 }
 
 impl Window {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         id: Id,
         parent: Option<Id>,
@@ -411,7 +412,7 @@ impl<'a> WindowContext<'a> {
             scroll.dragging_y = true;
             scroll.initial_scroll.y = scroll.rect.y - self.input.mouse_position.y * k;
         }
-        if scroll.dragging_y && self.input.is_mouse_down == false {
+        if scroll.dragging_y && !self.input.is_mouse_down {
             self.input.cursor_grabbed = false;
             scroll.dragging_y = false;
         }
@@ -478,7 +479,7 @@ impl InputHandler for Ui {
         for (n, window) in self.windows_focus_order.iter().enumerate() {
             let window = &self.windows[window];
 
-            if window.was_active == false {
+            if !window.was_active {
                 continue;
             }
 
@@ -809,7 +810,7 @@ impl Ui {
 
     pub(crate) fn get_active_window_context(&mut self) -> WindowContext {
         let focused;
-        let window = if self.in_modal == false {
+        let window = if !self.in_modal {
             match self.active_window {
                 None | Some(0) => {
                     focused = true;
@@ -907,7 +908,7 @@ impl Ui {
     pub fn is_mouse_over(&self, mouse_position: Vec2) -> bool {
         for window in self.windows_focus_order.iter() {
             let window = &self.windows[window];
-            if window.was_active == false {
+            if !window.was_active {
                 continue;
             }
             if window.full_rect().contains(mouse_position) {
@@ -915,10 +916,8 @@ impl Ui {
             }
         }
         for window in &self.modal {
-            if window.was_active {
-                if window.full_rect().contains(mouse_position) {
-                    return true;
-                }
+            if window.was_active && window.full_rect().contains(mouse_position) {
+                return true;
             }
         }
         false
@@ -948,7 +947,7 @@ impl Ui {
         // so need to figure the root id
 
         if self.in_modal {
-            return true;
+            true
         } else {
             self.child_window_stack
                 .get(0)
@@ -978,7 +977,7 @@ impl Ui {
             }
         }
 
-        return false;
+        false
     }
 
     pub fn new_frame(&mut self, delta: f32) {
@@ -997,7 +996,7 @@ impl Ui {
 
         self.key_repeat.new_frame(self.time);
 
-        for (_, window) in &mut self.windows {
+        for window in self.windows.values_mut() {
             window.painter.clear();
             window.cursor.reset();
             window.was_active = window.active;
@@ -1153,7 +1152,7 @@ pub(crate) mod ui_context {
             let ctrl = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
 
             while let Some(c) = get_char_pressed() {
-                if ctrl == false {
+                if !ctrl {
                     ui.char_event(c, false, false);
                 }
             }
@@ -1281,7 +1280,7 @@ pub(crate) mod ui_context {
         }
     }
 
-    const VERTEX_SHADER: &'static str = "#version 100
+    const VERTEX_SHADER: &str = "#version 100
 precision lowp float;
 
 attribute vec3 position;
@@ -1301,7 +1300,7 @@ void main() {
     color = color0 / 255.0;
 }
 ";
-    const FRAGMENT_SHADER: &'static str = "#version 100
+    const FRAGMENT_SHADER: &str = "#version 100
 precision lowp float;
 
 varying vec2 uv;

@@ -27,7 +27,7 @@ impl<'a> InputText<'a> {
         }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> InputText<'b> {
+    pub fn label(self, label: &str) -> InputText {
         InputText {
             id: self.id,
             size: self.size,
@@ -68,10 +68,14 @@ impl<'a> InputText<'a> {
             .painter
             .element_size(&context.style.editbox_style, &self.label);
 
-        let size = self.size.unwrap_or(vec2(
-            context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
-            label_size.y.max(19.),
-        ));
+        let size = self.size.unwrap_or_else(|| {
+            vec2(
+                context.window.cursor.area.w
+                    - context.style.margin * 2.
+                    - context.window.cursor.ident,
+                label_size.y.max(19.),
+            )
+        });
 
         let pos = context.window.cursor.fit(size, Layout::Vertical);
 
@@ -93,7 +97,7 @@ impl<'a> InputText<'a> {
 
         let context = ui.get_active_window_context();
 
-        if self.label.is_empty() == false {
+        if !self.label.is_empty() {
             context.window.painter.draw_element_label(
                 &context.style.label_style,
                 Vec2::new(pos.x + size.x * self.ratio, pos.y),

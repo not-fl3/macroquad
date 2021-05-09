@@ -38,7 +38,7 @@ async fn main() {
             platform_x -= 3.0 * delta;
         }
 
-        if stick == false {
+        if !stick {
             ball_x += dx * delta;
             ball_y += dy * delta;
         } else {
@@ -72,6 +72,7 @@ async fn main() {
             stick = true;
         }
 
+        #[allow(clippy::needless_range_loop)]
         for j in 0..BLOCKS_H {
             for i in 0..BLOCKS_W {
                 if blocks[j][i] {

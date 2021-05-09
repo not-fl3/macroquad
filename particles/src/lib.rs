@@ -1,3 +1,11 @@
+#![allow(
+    clippy::many_single_char_names,
+    clippy::collapsible_else_if,
+    clippy::new_without_default,
+    clippy::transmute_ptr_to_ptr,
+    clippy::transmute_ptr_to_ref
+)]
+
 use macroquad::prelude::*;
 use macroquad::window::miniquad::*;
 
@@ -508,7 +516,6 @@ impl Emitter {
                     "particles.glsl".to_string(),
                     include_str!("particles.glsl").to_owned(),
                 )],
-                ..Default::default()
             };
 
             let vertex = preprocess_shader(&vertex, &config);
@@ -608,7 +615,7 @@ impl Emitter {
         };
 
         Emitter {
-            blend_mode: config.blend_mode.clone(),
+            blend_mode: config.blend_mode,
             batched_size_curve: config.size_curve.as_ref().map(|curve| curve.batch()),
             post_processing_pass,
             post_processing_pipeline,
@@ -838,7 +845,7 @@ impl Emitter {
         if self.config.blend_mode != self.blend_mode {
             self.pipeline
                 .set_blend(ctx, Some(self.config.blend_mode.blend_state()));
-            self.blend_mode = self.config.blend_mode.clone();
+            self.blend_mode = self.config.blend_mode;
         }
 
         if self.config.post_processing.is_none() {
@@ -951,7 +958,7 @@ impl EmittersCache {
             quad_gl,
         } = gl;
 
-        if self.active_emitters.len() > 0 {
+        if !self.active_emitters.is_empty() {
             self.emitter.setup_render_pass(quad_gl, ctx);
         }
         for i in &mut self.active_emitters {
@@ -962,12 +969,12 @@ impl EmittersCache {
 
                 emitter.perform_render_pass(quad_gl, ctx);
 
-                if emitter.config.emitting == false {
+                if !emitter.config.emitting {
                     self.emitters_cache.push(i.take().unwrap().0);
                 }
             }
         }
-        if self.active_emitters.len() > 0 {
+        if !self.active_emitters.is_empty() {
             self.emitter.end_render_pass(quad_gl, ctx);
         }
 

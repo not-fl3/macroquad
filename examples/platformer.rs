@@ -81,7 +81,7 @@ async fn main() {
             let pos = world.actor_pos(player.collider);
             let on_ground = world.collide_check(player.collider, pos + vec2(0., 1.));
 
-            if on_ground == false {
+            if !on_ground {
                 player.speed.y += 500. * get_frame_time();
             }
 
@@ -93,10 +93,8 @@ async fn main() {
                 player.speed.x = 0.;
             }
 
-            if is_key_pressed(KeyCode::Space) {
-                if on_ground {
-                    player.speed.y = -120.;
-                }
+            if is_key_pressed(KeyCode::Space) && on_ground {
+                player.speed.y = -120.;
             }
 
             world.move_h(player.collider, player.speed.x * get_frame_time());

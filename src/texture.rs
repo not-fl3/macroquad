@@ -74,13 +74,14 @@ impl Image {
         let bytes = img.into_raw();
 
         Image {
+            bytes,
             width,
             height,
-            bytes,
         }
     }
 
     /// Creates an Image filled with the provided [Color].
+    #[allow(clippy::identity_op)]
     pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
         let mut bytes = vec![0; width as usize * height as usize * 4];
         for i in 0..width as usize * height as usize {
@@ -90,21 +91,22 @@ impl Image {
             bytes[i * 4 + 3] = (color.a * 255.) as u8;
         }
         Image {
+            bytes,
             width,
             height,
-            bytes,
         }
     }
 
     /// Updates this image from a slice of [Color]s.
+    #[allow(clippy::identity_op)]
     pub fn update(&mut self, colors: &[Color]) {
         assert!(self.width as usize * self.height as usize == colors.len());
 
-        for i in 0..colors.len() {
-            self.bytes[i * 4] = (colors[i].r * 255.) as u8;
-            self.bytes[i * 4 + 1] = (colors[i].g * 255.) as u8;
-            self.bytes[i * 4 + 2] = (colors[i].b * 255.) as u8;
-            self.bytes[i * 4 + 3] = (colors[i].a * 255.) as u8;
+        for (i, color) in colors.iter().enumerate() {
+            self.bytes[i * 4 + 0] = (color.r * 255.) as u8;
+            self.bytes[i * 4 + 1] = (color.g * 255.) as u8;
+            self.bytes[i * 4 + 2] = (color.b * 255.) as u8;
+            self.bytes[i * 4 + 3] = (color.a * 255.) as u8;
         }
     }
 
@@ -155,6 +157,7 @@ impl Image {
     }
 
     /// Returns an Image from a rect inside this image.
+    #[allow(clippy::identity_op)]
     pub fn sub_image(&self, rect: Rect) -> Image {
         let width = rect.w as usize;
         let height = rect.h as usize;
@@ -165,7 +168,7 @@ impl Image {
         let mut n = 0;
         for y in y..y + height {
             for x in x..x + width {
-                bytes[n] = self.bytes[y * self.width as usize * 4 + x * 4 + 0];
+                bytes[n + 0] = self.bytes[y * self.width as usize * 4 + x * 4 + 0];
                 bytes[n + 1] = self.bytes[y * self.width as usize * 4 + x * 4 + 1];
                 bytes[n + 2] = self.bytes[y * self.width as usize * 4 + x * 4 + 2];
                 bytes[n + 3] = self.bytes[y * self.width as usize * 4 + x * 4 + 3];
@@ -314,15 +317,15 @@ pub fn draw_texture_ex(
     let mut x = x;
     let mut y = y;
     if params.flip_x {
-        x = x + w;
+        x += w;
         w = -w;
     }
     if params.flip_y {
-        y = y + h;
+        y += h;
         h = -h;
     }
 
-    let pivot = params.pivot.unwrap_or(vec2(x + w / 2., y + h / 2.));
+    let pivot = params.pivot.unwrap_or_else(|| vec2(x + w / 2., y + h / 2.));
     let m = pivot;
     let p = [
         vec2(x, y) - pivot,
@@ -363,6 +366,7 @@ pub fn draw_texture_ex(
     context.gl.geometry(&vertices, &indices);
 }
 
+#[allow(clippy::too_many_arguments)]
 #[deprecated(since = "0.3.0", note = "Use draw_texture_ex instead")]
 pub fn draw_texture_rec(
     texture: Texture2D,
@@ -455,10 +459,7 @@ impl Texture2D {
     ///     );
     /// # }
     /// ```
-    pub fn from_file_with_format<'a>(
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Texture2D {
+    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Texture2D {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(&bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))

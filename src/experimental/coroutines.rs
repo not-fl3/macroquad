@@ -9,6 +9,7 @@ use std::task::{Context, Poll};
 
 use crate::{exec::ExecState, get_context};
 
+#[allow(clippy::type_complexity)]
 pub(crate) struct CoroutinesContext {
     futures: Vec<Option<(Pin<Box<dyn Future<Output = ()>>>, ExecState)>>,
 }
@@ -20,6 +21,7 @@ impl CoroutinesContext {
         }
     }
 
+    #[allow(clippy::manual_flatten)]
     pub fn update(&mut self) {
         for future in &mut self.futures {
             if let Some((f, context)) = future {

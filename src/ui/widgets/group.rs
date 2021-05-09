@@ -88,7 +88,7 @@ impl Group {
             {
                 *context.dragging = Some((self.id, DragState::Dragging(*orig)));
             }
-            if context.input.is_mouse_down == false {
+            if !context.input.is_mouse_down {
                 *context.dragging = None;
             }
         }
@@ -102,7 +102,7 @@ impl Group {
                     *context.drag_hovered_previous_frame,
                 );
 
-                if context.input.is_mouse_down == false {
+                if !context.input.is_mouse_down {
                     *context.dragging = None;
                     drag = Drag::Dropped(
                         context.input.mouse_position,
@@ -156,18 +156,17 @@ impl GroupToken {
 
         context.window.painter.clip(None);
 
-        if context.focused && self.draggable {
-            if
-            //parent.dragging.is_none()
-            context.input.is_mouse_down
-                && Rect::new(self.pos.x, self.pos.y, self.size.x, self.size.y)
-                    .contains(context.input.mouse_position)
-            {
-                // *context.dragging = Some((
-                //     id,
-                //     DragState::Clicked(context.input.mouse_position, Vec2::new(rect.x, rect.y)),
-                // ));
-            }
+        //parent.dragging.is_none()
+        if context.focused
+            && self.draggable
+            && context.input.is_mouse_down
+            && Rect::new(self.pos.x, self.pos.y, self.size.x, self.size.y)
+                .contains(context.input.mouse_position)
+        {
+            // *context.dragging = Some((
+            //     id,
+            //     DragState::Clicked(context.input.mouse_position, Vec2::new(rect.x, rect.y)),
+            // ));
         }
 
         ui.end_window();

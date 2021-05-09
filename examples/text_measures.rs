@@ -69,7 +69,7 @@ fn draw_text_annotated(text: &str, font: Option<Font>, x: f32, baseline: f32) {
         baseline,
         TextParams {
             font_size: 100,
-            font: font.unwrap_or(Default::default()),
+            font: font.unwrap_or_default(),
             ..Default::default()
         },
     );

@@ -129,7 +129,7 @@ pub mod shaders {
                 }
                 return true;
             }
-            return false;
+            false
         }
 
         fn skip_character(data: &[char], n: &mut usize, target: char) {
@@ -157,10 +157,7 @@ pub mod shaders {
                 .includes
                 .iter()
                 .find(|(name, _)| name == &filename)
-                .expect(&format!(
-                    "Include file {} in not on \"includes\" list",
-                    filename
-                ));
+                .unwrap_or_else(|| panic!("Include file {} in not on \"includes\" list", filename));
 
             let _ = res
                 .splice(
@@ -202,7 +199,6 @@ qwe
             &shader_string,
             &PreprocessorConfig {
                 includes: vec![("hello.glsl".to_string(), "iii\njjj".to_string())],
-                ..Default::default()
             },
         );
 

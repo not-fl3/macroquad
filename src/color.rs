@@ -39,31 +39,31 @@ fn color_from_bytes() {
     );
 }
 
-impl Into<[u8; 4]> for Color {
-    fn into(self) -> [u8; 4] {
+impl From<Color> for [u8; 4] {
+    fn from(color: Color) -> [u8; 4] {
         [
-            (self.r * 255.) as u8,
-            (self.g * 255.) as u8,
-            (self.b * 255.) as u8,
-            (self.a * 255.) as u8,
+            (color.r * 255.) as u8,
+            (color.g * 255.) as u8,
+            (color.b * 255.) as u8,
+            (color.a * 255.) as u8,
         ]
     }
 }
 
-impl Into<Color> for [u8; 4] {
-    fn into(self) -> Color {
+impl From<[u8; 4]> for Color {
+    fn from(arr: [u8; 4]) -> Color {
         Color::new(
-            self[0] as f32 / 255.,
-            self[1] as f32 / 255.,
-            self[2] as f32 / 255.,
-            self[3] as f32 / 255.,
+            arr[0] as f32 / 255.,
+            arr[1] as f32 / 255.,
+            arr[2] as f32 / 255.,
+            arr[3] as f32 / 255.,
         )
     }
 }
 
-impl Into<[f32; 4]> for Color {
-    fn into(self) -> [f32; 4] {
-        [self.r, self.g, self.b, self.a]
+impl From<Color> for [f32; 4] {
+    fn from(color: Color) -> [f32; 4] {
+        [color.r, color.g, color.b, color.a]
     }
 }
 
@@ -145,7 +145,7 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> Color {
             if t < 1.0 / 6.0 { return p + (q - p) * 6.0 * t; }
             if t < 1.0 / 2.0 { return q; }
             if t < 2.0 / 3.0 { return p + (q - p) * (2.0 / 3.0 - t) * 6.0; }
-            return p;
+            p
         }
 
         let q = if l < 0.5 {
@@ -216,9 +216,9 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
     };
 
     // Fix wraparounds
-    if h < 0 as f32 {
+    if h < 0.0 {
         h += 1.0;
-    } else if h > 1 as f32 {
+    } else if h > 1.0 {
         h -= 1.0;
     }
 

@@ -53,10 +53,10 @@ async fn main() {
             .build();
 
         Skin {
-            editbox_style,
-            window_style,
-            button_style,
             label_style,
+            button_style,
+            window_style,
+            editbox_style,
             ..root_ui().default_skin()
         }
     };
@@ -128,11 +128,11 @@ async fn main() {
             .build();
 
         Skin {
-            window_style,
-            button_style,
             label_style,
-            checkbox_style,
+            button_style,
+            window_style,
             editbox_style,
+            checkbox_style,
             ..root_ui().default_skin()
         }
     };
