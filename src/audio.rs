@@ -41,13 +41,13 @@ pub struct Sound(usize);
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
     let data = load_file(path).await?;
-    load_sound_data(&data).await
+    load_sound_from_bytes(&data).await
 }
 
 /// Load audio data.
 ///
 /// Attempts to automatically detect the format of the source of data.
-pub async fn load_sound_data(data: &[u8]) -> Result<Sound, crate::file::FileError> {
+pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::FileError> {
     let sound = load_native_snd(&data).await;
 
     let ctx = &mut get_context().audio_context;
