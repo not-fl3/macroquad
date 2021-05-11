@@ -1,4 +1,3 @@
-use std::fmt;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -27,26 +26,7 @@ impl Future for FrameFuture {
     }
 }
 
-#[derive(Debug)]
-pub struct FileError {
-    pub kind: miniquad::fs::Error,
-    pub path: String,
-}
-type FileResult<T> = Result<T, FileError>;
-impl std::error::Error for FileError {}
-impl fmt::Display for FileError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Couldn't load file {}: {}", self.path, self.kind)
-    }
-}
-impl FileError {
-    pub fn new(kind: miniquad::fs::Error, path: &str) -> Self {
-        Self {
-            kind,
-            path: path.to_string(),
-        }
-    }
-}
+type FileResult<T> = Result<T, crate::file::FileError>;
 
 pub struct FileLoadingFuture {
     pub contents: std::rc::Rc<std::cell::RefCell<Option<FileResult<Vec<u8>>>>>,

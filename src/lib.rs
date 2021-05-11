@@ -68,8 +68,55 @@ pub mod prelude;
 
 pub mod telemetry;
 
-// TODO: write something about macroquad entrypoint
-#[doc(hidden)]
+/// Macroquad entry point.
+///
+/// ```skip
+/// #[main("Window name")]
+/// async fn main() {
+/// }
+/// ```
+///
+/// ```skip
+/// fn window_conf() -> Conf {
+///     Conf {
+///         window_title: "Window name".to_owned(),
+///         fullscreen: true,
+///         ..Default::default()
+///     }
+/// }
+/// #[macroquad::main(window_conf)]
+/// async fn main() {
+/// }
+/// ```
+///
+/// ## Error handling
+///
+/// `async fn main()` can have the same signature as a normal `main` in Rust.
+/// The most typical use cases are:
+/// * `async fn main() {}`
+/// * `async fn main() -> Result<(), Error> {}` (note that `Error` should implement `Debug`)
+///
+/// When a lot of third party crates are involved and very different errors may happens, `anyhow` crate may help:
+/// * `async fn main() -> anyhow::Result<()> {}`
+///
+/// For better control over game errors custom error type may be introduced:
+/// ```skip
+/// #[derive(Debug)]
+/// enum GameError {
+///     FileError(macroquad::FileError),
+///     SomeThirdPartyCrateError(somecrate::Error)
+/// }
+/// impl From<macroquad::file::FileError> for GameError {
+///     fn from(error: macroquad::file::FileError) -> GameError {
+///         GameError::FileError(error)
+///     }
+/// }
+/// impl From<somecrate::Error> for GameError {
+///     fn from(error: somecrate::Error) -> GameError {
+///         GameError::SomeThirdPartyCrateError(error)
+///     }
+/// }
+/// ```
 pub use macroquad_macro::main;
 
 /// Cross platform random generator.
