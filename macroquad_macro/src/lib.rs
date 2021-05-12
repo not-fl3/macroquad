@@ -114,23 +114,27 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         None => panic!("No argument! Place function returned `Conf`"),
     };
 
+    let crate_name = crate_rename.unwrap_or_else(|| "macroquad".to_string());
     let mut prelude: TokenStream = format!(
         "
     fn main() {{
         {crate_name}::Window::{method}({ident}, {main});
     }}
     ",
-        crate_name = crate_rename.unwrap_or_else(|| "macroquad".to_string()),
+        crate_name = crate_name,
         method = method,
         ident = ident,
         main = if use_result {
-            "async {
-                if let Err(err) = amain().await {
-                    error!(\"Error: {:?}\", err);
-                }
-            }"
+            format!(
+                "async {{
+                if let Err(err) = amain().await {{
+                    {}::logging::error!(\"Error: {{:?}}\", err);
+                }}
+            }}",
+                crate_name
+            )
         } else {
-            "amain()"
+            "amain()".to_string()
         }
     )
     .parse()
