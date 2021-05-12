@@ -24,7 +24,7 @@ miniquad = "0.3.0-alpha.30"
 quad-rand = "0.2.1"
 glam = {version = "0.14", features = ["scalar-math"] }
 image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
-macroquad_macro = { version = "0.1.3", path = "macroquad_macro" }
+macroquad_macro = { version = "0.1.4", path = "macroquad_macro" }
 fontdue = "0.4.0"
 bumpalo = "3.4"
 

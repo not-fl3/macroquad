@@ -97,7 +97,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
 
     let next = source.next().unwrap();
     let use_result = if let TokenTree::Punct(punct) = &next {
-        *punct == '-' // Start of `-> Result<(), ...>`
+        format!("{}", punct) == "-" // Start of `-> Result<(), ...>`
     } else {
         false
     };
