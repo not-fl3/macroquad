@@ -57,3 +57,4 @@ pub async fn load_string(path: &str) -> Result<String, FileError> {
 
     Ok(String::from_utf8_lossy(&data).to_string())
 }
+

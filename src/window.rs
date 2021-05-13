@@ -3,7 +3,6 @@
 use crate::get_context;
 
 use crate::color::Color;
-use miniquad::PassAction;
 
 // miniquad is re-exported for the use in combination with `get_internal_gl`
 pub use miniquad;
@@ -13,21 +12,13 @@ pub fn next_frame() -> crate::exec::FrameFuture {
     crate::exec::FrameFuture
 }
 
+/// Fill window background with solid color.
+/// Note: even when "clear_background" was not called explicitly
+/// screen will be cleared at the beginning of the frame.
 pub fn clear_background(color: Color) {
     let context = get_context();
 
-    // all drawcalls are batched
-    // and batching is not clear-friendly
-    // so as a workaround we do immediate render pass with clear color
-    let clear = PassAction::clear_color(color.r, color.g, color.b, color.a);
-    if let Some(current_pass) = context.draw_context.current_pass {
-        context.quad_context.begin_pass(current_pass, clear);
-    } else {
-        context.quad_context.begin_default_pass(clear);
-    }
-    context.quad_context.end_render_pass();
-
-    context.draw_context.gl.clear_draw_calls();
+    context.gl.clear(&mut context.quad_context, color);
 }
 
 pub struct InternalGlContext<'a> {
@@ -39,11 +30,7 @@ impl<'a> InternalGlContext<'a> {
     /// Draw all the batched stuff and reset the internal state cache
     /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
     pub fn flush(&mut self) {
-        let context = get_context();
-
-        context
-            .draw_context
-            .perform_render_passes(&mut self.quad_context);
+        get_context().perform_render_passes();
     }
 }
 
@@ -52,7 +39,7 @@ pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
 
     InternalGlContext {
         quad_context: &mut context.quad_context,
-        quad_gl: &mut context.draw_context.gl,
+        quad_gl: &mut context.gl,
     }
 }
 

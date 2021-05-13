@@ -201,14 +201,11 @@ pub fn set_camera(camera: &dyn Camera) {
     let context = get_context();
 
     // flush previous camera draw calls
-    context
-        .draw_context
-        .perform_render_passes(&mut context.quad_context);
+    context.perform_render_passes();
 
-    context.draw_context.current_pass = camera.render_pass();
-    context.draw_context.gl.render_pass(camera.render_pass());
-    context.draw_context.gl.depth_test(camera.depth_enabled());
-    context.draw_context.camera_matrix = Some(camera.matrix());
+    context.gl.render_pass(camera.render_pass());
+    context.gl.depth_test(camera.depth_enabled());
+    context.camera_matrix = Some(camera.matrix());
 }
 
 /// Reset default 2D camera mode
@@ -216,12 +213,9 @@ pub fn set_default_camera() {
     let context = get_context();
 
     // flush previous camera draw calls
-    context
-        .draw_context
-        .perform_render_passes(&mut context.quad_context);
+    context.perform_render_passes();
 
-    context.draw_context.current_pass = None;
-    context.draw_context.gl.render_pass(None);
-    context.draw_context.gl.depth_test(false);
-    context.draw_context.camera_matrix = None;
+    context.gl.render_pass(None);
+    context.gl.depth_test(false);
+    context.camera_matrix = None;
 }

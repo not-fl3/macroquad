@@ -33,8 +33,30 @@ pub(crate) use render::ElementState;
 
 use std::ops::DerefMut;
 
+/// Root UI. Widgets drawn with the root ui will be always presented at the end of the frame with a "default" camera.
+/// UI space would be a "default" screen space (0..screen_width(), 0..screen_height())
 pub fn root_ui() -> impl DerefMut<Target = Ui> {
     crate::get_context().ui_context.ui.borrow_mut()
+}
+
+/// Current camera world space UI.
+/// Widgets will be drawn either at the end of the frame or just before next "set_camera" clal
+/// UI space would be equal to the camera space, widgets will be drawn at the plane with Y up X right and Z = 0.
+/// Note that windows focus queue, input focus etc is shared across all cameras.
+/// So this:
+///
+/// ```skip
+/// camera_ui().draw_window();
+/// set_camera(..);
+/// camera_ui().draw_window();
+/// root_ui().draw_window();
+/// ```
+/// Will result 3 windows on the screen, all in different cameras and probably looking differently,
+/// but only one of them would be focused.
+#[doc(hidden)]
+#[allow(unreachable_code)]
+pub fn camera_ui() -> impl DerefMut<Target = Ui> {
+    unimplemented!() as &'static mut Ui
 }
 
 use crate::{
@@ -330,6 +352,7 @@ impl AnyStorage {
             .unwrap()
     }
 }
+
 pub(crate) struct WindowContext<'a> {
     pub window: &'a mut Window,
     pub dragging: &'a mut Option<(Id, DragState)>,
@@ -1195,7 +1218,7 @@ pub(crate) mod ui_context {
             ui.mouse_wheel(wheel_x, -wheel_y);
         }
 
-        pub(crate) fn draw(&mut self) {
+        pub(crate) fn draw(&mut self, ctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
             // TODO: this belongs to new and waits for cleaning up context initialization mess
             let material = self.material.get_or_insert_with(|| {
                 let fragment_shader = FRAGMENT_SHADER.to_string();
@@ -1218,11 +1241,6 @@ pub(crate) mod ui_context {
                 )
                 .unwrap()
             });
-
-            let InternalGlContext {
-                quad_gl,
-                quad_context: ctx,
-            } = unsafe { get_internal_gl() };
 
             let mut ui = self.ui.borrow_mut();
             self.ui_draw_list.clear();

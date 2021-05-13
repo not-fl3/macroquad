@@ -43,7 +43,6 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
 
-mod drawing;
 mod exec;
 mod quad_gl;
 
@@ -131,10 +130,13 @@ pub mod logging {
 }
 pub use miniquad;
 
-use color::{colors::*, Color};
-use drawing::DrawContext;
-use glam::{vec2, Vec2};
-use ui::ui_context::UiContext;
+use crate::{
+    color::{colors::*, Color},
+    quad_gl::QuadGl,
+    ui::ui_context::UiContext,
+};
+
+use glam::{vec2, Mat4, Vec2};
 
 struct Context {
     quad_context: QuadContext,
@@ -160,7 +162,9 @@ struct Context {
 
     input_events: Vec<Vec<MiniquadInputEvent>>,
 
-    draw_context: DrawContext,
+    gl: QuadGl,
+    camera_matrix: Option<Mat4>,
+
     ui_context: UiContext,
     coroutines_context: experimental::coroutines::CoroutinesContext,
     fonts_storage: text::FontsStorage,
@@ -266,7 +270,9 @@ impl Context {
 
             input_events: Vec::new(),
 
-            draw_context: DrawContext::new(&mut ctx),
+            camera_matrix: None,
+            gl: QuadGl::new(&mut ctx),
+
             ui_context: UiContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
 
@@ -293,10 +299,11 @@ impl Context {
     fn end_frame(&mut self) {
         crate::experimental::scene::update();
 
-        self.ui_context.draw();
+        self.perform_render_passes();
 
-        self.draw_context
-            .perform_render_passes(&mut self.quad_context);
+        self.ui_context.draw(&mut self.quad_context, &mut self.gl);
+        let screen_mat = self.pixel_perfect_projection_matrix();
+        self.gl.draw(&mut self.quad_context, screen_mat);
 
         self.quad_context.commit_frame();
 
@@ -334,7 +341,27 @@ impl Context {
     fn clear(&mut self, color: Color) {
         self.quad_context
             .clear(Some((color.r, color.g, color.b, color.a)), None, None);
-        self.draw_context.gl.reset();
+        self.gl.reset();
+    }
+
+    pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
+        let (width, height) = self.quad_context.screen_size();
+
+        glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
+    }
+
+    pub(crate) fn projection_matrix(&self) -> glam::Mat4 {
+        if let Some(matrix) = self.camera_matrix {
+            matrix
+        } else {
+            self.pixel_perfect_projection_matrix()
+        }
+    }
+
+    pub(crate) fn perform_render_passes(&mut self) {
+        let matrix = self.projection_matrix();
+
+        self.gl.draw(&mut self.quad_context, matrix);
     }
 }
 

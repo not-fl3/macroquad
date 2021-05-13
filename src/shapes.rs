@@ -6,7 +6,7 @@ use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
 
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
 
     let mut vertices = Vec::<Vertex>::with_capacity(3);
 
@@ -27,7 +27,7 @@ pub fn draw_triangle_lines(v1: Vec2, v2: Vec2, v3: Vec2, thickness: f32, color: 
 }
 
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
 
     #[rustfmt::skip]
     let vertices = [
@@ -44,7 +44,7 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 }
 
 pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
     let t = thickness / 2.;
 
     #[rustfmt::skip]
@@ -85,7 +85,7 @@ pub fn draw_hexagon(
 }
 
 pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
 
     let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
     let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
@@ -145,7 +145,7 @@ pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
 }
 
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
     let dx = x2 - x1;
     let dy = y2 - y1;
 

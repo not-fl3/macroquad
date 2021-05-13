@@ -611,6 +611,19 @@ impl QuadGl {
         ))
     }
 
+    pub(crate) fn clear(&mut self, ctx: &mut miniquad::Context, color: Color) {
+        let clear = PassAction::clear_color(color.r, color.g, color.b, color.a);
+
+        if let Some(current_pass) = self.state.render_pass {
+            ctx.begin_pass(current_pass, clear);
+        } else {
+            ctx.begin_default_pass(clear);
+        }
+        ctx.end_render_pass();
+
+        self.clear_draw_calls();
+    }
+
     /// Reset only draw calls state
     pub fn clear_draw_calls(&mut self) {
         self.draw_calls_count = 0;
@@ -728,8 +741,7 @@ impl QuadGl {
         // back in the days when projection was a part of static batcher
         // now it is not, so here we go with this hack
 
-        let ctx = crate::get_context();
-        ctx.draw_context.projection_matrix(&mut ctx.quad_context)
+        crate::get_context().projection_matrix()
     }
 
     pub fn get_active_render_pass(&self) -> Option<RenderPass> {

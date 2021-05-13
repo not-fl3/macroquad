@@ -293,7 +293,7 @@ pub fn draw_texture_ex(
     color: Color,
     params: DrawTextureParams,
 ) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
 
     let Rect {
         x: sx,
