@@ -159,11 +159,11 @@ fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
         - Vec2::new(1.0, 1.0)
 }
 
-#[doc(hidden)]
+/// Functions for advanced input processing.
+///
+/// Functions in this module should be used by external tools that uses miniquad system, like different UI libraries. User shouldn't use this function.
 pub mod utils {
     use crate::get_context;
-
-    /// Functions in this module should be used by external tools that uses miniquad system, like different UI libraries. User shouldn't use this function.
 
     /// Register input subscriber. Returns subscriber identifier that must be used in `repeat_all_miniquad_input`.
     pub fn register_input_subscriber() -> usize {
@@ -174,7 +174,7 @@ pub mod utils {
         context.input_events.len() - 1
     }
 
-    /// Repeats all events that came since last call of this function with current value of `subscriber`. This function should be called at each frame.
+    /// Repeats all events that came since last call of this function with current value of `subscriber`. This function must be called at each frame.
     pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T, subscriber: usize) {
         let context = get_context();
         let mut ctx = &mut context.quad_context;
