@@ -25,7 +25,7 @@ quad-rand = "0.2.1"
 glam = {version = "0.14", features = ["scalar-math"] }
 image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
 macroquad_macro = { version = "0.1.5", path = "macroquad_macro" }
-fontdue = "0.4.0"
+fontdue = "0.5.0"
 bumpalo = "3.4"
 
 [target.'cfg(not(any(target_arch = "wasm32", target_os = "android")))'.dependencies]
