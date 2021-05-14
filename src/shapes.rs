@@ -31,10 +31,10 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 
     #[rustfmt::skip]
     let vertices = [
-        Vertex::new(x    , y    , 0., 0.0, 1.0, color),
+        Vertex::new(x    , y    , 0., 0.0, 0.0, color),
         Vertex::new(x + w, y    , 0., 1.0, 0.0, color),
         Vertex::new(x + w, y + h, 0., 1.0, 1.0, color),
-        Vertex::new(x    , y + h, 0., 0.0, 0.0, color),
+        Vertex::new(x    , y + h, 0., 0.0, 1.0, color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
