@@ -602,7 +602,8 @@ impl Ui {
         let mut font = crate::text::FontInternal::load_from_bytes(
             atlas.clone(),
             include_bytes!("ProggyClean.ttf"),
-        );
+        )
+        .unwrap();
 
         for character in crate::text::Font::ascii_character_list() {
             font.cache_glyph(character, 13);
