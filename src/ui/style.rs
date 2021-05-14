@@ -35,7 +35,7 @@ impl StyleBuilder {
         StyleBuilder {
             atlas,
             font: default_font,
-            font_size: 13,
+            font_size: 16,
             text_color: Color::from_rgba(0, 0, 0, 255),
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
@@ -220,7 +220,7 @@ impl Style {
             background_clicked: None,
             font,
             text_color: Color::from_rgba(0, 0, 0, 255),
-            font_size: 13,
+            font_size: 16,
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
             color_clicked: Color::from_rgba(255, 255, 255, 255),
@@ -376,7 +376,7 @@ impl Skin {
             },
             checkbox_style: Style {
                 text_color: Color::from_rgba(0, 0, 0, 255),
-                font_size: 13,
+                font_size: 16,
                 color: Color::from_rgba(200, 200, 200, 255),
                 color_hovered: Color::from_rgba(210, 210, 210, 255),
                 color_clicked: Color::from_rgba(150, 150, 150, 255),
