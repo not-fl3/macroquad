@@ -1,3 +1,11 @@
+#![allow(
+    clippy::many_single_char_names,
+    clippy::collapsible_else_if,
+    clippy::new_without_default,
+    clippy::transmute_ptr_to_ptr,
+    clippy::transmute_ptr_to_ref
+)]
+
 extern crate proc_macro;
 use proc_macro::{Ident, TokenStream, TokenTree};
 
@@ -20,7 +28,7 @@ fn next_literal(source: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Optio
         let mut literal = lit.to_string();
 
         // the only way to check that literal is string :/
-        if literal.starts_with("\"") {
+        if literal.starts_with('\"') {
             literal.remove(0);
             literal.remove(literal.len() - 1);
         }
@@ -28,7 +36,7 @@ fn next_literal(source: &mut Peekable<impl Iterator<Item = TokenTree>>) -> Optio
         return Some(literal);
     }
 
-    return None;
+    None
 }
 
 #[proc_macro_attribute]

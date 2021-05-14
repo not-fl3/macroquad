@@ -95,8 +95,8 @@ async fn main() {
         // Going 3d!
 
         set_camera(&Camera3D {
-            position: position,
-            up: up,
+            position,
+            up,
             target: position + front,
             ..Default::default()
         });

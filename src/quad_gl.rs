@@ -50,30 +50,30 @@ pub struct Vertex {
 
 pub type VertexInterop = ([f32; 3], [f32; 2], [f32; 4]);
 
-impl Into<VertexInterop> for Vertex {
-    fn into(self) -> VertexInterop {
+impl From<Vertex> for VertexInterop {
+    fn from(vertex: Vertex) -> VertexInterop {
         (
-            self.pos,
-            self.uv,
+            vertex.pos,
+            vertex.uv,
             [
-                self.color[0] as f32 / 255.0,
-                self.color[1] as f32 / 255.0,
-                self.color[2] as f32 / 255.0,
-                self.color[3] as f32 / 255.0,
+                vertex.color[0] as f32 / 255.0,
+                vertex.color[1] as f32 / 255.0,
+                vertex.color[2] as f32 / 255.0,
+                vertex.color[3] as f32 / 255.0,
             ],
         )
     }
 }
-impl Into<Vertex> for VertexInterop {
-    fn into(self) -> Vertex {
+impl From<VertexInterop> for Vertex {
+    fn from(vertex_interop: VertexInterop) -> Vertex {
         Vertex {
-            pos: self.0,
-            uv: self.1,
+            pos: vertex_interop.0,
+            uv: vertex_interop.1,
             color: [
-                ((self.2)[0] * 255.) as u8,
-                ((self.2)[1] * 255.) as u8,
-                ((self.2)[2] * 255.) as u8,
-                ((self.2)[3] * 255.) as u8,
+                ((vertex_interop.2)[0] * 255.) as u8,
+                ((vertex_interop.2)[1] * 255.) as u8,
+                ((vertex_interop.2)[2] * 255.) as u8,
+                ((vertex_interop.2)[3] * 255.) as u8,
             ],
         }
     }
@@ -236,7 +236,7 @@ impl MagicSnapshotter {
                 self.screen_texture = Some(Texture2D::from_miniquad_texture(color_img));
             }
 
-            if self.bindings.images.len() == 0 {
+            if self.bindings.images.is_empty() {
                 self.bindings.images.push(texture);
             } else {
                 self.bindings.images[0] = texture;
@@ -251,15 +251,13 @@ impl MagicSnapshotter {
             ctx.end_render_pass();
         } else {
             let (screen_width, screen_height) = ctx.screen_size();
-            if self.screen_texture.is_none()
-                || self
-                    .screen_texture
-                    .map(|t| {
-                        t.texture.width != screen_width as _
-                            || t.texture.height != screen_height as _
-                    })
-                    .unwrap_or(false)
-            {
+            let screen_texture_not_fit_in_screen = self
+                .screen_texture
+                .map(|t| {
+                    t.texture.width != screen_width as _ || t.texture.height != screen_height as _
+                })
+                .unwrap_or(false);
+            if self.screen_texture.is_none() || screen_texture_not_fit_in_screen {
                 self.screen_texture = Some(Texture2D::from_miniquad_texture(
                     Texture::new_render_texture(
                         ctx,
@@ -599,7 +597,7 @@ impl QuadGl {
         }
 
         let shader = Shader::new(ctx, vertex_shader, fragment_shader, shader_meta)?;
-        let wants_screen_texture = fragment_shader.find("_ScreenTexture").is_some();
+        let wants_screen_texture = fragment_shader.contains("_ScreenTexture");
 
         Ok(self.pipelines.make_pipeline(
             ctx,
@@ -692,10 +690,13 @@ impl QuadGl {
             bindings.index_buffer.update(ctx, dc.indices());
 
             bindings.images[0] = dc.texture;
-            bindings.images[1] = self.state.snapshotter.screen_texture.map_or_else(
-                || Texture::empty(),
-                |texture| texture.raw_miniquad_texture_handle(),
-            );
+            bindings.images[1] = self
+                .state
+                .snapshotter
+                .screen_texture
+                .map_or_else(Texture::empty, |texture| {
+                    texture.raw_miniquad_texture_handle()
+                });
             bindings
                 .images
                 .resize(2 + pipeline.textures.len(), Texture::empty());
@@ -714,9 +715,7 @@ impl QuadGl {
             ctx.apply_bindings(&bindings);
 
             if let Some(ref uniforms) = dc.uniforms {
-                for i in 0..uniforms.len() {
-                    pipeline.uniforms_data[i] = uniforms[i];
-                }
+                pipeline.uniforms_data[..uniforms.len()].clone_from_slice(&uniforms[..]);
             }
             pipeline.set_uniform("Projection", projection);
             pipeline.set_uniform("Model", dc.model);
@@ -787,10 +786,10 @@ impl QuadGl {
         assert!(vertices.len() <= MAX_VERTICES);
         assert!(indices.len() <= MAX_INDICES);
 
-        let pip = self.state.pipeline.unwrap_or(
+        let pip = self.state.pipeline.unwrap_or_else(|| {
             self.pipelines
-                .get(self.state.draw_mode, self.state.depth_test_enable),
-        );
+                .get(self.state.draw_mode, self.state.depth_test_enable)
+        });
 
         let previous_dc_ix = if self.draw_calls_count == 0 {
             None
@@ -799,6 +798,7 @@ impl QuadGl {
         };
         let previous_dc = previous_dc_ix.and_then(|ix| self.draw_calls.get(ix));
 
+        #[allow(clippy::blocks_in_if_conditions)]
         if previous_dc.map_or(true, |draw_call| {
             draw_call.texture != self.state.texture
                 || draw_call.clip != self.state.clip
@@ -810,13 +810,11 @@ impl QuadGl {
                 || draw_call.indices_count >= MAX_INDICES - indices.len()
                 || self.state.break_batching
         }) {
-            let uniforms = self.state.pipeline.map_or(None, |pipeline| {
-                Some(
-                    self.pipelines
-                        .get_quad_pipeline_mut(pipeline)
-                        .uniforms_data
-                        .clone(),
-                )
+            let uniforms = self.state.pipeline.map(|pipeline| {
+                self.pipelines
+                    .get_quad_pipeline_mut(pipeline)
+                    .uniforms_data
+                    .clone()
             });
 
             if self.draw_calls_count >= self.draw_calls.len() {
@@ -843,12 +841,12 @@ impl QuadGl {
         };
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
-        for i in 0..vertices.len() {
-            dc.vertices[dc.vertices_count + i] = vertices[i].into().into();
+        for (i, vertex) in vertices.iter().enumerate() {
+            dc.vertices[dc.vertices_count + i] = (*vertex).into().into();
         }
 
-        for i in 0..indices.len() {
-            dc.indices[dc.indices_count + i] = indices[i] + dc.vertices_count as u16;
+        for (i, index) in indices.iter().enumerate() {
+            dc.indices[dc.indices_count + i] = index + dc.vertices_count as u16;
         }
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();

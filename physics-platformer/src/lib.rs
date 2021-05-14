@@ -1,3 +1,11 @@
+#![allow(
+    clippy::many_single_char_names,
+    clippy::collapsible_else_if,
+    clippy::new_without_default,
+    clippy::transmute_ptr_to_ptr,
+    clippy::transmute_ptr_to_ref
+)]
+
 use macroquad::math::{vec2, Rect, Vec2};
 
 use std::collections::HashSet;
@@ -130,12 +138,11 @@ impl World {
             let sign = move_.signum();
 
             while move_ != 0 {
-                if self.collide_solids(
+                if !self.collide_solids(
                     collider.pos + vec2(0., sign as f32),
                     collider.width,
                     collider.height,
-                ) == false
-                {
+                ) {
                     collider.pos.y += sign as f32;
                     move_ -= sign;
                 } else {
@@ -160,12 +167,11 @@ impl World {
             let sign = move_.signum();
 
             while move_ != 0 {
-                if self.collide_solids(
+                if !self.collide_solids(
                     collider.pos + vec2(sign as f32, 0.),
                     collider.width,
                     collider.height,
-                ) == false
-                {
+                ) {
                     collider.pos.x += sign as f32;
                     move_ -= sign;
                 } else {
@@ -212,15 +218,13 @@ impl World {
 
             if riding_rect.overlaps(&rider_rect) {
                 riding_actors.push(*actor);
-            } else if pushing_rect.overlaps(&actor_collider.rect())
-                && actor_collider.squished == false
-            {
+            } else if pushing_rect.overlaps(&actor_collider.rect()) && !actor_collider.squished {
                 pushing_actors.push(*actor);
             }
 
-            if pushing_rect.overlaps(&actor_collider.rect()) == false {
+            if !pushing_rect.overlaps(&actor_collider.rect()) {
                 actor_collider.squishers.remove(&solid);
-                if actor_collider.squishers.len() == 0 {
+                if actor_collider.squishers.is_empty() {
                     actor_collider.squished = false;
                 }
             }
@@ -306,7 +310,7 @@ impl World {
                 if ix >= 0 && ix < static_colliders.len() as i32 && static_colliders[ix as usize] {
                     return *layer_tag == tag;
                 }
-                return false;
+                false
             };
 
             if check(pos)
@@ -320,10 +324,11 @@ impl World {
             if width > *tile_width as i32 {
                 let mut x = pos.x;
 
-                while {
+                loop {
                     x += tile_width;
-                    x < pos.x + width as f32 - 1.
-                } {
+                    if x > pos.x + width as f32 - 1. {
+                        break;
+                    }
                     if check(vec2(x, pos.y)) || check(vec2(x, pos.y + height as f32 - 1.0)) {
                         return true;
                     }
@@ -333,17 +338,18 @@ impl World {
             if height > *tile_height as i32 {
                 let mut y = pos.y;
 
-                while {
+                loop {
                     y += tile_height;
-                    y < pos.y + height as f32 - 1.
-                } {
+                    if y > pos.y + height as f32 - 1. {
+                        break;
+                    }
                     if check(vec2(pos.x, y)) || check(vec2(pos.x + width as f32 - 1., y)) {
                         return true;
                     }
                 }
             }
         }
-        return false;
+        false
     }
 
     pub fn squished(&self, actor: Actor) -> bool {

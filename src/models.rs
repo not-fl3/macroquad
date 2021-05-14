@@ -105,26 +105,10 @@ pub fn draw_grid(slices: u32, spacing: f32) {
 }
 
 pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>>, color: Color) {
-    let v1 = (
-        (center + vec3(-size.x, 0., -size.y)).into(),
-        vec2(0., 0.),
-        color,
-    );
-    let v2 = (
-        (center + vec3(-size.x, 0., size.y)).into(),
-        vec2(0., 1.),
-        color,
-    );
-    let v3 = (
-        (center + vec3(size.x, 0., size.y)).into(),
-        vec2(1., 1.),
-        color,
-    );
-    let v4 = (
-        (center + vec3(size.x, 0., -size.y)).into(),
-        vec2(1., 0.),
-        color,
-    );
+    let v1 = (center + vec3(-size.x, 0., -size.y), vec2(0., 0.), color);
+    let v2 = (center + vec3(-size.x, 0., size.y), vec2(0., 1.), color);
+    let v3 = (center + vec3(size.x, 0., size.y), vec2(1., 1.), color);
+    let v4 = (center + vec3(size.x, 0., -size.y), vec2(1., 0.), color);
 
     {
         let context = get_context();

@@ -163,7 +163,7 @@ pub struct EditboxState {
 }
 
 impl EditboxState {
-    pub fn clamp_selection<'a>(&mut self, text: &'a str) {
+    pub fn clamp_selection(&mut self, text: &str) {
         if let Some((ref mut start, ref mut end)) = &mut self.selection {
             if *start >= text.len() as u32 {
                 *start = text.len() as _;
@@ -249,7 +249,7 @@ impl EditboxState {
             if Self::word_delimiter(current_char) || current_char == '\n' {
                 space_skipping = true;
             }
-            if space_skipping && Self::word_delimiter(current_char) == false {
+            if space_skipping && !Self::word_delimiter(current_char) {
                 break;
             }
             cursor_tmp += 1;
@@ -273,7 +273,7 @@ impl EditboxState {
 
         self.selection = None;
 
-        let insert_command = InsertString::new(self, text, string.to_owned());
+        let insert_command = InsertString::new(self, text, string);
         insert_command.apply(&mut self.cursor, text);
         self.undo_stack.push(Box::new(insert_command));
     }
@@ -326,7 +326,7 @@ impl EditboxState {
             self.cursor = end_cursor;
         }
 
-        if shift == false {
+        if !shift {
             self.selection = None;
         }
         if shift {
@@ -339,7 +339,7 @@ impl EditboxState {
         }
     }
 
-    pub fn move_cursor_within_line(&mut self, text: &String, dx: i32, shift: bool) {
+    pub fn move_cursor_within_line(&mut self, text: &str, dx: i32, shift: bool) {
         assert!(dx >= 0, "not implemented");
 
         for _ in 0..dx {

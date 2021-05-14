@@ -185,6 +185,7 @@ impl<'a> RefMutAny<'a> {
         std::mem::forget(self);
     }
 
+    #[allow(clippy::wrong_self_convention)]
     fn to_typed<T>(self) -> RefMut<T> {
         let res = RefMut {
             data: self.data as *mut T,
@@ -315,6 +316,7 @@ impl Scene {
         }
     }
 
+    #[allow(clippy::manual_flatten)]
     pub fn clear(&mut self) {
         for cell in &mut self.nodes {
             if let Some(Cell {
@@ -322,7 +324,7 @@ impl Scene {
             }) = cell
             {
                 if let Some(cell) = cell.take() {
-                    assert!(unsafe { *cell.used == false });
+                    assert!(unsafe { !(*cell.used) });
 
                     let ix = self.dense.iter().position(|i| *i == cell.id).unwrap();
                     self.dense.remove(ix);
@@ -363,6 +365,7 @@ impl Scene {
     }
 
     pub fn get<T>(&self, handle: Handle<T>) -> Option<RefMut<T>> {
+        #[allow(clippy::question_mark)]
         if handle.id.is_none() {
             return None;
         }
@@ -427,7 +430,7 @@ impl Scene {
     pub fn update(&mut self) {
         for node in &mut self.iter() {
             let cell = self.nodes[node.handle.0.id].as_mut().unwrap();
-            if cell.initialized == false {
+            if !cell.initialized {
                 cell.initialized = true;
 
                 let node: RefMut<()> = node.to_typed::<()>();
@@ -537,7 +540,7 @@ pub(crate) fn get_untyped_node(handle: HandleUntyped) -> Option<RefMutAny<'stati
 }
 
 pub fn set_camera(camera: impl crate::camera::Camera + Clone + 'static) {
-    unsafe { get_scene() }.camera = Some(Box::new(camera.clone()));
+    unsafe { get_scene() }.camera = Some(Box::new(camera));
 }
 
 pub fn add_node<T: Node>(node: T) -> Handle<T> {

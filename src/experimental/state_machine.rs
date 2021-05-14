@@ -110,13 +110,13 @@ impl<T: 'static> StateMachine<T> {
     }
 
     /// A hack to update a state machine being part of an updating struct
-    pub fn update_detached<'a, F: FnMut(&mut T) -> &mut StateMachine<T>>(t: &'a mut T, mut f: F) {
+    pub fn update_detached<F: FnMut(&mut T) -> &mut StateMachine<T>>(t: &mut T, mut f: F) {
         let mut state_machine = f(t).take();
         state_machine.update(t, crate::time::get_frame_time());
         f(t).put_back(state_machine);
     }
 
-    pub fn update<'a>(&mut self, t: &'a mut T) {
+    pub fn update(&mut self, t: &mut T) {
         match self {
             StateMachine::Ready(state_machine) => {
                 state_machine.update(t, crate::time::get_frame_time())

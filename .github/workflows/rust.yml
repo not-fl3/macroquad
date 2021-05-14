@@ -57,3 +57,37 @@ jobs:
         with:
           command: fmt
           args: --all -- --check 
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - run: sudo apt-get update
+      - run: sudo apt-get -yq --no-install-suggests --no-install-recommends install libasound2-dev
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
+  clippy_examples:
+    name: cargo clippy --examples
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - run: sudo apt-get update
+      - run: sudo apt-get -yq --no-install-suggests --no-install-recommends install libasound2-dev
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --examples -- -D warnings

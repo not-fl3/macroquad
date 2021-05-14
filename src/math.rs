@@ -121,8 +121,8 @@ impl RectOffset {
         RectOffset {
             left,
             right,
-            top,
             bottom,
+            top,
         }
     }
 }

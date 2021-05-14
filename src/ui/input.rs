@@ -32,15 +32,15 @@ pub struct Input {
 
 impl Input {
     pub fn is_mouse_down(&self) -> bool {
-        self.is_mouse_down && self.cursor_grabbed == false && self.window_active
+        self.is_mouse_down && !self.cursor_grabbed && self.window_active
     }
 
     pub fn click_down(&self) -> bool {
-        self.click_down && self.cursor_grabbed == false && self.window_active
+        self.click_down && !self.cursor_grabbed && self.window_active
     }
 
     pub fn click_up(&self) -> bool {
-        self.click_up && self.cursor_grabbed == false && self.window_active
+        self.click_up && !self.cursor_grabbed && self.window_active
     }
 
     pub fn reset(&mut self) {

@@ -39,7 +39,7 @@ fn wrap_around(v: &Vec2) -> Vec2 {
     if vr.y < 0. {
         vr.y = screen_height()
     }
-    return vr;
+    vr
 }
 
 #[macroquad::main("Asteroids")]
@@ -77,7 +77,7 @@ async fn main() {
             let mut text = "You Win!. Press [enter] to play again.";
             let font_size = 30.;
 
-            if asteroids.len() > 0 {
+            if !asteroids.is_empty() {
                 text = "Game Over. Press [enter] to play again.";
             }
             let text_size = measure_text(text, None, font_size as _, 1.0);
@@ -199,7 +199,7 @@ async fn main() {
         asteroids.retain(|asteroid| !asteroid.collided);
         asteroids.append(&mut new_asteroids);
 
-        if asteroids.len() == 0 {
+        if asteroids.is_empty() {
             gameover = true;
         }
 

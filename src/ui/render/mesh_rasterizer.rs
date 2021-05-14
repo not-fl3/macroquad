@@ -194,6 +194,7 @@ impl DrawList {
             .extend(indices.iter().map(|i| i + indices_offset));
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn draw_line(
         &mut self,
         x1: f32,
@@ -235,7 +236,7 @@ fn get_active_draw_list<'a, 'b>(
     draw_lists: &'a mut Vec<DrawList>,
     command: &'b DrawCommand,
 ) -> &'a mut DrawList {
-    if draw_lists.len() == 0 {
+    if draw_lists.is_empty() {
         draw_lists.push(DrawList::new());
     }
 

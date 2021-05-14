@@ -36,6 +36,14 @@
 //! }
 //!```
 
+#![allow(
+    clippy::many_single_char_names,
+    clippy::collapsible_else_if,
+    clippy::new_without_default,
+    clippy::transmute_ptr_to_ptr,
+    clippy::transmute_ptr_to_ref
+)]
+
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
@@ -505,7 +513,7 @@ impl EventHandlerFree for Stage {
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
         let context = get_context();
         context.keys_down.insert(keycode);
-        if repeat == false {
+        if !repeat {
             context.keys_pressed.insert(keycode);
         }
 
@@ -585,6 +593,7 @@ impl EventHandlerFree for Stage {
 pub struct Window {}
 
 impl Window {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
         Window::from_config(
             conf::Conf {

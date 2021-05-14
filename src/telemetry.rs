@@ -123,7 +123,7 @@ impl Frame {
     }
 
     pub fn try_clone(&self) -> Option<Frame> {
-        if self.active_zone.is_null() == false {
+        if !self.active_zone.is_null() {
             return None;
         }
 
@@ -214,7 +214,7 @@ impl Profiler {
         let zones = if self.frame.active_zone.is_null() {
             &mut self.frame.zones
         } else {
-            unsafe { &mut (&mut *self.frame.active_zone).children }
+            unsafe { &mut (*self.frame.active_zone).children }
         };
 
         zones.push(Zone {
@@ -229,15 +229,15 @@ impl Profiler {
 
     fn end_zone(&mut self) {
         assert!(
-            self.frame.active_zone.is_null() == false,
+            !self.frame.active_zone.is_null(),
             "end_zone called without begin_zone"
         );
 
-        let start_time = unsafe { (&mut *self.frame.active_zone).start_time };
+        let start_time = unsafe { (*self.frame.active_zone).start_time };
         let duration = get_time() - start_time;
 
-        unsafe { (&mut *self.frame.active_zone).duration = duration };
-        self.frame.active_zone = unsafe { (&mut *self.frame.active_zone).parent };
+        unsafe { (*self.frame.active_zone).duration = duration };
+        self.frame.active_zone = unsafe { (*self.frame.active_zone).parent };
     }
 }
 

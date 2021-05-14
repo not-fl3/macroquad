@@ -116,7 +116,7 @@ impl Cursor {
                 self.x += size.x + self.margin;
             }
             Layout::Vertical => {
-                if self.x != self.margin {
+                if (self.x - self.margin).abs() > 1e-6 {
                     self.x = self.margin;
                     self.y += self.max_row_y;
                 }

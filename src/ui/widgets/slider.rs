@@ -20,11 +20,11 @@ impl<'a> Slider<'a> {
         }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> Slider<'b> {
+    pub fn label(self, label: &str) -> Slider {
         Slider {
             id: self.id,
             range: self.range,
-            label: label,
+            label,
         }
     }
 
@@ -48,7 +48,7 @@ impl<'a> Slider<'a> {
             .clone();
 
         let editbox_id = hash!(self.id, "editbox");
-        if context.input_focused(editbox_id) == false {
+        if !context.input_focused(editbox_id) {
             use std::fmt::Write;
 
             temp_string.clear();
@@ -94,7 +94,7 @@ impl<'a> Slider<'a> {
             context.input.cursor_grabbed = true;
         }
 
-        if *dragging == 1 && context.input.is_mouse_down == false {
+        if *dragging == 1 && !context.input.is_mouse_down {
             context.input.cursor_grabbed = false;
             *dragging = 0;
             *context.input_focus = None;
@@ -107,7 +107,7 @@ impl<'a> Slider<'a> {
             let old_data = *data;
             *data = self.range.start + (self.range.end - self.range.start) * mouse_position;
 
-            if old_data != *data {
+            if (old_data - *data).abs() > 1e-6 {
                 use std::fmt::Write;
 
                 temp_string.clear();
