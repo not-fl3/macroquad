@@ -169,6 +169,8 @@ struct Context {
     coroutines_context: experimental::coroutines::CoroutinesContext,
     fonts_storage: text::FontsStorage,
 
+    pc_assets_folder: Option<String>,
+
     start_time: f64,
     last_frame_time: f64,
     frame_time: f64,
@@ -279,6 +281,8 @@ impl Context {
             quad_context: ctx,
             audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
+
+            pc_assets_folder: None,
 
             start_time: miniquad::date::now(),
             last_frame_time: miniquad::date::now(),
