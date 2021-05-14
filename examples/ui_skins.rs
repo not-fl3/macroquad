@@ -8,6 +8,7 @@ async fn main() {
         let label_style = root_ui()
             .style_builder()
             .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
+            .unwrap()
             .text_color(Color::from_rgba(180, 180, 120, 255))
             .font_size(30)
             .build();
@@ -39,6 +40,7 @@ async fn main() {
                 None,
             ))
             .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
+            .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
             .font_size(40)
             .build();
@@ -47,6 +49,7 @@ async fn main() {
             .style_builder()
             .background_margin(RectOffset::new(0., 0., 0., 0.))
             .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
+            .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .color_selected(Color::from_rgba(190, 190, 190, 255))
             .font_size(50)
@@ -65,6 +68,7 @@ async fn main() {
         let label_style = root_ui()
             .style_builder()
             .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
             .build();
@@ -95,6 +99,7 @@ async fn main() {
                 None,
             ))
             .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
             .font_size(40)
             .build();
@@ -123,6 +128,7 @@ async fn main() {
             ))
             .background_margin(RectOffset::new(2., 2., 2., 2.))
             .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
             .build();

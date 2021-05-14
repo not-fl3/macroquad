@@ -1,7 +1,7 @@
 use crate::{
     color::Color,
     math::RectOffset,
-    text::{atlas::Atlas, FontInternal},
+    text::{atlas::Atlas, FontError, FontInternal},
     texture::Image,
     ui::ElementState,
 };
@@ -51,13 +51,13 @@ impl StyleBuilder {
         }
     }
 
-    pub fn font(self, ttf_bytes: &[u8]) -> StyleBuilder {
-        let font = FontInternal::load_from_bytes(self.atlas.clone(), ttf_bytes);
+    pub fn font(self, ttf_bytes: &[u8]) -> Result<StyleBuilder, FontError> {
+        let font = FontInternal::load_from_bytes(self.atlas.clone(), ttf_bytes)?;
 
-        StyleBuilder {
+        Ok(StyleBuilder {
             font: Rc::new(RefCell::new(font)),
             ..self
-        }
+        })
     }
 
     pub fn background(self, background: Image) -> StyleBuilder {
