@@ -74,6 +74,9 @@ For more examples take a look on [Macroquad examples folder](https://github.com/
 ```bash
 # ubuntu system dependencies
 apt install libx11-dev libxi-dev libgl1-mesa-dev libasound2-dev
+
+# fedora system dependencies
+dnf install libX11-devel libXi-devel mesa-libGL-devel alsa-lib-devel
 ```
 
 ### windows
