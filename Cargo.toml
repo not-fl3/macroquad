@@ -16,11 +16,14 @@ default = ["log-impl", "audio"]
 log-impl = ["miniquad/log-impl"]
 audio = ["rodio"]
 
+[package.metadata.android]
+assets = "examples/"
+
 [package.metadata.docs.rs]
 all-features = true
 
 [dependencies]
-miniquad = "0.3.0-alpha.30"
+miniquad = "0.3.0-alpha.33"
 quad-rand = "0.2.1"
 glam = {version = "0.14", features = ["scalar-math"] }
 image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
@@ -40,7 +43,6 @@ macroquad-platformer = { path = "./physics-platformer" }
 # this allows to use macroquad-particles in examples without two versions of macroquad
 [patch.crates-io]
 macroquad = { path = './' }
-
 #miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}
 
