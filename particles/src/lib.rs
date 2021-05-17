@@ -935,6 +935,7 @@ impl EmittersCache {
             Emitter::new(self.config.clone())
         };
 
+        emitter.mesh_dirty = true;
         emitter.config.emitting = true;
         emitter.reset();
 
