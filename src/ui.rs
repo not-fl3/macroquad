@@ -1301,15 +1301,13 @@ pub(crate) mod ui_context {
     }
 
     const VERTEX_SHADER: &'static str = "#version 100
-precision lowp float;
-
 attribute vec3 position;
 attribute vec4 color0;
 attribute vec2 texcoord;
 
-varying vec2 uv;
-varying vec2 pos;
-varying vec4 color;
+varying lowp vec2 uv;
+varying lowp vec2 pos;
+varying lowp vec4 color;
 
 uniform mat4 Model;
 uniform mat4 Projection;
@@ -1321,10 +1319,8 @@ void main() {
 }
 ";
     const FRAGMENT_SHADER: &'static str = "#version 100
-precision lowp float;
-
-varying vec2 uv;
-varying vec4 color;
+varying lowp vec2 uv;
+varying lowp vec4 color;
 
 uniform sampler2D Texture;
 
