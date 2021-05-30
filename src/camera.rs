@@ -219,3 +219,32 @@ pub fn set_default_camera() {
     context.gl.depth_test(false);
     context.camera_matrix = None;
 }
+
+pub(crate) struct CameraState {
+    render_pass: Option<miniquad::RenderPass>,
+    depth_test: bool,
+    matrix: Option<Mat4>,
+}
+
+pub fn push_camera_state() {
+    let context = get_context();
+
+    let camera_state = CameraState {
+        render_pass: context.gl.get_active_render_pass(),
+        depth_test: context.gl.is_depth_test_enabled(),
+        matrix: context.camera_matrix,
+    };
+    context.camera_stack.push(camera_state);
+}
+
+pub fn pop_camera_state() {
+    let context = get_context();
+
+    if let Some(camera_state) = context.camera_stack.pop() {
+        context.perform_render_passes();
+
+        context.gl.render_pass(camera_state.render_pass);
+        context.gl.depth_test(camera_state.depth_test);
+        context.camera_matrix = camera_state.matrix;
+    }
+}

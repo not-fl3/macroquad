@@ -38,6 +38,7 @@ rodio = { version = "0.13.0", optional=true, default-features = false, features 
 macroquad-particles = { path = "./particles" }
 macroquad-tiled = { path = "./tiled" }
 macroquad-platformer = { path = "./physics-platformer" }
+macroquad-profiler = { path = "./profiler" }
 
 # workaround to fix the examples
 # this allows to use macroquad-particles in examples without two versions of macroquad

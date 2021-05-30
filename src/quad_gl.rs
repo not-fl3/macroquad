@@ -4,11 +4,9 @@ use miniquad::*;
 
 pub use miniquad::{FilterMode, ShaderError};
 
-use crate::{color::Color, texture::Texture2D};
+use crate::{color::Color, telemetry, texture::Texture2D};
 
 use std::collections::BTreeMap;
-
-//use crate::telemetry;
 
 const MAX_VERTICES: usize = 10000;
 const MAX_INDICES: usize = 5000;
@@ -668,6 +666,7 @@ impl QuadGl {
             .iter_mut()
             .zip(self.draw_calls_bindings.iter_mut())
         {
+            telemetry::track_drawcall(dc.vertices_count, dc.indices_count);
             let pipeline = self.pipelines.get_quad_pipeline_mut(dc.pipeline);
 
             let (width, height) = if let Some(render_pass) = dc.render_pass {
@@ -746,6 +745,10 @@ impl QuadGl {
 
     pub fn get_active_render_pass(&self) -> Option<RenderPass> {
         self.state.render_pass
+    }
+
+    pub fn is_depth_test_enabled(&self) -> bool {
+        self.state.depth_test_enable
     }
 
     pub fn render_pass(&mut self, render_pass: Option<RenderPass>) {

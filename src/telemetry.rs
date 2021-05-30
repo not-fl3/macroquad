@@ -13,6 +13,8 @@ fn get_profiler() -> &'static mut Profiler {
             prev_frame: Frame::new(),
             enabled: false,
             enable_request: None,
+            drawcalls: vec![],
+            strings: vec![],
         })
     }
 }
@@ -98,6 +100,8 @@ pub(crate) fn reset() {
 
     profiler.frame.full_frame_time = crate::time::get_frame_time();
 
+    profiler.drawcalls.clear();
+
     std::mem::swap(&mut profiler.prev_frame, &mut profiler.frame);
     profiler.frame = Frame::new();
 
@@ -164,6 +168,8 @@ struct Profiler {
     active_query: Option<String>,
     enabled: bool,
     enable_request: Option<bool>,
+    drawcalls: Vec<(usize, usize)>,
+    strings: Vec<String>,
 }
 
 impl Profiler {
@@ -252,4 +258,54 @@ pub fn scene_allocated_memory() -> usize {
     use crate::experimental::scene;
 
     scene::allocated_memory()
+}
+
+/// ```skip
+/// {
+///    let _t = telemetry::LogTimeGuard::new("Atlas build time");
+///     mq::texture::build_textures_atlas();
+/// }
+/// ```
+/// Will add "Time query: Atlas build time, 0.5s" string to
+/// `telemetry::strings()`
+pub struct LogTimeGuard<'a> {
+    name: &'a str,
+    start_time: f64,
+}
+
+impl<'a> LogTimeGuard<'a> {
+    pub fn new(name: &'a str) -> LogTimeGuard {
+        LogTimeGuard {
+            name,
+            start_time: get_time(),
+        }
+    }
+}
+
+impl<'a> Drop for LogTimeGuard<'a> {
+    fn drop(&mut self) {
+        log_string(&format!(
+            "Time query: {}, {:.1}s",
+            self.name,
+            get_time() - self.start_time
+        ))
+    }
+}
+
+pub fn log_string(string: &str) {
+    get_profiler().strings.push(string.to_owned());
+}
+
+pub fn drawcalls() -> Vec<(usize, usize)> {
+    get_profiler().drawcalls.clone()
+}
+
+pub fn strings() -> Vec<String> {
+    get_profiler().strings.clone()
+}
+
+pub(crate) fn track_drawcall(vertices: usize, indices: usize) {
+    if get_profiler().enabled {
+        get_profiler().drawcalls.push((vertices, indices));
+    }
 }

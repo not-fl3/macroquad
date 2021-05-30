@@ -177,6 +177,8 @@ struct Context {
 
     #[cfg(one_screenshot)]
     counter: usize,
+
+    camera_stack: Vec<camera::CameraState>,
 }
 
 #[derive(Clone)]
@@ -277,6 +279,7 @@ impl Context {
 
             ui_context: UiContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
+            camera_stack: vec![],
 
             quad_context: ctx,
             audio_context: audio::AudioContext::new(),

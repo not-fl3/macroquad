@@ -3,7 +3,7 @@ use macroquad::telemetry::{self, *};
 
 use macroquad::prelude::*;
 
-use macroquad::ui::{hash, root_ui, widgets, Ui};
+use macroquad::ui::{hash, root_ui, widgets::Window, Ui};
 
 pub struct ProfilerState {
     fps_buffer: Vec<f32>,
@@ -159,20 +159,16 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
     }
 }
 
-pub fn init_state() {
-    storage::store(ProfilerState {
-        fps_buffer: vec![],
-        frames_buffer: vec![],
-        profiler_window_opened: false,
-        selected_frame: None,
-        paused: false,
-    });
-}
-
 pub fn profiler(params: ProfilerParams) {
-    //if storage::get::<ProfilerState>() {
-
-    //}
+    if storage::try_get::<ProfilerState>().is_none() {
+        storage::store(ProfilerState {
+            fps_buffer: vec![],
+            frames_buffer: vec![],
+            profiler_window_opened: false,
+            selected_frame: None,
+            paused: false,
+        })
+    }
     let mut state = storage::get_mut::<ProfilerState>();
 
     let frame = profiler_next_frame();
@@ -186,6 +182,8 @@ pub fn profiler(params: ProfilerParams) {
     state.fps_buffer.truncate(FPS_BUFFER_CAPACITY);
     state.frames_buffer.truncate(FRAMES_BUFFER_CAPACITY);
 
+    push_camera_state();
+    set_default_camera();
     let mut sum = 0.0;
     for (x, time) in state.fps_buffer.iter().enumerate() {
         draw_line(
@@ -233,14 +231,17 @@ pub fn profiler(params: ProfilerParams) {
     );
 
     if state.profiler_window_opened {
-        widgets::Window::new(
+        Window::new(
             hash!(),
             vec2(params.fps_counter_pos.x, params.fps_counter_pos.y + 150.0),
-            vec2(520., 440.),
+            vec2(525., 450.),
         )
-        .label("Profiler")
         .ui(&mut *root_ui(), |ui| {
-            let tab = ui.tabbar(hash!(), vec2(200.0, 20.0), &["profiler", "scene"]);
+            let tab = ui.tabbar(
+                hash!(),
+                vec2(300.0, 20.0),
+                &["profiler", "scene", "frame", "log"],
+            );
 
             match tab {
                 0 => profiler_window(ui, &mut state),
@@ -251,8 +252,23 @@ pub fn profiler(params: ProfilerParams) {
                         (telemetry::scene_allocated_memory() as f32) / 1000.0
                     ),
                 ),
+                2 => {
+                    let drawcalls = telemetry::drawcalls();
+                    ui.label(None, &format!("Draw calls: {}", drawcalls.len()));
+                    for (_vx, ix) in drawcalls {
+                        ui.label(None, &format!("{}", ix));
+                        ui.same_line(0.0);
+                    }
+                    ui.label(None, " ");
+                }
+                3 => {
+                    for label in telemetry::strings() {
+                        ui.label(None, &label);
+                    }
+                }
                 _ => unreachable!(),
             }
         });
     }
+    pop_camera_state();
 }

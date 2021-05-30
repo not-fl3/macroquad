@@ -185,6 +185,13 @@ impl Font {
         (0..255).filter_map(::std::char::from_u32).collect()
     }
 
+    /// List of latin characters
+    pub fn latin_character_list() -> Vec<char> {
+        "qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM1234567890!@#$%^&*(){}[].,:"
+            .chars()
+            .collect()
+    }
+
     pub fn populate_font_cache(&self, characters: &[char], size: u16) {
         let font = get_context().fonts_storage.get_font_mut(*self);
 
