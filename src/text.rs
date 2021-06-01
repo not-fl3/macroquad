@@ -7,7 +7,6 @@ use crate::{
     get_context,
     math::{vec3, Rect},
     texture::Image,
-    window::{get_internal_gl, InternalGlContext},
 };
 
 use crate::color::WHITE;
@@ -248,7 +247,10 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, FontError> {
 /// ```
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
     let context = get_context();
-    let atlas = Rc::new(RefCell::new(Atlas::new(&mut get_context().quad_context)));
+    let atlas = Rc::new(RefCell::new(Atlas::new(
+        &mut get_context().quad_context,
+        miniquad::FilterMode::Linear,
+    )));
 
     let font = context
         .fonts_storage
@@ -277,9 +279,6 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
 /// Draw text with custom params such as font, font size and font scale.
 pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     let font = get_context().fonts_storage.get_font_mut(params.font);
-    let InternalGlContext {
-        quad_context: ctx, ..
-    } = unsafe { get_internal_gl() };
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
@@ -313,7 +312,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
         );
 
         crate::texture::draw_texture_ex(
-            atlas.texture(ctx),
+            atlas.texture(),
             dest.x,
             dest.y,
             params.color,
@@ -357,7 +356,7 @@ pub(crate) struct FontsStorage {
 
 impl FontsStorage {
     pub(crate) fn new(ctx: &mut miniquad::Context) -> FontsStorage {
-        let atlas = Rc::new(RefCell::new(Atlas::new(ctx)));
+        let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Linear)));
 
         let default_font =
             FontInternal::load_from_bytes(atlas, include_bytes!("ProggyClean.ttf")).unwrap();

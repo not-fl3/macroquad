@@ -179,6 +179,7 @@ struct Context {
     counter: usize,
 
     camera_stack: Vec<camera::CameraState>,
+    texture_batcher: texture::Batcher,
 }
 
 #[derive(Clone)]
@@ -279,6 +280,7 @@ impl Context {
 
             ui_context: UiContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
+            texture_batcher: texture::Batcher::new(&mut ctx),
             camera_stack: vec![],
 
             quad_context: ctx,
@@ -385,6 +387,7 @@ struct Stage {}
 
 impl EventHandlerFree for Stage {
     fn resize_event(&mut self, width: f32, height: f32) {
+        let _z = telemetry::ZoneGuard::new("Event::resize_event");
         get_context().screen_width = width;
         get_context().screen_height = height;
     }
@@ -537,6 +540,8 @@ impl EventHandlerFree for Stage {
     }
 
     fn update(&mut self) {
+        let _z = telemetry::ZoneGuard::new("Event::update");
+
         // Unless called every frame, cursor will not remain grabbed
         let context = get_context();
         context.quad_context.set_cursor_grab(context.cursor_grabbed);
@@ -553,9 +558,12 @@ impl EventHandlerFree for Stage {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
             if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
-                let _z = telemetry::ZoneGuard::new("Main loop");
+                {
+                    let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
+                    get_context().begin_frame();
+                }
 
-                get_context().begin_frame();
+                let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
                 if exec::resume(future) {
                     unsafe {
@@ -567,8 +575,10 @@ impl EventHandlerFree for Stage {
                 get_context().coroutines_context.update();
             }
 
-            get_context().end_frame();
-
+            {
+                let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
+                get_context().end_frame();
+            }
             get_context().frame_time = date::now() - get_context().last_frame_time;
             get_context().last_frame_time = date::now();
 

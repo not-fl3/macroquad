@@ -598,7 +598,7 @@ impl InputHandler for Ui {
 
 impl Ui {
     pub fn new(ctx: &mut miniquad::Context) -> Ui {
-        let atlas = Rc::new(RefCell::new(Atlas::new(ctx)));
+        let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Nearest)));
         let mut font = crate::text::FontInternal::load_from_bytes(
             atlas.clone(),
             include_bytes!("ProggyClean.ttf"),
@@ -1219,7 +1219,7 @@ pub(crate) mod ui_context {
             ui.mouse_wheel(wheel_x, -wheel_y);
         }
 
-        pub(crate) fn draw(&mut self, ctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
+        pub(crate) fn draw(&mut self, _ctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
             // TODO: this belongs to new and waits for cleaning up context initialization mess
             let material = self.material.get_or_insert_with(|| {
                 let fragment_shader = FRAGMENT_SHADER.to_string();
@@ -1250,7 +1250,7 @@ pub(crate) mod ui_context {
 
             std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
-            let font_texture: Texture2D = ui.atlas.borrow_mut().texture(ctx);
+            let font_texture: Texture2D = ui.atlas.borrow_mut().texture();
             quad_gl.texture(Some(font_texture));
 
             gl_use_material(*material);

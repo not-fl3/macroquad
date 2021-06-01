@@ -13,13 +13,15 @@ fn get_profiler() -> &'static mut Profiler {
             prev_frame: Frame::new(),
             enabled: false,
             enable_request: None,
+            capture_request: false,
+            capture: false,
             drawcalls: vec![],
             strings: vec![],
         })
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Zone {
     pub name: String,
     pub start_time: f64,
@@ -90,6 +92,21 @@ pub fn end_gpu_query() {
     get_profiler().end_gpu_query();
 }
 
+/// Workaround to stop gl capture on debug rendering
+#[doc(hidden)]
+pub fn pause_gl_capture() {
+    if get_profiler().capture {
+        crate::get_context().gl.capture(false);
+    }
+}
+
+/// Workaround to stop gl capture on debug rendering
+pub fn resume_gl_capture() {
+    if get_profiler().capture {
+        crate::get_context().gl.capture(false);
+    }
+}
+
 pub(crate) fn reset() {
     let profiler = get_profiler();
 
@@ -100,17 +117,27 @@ pub(crate) fn reset() {
 
     profiler.frame.full_frame_time = crate::time::get_frame_time();
 
-    profiler.drawcalls.clear();
-
     std::mem::swap(&mut profiler.prev_frame, &mut profiler.frame);
     profiler.frame = Frame::new();
 
     if let Some(enable) = profiler.enable_request.take() {
         profiler.enabled = enable;
     }
+
+    if profiler.capture {
+        profiler.capture = false;
+        crate::get_context().gl.capture(false);
+    }
+
+    if profiler.capture_request {
+        profiler.drawcalls.clear();
+        profiler.capture = true;
+        crate::get_context().gl.capture(true);
+        profiler.capture_request = false;
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Frame {
     pub full_frame_time: f32,
     pub zones: Vec<Zone>,
@@ -143,8 +170,8 @@ impl Frame {
     }
 }
 
-pub fn profiler_next_frame() -> Frame {
-    get_profiler().next_frame()
+pub fn frame() -> Frame {
+    get_profiler().prev_frame.clone()
 }
 
 pub fn gpu_queries() -> Vec<(String, u64)> {
@@ -167,8 +194,10 @@ struct Profiler {
     queries: HashMap<String, GpuQuery>,
     active_query: Option<String>,
     enabled: bool,
+    capture_request: bool,
+    capture: bool,
     enable_request: Option<bool>,
-    drawcalls: Vec<(usize, usize)>,
+    drawcalls: Vec<DrawCallTelemetry>,
     strings: Vec<String>,
 }
 
@@ -210,10 +239,6 @@ impl Profiler {
         if query.query.is_available() {
             query.value = query.query.get_result();
         }
-    }
-
-    fn next_frame(&mut self) -> Frame {
-        std::mem::replace(&mut self.prev_frame, Frame::new())
     }
 
     fn begin_zone(&mut self, name: &str) {
@@ -296,7 +321,7 @@ pub fn log_string(string: &str) {
     get_profiler().strings.push(string.to_owned());
 }
 
-pub fn drawcalls() -> Vec<(usize, usize)> {
+pub fn drawcalls() -> Vec<DrawCallTelemetry> {
     get_profiler().drawcalls.clone()
 }
 
@@ -304,8 +329,45 @@ pub fn strings() -> Vec<String> {
     get_profiler().strings.clone()
 }
 
-pub(crate) fn track_drawcall(vertices: usize, indices: usize) {
-    if get_profiler().enabled {
-        get_profiler().drawcalls.push((vertices, indices));
-    }
+pub fn capture_frame() {
+    get_profiler().capture_request = true;
+}
+
+#[derive(Clone, Debug)]
+pub struct DrawCallTelemetry {
+    pub indices_count: usize,
+    pub texture: miniquad::Texture,
+}
+
+pub(crate) fn track_drawcall(
+    pipeline: &miniquad::Pipeline,
+    bindings: &miniquad::Bindings,
+    indices_count: usize,
+) {
+    let ctx = crate::get_context();
+    let texture = miniquad::Texture::new_render_texture(
+        &mut ctx.quad_context,
+        miniquad::TextureParams {
+            width: 128,
+            height: 128,
+            ..Default::default()
+        },
+    );
+
+    let pass = Some(miniquad::RenderPass::new(
+        &mut ctx.quad_context,
+        texture,
+        None,
+    ));
+    ctx.quad_context
+        .begin_pass(pass, miniquad::PassAction::clear_color(0.4, 0.8, 0.4, 1.));
+    ctx.quad_context.apply_pipeline(pipeline);
+    ctx.quad_context.apply_bindings(bindings);
+    ctx.quad_context.draw(0, indices_count as _, 1);
+    ctx.quad_context.end_render_pass();
+
+    get_profiler().drawcalls.push(DrawCallTelemetry {
+        indices_count,
+        texture,
+    });
 }

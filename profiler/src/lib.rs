@@ -1,5 +1,4 @@
-use macroquad::experimental::collections::storage;
-use macroquad::telemetry::{self, *};
+use macroquad::{experimental::collections::storage, telemetry};
 
 use macroquad::prelude::*;
 
@@ -29,7 +28,7 @@ const FPS_BUFFER_CAPACITY: usize = 100;
 const FRAMES_BUFFER_CAPACITY: usize = 400;
 
 fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
-    fn zone_ui(ui: &mut Ui, zone: &Zone, n: usize) {
+    fn zone_ui(ui: &mut Ui, zone: &telemetry::Zone, n: usize) {
         let label = format!(
             "{}: {:.4}ms {:.1}(1/t)",
             zone.name,
@@ -136,14 +135,14 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         .or_else(|| state.frames_buffer.get(0));
 
     ui.separator();
-    ui.group(hash!(), vec2(255., 300.), |ui| {
+    ui.group(hash!(), vec2(355., 300.), |ui| {
         if let Some(frame) = frame {
             for (n, zone) in frame.zones.iter().enumerate() {
                 zone_ui(ui, zone, n + 1);
             }
         }
     });
-    ui.group(hash!(), vec2(253., 300.), |ui| {
+    ui.group(hash!(), vec2(153., 300.), |ui| {
         let queries = telemetry::gpu_queries();
 
         for query in queries {
@@ -160,6 +159,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
 }
 
 pub fn profiler(params: ProfilerParams) {
+    telemetry::pause_gl_capture();
     if storage::try_get::<ProfilerState>().is_none() {
         storage::store(ProfilerState {
             fps_buffer: vec![],
@@ -171,7 +171,7 @@ pub fn profiler(params: ProfilerParams) {
     }
     let mut state = storage::get_mut::<ProfilerState>();
 
-    let frame = profiler_next_frame();
+    let frame = telemetry::frame();
 
     if state.paused == false && state.profiler_window_opened {
         state.frames_buffer.insert(0, frame);
@@ -255,11 +255,29 @@ pub fn profiler(params: ProfilerParams) {
                 2 => {
                     let drawcalls = telemetry::drawcalls();
                     ui.label(None, &format!("Draw calls: {}", drawcalls.len()));
-                    for (_vx, ix) in drawcalls {
-                        ui.label(None, &format!("{}", ix));
+                    for telemetry::DrawCallTelemetry { indices_count, .. } in &drawcalls {
+                        ui.same_line(0.0);
+
+                        ui.label(None, &format!("{}", indices_count));
                         ui.same_line(0.0);
                     }
                     ui.label(None, " ");
+
+                    for telemetry::DrawCallTelemetry {
+                        indices_count,
+                        texture,
+                    } in &drawcalls
+                    {
+                        ui.label(None, &format!("{}", *indices_count));
+                        ui.same_line(0.0);
+                        ui.texture(Texture2D::from_miniquad_texture(*texture), 100., 100.0);
+                        ui.same_line(0.0);
+                    }
+                    ui.label(None, " ");
+
+                    if ui.button(None, "Capture frame") {
+                        telemetry::capture_frame();
+                    }
                 }
                 3 => {
                     for label in telemetry::strings() {
@@ -271,4 +289,6 @@ pub fn profiler(params: ProfilerParams) {
         });
     }
     pop_camera_state();
+
+    telemetry::resume_gl_capture();
 }
