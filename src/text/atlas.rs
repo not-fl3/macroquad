@@ -78,7 +78,6 @@ impl Atlas {
             if self.texture.width() != self.image.width as _
                 || self.texture.height() != self.image.height as _
             {
-                println!("{} {}", self.image.width, self.image.height);
                 self.texture = Texture2D::from_rgba8(
                     self.image.width,
                     self.image.height,
