@@ -325,7 +325,7 @@ impl PipelineExt {
              }| uniform_name == name,
         );
         if uniform_meta.is_none() {
-            println!("Trying to set non-existing uniform: {}", name);
+            warn!("Trying to set non-existing uniform: {}", name);
             return;
         }
         let uniform_meta = uniform_meta.unwrap();
@@ -334,7 +334,7 @@ impl PipelineExt {
         let uniform_byte_offset = uniform_meta.byte_offset;
 
         if std::mem::size_of::<T>() != uniform_byte_size {
-            println!(
+            warn!(
                 "Trying to set uniform {} sized {} bytes value of {} bytes",
                 name,
                 std::mem::size_of::<T>(),
