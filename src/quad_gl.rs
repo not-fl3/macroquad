@@ -8,9 +8,6 @@ use crate::{color::Color, logging::warn, telemetry, texture::Texture2D};
 
 use std::collections::BTreeMap;
 
-const MAX_VERTICES: usize = 700;
-const MAX_INDICES: usize = 700;
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DrawMode {
     Triangles,
@@ -21,8 +18,8 @@ pub enum DrawMode {
 pub struct GlPipeline(usize);
 
 struct DrawCall {
-    vertices: [Vertex; MAX_VERTICES],
-    indices: [u16; MAX_INDICES],
+    vertices: Vec<Vertex>,
+    indices: Vec<u16>,
 
     vertices_count: usize,
     indices_count: usize,
@@ -101,11 +98,15 @@ impl DrawCall {
         pipeline: GlPipeline,
         uniforms: Option<Vec<u8>>,
         render_pass: Option<RenderPass>,
+        max_vertices: usize,
+        max_indices: usize,
     ) -> DrawCall {
         DrawCall {
-            vertices: [Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0));
-                MAX_VERTICES],
-            indices: [0; MAX_INDICES],
+            vertices: vec![
+                Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0));
+                max_vertices
+            ],
+            indices: vec![0; max_indices],
             vertices_count: 0,
             indices_count: 0,
             clip: None,
@@ -539,6 +540,8 @@ pub struct QuadGl {
     start_time: f64,
 
     white_texture: Texture,
+    max_vertices: usize,
+    max_indices: usize,
 }
 
 impl QuadGl {
@@ -565,6 +568,8 @@ impl QuadGl {
             start_time: miniquad::date::now(),
 
             white_texture,
+            max_vertices: 10000,
+            max_indices: 5000,
         }
     }
 
@@ -645,12 +650,12 @@ impl QuadGl {
             let vertex_buffer = Buffer::stream(
                 ctx,
                 BufferType::VertexBuffer,
-                MAX_VERTICES * std::mem::size_of::<Vertex>(),
+                self.max_vertices * std::mem::size_of::<Vertex>(),
             );
             let index_buffer = Buffer::stream(
                 ctx,
                 BufferType::IndexBuffer,
-                MAX_INDICES * std::mem::size_of::<u16>(),
+                self.max_indices * std::mem::size_of::<u16>(),
             );
             let bindings = Bindings {
                 vertex_buffers: vec![vertex_buffer],
@@ -798,12 +803,12 @@ impl QuadGl {
     }
 
     pub fn geometry(&mut self, vertices: &[impl Into<VertexInterop> + Copy], indices: &[u16]) {
-        if vertices.len() >= MAX_VERTICES || indices.len() >= MAX_INDICES {
+        if vertices.len() >= self.max_vertices || indices.len() >= self.max_indices {
             warn!("geometry() exceeded max drawcall size, clamping");
         }
 
-        let vertices = &vertices[0..MAX_VERTICES.min(vertices.len())];
-        let indices = &indices[0..MAX_INDICES.min(indices.len())];
+        let vertices = &vertices[0..self.max_vertices.min(vertices.len())];
+        let indices = &indices[0..self.max_indices.min(indices.len())];
 
         let pip = self.state.pipeline.unwrap_or(
             self.pipelines
@@ -824,8 +829,8 @@ impl QuadGl {
                 || draw_call.pipeline != pip
                 || draw_call.render_pass != self.state.render_pass
                 || draw_call.draw_mode != self.state.draw_mode
-                || draw_call.vertices_count >= MAX_VERTICES - vertices.len()
-                || draw_call.indices_count >= MAX_INDICES - indices.len()
+                || draw_call.vertices_count >= self.max_vertices - vertices.len()
+                || draw_call.indices_count >= self.max_indices - indices.len()
                 || draw_call.capture != self.state.capture
                 || self.state.break_batching
         }) {
@@ -846,6 +851,8 @@ impl QuadGl {
                     pip,
                     uniforms.clone(),
                     self.state.render_pass,
+                    self.max_vertices,
+                    self.max_indices,
                 ));
             }
             self.draw_calls[self.draw_calls_count].texture = self.state.texture;
@@ -903,6 +910,34 @@ impl QuadGl {
             .textures_data
             .entry(name.to_owned())
             .or_insert(texture.texture) = texture.texture;
+    }
+
+    pub(crate) fn update_drawcall_capacity(
+        &mut self,
+        ctx: &mut Context,
+        max_vertices: usize,
+        max_indices: usize,
+    ) {
+        self.max_vertices = max_vertices;
+        self.max_indices = max_indices;
+
+        for binding in &mut self.draw_calls_bindings {
+            let vertex_buffer = Buffer::stream(
+                ctx,
+                BufferType::VertexBuffer,
+                self.max_vertices * std::mem::size_of::<Vertex>(),
+            );
+            let index_buffer = Buffer::stream(
+                ctx,
+                BufferType::IndexBuffer,
+                self.max_indices * std::mem::size_of::<u16>(),
+            );
+            *binding = Bindings {
+                vertex_buffers: vec![vertex_buffer],
+                index_buffer,
+                images: vec![Texture::empty(), Texture::empty()],
+            };
+        }
     }
 }
 
