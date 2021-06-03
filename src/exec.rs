@@ -6,6 +6,7 @@ use std::task::{Context, Poll};
 pub enum ExecState {
     RunOnce,
     Waiting,
+    Wake,
 }
 
 pub struct FrameFuture;
@@ -31,6 +32,7 @@ type FileResult<T> = Result<T, crate::file::FileError>;
 pub struct FileLoadingFuture {
     pub contents: std::rc::Rc<std::cell::RefCell<Option<FileResult<Vec<u8>>>>>,
 }
+
 // TODO: use mutex(?) instead of refcell here
 // this is still safe tho - macroquad's executor is refcell-safe
 // but this just look too bad
@@ -47,7 +49,7 @@ impl Future for FileLoadingFuture {
         if *context == ExecState::Waiting {
             Poll::Pending
         } else if let Some(contents) = self.contents.borrow_mut().take() {
-            *context = ExecState::Waiting;
+            *context = ExecState::Wake;
             Poll::Ready(contents)
         } else {
             Poll::Pending
@@ -60,5 +62,12 @@ pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
     let mut futures_context = ExecState::RunOnce;
     let futures_context_ref: &mut _ = unsafe { std::mem::transmute(&mut futures_context) };
 
-    matches!(future.as_mut().poll(futures_context_ref), Poll::Ready(_))
+    if matches!(future.as_mut().poll(futures_context_ref), Poll::Ready(_)) {
+        return true;
+    }
+
+    if futures_context == ExecState::Wake {
+        return resume(future);
+    }
+    false
 }
