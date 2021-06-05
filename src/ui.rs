@@ -1087,6 +1087,14 @@ impl Ui {
         }
     }
 
+    pub fn set_input_focus(&mut self, id: Id) {
+        self.input_focus = Some(id);
+    }
+
+    pub fn clear_input_focus(&mut self) {
+        self.input_focus = None;
+    }
+
     pub fn move_window(&mut self, id: Id, position: Vec2) {
         if let Some(window) = self.windows.get_mut(&id) {
             window.set_position(position);
