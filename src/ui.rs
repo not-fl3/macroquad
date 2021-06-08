@@ -25,7 +25,7 @@ pub mod widgets;
 pub use clipboard::ClipboardObject;
 pub use input_handler::{InputHandler, KeyCode};
 pub use render::{DrawList, Vertex};
-pub use style::{Skin, Style};
+pub use style::{Skin, Style, StyleBuilder};
 
 pub use crate::hash;
 
@@ -63,7 +63,7 @@ use crate::{
     math::{Rect, RectOffset, Vec2},
     text::{atlas::Atlas, FontInternal},
     texture::Image,
-    ui::{canvas::DrawCanvas, render::Painter, style::StyleBuilder},
+    ui::{canvas::DrawCanvas, render::Painter},
 };
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
