@@ -3,8 +3,13 @@
 use crate::{file::load_file, get_context};
 use std::collections::HashMap;
 
-#[cfg(any(not(feature = "audio"), target_os = "android"))]
+#[cfg(not(feature = "audio"))]
 #[path = "audio/no_sound.rs"]
+mod snd;
+
+#[cfg(target_os = "android")]
+#[cfg(feature = "audio")]
+#[path = "audio/opensles_snd.rs"]
 mod snd;
 
 #[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
@@ -30,6 +35,16 @@ impl AudioContext {
             sounds: HashMap::new(),
             id: 0,
         }
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn pause(&mut self) {
+        self.native_ctx.pause()
+    }
+
+    #[cfg(target_os = "android")]
+    pub fn resume(&mut self) {
+        self.native_ctx.resume()
     }
 }
 
@@ -112,5 +127,5 @@ pub fn stop_sound(sound: Sound) {
 pub fn set_sound_volume(sound: Sound, volume: f32) {
     let ctx = &mut get_context().audio_context;
     let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
-    sound.set_volume(volume)
+    sound.set_volume(&mut ctx.native_ctx, volume)
 }

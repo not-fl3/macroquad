@@ -595,6 +595,16 @@ impl EventHandlerFree for Stage {
 
         telemetry::reset();
     }
+
+    fn window_restored_event(&mut self) {
+        #[cfg(target_os = "android")]
+        get_context().audio_context.resume();
+    }
+
+    fn window_minimized_event(&mut self) {
+        #[cfg(target_os = "android")]
+        get_context().audio_context.pause();
+    }
 }
 
 /// Not meant to be used directly, only from the macro.

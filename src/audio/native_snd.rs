@@ -79,7 +79,7 @@ impl Sound {
         self.sink_looped = sink_looped;
     }
 
-    pub fn set_volume(&mut self, volume: f32) {
+    pub fn set_volume(&mut self, _ctx: &mut AudioContext, volume: f32) {
         if self.looped {
             self.sink_looped.set_volume(volume);
         } else {
