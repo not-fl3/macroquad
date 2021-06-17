@@ -222,6 +222,15 @@ pub struct RenderTarget {
     pub render_pass: miniquad::RenderPass,
 }
 
+impl RenderTarget {
+    pub fn delete(&self) {
+        self.texture.delete();
+
+        let context = &mut get_context().quad_context;
+        self.render_pass.delete(context);
+    }
+}
+
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     let context = &mut get_context().quad_context;
 
