@@ -1,11 +1,10 @@
-// and a little bit of glue code to make it work with macroquad
-
 use crate::{audio::PlaySoundParams, logging::info};
 
 use std::sync::mpsc;
 
 // Slightly reduced OpenSLES implementation
 // from an amazing "audir" library: https://github.com/norse-rs/audir/
+// and a little bit of glue code to make it work with macroquad
 mod opensles {
     use audir_sles as sles;
     use std::os::raw::c_void;
