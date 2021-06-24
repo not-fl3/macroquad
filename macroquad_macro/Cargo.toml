@@ -8,6 +8,7 @@ repository = "https://github.com/not-fl3/macroquad"
 description = """
 Proc macro for macroquad
 """
+include = ["Cargo.toml", "src/", "README.md", "LICENSE-*"]
 
 [lib]
 proc-macro = true
