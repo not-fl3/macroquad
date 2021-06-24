@@ -56,12 +56,12 @@ impl Camera {
     }
 }
 
-impl Into<Camera2D> for Camera {
-    fn into(self) -> Camera2D {
+impl From<Camera> for Camera2D {
+    fn from(cam: Camera) -> Camera2D {
         let aspect = screen_width() / screen_height();
         Camera2D {
-            zoom: vec2(self.scale, -self.scale * aspect),
-            offset: vec2(self.offset.x, -self.offset.y),
+            zoom: vec2(cam.scale, -cam.scale * aspect),
+            offset: vec2(cam.offset.x, -cam.offset.y),
             target: vec2(0., 0.),
             rotation: 0.,
 

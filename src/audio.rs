@@ -63,7 +63,7 @@ pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
 ///
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::FileError> {
-    let sound = load_native_snd(&data).await;
+    let sound = load_native_snd(data).await;
 
     let ctx = &mut get_context().audio_context;
     let id = ctx.id;
@@ -89,7 +89,7 @@ async fn load_native_snd(data: &[u8]) -> snd::Sound {
 async fn load_native_snd(data: &[u8]) -> snd::Sound {
     let ctx = &mut get_context().audio_context.native_ctx;
 
-    snd::Sound::load(ctx, &data)
+    snd::Sound::load(ctx, data)
 }
 
 pub fn play_sound_once(sound: Sound) {

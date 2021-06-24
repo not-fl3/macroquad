@@ -36,6 +36,7 @@
 //! }
 //!```
 
+#![allow(clippy::identity_op)]
 use miniquad::Context as QuadContext;
 use miniquad::*;
 
@@ -515,7 +516,7 @@ impl EventHandlerFree for Stage {
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
         let context = get_context();
         context.keys_down.insert(keycode);
-        if repeat == false {
+        if !repeat {
             context.keys_pressed.insert(keycode);
         }
 

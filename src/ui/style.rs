@@ -125,14 +125,14 @@ impl StyleBuilder {
 
     pub fn color_selected(self, color_selected: Color) -> StyleBuilder {
         StyleBuilder {
-            color_selected: color_selected,
+            color_selected,
             ..self
         }
     }
 
     pub fn color_selected_hovered(self, color_selected_hovered: Color) -> StyleBuilder {
         StyleBuilder {
-            color_selected_hovered: color_selected_hovered,
+            color_selected_hovered,
             ..self
         }
     }
@@ -250,13 +250,15 @@ impl Style {
             selected,
         } = element_state;
 
-        if focused == false {
-            return self.color_inactive.unwrap_or(Color::from_rgba(
-                (self.color.r as f32 * 255.) as u8,
-                (self.color.g as f32 * 255.) as u8,
-                (self.color.b as f32 * 255.) as u8,
-                (self.color.a as f32 * 255. * 0.8) as u8,
-            ));
+        if !focused {
+            return self.color_inactive.unwrap_or_else(|| {
+                Color::from_rgba(
+                    (self.color.r as f32 * 255.) as u8,
+                    (self.color.g as f32 * 255.) as u8,
+                    (self.color.b as f32 * 255.) as u8,
+                    (self.color.a as f32 * 255. * 0.8) as u8,
+                )
+            });
         }
         if clicked {
             return self.color_clicked;
@@ -272,7 +274,7 @@ impl Style {
             return self.color_hovered;
         }
 
-        return self.color;
+        self.color
     }
 
     pub(crate) fn background_sprite(&self, element_state: ElementState) -> Option<u64> {
@@ -288,7 +290,7 @@ impl Style {
             return self.background_hovered;
         }
 
-        return self.background;
+        self.background
     }
 }
 
@@ -338,7 +340,7 @@ impl Skin {
                 text_color: Color::from_rgba(0, 0, 0, 255),
                 ..Style::default(default_font.clone())
             },
-            window_style: StyleBuilder::new(default_font.clone(), atlas.clone())
+            window_style: StyleBuilder::new(default_font.clone(), atlas)
                 .background_margin(RectOffset::new(1., 1., 1., 1.))
                 .color_inactive(Color::from_rgba(238, 238, 238, 128))
                 .text_color(Color::from_rgba(0, 0, 0, 255))
@@ -390,7 +392,7 @@ impl Skin {
                 color_hovered: Color::from_rgba(34, 153, 34, 68),
                 color_selected: Color::from_rgba(34, 34, 255, 255),
                 color_selected_hovered: Color::from_rgba(55, 55, 55, 68),
-                ..Style::default(default_font.clone())
+                ..Style::default(default_font)
             },
 
             margin: 2.0,

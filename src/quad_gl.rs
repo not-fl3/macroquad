@@ -46,30 +46,30 @@ pub struct Vertex {
 
 pub type VertexInterop = ([f32; 3], [f32; 2], [f32; 4]);
 
-impl Into<VertexInterop> for Vertex {
-    fn into(self) -> VertexInterop {
+impl From<Vertex> for VertexInterop {
+    fn from(vertex: Vertex) -> VertexInterop {
         (
-            self.pos,
-            self.uv,
+            vertex.pos,
+            vertex.uv,
             [
-                self.color[0] as f32 / 255.0,
-                self.color[1] as f32 / 255.0,
-                self.color[2] as f32 / 255.0,
-                self.color[3] as f32 / 255.0,
+                vertex.color[0] as f32 / 255.0,
+                vertex.color[1] as f32 / 255.0,
+                vertex.color[2] as f32 / 255.0,
+                vertex.color[3] as f32 / 255.0,
             ],
         )
     }
 }
-impl Into<Vertex> for VertexInterop {
-    fn into(self) -> Vertex {
+impl From<VertexInterop> for Vertex {
+    fn from(vi: VertexInterop) -> Vertex {
         Vertex {
-            pos: self.0,
-            uv: self.1,
+            pos: vi.0,
+            uv: vi.1,
             color: [
-                ((self.2)[0] * 255.) as u8,
-                ((self.2)[1] * 255.) as u8,
-                ((self.2)[2] * 255.) as u8,
-                ((self.2)[3] * 255.) as u8,
+                ((vi.2)[0] * 255.) as u8,
+                ((vi.2)[1] * 255.) as u8,
+                ((vi.2)[2] * 255.) as u8,
+                ((vi.2)[3] * 255.) as u8,
             ],
         }
     }
@@ -237,7 +237,7 @@ impl MagicSnapshotter {
                 self.screen_texture = Some(Texture2D::from_miniquad_texture(color_img));
             }
 
-            if self.bindings.images.len() == 0 {
+            if self.bindings.images.is_empty() {
                 self.bindings.images.push(texture);
             } else {
                 self.bindings.images[0] = texture;
@@ -719,7 +719,7 @@ impl QuadGl {
             } else {
                 ctx.apply_scissor_rect(0, 0, width as i32, height as i32);
             }
-            ctx.apply_bindings(&bindings);
+            ctx.apply_bindings(bindings);
 
             if let Some(ref uniforms) = dc.uniforms {
                 for i in 0..uniforms.len() {
@@ -737,7 +737,7 @@ impl QuadGl {
             ctx.end_render_pass();
 
             if dc.capture {
-                telemetry::track_drawcall(&pipeline.pipeline, &bindings, dc.indices_count);
+                telemetry::track_drawcall(&pipeline.pipeline, bindings, dc.indices_count);
             }
 
             dc.vertices_count = 0;

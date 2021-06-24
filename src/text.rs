@@ -132,7 +132,7 @@ impl FontInternal {
         font_scale_y: f32,
     ) -> TextDimensions {
         for character in text.chars() {
-            if self.characters.contains_key(&(character, font_size)) == false {
+            if !self.characters.contains_key(&(character, font_size)) {
                 self.cache_glyph(character, font_size);
             }
         }
@@ -162,7 +162,7 @@ impl FontInternal {
         let height = max_y - min_y;
         TextDimensions {
             width,
-            height: height,
+            height,
             offset_y: max_y,
         }
     }
@@ -254,7 +254,7 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
 
     let font = context
         .fonts_storage
-        .make_font(FontInternal::load_from_bytes(atlas.clone(), bytes)?);
+        .make_font(FontInternal::load_from_bytes(atlas, bytes)?);
 
     font.populate_font_cache(&Font::ascii_character_list(), 15);
 
@@ -285,7 +285,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 
     let mut total_width = 0.;
     for character in text.chars() {
-        if font.characters.contains_key(&(character, params.font_size)) == false {
+        if !font.characters.contains_key(&(character, params.font_size)) {
             font.cache_glyph(character, params.font_size);
         }
         let mut atlas = font.atlas.borrow_mut();
@@ -345,7 +345,7 @@ pub fn measure_text(
 ) -> TextDimensions {
     let font = get_context()
         .fonts_storage
-        .get_font_mut(font.unwrap_or(Font::default()));
+        .get_font_mut(font.unwrap_or_default());
 
     font.measure_text(text, font_size, font_scale, font_scale)
 }
