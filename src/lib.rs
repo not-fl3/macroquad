@@ -180,6 +180,8 @@ struct Context {
 
     camera_stack: Vec<camera::CameraState>,
     texture_batcher: texture::Batcher,
+    unwind: bool,
+    recovery_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
 }
 
 #[derive(Clone)]
@@ -295,6 +297,8 @@ impl Context {
 
             #[cfg(one_screenshot)]
             counter: 0,
+            unwind: false,
+            recovery_future: None,
         }
     }
 
@@ -557,22 +561,43 @@ impl EventHandlerFree for Stage {
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
-            if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
-                {
-                    let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
-                    get_context().begin_frame();
+            use std::panic;
+
+            {
+                let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
+                get_context().begin_frame();
+            }
+
+            fn maybe_unwind(unwind: bool, f: impl FnOnce() + Sized + panic::UnwindSafe) -> bool {
+                if unwind {
+                    panic::catch_unwind(|| f()).is_ok()
+                } else {
+                    f();
+                    true
                 }
+            }
 
-                let _z = telemetry::ZoneGuard::new("Event::draw user code");
+            let result = maybe_unwind(get_context().unwind, || {
+                if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+                    let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
-                if exec::resume(future) {
-                    unsafe {
-                        MAIN_FUTURE = None;
+                    if exec::resume(future) {
+                        unsafe {
+                            MAIN_FUTURE = None;
+                        }
+                        get_context().quad_context.quit();
+                        return;
                     }
-                    get_context().quad_context.quit();
-                    return;
+                    get_context().coroutines_context.update();
                 }
-                get_context().coroutines_context.update();
+            });
+
+            if result == false {
+                if let Some(recovery_future) = get_context().recovery_future.take() {
+                    unsafe {
+                        MAIN_FUTURE = Some(recovery_future);
+                    }
+                }
             }
 
             {

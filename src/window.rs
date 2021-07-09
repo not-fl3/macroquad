@@ -64,3 +64,54 @@ pub fn screen_height() -> f32 {
 
     context.screen_height
 }
+
+/// With `set_panic_handler` set to a handler code, macroquad will use
+/// `std::panic::catch_unwind` on user code to catch some panics.
+///
+/// Sometimes it is nice to let player send a bug report with a screenshot of an
+/// error. It is way easier to ask for a screenshot than ask to connect to a phone
+/// with adb and post a log.
+///
+/// For this very case "set_panic_handler" exists.
+/// ```ignore
+/// set_panic_handler(|msg, backtrace| async move {
+///     loop {
+///         clear_background(RED);
+///         ui::root_ui().label(None, &msg);
+///         for line in backtrace.split('\n') {
+///             root_ui().label(None, line);
+///         }
+///         next_frame().await;
+///      }
+/// });
+/// ```
+///
+/// `set_panic_handler` acts as a second app entry-point, that will be used
+/// after a panic in user code will happen. Macroquad will also try to catch some OS
+/// panics, but not all of them - some compatibility bugs may end up crashing the app.
+///
+/// Withot `set_panic_handler` macroquad will not use `catch_unwind` at all,
+/// therefore `panic_handler` is completely optional.
+/// NOTE: only with "backtrace" macroquad feature `backtrace` string will contain an
+/// actual backtrace. Otherwise only panic location and message will be available.
+/// NOTE: on android, even with "backtrace" nice backtrace is available only if the game is compiled with sdk >= 21.
+/// To use sdk >= 21 add "min_sdk_version = 21" to Cargo.toml
+pub fn set_panic_handler<T, F>(future: F)
+where
+    T: std::future::Future<Output = ()> + 'static,
+    F: Fn(String, String) -> T + Send + Sync + 'static,
+{
+    std::panic::set_hook(Box::new(move |info| {
+        let message = format!("{:?}", info);
+        #[cfg(feature = "backtrace")]
+        let backtrace_string = format!("{:?}", backtrace::Backtrace::new());
+        #[cfg(not(feature = "backtrace"))]
+        let backtrace_string = format!("Macroquad compiled without \"backtrace\" feature");
+        crate::logging::error!("{}", message);
+        crate::logging::error!("{}", backtrace_string);
+
+        crate::get_context().recovery_future = Some(Box::pin(future(message, backtrace_string)));
+    }));
+
+    crate::get_context().unwind = true;
+}

@@ -921,6 +921,11 @@ impl QuadGl {
         self.max_vertices = max_vertices;
         self.max_indices = max_indices;
 
+        for draw_call in &mut self.draw_calls {
+            draw_call.vertices =
+                vec![Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0)); max_vertices];
+            draw_call.indices = vec![0; max_indices];
+        }
         for binding in &mut self.draw_calls_bindings {
             let vertex_buffer = Buffer::stream(
                 ctx,
