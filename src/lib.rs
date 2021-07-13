@@ -123,10 +123,14 @@ pub mod rand {
     pub use quad_rand::*;
 }
 
-/// Logging macros, available with "log-impl" feature.
+#[cfg(not(feature = "log-rs"))]
+/// Logging macros, available with miniquad "log-impl" feature.
 pub mod logging {
     pub use miniquad::{debug, error, info, warn};
 }
+#[cfg(feature = "log-rs")]
+// Use logging facade
+pub use ::log as logging;
 pub use miniquad;
 
 use crate::{
