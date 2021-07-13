@@ -19,5 +19,5 @@ impl Sound {
 
     pub fn stop(&mut self, _ctx: &mut AudioContext) {}
 
-    pub fn set_volume(&mut self, _volume: f32) {}
+    pub fn set_volume(&mut self, _ctx: &mut AudioContext, _volume: f32) {}
 }
