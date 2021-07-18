@@ -1,6 +1,6 @@
-use nanoserde::DeJson;
-
 use macroquad::prelude::*;
+use nanoserde::DeJson;
+use std::f32;
 
 use std::collections::HashMap;
 
@@ -31,6 +31,13 @@ pub struct Object {
 }
 
 #[derive(Debug)]
+pub struct TileFlippingFlags {
+    pub antidiagonally: bool,
+    pub horizontally: bool,
+    pub vertically: bool,
+}
+
+#[derive(Debug)]
 pub struct Tile {
     /// id in the tileset
     pub id: u32,
@@ -38,6 +45,8 @@ pub struct Tile {
     pub tileset: String,
     /// "type" from tiled
     pub attrs: String,
+    /// flipping and rotation flags
+    pub flags: TileFlippingFlags,
 }
 
 #[derive(Debug)]
@@ -81,7 +90,7 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
+    pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect, flags: Option<&TileFlippingFlags>) {
         if self.tilesets.contains_key(tileset) == false {
             panic!(
                 "No such tileset: {}, tilesets available: {:?}",
@@ -92,22 +101,48 @@ impl Map {
         let tileset = &self.tilesets[tileset];
         let spr_rect = tileset.sprite_rect(sprite);
 
-        draw_texture_ex(
-            tileset.texture,
-            dest.x,
-            dest.y,
-            WHITE,
-            DrawTextureParams {
-                dest_size: Some(vec2(dest.w, dest.h)),
-                source: Some(Rect::new(
-                    spr_rect.x - 1.0,
-                    spr_rect.y - 1.0,
-                    spr_rect.w + 2.0,
-                    spr_rect.h + 2.0,
-                )),
-                ..Default::default()
-            },
-        );
+        if let Some(flags) = flags {
+            draw_texture_ex(
+                tileset.texture,
+                dest.x,
+                dest.y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(dest.w, dest.h)),
+                    source: Some(Rect::new(
+                        spr_rect.x - 1.0,
+                        spr_rect.y - 1.0,
+                        spr_rect.w + 2.0,
+                        spr_rect.h + 2.0,
+                    )),
+                    flip_x: flags.horizontally,
+                    flip_y: flags.vertically,
+                    rotation: if flags.antidiagonally {
+                        -90. * f32::consts::PI / 180.
+                    } else {
+                        0.
+                    },
+                    ..Default::default()
+                },
+            );
+        } else {
+            draw_texture_ex(
+                tileset.texture,
+                dest.x,
+                dest.y,
+                WHITE,
+                DrawTextureParams {
+                    dest_size: Some(vec2(dest.w, dest.h)),
+                    source: Some(Rect::new(
+                        spr_rect.x - 1.0,
+                        spr_rect.y - 1.0,
+                        spr_rect.w + 2.0,
+                        spr_rect.h + 2.0,
+                    )),
+                    ..Default::default()
+                },
+            );
+        }
     }
 
     pub fn spr_ex(&self, tileset: &str, source: Rect, dest: Rect) {
@@ -156,6 +191,7 @@ impl Map {
                         &tile.tileset,
                         tile.id,
                         Rect::new(pos.x, pos.y, spr_width, spr_height),
+                        Some(&tile.flags),
                     );
                 }
             }
@@ -334,7 +370,16 @@ pub fn load_map(
                     .data
                     .iter()
                     .map(|tile| {
-                        find_tileset(*tile).map(|tileset| {
+                        let antidiagonally = *tile & tiled::FLIPPED_ANTIDIAGONALLY_FLAG != 0;
+                        let horizontally = *tile & tiled::FLIPPED_HORIZONTALLY_FLAG != 0;
+                        let vertically = *tile & tiled::FLIPPED_VERTICALLY_FLAG != 0;
+
+                        let cleared_tile = tile
+                            & !(tiled::FLIPPED_ANTIDIAGONALLY_FLAG
+                                | tiled::FLIPPED_HORIZONTALLY_FLAG
+                                | tiled::FLIPPED_VERTICALLY_FLAG);
+
+                        find_tileset(cleared_tile).map(|tileset| {
                             let attrs = tileset
                                 .tiles
                                 .iter()
@@ -343,9 +388,14 @@ pub fn load_map(
                                 .unwrap_or("".to_owned());
 
                             Tile {
-                                id: *tile - tileset.firstgid,
+                                id: cleared_tile - tileset.firstgid,
                                 tileset: tileset.name.clone(),
                                 attrs,
+                                flags: TileFlippingFlags {
+                                    antidiagonally,
+                                    horizontally,
+                                    vertically,
+                                },
                             }
                         })
                     })

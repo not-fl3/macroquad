@@ -66,12 +66,18 @@ async fn main() {
 
             let pos = world.actor_pos(player.collider);
             if player.speed.x >= 0.0 {
-                tiled_map.spr("tileset", PLAYER_SPRITE, Rect::new(pos.x, pos.y, 8.0, 8.0));
+                tiled_map.spr(
+                    "tileset",
+                    PLAYER_SPRITE,
+                    Rect::new(pos.x, pos.y, 8.0, 8.0),
+                    None,
+                );
             } else {
                 tiled_map.spr(
                     "tileset",
                     PLAYER_SPRITE,
                     Rect::new(pos.x + 8.0, pos.y, -8.0, 8.0),
+                    None,
                 );
             }
         }
