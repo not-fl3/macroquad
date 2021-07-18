@@ -55,7 +55,7 @@ impl<'a> Drag<'a> {
         }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> Drag<'b> {
+    pub fn label(self, label: &str) -> Drag {
         Drag {
             label,
             id: self.id,
@@ -88,7 +88,7 @@ impl<'a> Drag<'a> {
         let label_size = context
             .window
             .painter
-            .element_size(&context.style.label_style, &self.label);
+            .element_size(&context.style.label_style, self.label);
         let size = vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
             label_size.y.max(22.),
@@ -107,20 +107,18 @@ impl<'a> Drag<'a> {
             .contains(context.input.mouse_position);
 
         // state transition between editbox and dragbox
-        if s.in_editbox == false {
+        if !s.in_editbox {
             if hovered && context.input.is_mouse_down() && context.input.modifier_ctrl {
                 s.in_editbox = true;
             }
-        } else {
-            if context.input.escape
-                || context.input.enter
-                || (hovered == false && context.input.is_mouse_down())
-            {
-                s.in_editbox = false;
-            }
+        } else if context.input.escape
+            || context.input.enter
+            || (!hovered && context.input.is_mouse_down())
+        {
+            s.in_editbox = false;
         }
 
-        if s.in_editbox == false {
+        if !s.in_editbox {
             let context = ui.get_active_window_context();
 
             // context.window.painter.draw_rect(
@@ -148,7 +146,7 @@ impl<'a> Drag<'a> {
             );
 
             if let Some(drag) = s.drag {
-                if context.input.is_mouse_down == false {
+                if !context.input.is_mouse_down {
                     s.drag = None;
                     context.input.cursor_grabbed = false;
                     if !hovered {
@@ -173,42 +171,38 @@ impl<'a> Drag<'a> {
                         }
                     }
                 }
-            } else {
-                if hovered && context.input.is_mouse_down() {
-                    s.drag = Some(DragState {
-                        start_mouse: context.input.mouse_position.x,
-                        start_value: (*data).into(),
-                    });
-                    *context.input_focus = Some(self.id);
-                    context.input.cursor_grabbed = true;
-                }
+            } else if hovered && context.input.is_mouse_down() {
+                s.drag = Some(DragState {
+                    start_mouse: context.input.mouse_position.x,
+                    start_value: (*data).into(),
+                });
+                *context.input_focus = Some(self.id);
+                context.input.cursor_grabbed = true;
             }
+        } else if s.string_represents != (*data).into() {
+            s.string = data.to_string();
+        }
+
+        Editbox::new(self.id, editbox_area)
+            .position(pos)
+            .multiline(false)
+            .ui(ui, &mut s.string);
+
+        if let Ok(n) = s.string.parse() {
+            *data = n;
+            s.string_represents = n.into();
+            s.before = s.string.clone();
+        } else if s.string.is_empty() {
+            *data = T::default();
+            s.string_represents = 0.0;
+            s.before = s.string.clone();
         } else {
-            if s.string_represents != (*data).into() {
-                s.string = data.to_string();
-            }
-
-            Editbox::new(self.id, editbox_area)
-                .position(pos)
-                .multiline(false)
-                .ui(ui, &mut s.string);
-
-            if let Ok(n) = s.string.parse() {
-                *data = n;
-                s.string_represents = n.into();
-                s.before = s.string.clone();
-            } else if s.string.is_empty() {
-                *data = T::default();
-                s.string_represents = 0.0;
-                s.before = s.string.clone();
-            } else {
-                s.string = s.before.clone();
-            }
+            s.string = s.before.clone();
         }
 
         let context = ui.get_active_window_context();
 
-        if self.label.is_empty() == false {
+        if !self.label.is_empty() {
             context.window.painter.draw_element_label(
                 &context.style.label_style,
                 Vec2::new(pos.x + size.x / 2. + 5., pos.y),

@@ -61,11 +61,11 @@ impl Image {
     /// ```
     pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Image {
         let img = if let Some(fmt) = format {
-            image::load_from_memory_with_format(&bytes, fmt)
+            image::load_from_memory_with_format(bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
                 .to_rgba8()
         } else {
-            image::load_from_memory(&bytes)
+            image::load_from_memory(bytes)
                 .unwrap_or_else(|e| panic!("{}", e))
                 .to_rgba8()
         };
@@ -334,15 +334,15 @@ pub fn draw_texture_ex(
     let mut x = x;
     let mut y = y;
     if params.flip_x {
-        x = x + w;
+        x += w;
         w = -w;
     }
     if params.flip_y {
-        y = y + h;
+        y += h;
         h = -h;
     }
 
-    let pivot = params.pivot.unwrap_or(vec2(x + w / 2., y + h / 2.));
+    let pivot = params.pivot.unwrap_or_else(|| vec2(x + w / 2., y + h / 2.));
     let m = pivot;
     let p = [
         vec2(x, y) - pivot,
@@ -475,16 +475,13 @@ impl Texture2D {
     ///     );
     /// # }
     /// ```
-    pub fn from_file_with_format<'a>(
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Texture2D {
+    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Texture2D {
         let img = if let Some(fmt) = format {
-            image::load_from_memory_with_format(&bytes, fmt)
+            image::load_from_memory_with_format(bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
                 .to_rgba8()
         } else {
-            image::load_from_memory(&bytes)
+            image::load_from_memory(bytes)
                 .unwrap_or_else(|e| panic!("{}", e))
                 .to_rgba8()
         };

@@ -119,7 +119,7 @@ pub mod shaders {
                 }
                 return true;
             }
-            return false;
+            false
         }
 
         fn skip_character(data: &[char], n: &mut usize, target: char) {

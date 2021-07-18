@@ -13,7 +13,7 @@ impl<'a> Checkbox<'a> {
         Checkbox { id, label: "" }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> Checkbox<'b> {
+    pub fn label(self, label: &str) -> Checkbox {
         Checkbox { id: self.id, label }
     }
 
@@ -23,7 +23,7 @@ impl<'a> Checkbox<'a> {
         let label_size = context
             .window
             .painter
-            .element_size(&context.style.label_style, &self.label);
+            .element_size(&context.style.label_style, self.label);
         let size = vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
             label_size.y.max(22.),
@@ -102,7 +102,7 @@ impl<'a> Checkbox<'a> {
 
         let context = ui.get_active_window_context();
 
-        if self.label.is_empty() == false {
+        if !self.label.is_empty() {
             context.window.painter.draw_element_label(
                 &context.style.label_style,
                 Vec2::new(pos.x + size.x / 2. + 5., pos.y),

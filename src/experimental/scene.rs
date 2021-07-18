@@ -92,7 +92,7 @@ impl<T> Handle<T> {
 
         let offset = unsafe {
             let mut base = std::mem::MaybeUninit::<T>::uninit();
-            let field = f(std::mem::transmute(base.as_mut_ptr())) as *mut _ as *mut u8;
+            let field = f(&mut *base.as_mut_ptr()) as *mut _ as *mut u8;
 
             (field as *mut u8).offset_from(base.as_mut_ptr() as *mut u8)
         };
@@ -322,7 +322,7 @@ impl Scene {
             }) = cell
             {
                 if let Some(cell) = cell.take() {
-                    assert!(unsafe { *cell.used == false });
+                    assert!(unsafe { !*cell.used });
 
                     let ix = self.dense.iter().position(|i| *i == cell.id).unwrap();
                     self.dense.remove(ix);
@@ -427,7 +427,7 @@ impl Scene {
     pub fn update(&mut self) {
         for node in &mut self.iter() {
             let cell = self.nodes[node.handle.0.id].as_mut().unwrap();
-            if cell.initialized == false {
+            if !cell.initialized {
                 cell.initialized = true;
 
                 let node: RefMut<()> = node.to_typed::<()>();
@@ -537,7 +537,7 @@ pub(crate) fn get_untyped_node(handle: HandleUntyped) -> Option<RefMutAny<'stati
 }
 
 pub fn set_camera(camera: impl crate::camera::Camera + Clone + 'static) {
-    unsafe { get_scene() }.camera = Some(Box::new(camera.clone()));
+    unsafe { get_scene() }.camera = Some(Box::new(camera));
 }
 
 pub fn add_node<T: Node>(node: T) -> Handle<T> {

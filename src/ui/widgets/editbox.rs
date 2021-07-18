@@ -54,7 +54,7 @@ impl<'a> Editbox<'a> {
         Editbox { password, ..self }
     }
 
-    pub fn filter<'b>(self, filter: &'b dyn Fn(char) -> bool) -> Editbox<'b> {
+    pub fn filter(self, filter: &'_ dyn Fn(char) -> bool) -> Editbox<'_> {
         Editbox {
             id: self.id,
             pos: self.pos,
@@ -125,7 +125,7 @@ impl<'a> Editbox<'a> {
                     ..
                 } => {
                     if let Some(clipboard) = clipboard.get() {
-                        if clipboard.len() != 0 {
+                        if !clipboard.is_empty() {
                             if state.selection.is_some() {
                                 state.delete_selected(text);
                             }
@@ -204,7 +204,7 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                 }
                 InputCharacter {
@@ -212,7 +212,7 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_end = state.find_line_end(&text) as i32;
+                    let to_line_end = state.find_line_end(text) as i32;
                     state.move_cursor(text, to_line_end, modifier_shift);
                 }
                 InputCharacter {
@@ -220,11 +220,11 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                     if state.cursor != 0 {
                         state.move_cursor(text, -1, modifier_shift);
-                        let new_to_line_begin = state.find_line_begin(&text) as i32;
+                        let new_to_line_begin = state.find_line_begin(text) as i32;
                         let offset = to_line_begin.min(new_to_line_begin) - new_to_line_begin;
                         state.move_cursor(text, offset, modifier_shift);
                     }
@@ -234,11 +234,11 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
-                    let to_line_end = state.find_line_end(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
+                    let to_line_end = state.find_line_end(text) as i32;
 
                     state.move_cursor(text, to_line_end, modifier_shift);
-                    if text.len() != 0 && state.cursor < text.len() as u32 - 1 {
+                    if !text.is_empty() && state.cursor < text.len() as u32 - 1 {
                         state.move_cursor(text, 1, modifier_shift);
                         state.move_cursor_within_line(text, to_line_begin, modifier_shift);
                     }
@@ -264,7 +264,7 @@ impl<'a> Editbox<'a> {
         if context.input.click_down() && hovered {
             *context.input_focus = Some(self.id);
         }
-        if context.input_focused(self.id) && context.input.click_down() && hovered == false {
+        if context.input_focused(self.id) && context.input.click_down() && !hovered {
             *context.input_focus = None;
         }
 
@@ -298,7 +298,7 @@ impl<'a> Editbox<'a> {
         }
 
         // reset selection state when lost focus
-        if context.focused == false || input_focused == false {
+        if !context.focused || !input_focused {
             state.deselect();
             state.clicks_counter = 0;
         }
@@ -308,7 +308,7 @@ impl<'a> Editbox<'a> {
 
         let mut edited = false;
         if context.focused && input_focused {
-            edited = context.input.input_buffer.len() != 0;
+            edited = !context.input.input_buffer.is_empty();
             self.apply_keyboard_input(
                 &mut context.input.input_buffer,
                 &mut *context.clipboard,
@@ -435,7 +435,7 @@ impl<'a> Editbox<'a> {
                     .unwrap_or(0.);
             }
 
-            if clicked == false && hovered && context.input.is_mouse_down() && input_focused {
+            if !clicked && hovered && context.input.is_mouse_down() && input_focused {
                 let cursor_on_current_line =
                     (context.input.mouse_position.y - (pos.y + y + line_height / 2.)).abs()
                         < line_height / 2. + 0.1;
