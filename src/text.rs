@@ -132,7 +132,7 @@ impl FontInternal {
         font_scale_y: f32,
     ) -> TextDimensions {
         for character in text.chars() {
-            if self.characters.contains_key(&(character, font_size)) == false {
+            if !self.characters.contains_key(&(character, font_size)) {
                 self.cache_glyph(character, font_size);
             }
         }
@@ -162,7 +162,7 @@ impl FontInternal {
         let height = max_y - min_y;
         TextDimensions {
             width,
-            height: height,
+            height,
             offset_y: max_y,
         }
     }
@@ -220,6 +220,9 @@ pub struct TextParams {
     /// Default is 1.0
     pub font_scale_aspect: f32,
     pub color: Color,
+    /// Depth to draw this font at.
+    /// See `DrawTextureParams` for more abot depth
+    pub depth: f32,
 }
 
 impl Default for TextParams {
@@ -230,6 +233,7 @@ impl Default for TextParams {
             font_scale: 1.0,
             font_scale_aspect: 1.0,
             color: WHITE,
+            depth: 0.0,
         }
     }
 }
@@ -285,7 +289,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 
     let mut total_width = 0.;
     for character in text.chars() {
-        if font.characters.contains_key(&(character, params.font_size)) == false {
+        if !font.characters.contains_key(&(character, params.font_size)) {
             font.cache_glyph(character, params.font_size);
         }
         let mut atlas = font.atlas.borrow_mut();
@@ -319,6 +323,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
             crate::texture::DrawTextureParams {
                 dest_size: Some(vec2(dest.w, dest.h)),
                 source: Some(source),
+                depth: params.depth,
                 ..Default::default()
             },
         );

@@ -17,6 +17,9 @@ pub fn next_frame() -> crate::exec::FrameFuture {
 /// Fill window background with solid color.
 /// Note: even when "clear_background" was not called explicitly
 /// screen will be cleared at the beginning of the frame.
+///
+/// Also sets the depth to `f32::MAX`, so everything draws on top.
+/// (I don't know why it has to be MAX; it seems like it should be MIN. Oh well.)
 pub fn clear_background(color: Color) {
     let context = get_context();
 
