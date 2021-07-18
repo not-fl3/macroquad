@@ -2,11 +2,6 @@
 
 use crate::get_context;
 
-/// Set target FPS (maximum)
-pub fn set_target_fps(_fps: f32) {
-    unimplemented!()
-}
-
 /// Returns current FPS
 pub fn get_fps() -> i32 {
     let context = get_context();
