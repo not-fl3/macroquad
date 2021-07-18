@@ -138,3 +138,8 @@ pub struct Map {
     #[nserde(rename = "type")]
     pub ty: String,
 }
+
+/// https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tile-flipping
+pub const FLIPPED_HORIZONTALLY_FLAG: u32 = 0x80000000;
+pub const FLIPPED_VERTICALLY_FLAG: u32 = 0x40000000;
+pub const FLIPPED_ANTIDIAGONALLY_FLAG: u32 = 0x20000000;
