@@ -161,6 +161,9 @@ struct Context {
     mouse_position: Vec2,
     mouse_wheel: Vec2,
 
+    prevent_quit_event: bool,
+    quit_requested: bool,
+
     cursor_grabbed: bool,
 
     input_events: Vec<Vec<MiniquadInputEvent>>,
@@ -276,6 +279,9 @@ impl Context {
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
 
+            prevent_quit_event: false,
+            quit_requested: false,
+
             cursor_grabbed: false,
 
             input_events: Vec::new(),
@@ -339,6 +345,8 @@ impl Context {
         self.keys_released.clear();
         self.mouse_pressed.clear();
         self.mouse_released.clear();
+
+        self.quit_requested = false;
 
         // remove all touches that were Ended or Cancelled
         self.touches.retain(|_, touch| {
@@ -632,6 +640,14 @@ impl EventHandlerFree for Stage {
     fn window_minimized_event(&mut self) {
         #[cfg(target_os = "android")]
         get_context().audio_context.pause();
+    }
+
+    fn quit_requested_event(&mut self) {
+        let context = get_context();
+        if context.prevent_quit_event {
+            context.quad_context.cancel_quit();
+            context.quit_requested = true;
+        }
     }
 }
 

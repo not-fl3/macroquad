@@ -159,6 +159,16 @@ fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
         - Vec2::new(1.0, 1.0)
 }
 
+/// Prevents quit
+pub fn prevent_quit() {
+    get_context().prevent_quit_event = true;
+}
+
+/// Detect if quit has been requested
+pub fn is_quit_requested() -> bool {
+    get_context().quit_requested
+}
+
 /// Functions for advanced input processing.
 ///
 /// Functions in this module should be used by external tools that uses miniquad system, like different UI libraries. User shouldn't use this function.
