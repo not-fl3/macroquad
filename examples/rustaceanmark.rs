@@ -10,16 +10,11 @@ struct Rustaceane {
 #[macroquad::main("Rustaceanmark")]
 async fn main() {
 
-    let mut last_time = Instant::now();
     let mut rustaceanes: Vec<Rustaceane> = Vec::new();
     let rustacean_tex = load_texture("examples/rustacean_happy.png").await.unwrap();
     rustacean_tex.set_filter(FilterMode::Nearest);
 
     loop {
-        let curr_time = Instant::now();
-        let fps = (1.0 / curr_time.duration_since(last_time).as_secs_f32()) as i32;
-        last_time = curr_time;
-
         clear_background(Color::default());
 
         if macroquad::input::is_mouse_button_down(MouseButton::Left) {
@@ -51,7 +46,7 @@ async fn main() {
             draw_texture(rustacean_tex, rustaceane.pos.x, rustaceane.pos.y, rustaceane.color);
         }
 
-        draw_text(format!("FPS: {}",fps).as_str(), 0., 16., 32., WHITE);
+        draw_text(format!("FPS: {}",get_fps()).as_str(), 0., 16., 32., WHITE);
         draw_text(format!("Rustaceanes: {}", rustaceanes.len()).as_str(), 0., 32., 32., WHITE);
 
         next_frame().await
