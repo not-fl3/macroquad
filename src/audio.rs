@@ -3,35 +3,58 @@
 use crate::{file::load_file, get_context};
 use std::collections::HashMap;
 
+#[cfg(feature = "audio")]
+use quad_snd::{AudioContext as QuadSndContext, Sound as QuadSndSound};
+
+#[cfg(feature = "audio")]
+pub use quad_snd::PlaySoundParams;
+
 #[cfg(not(feature = "audio"))]
-#[path = "audio/no_sound.rs"]
-mod snd;
+mod dummy_audio {
+    use crate::audio::PlaySoundParams;
 
-#[cfg(target_os = "android")]
-#[cfg(feature = "audio")]
-#[path = "audio/opensles_snd.rs"]
-mod snd;
+    pub struct AudioContext {}
 
-#[cfg(not(any(target_arch = "wasm32", target_os = "android")))]
-#[cfg(feature = "audio")]
-#[path = "audio/native_snd.rs"]
-mod snd;
+    impl AudioContext {
+        pub fn new() -> AudioContext {
+            AudioContext {}
+        }
+    }
 
-#[cfg(target_arch = "wasm32")]
-#[cfg(feature = "audio")]
-#[path = "audio/web_snd.rs"]
-mod snd;
+    pub struct Sound {}
+
+    impl Sound {
+        pub fn load(_ctx: &mut AudioContext, _data: &[u8]) -> Sound {
+            Sound {}
+        }
+
+        pub fn play(&mut self, _ctx: &mut AudioContext, _params: PlaySoundParams) {}
+
+        pub fn stop(&mut self, _ctx: &mut AudioContext) {}
+
+        pub fn set_volume(&mut self, _ctx: &mut AudioContext, _volume: f32) {}
+    }
+}
+
+#[cfg(not(feature = "audio"))]
+use dummy_audio::{AudioContext as QuadSndContext, Sound as QuadSndSound};
+
+#[cfg(not(feature = "audio"))]
+pub struct PlaySoundParams {
+    pub looped: bool,
+    pub volume: f32,
+}
 
 pub struct AudioContext {
-    native_ctx: snd::AudioContext,
-    sounds: HashMap<usize, snd::Sound>,
+    native_ctx: QuadSndContext,
+    sounds: HashMap<usize, QuadSndSound>,
     id: usize,
 }
 
 impl AudioContext {
     pub fn new() -> AudioContext {
         AudioContext {
-            native_ctx: snd::AudioContext::new(),
+            native_ctx: QuadSndContext::new(),
             sounds: HashMap::new(),
             id: 0,
         }
@@ -56,6 +79,7 @@ pub struct Sound(usize);
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
     let data = load_file(path).await?;
+
     load_sound_from_bytes(&data).await
 }
 
@@ -63,33 +87,19 @@ pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
 ///
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::FileError> {
-    let sound = load_native_snd(&data).await;
-
     let ctx = &mut get_context().audio_context;
+    let sound = QuadSndSound::load(&mut ctx.native_ctx, &data);
+
+    // only on wasm the sound is not ready right away
+    #[cfg(target_arch = "wasm32")]
+    while sound.is_loaded() {
+        crate::window::next_frame().await;
+    }
+
     let id = ctx.id;
     ctx.sounds.insert(id, sound);
     ctx.id += 1;
     Ok(Sound(id))
-}
-
-#[cfg(not(feature = "audio"))]
-async fn load_native_snd(data: &[u8]) -> snd::Sound {
-    let ctx = &mut get_context().audio_context.native_ctx;
-    snd::Sound::load(ctx, &data)
-}
-
-#[cfg(feature = "audio")]
-#[cfg(target_arch = "wasm32")]
-async fn load_native_snd(data: &[u8]) -> snd::Sound {
-    snd::Sound::load(&data).await
-}
-
-#[cfg(feature = "audio")]
-#[cfg(not(target_arch = "wasm32"))]
-async fn load_native_snd(data: &[u8]) -> snd::Sound {
-    let ctx = &mut get_context().audio_context.native_ctx;
-
-    snd::Sound::load(ctx, &data)
 }
 
 pub fn play_sound_once(sound: Sound) {
@@ -103,11 +113,6 @@ pub fn play_sound_once(sound: Sound) {
             volume: 1.0,
         },
     );
-}
-
-pub struct PlaySoundParams {
-    pub looped: bool,
-    pub volume: f32,
 }
 
 pub fn play_sound(sound: Sound, params: PlaySoundParams) {

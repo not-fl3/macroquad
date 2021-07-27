@@ -12,9 +12,9 @@ Simple and easy to use graphics library
 readme="README.md"
 
 [features]
-default = ["audio"]
-audio = ["rodio"]
+audio = ["quad-snd"]
 log-rs = ["log"]
+default = ["audio"]
 
 [package.metadata.android]
 assets = "examples/"
@@ -35,13 +35,7 @@ fontdue = "0.5.0"
 bumpalo = "3.4"
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
-
-[target.'cfg(not(any(target_arch = "wasm32", target_os = "android")))'.dependencies]
-rodio = { version = "0.13.0", optional=true, default-features = false, features = ["wav", "vorbis"] }
-
-[target.'cfg(target_os = "android")'.dependencies]
-audir-sles = "0.1.0"
-audrey = "0.3.0"
+quad-snd = { version = "0.2", optional = true }
 
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
@@ -53,6 +47,8 @@ macroquad-platformer = { path = "./physics-platformer" }
 # this allows to use macroquad-particles in examples without two versions of macroquad
 [patch.crates-io]
 macroquad = { path = './' }
+#quad-snd = {path = '../quad-snd'}
+
 #miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}
 
