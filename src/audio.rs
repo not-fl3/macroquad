@@ -19,6 +19,10 @@ mod dummy_audio {
         pub fn new() -> AudioContext {
             AudioContext {}
         }
+
+        pub fn pause(&mut self) {}
+
+        pub fn resume(&mut self) {}
     }
 
     pub struct Sound {}
