@@ -1,9 +1,8 @@
 use macroquad::prelude::*;
-use macroquad::ui::{root_ui, widgets::Window, hash};
+use macroquad::ui::{hash, root_ui, widgets::Window};
 
 #[macroquad::main("Exit dialog")]
 async fn main() {
-
     prevent_quit();
 
     let mut show_exit_dialog = false;
