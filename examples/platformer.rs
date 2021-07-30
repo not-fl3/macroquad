@@ -24,7 +24,11 @@ async fn main() {
 
     let mut static_colliders = vec![];
     for (_x, _y, tile) in tiled_map.tiles("main layer", None) {
-        static_colliders.push(tile.is_some());
+        static_colliders.push(if tile.is_some() {
+            Tile::Solid
+        } else {
+            Tile::Empty
+        });
     }
 
     let mut world = World::new();
