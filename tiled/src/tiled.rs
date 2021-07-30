@@ -131,7 +131,7 @@ pub struct Map {
     pub tilesets: Vec<Tileset>,
 
     /// The JSON format version
-    pub version: f32,
+    pub version: String,
     /// Number of tile columns
     pub width: u32,
 

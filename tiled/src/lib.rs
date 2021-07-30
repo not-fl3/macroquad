@@ -10,7 +10,7 @@ mod tiled;
 pub use error::Error;
 pub use tiled::layer::Property;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Object {
     /// If not null - the object is (probably) a tile
     pub gid: Option<u32>,
