@@ -55,7 +55,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
             context
                 .window
                 .painter
-                .label_size(&self.label, None, font, font_size)
+                .label_size(self.label, None, font, font_size)
         };
 
         let clickable_rect = Rect::new(pos.x, pos.y, active_area_w, size.y);

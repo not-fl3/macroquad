@@ -719,7 +719,7 @@ impl QuadGl {
             } else {
                 ctx.apply_scissor_rect(0, 0, width as i32, height as i32);
             }
-            ctx.apply_bindings(&bindings);
+            ctx.apply_bindings(bindings);
 
             if let Some(ref uniforms) = dc.uniforms {
                 for i in 0..uniforms.len() {
@@ -737,7 +737,7 @@ impl QuadGl {
             ctx.end_render_pass();
 
             if dc.capture {
-                telemetry::track_drawcall(&pipeline.pipeline, &bindings, dc.indices_count);
+                telemetry::track_drawcall(&pipeline.pipeline, bindings, dc.indices_count);
             }
 
             dc.vertices_count = 0;

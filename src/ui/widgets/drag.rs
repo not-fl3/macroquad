@@ -88,7 +88,7 @@ impl<'a> Drag<'a> {
         let label_size = context
             .window
             .painter
-            .element_size(&context.style.label_style, &self.label);
+            .element_size(&context.style.label_style, self.label);
         let size = vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
             label_size.y.max(22.),
