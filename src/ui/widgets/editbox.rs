@@ -204,7 +204,7 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                 }
                 InputCharacter {
@@ -212,7 +212,7 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_end = state.find_line_end(&text) as i32;
+                    let to_line_end = state.find_line_end(text) as i32;
                     state.move_cursor(text, to_line_end, modifier_shift);
                 }
                 InputCharacter {
@@ -220,11 +220,11 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                     if state.cursor != 0 {
                         state.move_cursor(text, -1, modifier_shift);
-                        let new_to_line_begin = state.find_line_begin(&text) as i32;
+                        let new_to_line_begin = state.find_line_begin(text) as i32;
                         let offset = to_line_begin.min(new_to_line_begin) - new_to_line_begin;
                         state.move_cursor(text, offset, modifier_shift);
                     }
@@ -234,8 +234,8 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
-                    let to_line_end = state.find_line_end(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
+                    let to_line_end = state.find_line_end(text) as i32;
 
                     state.move_cursor(text, to_line_end, modifier_shift);
                     if text.len() != 0 && state.cursor < text.len() as u32 - 1 {

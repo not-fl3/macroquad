@@ -189,7 +189,7 @@ qwe
 "#;
 
         let result = preprocess_shader(
-            &shader_string,
+            shader_string,
             &PreprocessorConfig {
                 includes: vec![("hello.glsl".to_string(), "iii\njjj".to_string())],
                 ..Default::default()

@@ -66,7 +66,7 @@ impl<'a> InputText<'a> {
         let label_size = context
             .window
             .painter
-            .element_size(&context.style.editbox_style, &self.label);
+            .element_size(&context.style.editbox_style, self.label);
 
         let size = self.size.unwrap_or(vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,

@@ -92,7 +92,7 @@ pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::FileError> {
     let ctx = &mut get_context().audio_context;
-    let sound = QuadSndSound::load(&mut ctx.native_ctx, &data);
+    let sound = QuadSndSound::load(&mut ctx.native_ctx, data);
 
     // only on wasm the sound is not ready right away
     #[cfg(target_arch = "wasm32")]

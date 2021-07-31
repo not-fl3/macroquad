@@ -139,7 +139,7 @@ impl Window {
                 context.window.painter.draw_element_label(
                     &context.style.window_titlebar_style,
                     position,
-                    &label,
+                    label,
                     ElementState {
                         focused,
                         clicked: false,
