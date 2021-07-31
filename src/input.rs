@@ -132,21 +132,21 @@ pub fn get_last_key_pressed() -> Option<KeyCode> {
     context.keys_pressed.iter().next().cloned()
 }
 
-/// Detect if the key is being pressed
+/// Detect if the button is being pressed
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
     let context = get_context();
 
     context.mouse_down.contains(&btn)
 }
 
-/// Detect if the key has been pressed once
+/// Detect if the button has been pressed once
 pub fn is_mouse_button_pressed(btn: MouseButton) -> bool {
     let context = get_context();
 
     context.mouse_pressed.contains(&btn)
 }
 
-/// Detect if the key has been released this frame
+/// Detect if the button has been released this frame
 pub fn is_mouse_button_released(btn: MouseButton) -> bool {
     let context = get_context();
 
