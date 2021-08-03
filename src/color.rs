@@ -145,7 +145,7 @@ pub fn hsl_to_rgb(h: f32, s: f32, l: f32) -> Color {
             if t < 1.0 / 6.0 { return p + (q - p) * 6.0 * t; }
             if t < 1.0 / 2.0 { return q; }
             if t < 2.0 / 3.0 { return p + (q - p) * (2.0 / 3.0 - t) * 6.0; }
-            return p;
+            p
         }
 
         let q = if l < 0.5 {

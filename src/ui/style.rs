@@ -272,7 +272,7 @@ impl Style {
             return self.color_hovered;
         }
 
-        return self.color;
+        self.color
     }
 
     pub(crate) fn background_sprite(&self, element_state: ElementState) -> Option<u64> {
@@ -288,7 +288,7 @@ impl Style {
             return self.background_hovered;
         }
 
-        return self.background;
+        self.background
     }
 }
 

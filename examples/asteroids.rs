@@ -39,7 +39,7 @@ fn wrap_around(v: &Vec2) -> Vec2 {
     if vr.y < 0. {
         vr.y = screen_height()
     }
-    return vr;
+    vr
 }
 
 #[macroquad::main("Asteroids")]

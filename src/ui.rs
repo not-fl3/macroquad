@@ -972,7 +972,7 @@ impl Ui {
         // so need to figure the root id
 
         if self.in_modal {
-            return true;
+            true
         } else {
             self.child_window_stack
                 .get(0)
@@ -1002,7 +1002,7 @@ impl Ui {
             }
         }
 
-        return false;
+        false
     }
 
     pub fn new_frame(&mut self, delta: f32) {
