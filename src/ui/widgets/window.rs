@@ -1,5 +1,5 @@
 use crate::{
-    math::Vec2,
+    math::{Rect, Vec2},
     ui::{ElementState, Id, Ui, WindowContext},
 };
 
@@ -92,27 +92,29 @@ impl Window {
         WindowToken
     }
 
-    fn draw_close_button(&self, _context: &mut WindowContext) -> bool {
-        // let button_rect = Rect::new(
-        //     context.window.position.x + context.window.size.x - 15.,
-        //     context.window.position.y,
-        //     20.,
-        //     20.,
-        // );
-        // context.window.painter.draw_label(
-        //     "X",
-        //     Vec2::new(
-        //         context.window.position.x + context.window.size.x - 10.,
-        //         context.window.position.y + 3.,
-        //     ),
-        //     Some(context.style.title(context.focused)),
-        //     unimplemented!(),
-        //     unimplemented!(),
-        // );
-        // context.focused
-        //     && button_rect.contains(context.input.mouse_position)
-        //     && context.input.click_up
-        unimplemented!()
+    fn draw_close_button(&self, context: &mut WindowContext) -> bool {
+        let style = context.style;
+        let size = Vec2::new(style.title_height - 4., style.title_height - 4.);
+        let pos = Vec2::new(
+            context.window.position.x + context.window.size.x - style.title_height + 1.,
+            context.window.position.y + 2.,
+        );
+        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let (hovered, clicked) = context.register_click_intention(rect);
+
+        context.window.painter.draw_element_background(
+            &context.style.button_style,
+            pos,
+            size,
+            ElementState {
+                focused: context.focused,
+                hovered,
+                clicked: hovered && context.input.is_mouse_down,
+                selected: false,
+            },
+        );
+
+        clicked
     }
 
     fn draw_window_frame(&self, context: &mut WindowContext) {
