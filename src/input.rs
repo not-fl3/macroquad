@@ -125,7 +125,7 @@ pub fn get_char_pressed() -> Option<char> {
     context.chars_pressed_queue.pop()
 }
 
-pub fn get_char_pressed_ui() -> Option<char> {
+pub(crate) fn get_char_pressed_ui() -> Option<char> {
     let context = get_context();
 
     context.chars_pressed_ui_queue.pop()
