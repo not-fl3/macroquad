@@ -158,6 +158,7 @@ struct Context {
     mouse_released: HashSet<MouseButton>,
     touches: HashMap<u64, input::Touch>,
     chars_pressed_queue: Vec<char>,
+    chars_pressed_ui_queue: Vec<char>,
     mouse_position: Vec2,
     mouse_wheel: Vec2,
 
@@ -272,6 +273,7 @@ impl Context {
             keys_pressed: HashSet::new(),
             keys_released: HashSet::new(),
             chars_pressed_queue: Vec::new(),
+            chars_pressed_ui_queue: Vec::new(),
             mouse_down: HashSet::new(),
             mouse_pressed: HashSet::new(),
             mouse_released: HashSet::new(),
@@ -517,6 +519,7 @@ impl EventHandlerFree for Stage {
         let context = get_context();
 
         context.chars_pressed_queue.push(character);
+        context.chars_pressed_ui_queue.push(character);
 
         context.input_events.iter_mut().for_each(|arr| {
             arr.push(MiniquadInputEvent::Char {
