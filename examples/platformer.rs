@@ -24,10 +24,10 @@ async fn main() {
 
     let mut static_colliders = vec![];
     for (_x, _y, tile) in tiled_map.tiles("main layer", None) {
-        static_colliders.push(if tile.is_some() {
-            Tile::Solid
-        } else {
-            Tile::Empty
+        static_colliders.push(match tile {
+            None => Tile::Empty,
+            Some(tile) if tile.attrs.contains("jumpthrough") => Tile::JumpThrough,
+            _ => Tile::Solid,
         });
     }
 
@@ -97,8 +97,10 @@ async fn main() {
                 player.speed.x = 0.;
             }
 
-            if is_key_pressed(KeyCode::Space) {
-                if on_ground {
+            if is_key_pressed(KeyCode::Space) && on_ground {
+                if is_key_down(KeyCode::Down) {
+                    world.descent(player.collider);
+                } else {
                     player.speed.y = -120.;
                 }
             }
