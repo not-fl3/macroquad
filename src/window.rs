@@ -73,7 +73,7 @@ pub fn screen_height() -> f32 {
 /// with adb and post a log.
 ///
 /// For this very case "set_panic_handler" exists.
-/// ```skip
+/// ```ignore
 /// set_panic_handler(|msg, backtrace| async move {
 ///     loop {
 ///         clear_background(RED);
@@ -92,11 +92,9 @@ pub fn screen_height() -> f32 {
 ///
 /// Withot `set_panic_handler` macroquad will not use `catch_unwind` at all,
 /// therefore `panic_handler` is completely optional.
-///
 /// NOTE: only with "backtrace" macroquad feature `backtrace` string will contain an
 /// actual backtrace. Otherwise only panic location and message will be available.
-///
-/// NOTE: on android, even with "backtrace" nice backtrace is available only if the game is compiled with sdk >= 21.  
+/// NOTE: on android, even with "backtrace" nice backtrace is available only if the game is compiled with sdk >= 21.
 /// To use sdk >= 21 add "min_sdk_version = 21" to Cargo.toml
 pub fn set_panic_handler<T, F>(future: F)
 where
