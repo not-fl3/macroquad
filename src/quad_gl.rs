@@ -25,6 +25,7 @@ struct DrawCall {
     indices_count: usize,
 
     clip: Option<(i32, i32, i32, i32)>,
+    viewport: Option<(i32, i32, i32, i32)>,
     texture: Texture,
 
     model: glam::Mat4,
@@ -109,6 +110,7 @@ impl DrawCall {
             indices: vec![0; max_indices],
             vertices_count: 0,
             indices_count: 0,
+            viewport: None,
             clip: None,
             texture,
             model,
@@ -283,6 +285,7 @@ struct GlState {
     texture: Texture,
     draw_mode: DrawMode,
     clip: Option<(i32, i32, i32, i32)>,
+    viewport: Option<(i32, i32, i32, i32)>,
     model_stack: Vec<glam::Mat4>,
     pipeline: Option<GlPipeline>,
     depth_test_enable: bool,
@@ -552,6 +555,7 @@ impl QuadGl {
             pipelines: PipelinesStorage::new(ctx),
             state: GlState {
                 clip: None,
+                viewport: None,
                 texture: white_texture,
                 model_stack: vec![glam::Mat4::IDENTITY],
                 draw_mode: DrawMode::Triangles,
@@ -714,6 +718,11 @@ impl QuadGl {
             }
 
             ctx.apply_pipeline(&pipeline.pipeline);
+            if let Some((x, y, w, h)) = dc.viewport {
+                ctx.apply_viewport(x, y, w, h);
+            } else {
+                ctx.apply_viewport(0, 0, width as i32, height as i32);
+            }
             if let Some(clip) = dc.clip {
                 ctx.apply_scissor_rect(clip.0, height as i32 - (clip.1 + clip.3), clip.2, clip.3);
             } else {
@@ -783,6 +792,19 @@ impl QuadGl {
         self.state.clip = clip;
     }
 
+    pub fn viewport(&mut self, viewport: Option<(i32, i32, i32, i32)>) {
+        self.state.viewport = viewport;
+    }
+
+    pub fn get_viewport(&self) -> (i32, i32, i32, i32) {
+        self.state.viewport.unwrap_or((
+            0,
+            0,
+            crate::window::screen_width() as _,
+            crate::window::screen_height() as _,
+        ))
+    }
+
     pub fn push_model_matrix(&mut self, matrix: glam::Mat4) {
         self.state.model_stack.push(self.state.model() * matrix);
     }
@@ -825,6 +847,7 @@ impl QuadGl {
         if previous_dc.map_or(true, |draw_call| {
             draw_call.texture != self.state.texture
                 || draw_call.clip != self.state.clip
+                || draw_call.viewport != self.state.viewport
                 || draw_call.model != self.state.model()
                 || draw_call.pipeline != pip
                 || draw_call.render_pass != self.state.render_pass
@@ -860,6 +883,7 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
             self.draw_calls[self.draw_calls_count].clip = self.state.clip;
+            self.draw_calls[self.draw_calls_count].viewport = self.state.viewport;
             self.draw_calls[self.draw_calls_count].model = self.state.model();
             self.draw_calls[self.draw_calls_count].pipeline = pip;
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
