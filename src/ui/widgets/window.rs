@@ -1,6 +1,6 @@
 use crate::{
-    math::{Rect, Vec2},
-    ui::{ElementState, Id, Ui, WindowContext},
+    math::{vec2, Rect, Vec2},
+    ui::{ElementState, Id, Ui, UiContent, WindowContext},
 };
 
 #[derive(Debug, Clone)]
@@ -138,10 +138,11 @@ impl Window {
         // TODO: figure what does title bar mean with windows with background
         if self.titlebar {
             if let Some(label) = &self.label {
-                context.window.painter.draw_element_label(
+                context.window.painter.draw_element_content(
                     &context.style.window_titlebar_style,
                     position,
-                    label,
+                    vec2(size.x, style.title_height),
+                    &UiContent::Label(label.into()),
                     ElementState {
                         focused,
                         clicked: false,
@@ -151,8 +152,8 @@ impl Window {
                 );
             }
             context.window.painter.draw_line(
-                Vec2::new(position.x, position.y + style.title_height),
-                Vec2::new(position.x + size.x, position.y + style.title_height),
+                vec2(position.x, position.y + style.title_height),
+                vec2(position.x + size.x, position.y + style.title_height),
                 style.window_titlebar_style.color(ElementState {
                     focused,
                     clicked: false,
