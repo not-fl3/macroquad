@@ -31,7 +31,7 @@ pub use crate::hash;
 
 pub(crate) use render::ElementState;
 
-use std::ops::DerefMut;
+use std::{borrow::Cow, ops::DerefMut};
 
 /// Root UI. Widgets drawn with the root ui will be always presented at the end of the frame with a "default" camera.
 /// UI space would be a "default" screen space (0..screen_width(), 0..screen_height())
@@ -79,6 +79,29 @@ pub use cursor::Layout;
 use input::{InputCharacter, Key};
 
 pub type Id = u64;
+
+pub enum UiContent<'a> {
+    Label(Cow<'a, str>),
+    Texture(crate::texture::Texture2D),
+}
+
+impl<'a> From<&'a str> for UiContent<'a> {
+    fn from(data: &'a str) -> UiContent<'a> {
+        UiContent::Label(data.into())
+    }
+}
+
+impl From<String> for UiContent<'static> {
+    fn from(data: String) -> UiContent<'static> {
+        UiContent::Label(data.into())
+    }
+}
+
+impl From<crate::texture::Texture2D> for UiContent<'static> {
+    fn from(data: crate::texture::Texture2D) -> UiContent<'static> {
+        UiContent::Texture(data)
+    }
+}
 
 pub(crate) struct Window {
     pub id: Id,

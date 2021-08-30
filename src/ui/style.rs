@@ -14,9 +14,9 @@ pub struct StyleBuilder {
     font: Rc<RefCell<FontInternal>>,
     font_size: u16,
     text_color: Color,
-    background: Option<Image>,
     background_margin: Option<RectOffset>,
     margin: Option<RectOffset>,
+    background: Option<Image>,
     background_hovered: Option<Image>,
     background_clicked: Option<Image>,
     color: Color,
@@ -25,6 +25,7 @@ pub struct StyleBuilder {
     color_selected: Color,
     color_selected_hovered: Color,
     color_clicked: Color,
+    reverse_background_z: bool,
 }
 
 impl StyleBuilder {
@@ -48,6 +49,7 @@ impl StyleBuilder {
             margin: None,
             background_hovered: None,
             background_clicked: None,
+            reverse_background_z: false,
         }
     }
 
@@ -144,6 +146,13 @@ impl StyleBuilder {
         }
     }
 
+    pub fn reverse_background_z(self, reverse_background_z: bool) -> StyleBuilder {
+        StyleBuilder {
+            reverse_background_z,
+            ..self
+        }
+    }
+
     pub fn build(self) -> Style {
         let mut atlas = self.atlas.borrow_mut();
 
@@ -180,6 +189,7 @@ impl StyleBuilder {
             font: self.font,
             text_color: self.text_color,
             font_size: self.font_size,
+            reverse_background_z: self.reverse_background_z,
         }
     }
 }
@@ -208,6 +218,7 @@ pub struct Style {
     pub(crate) font: Rc<RefCell<FontInternal>>,
     pub(crate) text_color: Color,
     pub(crate) font_size: u16,
+    pub(crate) reverse_background_z: bool,
 }
 
 impl Style {
@@ -227,6 +238,7 @@ impl Style {
             color_selected: Color::from_rgba(255, 255, 255, 255),
             color_selected_hovered: Color::from_rgba(255, 255, 255, 255),
             color_inactive: None,
+            reverse_background_z: false,
         }
     }
 
@@ -296,6 +308,7 @@ impl Style {
 pub struct Skin {
     pub label_style: Style,
     pub button_style: Style,
+    pub button_text_style: Style,
     pub tabbar_style: Style,
     pub window_style: Style,
     pub editbox_style: Style,
@@ -318,6 +331,7 @@ impl Skin {
             label_style: Style {
                 margin: Some(RectOffset::new(2., 2., 2., 2.)),
                 text_color: Color::from_rgba(0, 0, 0, 255),
+                color_inactive: Some(Color::from_rgba(0, 0, 0, 128)),
                 ..Style::default(default_font.clone())
             },
             button_style: Style {
@@ -326,6 +340,15 @@ impl Skin {
                 color_clicked: Color::from_rgba(187, 187, 187, 255),
                 color_hovered: Color::from_rgba(170, 170, 170, 235),
                 text_color: Color::from_rgba(0, 0, 0, 255),
+                ..Style::default(default_font.clone())
+            },
+            button_text_style: Style {
+                margin: Some(RectOffset::new(2., 2., 2., 2.)),
+                text_color: Color::from_rgba(0, 0, 0, 255),
+                color: Color::from_rgba(0, 0, 0, 255),
+                color_clicked: Color::from_rgba(0, 0, 0, 255),
+                color_hovered: Color::from_rgba(0, 0, 0, 255),
+                color_inactive: Some(Color::from_rgba(0, 0, 0, 128)),
                 ..Style::default(default_font.clone())
             },
             tabbar_style: Style {
