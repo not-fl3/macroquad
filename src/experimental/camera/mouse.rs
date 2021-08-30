@@ -66,6 +66,7 @@ impl Into<Camera2D> for Camera {
             rotation: 0.,
 
             render_target: None,
+            viewport: None,
         }
     }
 }

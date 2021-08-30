@@ -870,6 +870,9 @@ impl Emitter {
             }
 
             ctx.apply_pipeline(&self.post_processing_pipeline);
+            let (x, y, w, h) = quad_gl.get_viewport();
+            ctx.apply_viewport(x, y, w, h);
+
             ctx.apply_bindings(&self.post_processing_bindings);
 
             ctx.draw(0, 6, 1);
