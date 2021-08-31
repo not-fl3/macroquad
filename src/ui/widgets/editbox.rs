@@ -416,18 +416,16 @@ impl<'a> Editbox<'a> {
             }
 
             if character != '\n' {
-                let ascent = font.ascent(font_size as f32);
-                let descent = font.descent(font_size as f32);
+                let descent = font.descent(font_size as f32) as f32;
+                let ascent = font.ascent(font_size as f32) as f32;
+                let baseline = (ascent + descent) / 2.;
 
                 advance = context
                     .window
                     .painter
                     .draw_character(
                         character,
-                        pos + vec2(
-                            x,
-                            y + font_size as f32 / 2. + (ascent - descent) / 2. + descent,
-                        ),
+                        pos + vec2(x, y + font_size as f32 - baseline),
                         text_color,
                         &mut *font,
                         font_size,
