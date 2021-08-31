@@ -221,7 +221,7 @@ impl Painter {
         style: &Style,
         pos: Vec2,
         label: &str,
-        _element_state: ElementState,
+        element_state: ElementState,
     ) {
         let font = &mut *style.font.borrow_mut();
         let font_size = style.font_size;
@@ -240,7 +240,7 @@ impl Painter {
                 margin.left + background_margin.left,
                 top_coord + text_measures.offset_y,
             ),
-            Some(style.text_color),
+            Some(style.text_color(element_state)),
             font,
             font_size,
         );
@@ -258,7 +258,7 @@ impl Painter {
             UiContent::Label(data) => {
                 let font = &mut *style.font.borrow_mut();
                 let font_size = style.font_size;
-                let text_color = style.color(element_state);
+                let text_color = style.text_color(element_state);
                 let text_measures = self.label_size(data, None, font, font_size);
 
                 let left_coord = (element_size.x - text_measures.width) / 2.;

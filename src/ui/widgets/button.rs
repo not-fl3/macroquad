@@ -65,17 +65,8 @@ impl<'a> Button<'a> {
             );
         }
 
-        // this is not entirely correct
-        // there should be a distinction of button background style
-        // button label style and button content style
-        // waiting for Style refactoring, and so far - using special Label's style
-        // for button text color
-        let style = match self.content {
-            UiContent::Label(..) => &context.style.button_text_style,
-            UiContent::Texture(..) => &context.style.button_style,
-        };
         context.window.painter.draw_element_content(
-            style,
+            &context.style.button_style,
             pos,
             size,
             &self.content,

@@ -254,6 +254,21 @@ impl Style {
         }
     }
 
+    pub(crate) fn text_color(&self, element_state: ElementState) -> Color {
+        let ElementState { focused, .. } = element_state;
+
+        if focused {
+            self.text_color
+        } else {
+            Color::new(
+                self.text_color.r * 0.6,
+                self.text_color.g * 0.6,
+                self.text_color.b * 0.6,
+                self.text_color.a * 0.6,
+            )
+        }
+    }
+
     pub(crate) fn color(&self, element_state: ElementState) -> Color {
         let ElementState {
             clicked,
@@ -308,7 +323,6 @@ impl Style {
 pub struct Skin {
     pub label_style: Style,
     pub button_style: Style,
-    pub button_text_style: Style,
     pub tabbar_style: Style,
     pub window_style: Style,
     pub editbox_style: Style,
@@ -340,15 +354,6 @@ impl Skin {
                 color_clicked: Color::from_rgba(187, 187, 187, 255),
                 color_hovered: Color::from_rgba(170, 170, 170, 235),
                 text_color: Color::from_rgba(0, 0, 0, 255),
-                ..Style::default(default_font.clone())
-            },
-            button_text_style: Style {
-                margin: Some(RectOffset::new(2., 2., 2., 2.)),
-                text_color: Color::from_rgba(0, 0, 0, 255),
-                color: Color::from_rgba(0, 0, 0, 255),
-                color_clicked: Color::from_rgba(0, 0, 0, 255),
-                color_hovered: Color::from_rgba(0, 0, 0, 255),
-                color_inactive: Some(Color::from_rgba(0, 0, 0, 128)),
                 ..Style::default(default_font.clone())
             },
             tabbar_style: Style {
