@@ -12,7 +12,7 @@ async fn main() {
     warn!("Or warnings, the yellow ones.");
 
     loop {
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
 
         debug!("Still alive!");
 

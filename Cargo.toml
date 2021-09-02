@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.3.0-alpha.17"
+version = "0.3.9"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
@@ -12,31 +12,44 @@ Simple and easy to use graphics library
 readme="README.md"
 
 [features]
-default = ["log-impl"]
-log-impl = ["miniquad/log-impl"]
+audio = ["quad-snd"]
+log-rs = ["log"]
+default = ["audio"]
+
+[package.metadata.android]
+assets = "examples/"
+
+[profile.dev.package."*"]
+opt-level = 3
 
 [package.metadata.docs.rs]
 all-features = true
 
 [dependencies]
-miniquad = "0.3.0-alpha.29"
+miniquad = { version = "0.3.0-alpha.37", features = ["log-impl"] }
 quad-rand = "0.2.1"
-glam = {version = "0.10", features = ["scalar-math"] }
+glam = {version = "0.14", features = ["scalar-math"] }
 image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
-macroquad_macro = { version = "0.1.2", path = "macroquad_macro" }
-fontdue = "0.4.0"
+macroquad_macro = { version = "0.1.6", path = "macroquad_macro" }
+fontdue = "0.5.0"
 bumpalo = "3.4"
+backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
+log = { version = "0.4", optional = true }
+quad-snd = { version = "0.2", optional = true }
 
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
 macroquad-tiled = { path = "./tiled" }
-physics-platformer = { path = "./physics-platformer" }
+macroquad-profiler = { path = "./profiler" }
+macroquad-platformer = { path = "./physics-platformer" }
 
 # workaround to fix the examples
 # this allows to use macroquad-particles in examples without two versions of macroquad
 [patch.crates-io]
 macroquad = { path = './' }
+#quad-snd = {path = '../quad-snd'}
 
 #miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}
+
 

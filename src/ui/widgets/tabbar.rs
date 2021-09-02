@@ -1,6 +1,6 @@
 use crate::{
-    math::{Rect, Vec2},
-    ui::{ElementState, Id, Layout, Ui},
+    math::{vec2, Rect, Vec2},
+    ui::{ElementState, Id, Layout, Ui, UiContent},
 };
 
 pub struct Tabbar<'a> {
@@ -67,16 +67,11 @@ impl Tabbar<'_> {
                 },
             );
 
-            let text_width = context
-                .window
-                .painter
-                .element_size(&context.style.tabbar_style, label)
-                .x;
-
-            context.window.painter.draw_element_label(
+            context.window.painter.draw_element_content(
                 &context.style.tabbar_style,
-                pos + Vec2::new(width * n as f32 + (width - text_width) / 2., 0.0),
-                label,
+                pos + vec2(width * n as f32, 0.0),
+                vec2(width, self.size.y),
+                &UiContent::Label((*label).into()),
                 ElementState {
                     focused: context.focused,
                     hovered,

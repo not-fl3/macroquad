@@ -3,11 +3,11 @@ use macroquad::prelude::*;
 #[macroquad::main("Camera")]
 async fn main() {
     loop {
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
 
         // Render some primitives in camera space
 
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             zoom: vec2(1., screen_width() / screen_height()),
             ..Default::default()
         });

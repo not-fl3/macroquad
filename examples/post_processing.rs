@@ -3,7 +3,8 @@ use macroquad::prelude::*;
 #[macroquad::main("Post processing")]
 async fn main() {
     let render_target = render_target(320, 150);
-    set_texture_filter(render_target.texture, FilterMode::Nearest);
+    render_target.texture.set_filter(FilterMode::Nearest);
+
     let material =
         load_material(CRT_VERTEX_SHADER, CRT_FRAGMENT_SHADER, Default::default()).unwrap();
 
@@ -11,14 +12,14 @@ async fn main() {
         // drawing to the texture
 
         // 0..100, 0..100 camera
-        set_camera(Camera2D {
+        set_camera(&Camera2D {
             zoom: vec2(0.01, 0.01),
             target: vec2(0.0, 0.0),
             render_target: Some(render_target),
             ..Default::default()
         });
 
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
         draw_line(-30.0, 45.0, 30.0, 45.0, 3.0, BLUE);
         draw_circle(-45.0, -35.0, 20.0, YELLOW);
         draw_circle(45.0, -35.0, 20.0, GREEN);
@@ -27,7 +28,7 @@ async fn main() {
 
         set_default_camera();
 
-        clear_background(RED);
+        clear_background(WHITE);
         gl_use_material(material);
         draw_texture_ex(
             render_target.texture,

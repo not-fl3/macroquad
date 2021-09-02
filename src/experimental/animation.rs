@@ -16,6 +16,7 @@ pub struct AnimationFrame {
     pub dest_size: Vec2,
 }
 
+#[derive(Clone)]
 pub struct AnimatedSprite {
     tile_width: f32,
     tile_height: f32,
@@ -47,6 +48,13 @@ impl AnimatedSprite {
 
     pub fn set_animation(&mut self, animation: usize) {
         self.current_animation = animation;
+
+        let animation = &self.animations[self.current_animation];
+        self.frame %= animation.frames;
+    }
+
+    pub fn current_animation(&self) -> usize {
+        self.current_animation
     }
 
     pub fn set_frame(&mut self, frame: u32) {

@@ -1,0 +1,1 @@
+Internal crate for macroquad

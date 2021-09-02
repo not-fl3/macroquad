@@ -3,7 +3,7 @@ use crate::{
     ui::{Id, Ui},
 };
 
-/// Borderless subwindow drawn on top of everyting
+/// Borderless subwindow drawn on top of everything
 pub struct Popup {
     id: Id,
     size: Vec2,

@@ -1,6 +1,6 @@
 use crate::{
     math::{vec2, Vec2},
-    ui::{widgets::Editbox, ElementState, Id, Layout, Ui},
+    ui::{widgets::Editbox, ElementState, Id, Layout, Ui, UiContent},
 };
 
 pub struct InputText<'a> {
@@ -63,15 +63,15 @@ impl<'a> InputText<'a> {
     pub fn ui(self, ui: &mut Ui, data: &mut String) {
         let context = ui.get_active_window_context();
 
-        let label_size = context
-            .window
-            .painter
-            .element_size(&context.style.editbox_style, &self.label);
+        let label_size = context.window.painter.content_with_margins_size(
+            &context.style.editbox_style,
+            &UiContent::Label((&*data).into()),
+        );
 
-        let size = vec2(
+        let size = self.size.unwrap_or(vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
             label_size.y.max(19.),
-        );
+        ));
 
         let pos = context.window.cursor.fit(size, Layout::Vertical);
 

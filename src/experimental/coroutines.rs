@@ -1,5 +1,5 @@
 //! The way to emulate multitasking with macroquad's `.await`.
-//! Usefull for organizing state machines, animation cutscenes and other stuff that require
+//! Useful for organizing state machines, animation cutscenes and other stuff that require
 //! some evaluation over time.
 //!
 
@@ -109,7 +109,7 @@ pub mod tweens {
         task::{Context, Poll},
     };
 
-    pub struct LinearTweanFuture<T>
+    pub struct LinearTweenFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
     {
@@ -119,12 +119,12 @@ pub mod tweens {
         start_time: f64,
         time: f32,
     }
-    impl<T> Unpin for LinearTweanFuture<T> where
+    impl<T> Unpin for LinearTweenFuture<T> where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>
     {
     }
 
-    impl<T> Future for LinearTweanFuture<T>
+    impl<T> Future for LinearTweenFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
     {
@@ -159,13 +159,13 @@ pub mod tweens {
         from: T,
         to: T,
         time: f32,
-    ) -> LinearTweanFuture<T>
+    ) -> LinearTweenFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
         T1: Node,
         F: for<'r> FnMut(&'r mut T1) -> &'r mut T,
     {
-        LinearTweanFuture {
+        LinearTweenFuture {
             to,
             from,
             lens: handle.lens(lens),
@@ -174,12 +174,8 @@ pub mod tweens {
         }
     }
 
-    pub async fn follow_path<T, T1, F>(
-        handle: Handle<T1>,
-        mut lens: F,
-        path: Vec<T>,
-        time: f32,
-    ) where
+    pub async fn follow_path<T, T1, F>(handle: Handle<T1>, mut lens: F, path: Vec<T>, time: f32)
+    where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
         T1: Node,
         F: for<'r> FnMut(&'r mut T1) -> &'r mut T,

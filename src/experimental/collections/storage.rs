@@ -3,14 +3,14 @@
 //! ```
 //! use macroquad::experimental::collections::storage;
 //!
-//! struct WorldBoundries(i32);
+//! struct WorldBoundaries(i32);
 //!
 //! fn draw_player() {
-//!   let boundries: i32 = storage::get::<WorldBoundries>().unwrap().0;
-//!   assert_eq!(boundries, 23);
+//!   let boundaries: i32 = storage::get::<WorldBoundaries>().0;
+//!   assert_eq!(boundaries, 23);
 //! }
 //!
-//! storage::store(WorldBoundries(23));
+//! storage::store(WorldBoundaries(23));
 //! draw_player();
 //! ```
 
@@ -41,8 +41,14 @@ pub fn store<T: Any>(data: T) {
 }
 
 /// Get reference to data from global storage.
+/// Will panic if there is no data available with this type.
+pub fn get<T: Any>() -> impl Deref<Target = T> {
+    try_get::<T>().unwrap()
+}
+
+/// Get reference to data from global storage.
 /// Will return None if there is no data available with this type.
-pub fn get<T: Any>() -> Option<impl Deref<Target = T>> {
+pub fn try_get<T: Any>() -> Option<impl Deref<Target = T>> {
     unsafe {
         if STORAGE.is_none() {
             STORAGE = Some(HashMap::new());
@@ -58,7 +64,7 @@ pub fn get<T: Any>() -> Option<impl Deref<Target = T>> {
 
 /// Get mutable reference to data from global storage.
 /// Will return None if there is no data available with this type.
-pub fn get_mut<T: Any>() -> Option<impl DerefMut<Target = T>> {
+pub fn try_get_mut<T: Any>() -> Option<impl DerefMut<Target = T>> {
     unsafe {
         if STORAGE.is_none() {
             STORAGE = Some(HashMap::new());
@@ -70,4 +76,10 @@ pub fn get_mut<T: Any>() -> Option<impl DerefMut<Target = T>> {
         data.downcast_ref::<Rc<RefCell<T>>>()
             .map(|data| data.borrow_mut())
     })
+}
+
+/// Get mutable reference to data from global storage.
+/// Will panic if there is no data available with this type.
+pub fn get_mut<T: Any>() -> impl DerefMut<Target = T> {
+    try_get_mut::<T>().unwrap()
 }

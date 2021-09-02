@@ -1,6 +1,6 @@
 use crate::{
     math::Vec2,
-    ui::{ElementState, Layout, Ui},
+    ui::{ElementState, Layout, Ui, UiContent},
 };
 
 use std::borrow::Cow;
@@ -39,20 +39,21 @@ impl<'a> Label<'a> {
     pub fn ui(self, ui: &mut Ui) {
         let context = ui.get_active_window_context();
 
-        let size = context
-            .window
-            .painter
-            .element_size(&context.style.label_style, &self.label);
+        let size = context.window.painter.content_with_margins_size(
+            &context.style.label_style,
+            &UiContent::Label(self.label.clone()),
+        );
 
         let pos = context
             .window
             .cursor
             .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
 
-        context.window.painter.draw_element_label(
+        context.window.painter.draw_element_content(
             &context.style.label_style,
             pos,
-            &self.label,
+            size,
+            &UiContent::Label(self.label),
             ElementState {
                 focused: context.focused,
                 hovered: false,
@@ -74,6 +75,6 @@ impl Ui {
         context
             .window
             .painter
-            .element_size(&context.style.label_style, label)
+            .content_with_margins_size(&context.style.label_style, &UiContent::Label(label.into()))
     }
 }

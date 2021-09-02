@@ -2,22 +2,22 @@ use macroquad::prelude::*;
 
 #[macroquad::main("3D")]
 async fn main() {
-    let rust_logo = load_texture("examples/rust.png").await;
-    let ferris = load_texture("examples/ferris.png").await;
+    let rust_logo = load_texture("examples/rust.png").await.unwrap();
+    let ferris = load_texture("examples/ferris.png").await.unwrap();
 
     loop {
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
 
         // Going 3d!
 
-        set_camera(Camera3D {
+        set_camera(&Camera3D {
             position: vec3(-20., 15., 0.),
             up: vec3(0., 1., 0.),
             target: vec3(0., 0., 0.),
             ..Default::default()
         });
 
-        draw_grid(20, 1.);
+        draw_grid(20, 1., BLACK, GRAY);
 
         draw_cube_wires(vec3(0., 1., -6.), vec3(2., 2., 2.), DARKGREEN);
         draw_cube_wires(vec3(0., 1., 6.), vec3(2., 2., 2.), DARKBLUE);

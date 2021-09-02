@@ -1,13 +1,8 @@
-use macroquad::experimental::collections::storage;
-use macroquad::telemetry::{self, *};
+use macroquad::{experimental::collections::storage, telemetry};
 
 use macroquad::prelude::*;
 
-use megaui_macroquad::{
-    draw_megaui, draw_window,
-    megaui::{self, hash, Ui},
-    WindowParams,
-};
+use macroquad::ui::{hash, root_ui, widgets::Window, Ui};
 
 pub struct ProfilerState {
     fps_buffer: Vec<f32>,
@@ -33,7 +28,7 @@ const FPS_BUFFER_CAPACITY: usize = 100;
 const FRAMES_BUFFER_CAPACITY: usize = 400;
 
 fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
-    fn zone_ui(ui: &mut Ui, zone: &Zone, n: usize) {
+    fn zone_ui(ui: &mut Ui, zone: &telemetry::Zone, n: usize) {
         let label = format!(
             "{}: {:.4}ms {:.1}(1/t)",
             zone.name,
@@ -54,17 +49,17 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
     let mut canvas = ui.canvas();
     let w = 515.0;
     let h = 40.0;
-    let pos = canvas.request_space(megaui::Vec2::new(w, h));
+    let pos = canvas.request_space(vec2(w, h));
 
-    let rect = megaui::Rect::new(pos.x, pos.y, w, h);
-    canvas.rect(rect, megaui::Color::new(0.5, 0.5, 0.5, 1.0), None);
+    let rect = Rect::new(pos.x, pos.y, w, h);
+    canvas.rect(rect, Color::new(0.5, 0.5, 0.5, 1.0), None);
 
     let (mouse_x, mouse_y) = mouse_position();
 
     let mut selected_frame = None;
 
     // select the slowest frame among the ones close to the mouse cursor
-    if rect.contains(megaui::Vec2::new(mouse_x, mouse_y)) && state.frames_buffer.len() >= 1 {
+    if rect.contains(vec2(mouse_x, mouse_y)) && state.frames_buffer.len() >= 1 {
         let x = ((mouse_x - pos.x - 2.) / w * FRAMES_BUFFER_CAPACITY as f32) as i32;
 
         let min = clamp(x - 2, 0, state.frames_buffer.len() as i32 - 1) as usize;
@@ -86,19 +81,19 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         let x = n as f32 / FRAMES_BUFFER_CAPACITY as f32 * (w - 2.);
         let selected = selected_frame.map_or(false, |selected| n == selected);
         let color = if selected {
-            megaui::Color::new(1.0, 1.0, 0.0, 1.0)
+            Color::new(1.0, 1.0, 0.0, 1.0)
         } else if frame.full_frame_time < 1.0 / 58.0 {
-            megaui::Color::new(0.6, 0.6, 1.0, 1.0)
+            Color::new(0.6, 0.6, 1.0, 1.0)
         } else if frame.full_frame_time < 1.0 / 25.0 {
-            megaui::Color::new(0.3, 0.3, 0.8, 1.0)
+            Color::new(0.3, 0.3, 0.8, 1.0)
         } else {
-            megaui::Color::new(0.2, 0.2, 0.6, 1.0)
+            Color::new(0.2, 0.2, 0.6, 1.0)
         };
         let t = macroquad::math::clamp(frame.full_frame_time * 1000.0, 0.0, h);
 
         canvas.line(
-            megaui::Vec2::new(pos.x + x + 2., pos.y + h - 1.0),
-            megaui::Vec2::new(pos.x + x + 2., pos.y + h - t),
+            vec2(pos.x + x + 2., pos.y + h - 1.0),
+            vec2(pos.x + x + 2., pos.y + h - t),
             color,
         );
     }
@@ -140,14 +135,14 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         .or_else(|| state.frames_buffer.get(0));
 
     ui.separator();
-    ui.group(hash!(), megaui::Vec2::new(255., 300.), |ui| {
+    ui.group(hash!(), vec2(355., 300.), |ui| {
         if let Some(frame) = frame {
             for (n, zone) in frame.zones.iter().enumerate() {
                 zone_ui(ui, zone, n + 1);
             }
         }
     });
-    ui.group(hash!(), megaui::Vec2::new(253., 300.), |ui| {
+    ui.group(hash!(), vec2(153., 300.), |ui| {
         let queries = telemetry::gpu_queries();
 
         for query in queries {
@@ -164,7 +159,8 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
 }
 
 pub fn profiler(params: ProfilerParams) {
-    if storage::get::<ProfilerState>().is_none() {
+    telemetry::pause_gl_capture();
+    if storage::try_get::<ProfilerState>().is_none() {
         storage::store(ProfilerState {
             fps_buffer: vec![],
             frames_buffer: vec![],
@@ -173,9 +169,9 @@ pub fn profiler(params: ProfilerParams) {
             paused: false,
         })
     }
-    let mut state = storage::get_mut::<ProfilerState>().unwrap();
+    let mut state = storage::get_mut::<ProfilerState>();
 
-    let frame = profiler_next_frame();
+    let frame = telemetry::frame();
 
     if state.paused == false && state.profiler_window_opened {
         state.frames_buffer.insert(0, frame);
@@ -186,6 +182,8 @@ pub fn profiler(params: ProfilerParams) {
     state.fps_buffer.truncate(FPS_BUFFER_CAPACITY);
     state.frames_buffer.truncate(FRAMES_BUFFER_CAPACITY);
 
+    push_camera_state();
+    set_default_camera();
     let mut sum = 0.0;
     for (x, time) in state.fps_buffer.iter().enumerate() {
         draw_line(
@@ -233,36 +231,64 @@ pub fn profiler(params: ProfilerParams) {
     );
 
     if state.profiler_window_opened {
-        draw_window(
+        Window::new(
             hash!(),
             vec2(params.fps_counter_pos.x, params.fps_counter_pos.y + 150.0),
-            vec2(520., 440.),
-            WindowParams {
-                label: "Profiler".to_string(),
-                close_button: false,
-                titlebar: false,
-                ..Default::default()
-            },
-            |ui| {
-                let tab = ui.tabbar(
-                    hash!(),
-                    megaui::Vec2::new(200.0, 20.0),
-                    &["profiler", "scene"],
-                );
+            vec2(525., 450.),
+        )
+        .ui(&mut *root_ui(), |ui| {
+            let tab = ui.tabbar(
+                hash!(),
+                vec2(300.0, 20.0),
+                &["profiler", "scene", "frame", "log"],
+            );
 
-                match tab {
-                    0 => profiler_window(ui, &mut state),
-                    1 => ui.label(
-                        None,
-                        &format!(
-                            "scene allocated memory: {:.1} kb",
-                            (telemetry::scene_allocated_memory() as f32) / 1000.0
-                        ),
+            match tab {
+                0 => profiler_window(ui, &mut state),
+                1 => ui.label(
+                    None,
+                    &format!(
+                        "scene allocated memory: {:.1} kb",
+                        (telemetry::scene_allocated_memory() as f32) / 1000.0
                     ),
-                    _ => unreachable!(),
+                ),
+                2 => {
+                    let drawcalls = telemetry::drawcalls();
+                    ui.label(None, &format!("Draw calls: {}", drawcalls.len()));
+                    for telemetry::DrawCallTelemetry { indices_count, .. } in &drawcalls {
+                        ui.same_line(0.0);
+
+                        ui.label(None, &format!("{}", indices_count));
+                        ui.same_line(0.0);
+                    }
+                    ui.label(None, " ");
+
+                    for telemetry::DrawCallTelemetry {
+                        indices_count,
+                        texture,
+                    } in &drawcalls
+                    {
+                        ui.label(None, &format!("{}", *indices_count));
+                        ui.same_line(0.0);
+                        ui.texture(Texture2D::from_miniquad_texture(*texture), 100., 100.0);
+                        ui.same_line(0.0);
+                    }
+                    ui.label(None, " ");
+
+                    if ui.button(None, "Capture frame") {
+                        telemetry::capture_frame();
+                    }
                 }
-            },
-        );
+                3 => {
+                    for label in telemetry::strings() {
+                        ui.label(None, &label);
+                    }
+                }
+                _ => unreachable!(),
+            }
+        });
     }
-    draw_megaui();
+    pop_camera_state();
+
+    telemetry::resume_gl_capture();
 }

@@ -1,6 +1,6 @@
 use crate::{
-    math::Vec2,
-    ui::{ElementState, Id, Ui, WindowContext},
+    math::{vec2, Rect, Vec2},
+    ui::{ElementState, Id, Ui, UiContent, WindowContext},
 };
 
 #[derive(Debug, Clone)]
@@ -92,27 +92,29 @@ impl Window {
         WindowToken
     }
 
-    fn draw_close_button(&self, _context: &mut WindowContext) -> bool {
-        // let button_rect = Rect::new(
-        //     context.window.position.x + context.window.size.x - 15.,
-        //     context.window.position.y,
-        //     20.,
-        //     20.,
-        // );
-        // context.window.painter.draw_label(
-        //     "X",
-        //     Vec2::new(
-        //         context.window.position.x + context.window.size.x - 10.,
-        //         context.window.position.y + 3.,
-        //     ),
-        //     Some(context.style.title(context.focused)),
-        //     unimplemented!(),
-        //     unimplemented!(),
-        // );
-        // context.focused
-        //     && button_rect.contains(context.input.mouse_position)
-        //     && context.input.click_up
-        unimplemented!()
+    fn draw_close_button(&self, context: &mut WindowContext) -> bool {
+        let style = context.style;
+        let size = Vec2::new(style.title_height - 4., style.title_height - 4.);
+        let pos = Vec2::new(
+            context.window.position.x + context.window.size.x - style.title_height + 1.,
+            context.window.position.y + 2.,
+        );
+        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let (hovered, clicked) = context.register_click_intention(rect);
+
+        context.window.painter.draw_element_background(
+            &context.style.button_style,
+            pos,
+            size,
+            ElementState {
+                focused: context.focused,
+                hovered,
+                clicked: hovered && context.input.is_mouse_down,
+                selected: false,
+            },
+        );
+
+        clicked
     }
 
     fn draw_window_frame(&self, context: &mut WindowContext) {
@@ -136,10 +138,11 @@ impl Window {
         // TODO: figure what does title bar mean with windows with background
         if self.titlebar {
             if let Some(label) = &self.label {
-                context.window.painter.draw_element_label(
+                context.window.painter.draw_element_content(
                     &context.style.window_titlebar_style,
                     position,
-                    &label,
+                    vec2(size.x, style.title_height),
+                    &UiContent::Label(label.into()),
                     ElementState {
                         focused,
                         clicked: false,
@@ -149,8 +152,8 @@ impl Window {
                 );
             }
             context.window.painter.draw_line(
-                Vec2::new(position.x, position.y + style.title_height),
-                Vec2::new(position.x + size.x, position.y + style.title_height),
+                vec2(position.x, position.y + style.title_height),
+                vec2(position.x + size.x, position.y + style.title_height),
                 style.window_titlebar_style.color(ElementState {
                     focused,
                     clicked: false,

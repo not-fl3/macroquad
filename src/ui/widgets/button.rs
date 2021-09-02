@@ -1,25 +1,23 @@
 use crate::{
     math::{Rect, Vec2},
-    ui::{ElementState, Layout, Ui},
+    ui::{ElementState, Layout, Ui, UiContent},
 };
-
-use std::borrow::Cow;
 
 pub struct Button<'a> {
     position: Option<Vec2>,
     size: Option<Vec2>,
-    label: Cow<'a, str>,
+    content: UiContent<'a>,
 }
 
 impl<'a> Button<'a> {
-    pub fn new<S>(label: S) -> Button<'a>
+    pub fn new<S>(content: S) -> Button<'a>
     where
-        S: Into<Cow<'a, str>>,
+        S: Into<UiContent<'a>>,
     {
         Button {
             position: None,
             size: None,
-            label: label.into(),
+            content: content.into(),
         }
     }
 
@@ -43,7 +41,7 @@ impl<'a> Button<'a> {
             context
                 .window
                 .painter
-                .element_size(&context.style.button_style, &self.label)
+                .content_with_margins_size(&context.style.button_style, &self.content)
         });
 
         let pos = context
@@ -53,10 +51,25 @@ impl<'a> Button<'a> {
         let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
         let (hovered, clicked) = context.register_click_intention(rect);
 
-        context.window.painter.draw_element_background(
+        if !context.style.button_style.reverse_background_z {
+            context.window.painter.draw_element_background(
+                &context.style.button_style,
+                pos,
+                size,
+                ElementState {
+                    focused: context.focused,
+                    hovered,
+                    clicked: hovered && context.input.is_mouse_down,
+                    selected: false,
+                },
+            );
+        }
+
+        context.window.painter.draw_element_content(
             &context.style.button_style,
             pos,
             size,
+            &self.content,
             ElementState {
                 focused: context.focused,
                 hovered,
@@ -65,24 +78,30 @@ impl<'a> Button<'a> {
             },
         );
 
-        context.window.painter.draw_element_label(
-            &context.style.button_style,
-            pos,
-            &self.label,
-            ElementState {
-                focused: context.focused,
-                hovered,
-                clicked: hovered && context.input.is_mouse_down,
-                selected: false,
-            },
-        );
+        if context.style.button_style.reverse_background_z {
+            context.window.painter.draw_element_background(
+                &context.style.button_style,
+                pos,
+                size,
+                ElementState {
+                    focused: context.focused,
+                    hovered,
+                    clicked: hovered && context.input.is_mouse_down,
+                    selected: false,
+                },
+            );
+        }
 
         clicked
     }
 }
 
 impl Ui {
-    pub fn button<P: Into<Option<Vec2>>>(&mut self, position: P, label: &str) -> bool {
+    pub fn button<'a, P: Into<Option<Vec2>>, S: Into<UiContent<'a>>>(
+        &mut self,
+        position: P,
+        label: S,
+    ) -> bool {
         Button::new(label).position(position).ui(self)
     }
 }

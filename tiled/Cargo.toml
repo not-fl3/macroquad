@@ -1,11 +1,15 @@
 [package]
 name = "macroquad-tiled"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Fedor Logachev <not.fl3@gmail.com>"]
 edition = "2018"
+license = "MIT/Apache-2.0"
+description = """
+Tiled editor macroquad intergration
+"""
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 nanoserde = "0.1"
-macroquad = { path = "../", version = "0.3.0-alpha" }
+macroquad = { path = "../", version = "0.3.0" }

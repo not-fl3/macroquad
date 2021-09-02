@@ -204,7 +204,7 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                 }
                 InputCharacter {
@@ -212,7 +212,7 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_end = state.find_line_end(&text) as i32;
+                    let to_line_end = state.find_line_end(text) as i32;
                     state.move_cursor(text, to_line_end, modifier_shift);
                 }
                 InputCharacter {
@@ -220,11 +220,11 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                     if state.cursor != 0 {
                         state.move_cursor(text, -1, modifier_shift);
-                        let new_to_line_begin = state.find_line_begin(&text) as i32;
+                        let new_to_line_begin = state.find_line_begin(text) as i32;
                         let offset = to_line_begin.min(new_to_line_begin) - new_to_line_begin;
                         state.move_cursor(text, offset, modifier_shift);
                     }
@@ -234,8 +234,8 @@ impl<'a> Editbox<'a> {
                     modifier_shift,
                     ..
                 } => {
-                    let to_line_begin = state.find_line_begin(&text) as i32;
-                    let to_line_end = state.find_line_end(&text) as i32;
+                    let to_line_begin = state.find_line_begin(text) as i32;
+                    let to_line_end = state.find_line_end(text) as i32;
 
                     state.move_cursor(text, to_line_end, modifier_shift);
                     if text.len() != 0 && state.cursor < text.len() as u32 - 1 {
@@ -262,10 +262,10 @@ impl<'a> Editbox<'a> {
         let hovered = rect.contains(context.input.mouse_position);
 
         if context.input.click_down() && hovered {
-            context.window.input_focus = Some(self.id);
+            *context.input_focus = Some(self.id);
         }
-        if context.window.input_focused(self.id) && context.input.click_down() && hovered == false {
-            context.window.input_focus = None;
+        if context.input_focused(self.id) && context.input.click_down() && hovered == false {
+            *context.input_focus = None;
         }
 
         let mut state = context
@@ -287,7 +287,15 @@ impl<'a> Editbox<'a> {
             state.cursor = text.len() as u32;
         }
 
-        let input_focused = context.window.input_focused(self.id) && context.focused;
+        let input_focused =
+            context.input_focus.map_or(false, |id| id == self.id) && context.focused;
+
+        let is_tab_selected = context
+            .tab_selector
+            .register_selectable_widget(input_focused, context.input);
+        if is_tab_selected {
+            *context.input_focus = Some(self.id);
+        }
 
         // reset selection state when lost focus
         if context.focused == false || input_focused == false {
@@ -362,8 +370,13 @@ impl<'a> Editbox<'a> {
         let mut y = 0.;
         let mut clicked = false;
 
-        for n in 0..text.len() + 1 {
-            let character = text.chars().nth(n).unwrap_or(' ');
+        for (n, character) in text.chars().chain(std::iter::once(' ')).enumerate() {
+            let character = if character != '\n' && self.password {
+                '*'
+            } else {
+                character
+            };
+
             let font_size = context.style.editbox_style.font_size;
             if n == state.cursor as usize && input_focused {
                 // caret
@@ -378,40 +391,46 @@ impl<'a> Editbox<'a> {
                 break;
             }
 
-            let mut advance = 1.5; // 1.5 - hack to make cursor on newlines visible
-            if character != '\n' {
-                let mut font = context.style.editbox_style.font.borrow_mut();
-                let font_size = context.style.editbox_style.font_size;
+            let mut font = context.style.editbox_style.font.borrow_mut();
+            let font_size = context.style.editbox_style.font_size;
 
-                let ascent = font.ascent(font_size as f32);
-                let descent = font.descent(font_size as f32);
+            let mut advance = 1.5; // 1.5 - hack to make cursor on newlines visible
+
+            if state.in_selected_range(n as u32) {
+                let pos = pos + vec2(x, y);
+
+                context.window.painter.draw_rect(
+                    Rect::new(
+                        pos.x,
+                        pos.y,
+                        context
+                            .window
+                            .painter
+                            .character_advance(character, &font, font_size)
+                            + 1.0,
+                        font_size as f32 - 1.,
+                    ),
+                    None,
+                    context.style.editbox_style.color_selected,
+                );
+            }
+
+            if character != '\n' {
+                let descent = font.descent(font_size as f32) as f32;
+                let ascent = font.ascent(font_size as f32) as f32;
+                let baseline = (ascent + descent) / 2.;
 
                 advance = context
                     .window
                     .painter
                     .draw_character(
-                        if self.password { '*' } else { character },
-                        pos + vec2(
-                            x,
-                            y + font_size as f32 / 2. + (ascent - descent) / 2. + descent,
-                        ),
+                        character,
+                        pos + vec2(x, y + font_size as f32 - baseline),
                         text_color,
                         &mut *font,
                         font_size,
                     )
                     .unwrap_or(0.);
-            }
-            if state.in_selected_range(n as u32) {
-                let pos = pos + vec2(x, y);
-
-                context.window.painter.draw_rect(
-                    Rect::new(pos.x, pos.y, advance, font_size as f32 - 4.),
-                    None,
-                    context.style.editbox_style.color(ElementState {
-                        focused: context.focused,
-                        ..Default::default()
-                    }),
-                );
             }
 
             if clicked == false && hovered && context.input.is_mouse_down() && input_focused {

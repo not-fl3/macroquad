@@ -1,14 +1,12 @@
 //! Resolve high-level drawing primitive + given style into DrawCommand
 //! DrawCommand will later rasterized into mesh in mesh_rasterizer.rs
 
-// TODO: remove this!
-#![allow(warnings)]
-
 use crate::{
     color::Color,
     math::{vec2, Rect, RectOffset, Vec2},
     text::{atlas::Atlas, FontInternal, TextDimensions},
-    ui::style::Style,
+    texture::Texture2D,
+    ui::{style::Style, UiContent},
 };
 
 use std::{cell::RefCell, rc::Rc};
@@ -55,7 +53,7 @@ pub(crate) enum DrawCommand {
     },
     DrawRawTexture {
         rect: Rect,
-        texture: u32,
+        texture: Texture2D,
     },
     Clip {
         rect: Option<Rect>,
@@ -172,16 +170,22 @@ impl Painter {
         0.
     }
 
-    pub fn element_size(&self, style: &Style, content: &str) -> Vec2 {
+    pub fn content_with_margins_size(&self, style: &Style, content: &UiContent) -> Vec2 {
         let font = &mut *style.font.borrow_mut();
         let font_size = style.font_size;
 
         let background_margin = style.background_margin.unwrap_or_default();
         let margin = style.margin.unwrap_or_default();
 
-        let text_measures = self.label_size(content, None, font, font_size);
+        let size = match content {
+            UiContent::Label(label) => {
+                let text_measures = self.label_size(&*label, None, font, font_size);
+                (text_measures.width, font_size as f32)
+            }
+            UiContent::Texture(texture) => (texture.width(), texture.height()),
+        };
 
-        vec2(text_measures.width, font_size as f32)
+        vec2(size.0, size.1)
             + Vec2::new(
                 margin.left + margin.right + background_margin.left + background_margin.right,
                 margin.top + margin.bottom + background_margin.top + background_margin.bottom,
@@ -210,12 +214,14 @@ impl Painter {
         }
     }
 
+    // mostly legacy, technically everything should use `draw_element_content`
+    // but draw_element_label had a slightly different margins resolver, so..
     pub fn draw_element_label(
         &mut self,
         style: &Style,
         pos: Vec2,
         label: &str,
-        _element_state: ElementState,
+        element_state: ElementState,
     ) {
         let font = &mut *style.font.borrow_mut();
         let font_size = style.font_size;
@@ -224,7 +230,7 @@ impl Painter {
         let background_margin = style.background_margin.unwrap_or_default();
         let margin = style.margin.unwrap_or_default();
 
-        let top_coord = (font_size as f32 - text_measures.height as f32) / 2.
+        let top_coord = (font_size as f32) / 2. - (text_measures.height / 2.).trunc()
             + margin.top
             + background_margin.top;
 
@@ -234,10 +240,56 @@ impl Painter {
                 margin.left + background_margin.left,
                 top_coord + text_measures.offset_y,
             ),
-            Some(style.text_color),
+            Some(style.text_color(element_state)),
             font,
             font_size,
         );
+    }
+
+    pub fn draw_element_content(
+        &mut self,
+        style: &Style,
+        element_pos: Vec2,
+        element_size: Vec2,
+        content: &UiContent,
+        element_state: ElementState,
+    ) {
+        match content {
+            UiContent::Label(data) => {
+                let font = &mut *style.font.borrow_mut();
+                let font_size = style.font_size;
+                let text_color = style.text_color(element_state);
+                let text_measures = self.label_size(data, None, font, font_size);
+
+                let left_coord = (element_size.x - text_measures.width) / 2.;
+                let top_coord =
+                    element_size.y / 2. - text_measures.height / 2. + text_measures.offset_y;
+
+                self.draw_label(
+                    &*data,
+                    element_pos + Vec2::new(left_coord, top_coord),
+                    Some(text_color),
+                    font,
+                    font_size,
+                );
+            }
+            UiContent::Texture(texture) => {
+                let background_margin = style.background_margin.unwrap_or_default();
+                let margin = style.margin.unwrap_or_default();
+
+                let top_coord = margin.top + background_margin.top;
+
+                let pos = element_pos + Vec2::new(margin.left + background_margin.left, top_coord);
+                let size = element_size
+                    - vec2(
+                        background_margin.left + background_margin.right,
+                        background_margin.top + background_margin.bottom,
+                    )
+                    - vec2(margin.left + margin.right, margin.top + margin.bottom);
+
+                self.draw_raw_texture(Rect::new(pos.x, pos.y, size.x, size.y), *texture);
+            }
+        }
     }
 
     pub fn label_size(
@@ -247,7 +299,7 @@ impl Painter {
         font: &mut FontInternal,
         font_size: u16,
     ) -> TextDimensions {
-        font.measure_text(label, font_size, 1.0)
+        font.measure_text(label, font_size, 1.0, 1.0)
     }
 
     /// If character is in font atlas - will return x advance from position to potential next character position
@@ -314,6 +366,7 @@ impl Painter {
         let params = params.into();
 
         let mut total_width = 0.;
+        let position = vec2(position.x.trunc(), position.y.trunc());
         for character in label.chars() {
             if let Some(advance) = self.draw_character(
                 character,
@@ -327,7 +380,7 @@ impl Painter {
         }
     }
 
-    pub fn draw_raw_texture(&mut self, rect: Rect, texture: u32) {
+    pub fn draw_raw_texture(&mut self, rect: Rect, texture: Texture2D) {
         if self
             .clipping_zone
             .map_or(false, |clip| !clip.overlaps(&rect))
@@ -442,28 +495,29 @@ impl Painter {
 }
 
 #[derive(Clone, Debug)]
-pub enum Aligment {
+#[allow(dead_code)]
+pub enum Alignment {
     Left,
     Center,
 }
 
-impl Default for Aligment {
-    fn default() -> Aligment {
-        Aligment::Left
+impl Default for Alignment {
+    fn default() -> Alignment {
+        Alignment::Left
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct LabelParams {
     pub color: Color,
-    pub aligment: Aligment,
+    pub alignment: Alignment,
 }
 
 impl Default for LabelParams {
     fn default() -> LabelParams {
         LabelParams {
             color: Color::new(0., 0., 0., 1.),
-            aligment: Aligment::default(),
+            alignment: Alignment::default(),
         }
     }
 }
@@ -484,8 +538,8 @@ impl From<Color> for LabelParams {
         }
     }
 }
-impl From<(Color, Aligment)> for LabelParams {
-    fn from((color, aligment): (Color, Aligment)) -> LabelParams {
-        LabelParams { color, aligment }
+impl From<(Color, Alignment)> for LabelParams {
+    fn from((color, alignment): (Color, Alignment)) -> LabelParams {
+        LabelParams { color, alignment }
     }
 }

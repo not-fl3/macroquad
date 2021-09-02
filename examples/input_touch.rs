@@ -3,7 +3,7 @@ use macroquad::prelude::*;
 #[macroquad::main("InputTouch")]
 async fn main() {
     loop {
-        clear_background(RED);
+        clear_background(LIGHTGRAY);
 
         for touch in touches() {
             let (fill_color, size) = match touch.phase {

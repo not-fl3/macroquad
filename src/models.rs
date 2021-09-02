@@ -2,7 +2,7 @@
 
 use crate::{color::Color, get_context};
 
-use crate::quad_gl::{DrawMode, Texture2D};
+use crate::{quad_gl::DrawMode, texture::Texture2D};
 use glam::{vec2, vec3, Vec2, Vec3};
 
 #[derive(Clone, Debug, Copy)]
@@ -29,7 +29,7 @@ pub struct Mesh {
 }
 
 pub fn draw_mesh(mesh: &Mesh) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
 
     context.gl.texture(mesh.texture);
     context.gl.draw_mode(DrawMode::Triangles);
@@ -37,7 +37,7 @@ pub fn draw_mesh(mesh: &Mesh) {
 }
 
 fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
     let indices = [0, 1, 2, 0, 2, 3];
     let quad = [
         (
@@ -67,7 +67,7 @@ fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
 }
 
 pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
     let uv = [0., 0.];
     let color: [f32; 4] = color.into();
     let indices = [0, 1];
@@ -82,14 +82,10 @@ pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
 }
 
 /// Draw a grid centered at (0, 0, 0)
-pub fn draw_grid(slices: u32, spacing: f32) {
+pub fn draw_grid(slices: u32, spacing: f32, axes_color: Color, other_color: Color) {
     let half_slices = (slices as i32) / 2;
     for i in -half_slices..half_slices + 1 {
-        let color = if i == 0 {
-            Color::new(0.55, 0.55, 0.55, 0.75)
-        } else {
-            Color::new(0.75, 0.75, 0.75, 0.75)
-        };
+        let color = if i == 0 { axes_color } else { other_color };
 
         draw_line_3d(
             vec3(i as f32 * spacing, 0., -half_slices as f32 * spacing),
@@ -127,14 +123,14 @@ pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>
     );
 
     {
-        let context = &mut get_context().draw_context;
+        let context = get_context();
         context.gl.texture(texture.into());
     }
     draw_quad([v1, v2, v3, v4]);
 }
 
 pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D>>, color: Color) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
     context.gl.texture(texture.into());
 
     let (x, y, z) = (position.x, position.y, position.z);
@@ -390,7 +386,7 @@ pub fn draw_sphere_ex(
     color: Color,
     params: DrawSphereParams,
 ) {
-    let context = &mut get_context().draw_context;
+    let context = get_context();
 
     let rings = params.rings;
     let slices = params.slices;

@@ -1,21 +1,21 @@
 //!
 //! `macroquad` is a simple and easy to use game library for Rust programming language.
-//!  
+//!
 //! `macroquad` attempts to avoid any rust-specific programming concepts like lifetimes/borrowing, making it very friendly for rust beginners.
-//!  
+//!
 //! ## Supported platforms
-//!  
+//!
 //! * PC: Windows/Linux/MacOS
 //! * HTML5
 //! * Android
 //! * IOS
-//!  
+//!
 //! ## Features
-//!  
+//!
 //! * Same code for all supported platforms, no platform dependent defines required
 //! * Efficient 2D rendering with automatic geometry batching
 //! * Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old laptop)
-//! * Immidiate mode UI library included
+//! * Immediate mode UI library included
 //! * Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples)
 //! # Example
 //! ```no_run
@@ -25,12 +25,12 @@
 //! async fn main() {
 //!     loop {
 //!         clear_background(RED);
-//!  
+//!
 //!         draw_line(40.0, 40.0, 100.0, 200.0, 15.0, BLUE);
 //!         draw_rectangle(screen_width() / 2.0 - 60.0, 100.0, 120.0, 60.0, GREEN);
 //!         draw_circle(screen_width() - 30.0, screen_height() - 30.0, 15.0, YELLOW);
 //!         draw_text("HELLO", 20.0, 20.0, 20.0, DARKGRAY);
-//!  
+//!
 //!         next_frame().await
 //!     }
 //! }
@@ -43,10 +43,10 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
 
-mod drawing;
 mod exec;
 mod quad_gl;
 
+pub mod audio;
 pub mod camera;
 pub mod color;
 pub mod file;
@@ -67,8 +67,55 @@ pub mod prelude;
 
 pub mod telemetry;
 
-// TODO: write something about macroquad entrypoint
-#[doc(hidden)]
+/// Macroquad entry point.
+///
+/// ```skip
+/// #[main("Window name")]
+/// async fn main() {
+/// }
+/// ```
+///
+/// ```skip
+/// fn window_conf() -> Conf {
+///     Conf {
+///         window_title: "Window name".to_owned(),
+///         fullscreen: true,
+///         ..Default::default()
+///     }
+/// }
+/// #[macroquad::main(window_conf)]
+/// async fn main() {
+/// }
+/// ```
+///
+/// ## Error handling
+///
+/// `async fn main()` can have the same signature as a normal `main` in Rust.
+/// The most typical use cases are:
+/// * `async fn main() {}`
+/// * `async fn main() -> Result<(), Error> {}` (note that `Error` should implement `Debug`)
+///
+/// When a lot of third party crates are involved and very different errors may happens, `anyhow` crate may help:
+/// * `async fn main() -> anyhow::Result<()> {}`
+///
+/// For better control over game errors custom error type may be introduced:
+/// ```skip
+/// #[derive(Debug)]
+/// enum GameError {
+///     FileError(macroquad::FileError),
+///     SomeThirdPartyCrateError(somecrate::Error)
+/// }
+/// impl From<macroquad::file::FileError> for GameError {
+///     fn from(error: macroquad::file::FileError) -> GameError {
+///         GameError::FileError(error)
+///     }
+/// }
+/// impl From<somecrate::Error> for GameError {
+///     fn from(error: somecrate::Error) -> GameError {
+///         GameError::SomeThirdPartyCrateError(error)
+///     }
+/// }
+/// ```
 pub use macroquad_macro::main;
 
 /// Cross platform random generator.
@@ -76,20 +123,27 @@ pub mod rand {
     pub use quad_rand::*;
 }
 
-#[cfg(feature = "log-impl")]
-/// Logging macros, available with "log-impl" feature.
+#[cfg(not(feature = "log-rs"))]
+/// Logging macros, available with miniquad "log-impl" feature.
 pub mod logging {
     pub use miniquad::{debug, error, info, warn};
 }
+#[cfg(feature = "log-rs")]
+// Use logging facade
+pub use ::log as logging;
 pub use miniquad;
 
-use drawing::DrawContext;
-use glam::{vec2, Vec2};
-use quad_gl::{colors::*, Color};
-use ui::ui_context::UiContext;
+use crate::{
+    color::{colors::*, Color},
+    quad_gl::QuadGl,
+    ui::ui_context::UiContext,
+};
+
+use glam::{vec2, Mat4, Vec2};
 
 struct Context {
     quad_context: QuadContext,
+    audio_context: audio::AudioContext,
 
     screen_width: f32,
     screen_height: f32,
@@ -98,26 +152,43 @@ struct Context {
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
+    keys_released: HashSet<KeyCode>,
     mouse_down: HashSet<MouseButton>,
     mouse_pressed: HashSet<MouseButton>,
     mouse_released: HashSet<MouseButton>,
     touches: HashMap<u64, input::Touch>,
     chars_pressed_queue: Vec<char>,
+    chars_pressed_ui_queue: Vec<char>,
     mouse_position: Vec2,
     mouse_wheel: Vec2,
+
+    prevent_quit_event: bool,
+    quit_requested: bool,
 
     cursor_grabbed: bool,
 
     input_events: Vec<Vec<MiniquadInputEvent>>,
 
-    draw_context: DrawContext,
+    gl: QuadGl,
+    camera_matrix: Option<Mat4>,
+
     ui_context: UiContext,
     coroutines_context: experimental::coroutines::CoroutinesContext,
     fonts_storage: text::FontsStorage,
 
+    pc_assets_folder: Option<String>,
+
     start_time: f64,
     last_frame_time: f64,
     frame_time: f64,
+
+    #[cfg(one_screenshot)]
+    counter: usize,
+
+    camera_stack: Vec<camera::CameraState>,
+    texture_batcher: texture::Batcher,
+    unwind: bool,
+    recovery_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
 }
 
 #[derive(Clone)]
@@ -200,7 +271,9 @@ impl Context {
 
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
+            keys_released: HashSet::new(),
             chars_pressed_queue: Vec::new(),
+            chars_pressed_ui_queue: Vec::new(),
             mouse_down: HashSet::new(),
             mouse_pressed: HashSet::new(),
             mouse_released: HashSet::new(),
@@ -208,20 +281,35 @@ impl Context {
             mouse_position: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
 
+            prevent_quit_event: false,
+            quit_requested: false,
+
             cursor_grabbed: false,
 
             input_events: Vec::new(),
 
-            draw_context: DrawContext::new(&mut ctx),
+            camera_matrix: None,
+            gl: QuadGl::new(&mut ctx),
+
             ui_context: UiContext::new(&mut ctx),
             fonts_storage: text::FontsStorage::new(&mut ctx),
+            texture_batcher: texture::Batcher::new(&mut ctx),
+            camera_stack: vec![],
 
             quad_context: ctx,
+            audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
+
+            pc_assets_folder: None,
 
             start_time: miniquad::date::now(),
             last_frame_time: miniquad::date::now(),
             frame_time: 1. / 60.,
+
+            #[cfg(one_screenshot)]
+            counter: 0,
+            unwind: false,
+            recovery_future: None,
         }
     }
 
@@ -230,24 +318,37 @@ impl Context {
 
         self.ui_context.process_input();
         self.clear(Self::DEFAULT_BG_COLOR);
-        self.draw_context
-            .update_projection_matrix(&mut self.quad_context);
     }
 
     fn end_frame(&mut self) {
-        self.ui_context.draw();
+        crate::experimental::scene::update();
 
-        self.draw_context
-            .perform_render_passes(&mut self.quad_context);
+        self.perform_render_passes();
+
+        self.ui_context.draw(&mut self.quad_context, &mut self.gl);
+        let screen_mat = self.pixel_perfect_projection_matrix();
+        self.gl.draw(&mut self.quad_context, screen_mat);
 
         self.quad_context.commit_frame();
+
+        #[cfg(one_screenshot)]
+        {
+            get_context().counter += 1;
+            if get_context().counter == 3 {
+                crate::prelude::get_screen_data().export_png("screenshot.png");
+                panic!("screenshot successfully saved to `screenshot.png`");
+            }
+        }
 
         telemetry::end_gpu_query();
 
         self.mouse_wheel = Vec2::new(0., 0.);
         self.keys_pressed.clear();
+        self.keys_released.clear();
         self.mouse_pressed.clear();
         self.mouse_released.clear();
+
+        self.quit_requested = false;
 
         // remove all touches that were Ended or Cancelled
         self.touches.retain(|_, touch| {
@@ -266,9 +367,27 @@ impl Context {
     fn clear(&mut self, color: Color) {
         self.quad_context
             .clear(Some((color.r, color.g, color.b, color.a)), None, None);
-        self.draw_context.gl.reset();
-        self.draw_context
-            .update_projection_matrix(&mut self.quad_context);
+        self.gl.reset();
+    }
+
+    pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
+        let (width, height) = self.quad_context.screen_size();
+
+        glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
+    }
+
+    pub(crate) fn projection_matrix(&self) -> glam::Mat4 {
+        if let Some(matrix) = self.camera_matrix {
+            matrix
+        } else {
+            self.pixel_perfect_projection_matrix()
+        }
+    }
+
+    pub(crate) fn perform_render_passes(&mut self) {
+        let matrix = self.projection_matrix();
+
+        self.gl.draw(&mut self.quad_context, matrix);
     }
 }
 
@@ -285,6 +404,7 @@ struct Stage {}
 
 impl EventHandlerFree for Stage {
     fn resize_event(&mut self, width: f32, height: f32) {
+        let _z = telemetry::ZoneGuard::new("Event::resize_event");
         get_context().screen_width = width;
         get_context().screen_height = height;
     }
@@ -294,14 +414,16 @@ impl EventHandlerFree for Stage {
 
         if context.cursor_grabbed {
             context.mouse_position += Vec2::new(x, y);
-    
-            let event = MiniquadInputEvent::MouseMotion { x: context.mouse_position.x, y: context.mouse_position.y };
+
+            let event = MiniquadInputEvent::MouseMotion {
+                x: context.mouse_position.x,
+                y: context.mouse_position.y,
+            };
             context
                 .input_events
                 .iter_mut()
                 .for_each(|arr| arr.push(event.clone()));
         }
-
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
@@ -309,7 +431,7 @@ impl EventHandlerFree for Stage {
 
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
-            
+
             context
                 .input_events
                 .iter_mut()
@@ -353,7 +475,6 @@ impl EventHandlerFree for Stage {
 
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
-    
             context
                 .input_events
                 .iter_mut()
@@ -397,6 +518,7 @@ impl EventHandlerFree for Stage {
         let context = get_context();
 
         context.chars_pressed_queue.push(character);
+        context.chars_pressed_ui_queue.push(character);
 
         context.input_events.iter_mut().for_each(|arr| {
             arr.push(MiniquadInputEvent::Char {
@@ -426,6 +548,7 @@ impl EventHandlerFree for Stage {
     fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
         let context = get_context();
         context.keys_down.remove(&keycode);
+        context.keys_released.insert(keycode);
 
         context
             .input_events
@@ -434,6 +557,8 @@ impl EventHandlerFree for Stage {
     }
 
     fn update(&mut self) {
+        let _z = telemetry::ZoneGuard::new("Event::update");
+
         // Unless called every frame, cursor will not remain grabbed
         let context = get_context();
         context.quad_context.set_cursor_grab(context.cursor_grabbed);
@@ -449,23 +574,49 @@ impl EventHandlerFree for Stage {
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
-            if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
-                let _z = telemetry::ZoneGuard::new("Main loop");
+            use std::panic;
 
+            {
+                let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
                 get_context().begin_frame();
-
-                if exec::resume(future) {
-                    unsafe {
-                        MAIN_FUTURE = None;
-                    }
-                    get_context().quad_context.quit();
-                    return;
-                }
-                get_context().coroutines_context.update();
             }
 
-            get_context().end_frame();
+            fn maybe_unwind(unwind: bool, f: impl FnOnce() + Sized + panic::UnwindSafe) -> bool {
+                if unwind {
+                    panic::catch_unwind(|| f()).is_ok()
+                } else {
+                    f();
+                    true
+                }
+            }
 
+            let result = maybe_unwind(get_context().unwind, || {
+                if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+                    let _z = telemetry::ZoneGuard::new("Event::draw user code");
+
+                    if exec::resume(future) {
+                        unsafe {
+                            MAIN_FUTURE = None;
+                        }
+                        get_context().quad_context.quit();
+                        return;
+                    }
+                    get_context().coroutines_context.update();
+                }
+            });
+
+            if result == false {
+                if let Some(recovery_future) = get_context().recovery_future.take() {
+                    unsafe {
+                        MAIN_FUTURE = Some(recovery_future);
+                    }
+                }
+            }
+
+            {
+                let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
+                get_context().end_frame();
+            }
             get_context().frame_time = date::now() - get_context().last_frame_time;
             get_context().last_frame_time = date::now();
 
@@ -481,6 +632,24 @@ impl EventHandlerFree for Stage {
         }
 
         telemetry::reset();
+    }
+
+    fn window_restored_event(&mut self) {
+        #[cfg(target_os = "android")]
+        get_context().audio_context.resume();
+    }
+
+    fn window_minimized_event(&mut self) {
+        #[cfg(target_os = "android")]
+        get_context().audio_context.pause();
+    }
+
+    fn quit_requested_event(&mut self) {
+        let context = get_context();
+        if context.prevent_quit_event {
+            context.quad_context.cancel_quit();
+            context.quit_requested = true;
+        }
     }
 }
 
@@ -510,9 +679,7 @@ impl Window {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
-                unsafe {
-                    CONTEXT = Some(Context::new(ctx))
-                };
+                unsafe { CONTEXT = Some(Context::new(ctx)) };
                 UserData::free(Stage {})
             },
         );

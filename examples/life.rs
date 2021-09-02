@@ -23,7 +23,7 @@ async fn main() {
             }
         }
     }
-    let texture = load_texture_from_image(&image);
+    let texture = Texture2D::from_image(&image);
 
     loop {
         clear_background(WHITE);
@@ -80,13 +80,13 @@ async fn main() {
                 (i % w) as u32,
                 (i / w) as u32,
                 match buffer[i as usize] {
-                    CellState::Alive => RED,
-                    CellState::Dead => GREEN,
+                    CellState::Alive => BLACK,
+                    CellState::Dead => WHITE,
                 },
             );
         }
 
-        update_texture(texture, &image);
+        texture.update(&image);
 
         draw_texture(texture, 0., 0., WHITE);
 

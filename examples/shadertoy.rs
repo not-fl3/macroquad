@@ -40,14 +40,13 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
         }
     }
 
-    (load_texture_from_image(&image), image)
+    (Texture2D::from_image(&image), image)
 }
 
 #[macroquad::main("Shadertoy")]
 async fn main() {
-    let ferris = load_texture("examples/rust.png").await;
-    let (_color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
-    //set_megaui_texture(0, color_picker_texture);
+    let ferris = load_texture("examples/rust.png").await.unwrap();
+    let (color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
 
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
     let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
@@ -73,7 +72,7 @@ async fn main() {
         Sphere,
         Cube,
         Plane,
-    };
+    }
     let mut mesh = Mesh::Sphere;
 
     let mut camera = Camera3D {
@@ -93,9 +92,14 @@ async fn main() {
     loop {
         clear_background(WHITE);
 
-        set_camera(camera);
+        set_camera(&camera);
 
-        draw_grid(20, 1.);
+        draw_grid(
+            20,
+            1.,
+            Color::new(0.55, 0.55, 0.55, 0.75),
+            Color::new(0.75, 0.75, 0.75, 0.75),
+        );
 
         gl_use_material(material);
         match mesh {
@@ -109,7 +113,7 @@ async fn main() {
 
         let mut need_update = false;
 
-        widgets::Window::new(hash!(), vec2(20., 20.), vec2(450., 650.))
+        widgets::Window::new(hash!(), vec2(20., 20.), vec2(470., 650.))
             .label("Shader")
             .ui(&mut *root_ui(), |ui| {
                 ui.label(None, "Camera: ");
@@ -302,7 +306,10 @@ async fn main() {
                         Color::new(0.0, 0.0, 0.0, 1.0),
                         Color::new(color.r, color.g, color.b, 1.0),
                     );
-                    canvas.image(Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0), 0);
+                    canvas.image(
+                        Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0),
+                        color_picker_texture,
+                    );
 
                     if x >= 0 && x < 200 && y >= 0 && y < 200 {
                         canvas.rect(

@@ -24,7 +24,7 @@ async fn main() {
 
         let camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, 100.0, 100.0));
 
-        set_camera(camera);
+        set_camera(&camera);
 
         emitter.draw(vec2(50., 50.));
 

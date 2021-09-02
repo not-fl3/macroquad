@@ -13,7 +13,7 @@ pub struct Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        Self::new(Vec2::zero(), 1.0)
+        Self::new(Vec2::ZERO, 1.0)
     }
 }
 
@@ -66,6 +66,7 @@ impl Into<Camera2D> for Camera {
             rotation: 0.,
 
             render_target: None,
+            viewport: None,
         }
     }
 }

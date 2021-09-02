@@ -3,6 +3,7 @@
 use crate::{
     color::Color,
     math::{Rect, RectOffset, Vec2},
+    texture::Texture2D,
     ui::render::DrawCommand,
 };
 
@@ -44,7 +45,7 @@ pub struct DrawList {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u16>,
     pub clipping_zone: Option<Rect>,
-    pub texture: Option<u32>,
+    pub texture: Option<Texture2D>,
 }
 
 impl DrawList {

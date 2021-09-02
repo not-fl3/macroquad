@@ -108,7 +108,7 @@ impl Cursor {
                 if self.x + size.x < self.area.w as f32 - self.margin * 2. {
                     res = Vec2::new(self.x, self.y);
                 } else {
-                    self.x = self.margin;
+                    self.x = self.margin + 1.; // +1. is a hack to make next vertical thing correctly jump to the next row
                     self.y += self.max_row_y + self.margin;
                     self.max_row_y = 0.;
                     res = Vec2::new(self.x, self.y);

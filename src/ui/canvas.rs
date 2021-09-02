@@ -5,6 +5,7 @@ use super::WindowContext;
 use crate::{
     color::Color,
     math::{Rect, Vec2},
+    texture::Texture2D,
 };
 
 pub struct DrawCanvas<'a> {
@@ -39,7 +40,7 @@ impl<'a> DrawCanvas<'a> {
         self.context.window.painter.draw_line(start, end, color);
     }
 
-    pub fn image(&mut self, rect: Rect, texture: u32) {
+    pub fn image(&mut self, rect: Rect, texture: Texture2D) {
         self.context.register_click_intention(rect);
 
         self.context.window.painter.draw_raw_texture(rect, texture);

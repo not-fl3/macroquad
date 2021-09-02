@@ -1,10 +1,10 @@
 on: [push, pull_request]
 
-name: Cross-compile
+name: CI
 
 jobs:
   build:
-    name: Build
+    name: Cross-compile
     runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
@@ -17,7 +17,7 @@ jobs:
           - { os: windows-latest, target: 'x86_64-pc-windows-msvc' }
         include:
           - os: ubuntu-latest
-            packages: libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64
+            packages: libx11-dev libxi-dev libgl1-mesa-dev gcc-mingw-w64 libasound2-dev
 
     steps:
       - uses: actions/checkout@v2
@@ -42,3 +42,18 @@ jobs:
         with:
           command: build
           args: --all-targets --target=${{ matrix.config.target }}
+  fmt:
+    name: cargo fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check 

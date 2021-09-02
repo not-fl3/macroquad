@@ -1,6 +1,6 @@
 use crate::{
     math::{vec2, Rect, Vec2},
-    ui::{widgets::Editbox, ElementState, Id, Layout, Ui},
+    ui::{widgets::Editbox, ElementState, Id, Layout, Ui, UiContent},
 };
 
 use std::any::Any;
@@ -85,10 +85,10 @@ impl<'a> Drag<'a> {
         let state_hash = hash!(self.id, "input_float_state");
         let mut s: State = std::mem::take(context.storage_any.get_or_default(state_hash));
 
-        let label_size = context
-            .window
-            .painter
-            .element_size(&context.style.label_style, &self.label);
+        let label_size = context.window.painter.content_with_margins_size(
+            &context.style.label_style,
+            &UiContent::Label(self.label.into()),
+        );
         let size = vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
             label_size.y.max(22.),
@@ -130,10 +130,10 @@ impl<'a> Drag<'a> {
             // );
 
             let label = format!("{:.2}", (*data));
-            let value_size = context
-                .window
-                .painter
-                .element_size(&context.style.label_style, &label);
+            let value_size = context.window.painter.content_with_margins_size(
+                &context.style.label_style,
+                &UiContent::Label((&label).into()),
+            );
 
             context.window.painter.draw_element_label(
                 &context.style.label_style,
@@ -152,7 +152,7 @@ impl<'a> Drag<'a> {
                     s.drag = None;
                     context.input.cursor_grabbed = false;
                     if !hovered {
-                        context.window.input_focus = None;
+                        *context.input_focus = None;
                     }
                 } else {
                     let mouse_delta =
@@ -179,7 +179,7 @@ impl<'a> Drag<'a> {
                         start_mouse: context.input.mouse_position.x,
                         start_value: (*data).into(),
                     });
-                    context.window.input_focus = Some(self.id);
+                    *context.input_focus = Some(self.id);
                     context.input.cursor_grabbed = true;
                 }
             }

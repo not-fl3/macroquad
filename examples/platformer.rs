@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 
 use macroquad_tiled as tiled;
 
-use physics_platformer::*;
+use macroquad_platformer::*;
 
 struct Player {
     collider: Actor,
@@ -16,15 +16,19 @@ struct Platform {
 
 #[macroquad::main("Platformer")]
 async fn main() {
-    let tileset = load_texture("examples/tileset.png").await;
-    set_texture_filter(tileset, FilterMode::Nearest);
+    let tileset = load_texture("examples/tileset.png").await.unwrap();
+    tileset.set_filter(FilterMode::Nearest);
 
     let tiled_map_json = load_string("examples/map.json").await.unwrap();
     let tiled_map = tiled::load_map(&tiled_map_json, &[("tileset.png", tileset)], &[]).unwrap();
 
     let mut static_colliders = vec![];
     for (_x, _y, tile) in tiled_map.tiles("main layer", None) {
-        static_colliders.push(tile.is_some());
+        static_colliders.push(if tile.is_some() {
+            Tile::Solid
+        } else {
+            Tile::Empty
+        });
     }
 
     let mut world = World::new();
@@ -45,7 +49,7 @@ async fn main() {
     loop {
         clear_background(BLACK);
 
-        set_camera(camera);
+        set_camera(&camera);
 
         tiled_map.draw_tiles("main layer", Rect::new(0.0, 0.0, 320.0, 152.0), None);
 
