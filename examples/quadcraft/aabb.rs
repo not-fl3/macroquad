@@ -56,6 +56,19 @@ impl AABB {
             max: position + radius_bounds,
         }
     }
+
+    pub fn intersects_ray(&self, origin: Vec3, direction: Vec3) -> f32 {
+        let t1 = (self.min.x - origin.x) / direction.x;
+        let t2 = (self.max.x - origin.x) / direction.x;
+        let t3 = (self.min.y - origin.y) / direction.y;
+        let t4 = (self.max.y - origin.y) / direction.y;
+        let t5 = (self.min.z - origin.z) / direction.z;
+        let t6 = (self.max.z - origin.z) / direction.z;
+        let t7 = t1.min(t2).max(t3.min(t4)).max(t5.min(t6));
+        let t8 = t1.max(t2).min(t3.max(t4)).min(t5.max(t6));
+
+        if t8 < 0.0 || t7 > t8 { -1.0 } else { t7 }
+    }
 }
 
 mod test
@@ -64,8 +77,7 @@ mod test
     use super::*;
 
     #[test]
-    fn test_aabb()
-    {
+    fn test_aabb() {
         let aabb = AABB { min: Vec3::ZERO, max: Vec3::ONE };
         let gold = aabb.clone();
         assert!(gold == aabb);
@@ -75,15 +87,13 @@ mod test
     }
 
     #[test]
-    fn test_get_center()
-    {
+    fn test_get_center() {
         assert!(AABB::new(vec3(-1.0, -1.0, -1.0), Vec3::ONE).get_center() == Vec3::ZERO);
         assert!(AABB::new(vec3(-4.0, -1.0, -1.0), Vec3::ONE).get_center() == vec3(-1.5, 0.0, 0.0));
     }
 
     #[test]
-    fn test_get_collision_depth()
-    {
+    fn test_get_collision_depth() {
         let a = AABB::new(vec3(-1.0, -1.0, -1.0), Vec3::ONE);
         let b = AABB::new(vec3(0.5, 0.5, 0.5), vec3(10000.5, 10000.5, 10000.5));
 
@@ -98,8 +108,7 @@ mod test
     }
 
     #[test]
-    fn test_is_there_a_collision()
-    {
+    fn test_is_there_a_collision() {
         let a = AABB::new(vec3(-1.0, -1.0, -1.0), Vec3::ONE);
         let b = a.clone();
 
@@ -117,5 +126,20 @@ mod test
 
         assert_eq!(a.get_collision_depth(b), vec3(-4.0, -4.0, -4.0));
         assert_eq!(a.is_colliding(b), false);
+    }
+
+    #[test]
+    fn test_aabb_intersects_ray() {
+        let a = AABB::new(vec3(-1.0, -1.0, -1.0), Vec3::ONE);
+
+        assert_eq!(
+            a.intersects_ray(vec3(10.0, 10.0, 10.0), vec3(0.0, 1.0, 0.0)),
+            -1.0
+        );
+
+        assert_eq!(
+            a.intersects_ray(vec3(10.0, 0.0, 0.0), vec3(-1.0, 0.0, 0.0)),
+            9.0
+        );
     }
 }
