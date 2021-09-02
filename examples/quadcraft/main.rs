@@ -157,6 +157,17 @@ async fn main() {
                 screen_height() - (block_type.height() + 16.0),
                 WHITE
             );
+
+            if i == selected_block_index as usize {
+                draw_rectangle_lines(
+                    32.0 + i as f32 * (block_type.width() + 16.0),
+                    screen_height() - (block_type.height() + 16.0),
+                    block_type.width(),
+                    block_type.height(),
+                    2.0,
+                    RED
+                );
+            }
         }
 
         draw_text(
