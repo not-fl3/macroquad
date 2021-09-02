@@ -7,10 +7,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use crate::{exec::ExecState, get_context};
+use crate::exec::dummy_waker;
+use crate::get_context;
 
 pub(crate) struct CoroutinesContext {
-    futures: Vec<Option<(Pin<Box<dyn Future<Output = ()>>>, ExecState)>>,
+    futures: Vec<Option<Pin<Box<dyn Future<Output = ()>>>>>,
 }
 
 impl CoroutinesContext {
@@ -22,11 +23,10 @@ impl CoroutinesContext {
 
     pub fn update(&mut self) {
         for future in &mut self.futures {
-            if let Some((f, context)) = future {
-                *context = ExecState::RunOnce;
-
-                let futures_context_ref: &mut _ = unsafe { std::mem::transmute(context) };
-                if matches!(f.as_mut().poll(futures_context_ref), Poll::Ready(_)) {
+            if let Some(f) = future {
+                let waker = dummy_waker();
+                let mut futures_context = std::task::Context::from_waker(&waker);
+                if matches!(f.as_mut().poll(&mut futures_context), Poll::Ready(_)) {
                     *future = None;
                 }
             }
@@ -53,9 +53,7 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
     let boxed_future = unsafe { std::mem::transmute(boxed_future) };
 
-    context
-        .futures
-        .push(Some((boxed_future, ExecState::RunOnce)));
+    context.futures.push(Some(boxed_future));
 
     Coroutine {
         id: context.futures.len() - 1,
