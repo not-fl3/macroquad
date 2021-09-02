@@ -106,8 +106,38 @@ async fn main() {
             format!("{} FPS", get_fps()).as_str(),
             16.0,
             16.0,
+            32.0,
+            BLACK
+        );
+
+        draw_text(
+            format!("Fly Mode: {}", toggle_camera_fly).as_str(),
             16.0,
-            Color::new(1.0, 1.0, 1.0, 1.0)
+            32.0,
+            32.0,
+            BLACK
+        );
+
+        draw_text(
+            format!(
+                "Show Chunk Bounds: {}",
+                toggle_draw_chunk_boundaries
+            ).as_str(),
+            16.0,
+            32.0,
+            32.0,
+            BLACK
+        );
+
+        draw_text(
+            format!(
+                "Show Block AABBs: {}",
+                toggle_draw_block_colliders
+            ).as_str(),
+            16.0,
+            32.0,
+            32.0,
+            BLACK
         );
 
         // Player input controlls
@@ -216,30 +246,11 @@ pub async fn init_world(world: &mut World) {
         }
     }
 
-    for x in -size .. size {
-        for z in -size .. size {
-            world.queue_place_block(
-                ivec3(x, -size - 2, z),
-                Block { typ: lab_tile }
-            );
-
-            if x == z {
-                world.queue_place_block(
-                    ivec3(x, -size - 1, z),
-                    Block { typ: lava }
-                );
-            }
-
-            else {
-                world.queue_place_block(
-                    ivec3(x, -size - 1, z),
-                    Block { typ: water }
-                );
-            }
-        }
-    }
-
-    world.queue_place_block(ivec3(0, size, 0), Block {typ: water});
+    world.queue_place_block(ivec3(0, -11, 0), Block {typ: water});
+    world.queue_place_block(ivec3(1, -11, 0), Block {typ: water});
+    world.queue_place_block(ivec3(-1, -11, 0), Block {typ: water});
+    world.queue_place_block(ivec3(0, -11, 1), Block {typ: water});
+    world.queue_place_block(ivec3(0, -11, -1), Block {typ: water});
     world.rebuild_all();
 }
 
