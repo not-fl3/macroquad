@@ -34,10 +34,19 @@ async fn main() {
     let mut game_world = World::new();
     init_world(&mut game_world).await;
 
+    // For drawing inventory and selecting block types
+    let mut loaded_block_types = Vec::new();
+    for block_type in game_world.block_types.iter() {
+        let image = game_world.texture_cache.get(&block_type.texture).unwrap();
+        let texture = Texture2D::from_image(&image);
+        loaded_block_types.push(texture);
+    }
+
     // Player position, velocity, and AABB collision bounds
     let mut origin = vec3(5.0, 5.0, 5.0);
     let mut velocity = Vec3::ZERO;
     let bounds = vec3(0.25, 0.75, 0.25);
+    let mut selected_block_index = 0i32;
     let mut toggle_camera_fly = false;
     let mut toggle_draw_chunk_boundaries = false;
     let mut toggle_draw_block_colliders = false;
@@ -80,7 +89,7 @@ async fn main() {
         }
 
         // Physics Update
-        let radius = 5.0;
+        let radius = 4.0;
         let collidables = game_world.get_collidable_blocks(
             AABB::from_box(camera.position, Vec3::ONE * radius)
         );
@@ -118,14 +127,13 @@ async fn main() {
             );
 
             if is_mouse_button_pressed(MouseButton::Left) {
-                let whatever_block_was_first = 0;
                 game_world.queue_place_block(
                     aabb.get_center().as_i32() + ivec3(
                         0,
                         VOXEL_SIZE as i32,
                         0
                     ),
-                    Block {typ: whatever_block_was_first}
+                    Block {typ: selected_block_index as u16}
                 );
                 game_world.rebuild_all();
             }
@@ -140,6 +148,16 @@ async fn main() {
 
         // Game Rendering 2D
         set_default_camera();
+
+        // Draw inventory
+        for (i, block_type) in loaded_block_types.iter().enumerate() {
+            draw_texture(
+                *block_type,
+                32.0 + i as f32 * (block_type.width() + 16.0),
+                screen_height() - (block_type.height() + 16.0),
+                WHITE
+            );
+        }
 
         draw_text(
             format!("{} FPS", get_fps()).as_str(),
@@ -180,6 +198,18 @@ async fn main() {
         );
 
         // Player input controlls
+        if mouse_wheel().1 > 0.0 {
+            selected_block_index = (selected_block_index + 1i32).clamp(
+                0,
+                loaded_block_types.len() as i32 - 1i32
+            );
+        }
+        if mouse_wheel().1 < 0.0 {
+            selected_block_index = (selected_block_index - 1i32).clamp(
+                0,
+                loaded_block_types.len() as i32 - 1i32
+            );
+        }
         if is_key_down(KeyCode::Down) {
             velocity += 
                 -(camera.front * vec3(1.0, 0.0, 1.0)) *
