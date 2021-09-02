@@ -51,7 +51,6 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
     let context = &mut get_context().coroutines_context;
 
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
-    let boxed_future = unsafe { std::mem::transmute(boxed_future) };
 
     context.futures.push(Some(boxed_future));
 
