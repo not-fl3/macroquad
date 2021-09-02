@@ -77,7 +77,7 @@ fn draw_text_annotated(text: &str, font: Option<Font>, x: f32, baseline: f32) {
 
 #[macroquad::main("Text")]
 async fn main() {
-    let font = load_ttf_font("./examples/DancingScriptRegular.ttf")
+    let font = load_ttf_font("./examples/res/DancingScriptRegular.ttf")
         .await
         .unwrap();
 

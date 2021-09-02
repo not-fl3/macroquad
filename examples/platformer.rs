@@ -16,10 +16,10 @@ struct Platform {
 
 #[macroquad::main("Platformer")]
 async fn main() {
-    let tileset = load_texture("examples/tileset.png").await.unwrap();
+    let tileset = load_texture("examples/res/tileset.png").await.unwrap();
     tileset.set_filter(FilterMode::Nearest);
 
-    let tiled_map_json = load_string("examples/map.json").await.unwrap();
+    let tiled_map_json = load_string("examples/res/map.json").await.unwrap();
     let tiled_map = tiled::load_map(&tiled_map_json, &[("tileset.png", tileset)], &[]).unwrap();
 
     let mut static_colliders = vec![];

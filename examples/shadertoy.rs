@@ -45,7 +45,7 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
 
 #[macroquad::main("Shadertoy")]
 async fn main() {
-    let ferris = load_texture("examples/rust.png").await.unwrap();
+    let ferris = load_texture("examples/res/rust.png").await.unwrap();
     let (color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
 
     let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();

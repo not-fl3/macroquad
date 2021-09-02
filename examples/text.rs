@@ -2,7 +2,7 @@ use macroquad::prelude::*;
 
 #[macroquad::main("Text")]
 async fn main() {
-    let font = load_ttf_font("./examples/DancingScriptRegular.ttf")
+    let font = load_ttf_font("./examples/res/DancingScriptRegular.ttf")
         .await
         .unwrap();
 
