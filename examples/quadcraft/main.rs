@@ -179,7 +179,7 @@ async fn main() {
         );
 
         draw_text(
-            format!("Fly Mode: {}", toggle_camera_fly).as_str(),
+            format!("Key1: Fly Mode: {}", toggle_camera_fly).as_str(),
             16.0,
             32.0 * 2.0,
             32.0,
@@ -188,7 +188,7 @@ async fn main() {
 
         draw_text(
             format!(
-                "Show Chunk Bounds: {}",
+                "Key2: Show Chunk Bounds: {}",
                 toggle_draw_chunk_boundaries
             ).as_str(),
             16.0,
@@ -199,11 +199,35 @@ async fn main() {
 
         draw_text(
             format!(
-                "Show Block AABBs: {}",
+                "Key3: Show Block AABBs: {}",
                 toggle_draw_block_colliders
             ).as_str(),
             16.0,
             32.0 * 4.0,
+            32.0,
+            BLACK
+        );
+
+        draw_text(
+            "Scroll Mouse To Select Block",
+            16.0,
+            32.0 * 5.0,
+            32.0,
+            BLACK
+        );
+
+        draw_text(
+            "Place With Left Mouse Button",
+            16.0,
+            32.0 * 6.0,
+            32.0,
+            BLACK
+        );
+
+        draw_text(
+            "Remove With Left Mouse Button",
+            16.0,
+            32.0 * 7.0,
             32.0,
             BLACK
         );
