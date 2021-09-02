@@ -1,7 +1,7 @@
-use std::collections::{HashMap, HashSet};
-use macroquad::{prelude::*, models::Vertex as Vert};
-use crate::{VOXEL_HALF, CHUNK_SIZE, PIXELS_PER_TEXTURE};
 use crate::aabb::AABB;
+use crate::{CHUNK_SIZE, PIXELS_PER_TEXTURE, VOXEL_HALF};
+use macroquad::{models::Vertex as Vert, prelude::*};
+use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Copy, Debug)]
 pub struct Block {
@@ -11,7 +11,8 @@ pub struct Block {
 }
 
 pub struct Chunk {
-    pub position: IVec3,  /// Position can contain negative numbers.
+    pub position: IVec3,
+    /// Position can contain negative numbers.
     pub modified: bool,
     pub data: [Option<Block>; CHUNK_SIZE.pow(3)],
     pub mesh_opaque: Mesh,
@@ -42,7 +43,7 @@ impl World {
     pub async fn register(&mut self, block_type: BlockType) -> u16 {
         self.texture_cache.insert(
             block_type.texture.clone(),
-            load_image(&block_type.texture).await.unwrap()
+            load_image(&block_type.texture).await.unwrap(),
         );
         self.block_types.push(block_type);
         (self.block_types.len() - 1) as u16
@@ -85,11 +86,7 @@ impl World {
         }
     }
 
-    pub fn queue_place_block_if_not_already_there(
-        &mut self,
-        position: IVec3,
-        block: Block
-    ) {
+    pub fn queue_place_block_if_not_already_there(&mut self, position: IVec3, block: Block) {
         let mut place_block = true;
 
         if let Some(other_block) = self.get_block_at(position) {
@@ -124,9 +121,7 @@ impl World {
             let block_chunk_offset = position - chunk_position;
             // Already checked that it exists
             let chunk = self.chunks.get(&chunk_position).unwrap();
-            let block_index = chunk.get_index_from_local_position(
-                block_chunk_offset
-            );
+            let block_index = chunk.get_index_from_local_position(block_chunk_offset);
             return chunk.data[block_index];
         }
 
@@ -137,29 +132,19 @@ impl World {
         // Build meshes/textures OUTSIDE of the chunk using multiple READ refs
         let rebuild_chunk = |(_chunk_index, chunk): (&IVec3, &Chunk)| {
             if chunk.modified {
-                Some(
-                    chunk.rebuild(
-                        &self.chunks,
-                        &self.block_types,
-                        &self.texture_cache
-                    )
-                )
-            }
-            else {
+                Some(chunk.rebuild(&self.chunks, &self.block_types, &self.texture_cache))
+            } else {
                 None
             }
         };
 
-        let new_meshes: Vec<Option<(IVec3, Mesh, Mesh, Image)>> = self.chunks
-            .iter()
-            .map(rebuild_chunk)
-            .collect();
+        let new_meshes: Vec<Option<(IVec3, Mesh, Mesh, Image)>> =
+            self.chunks.iter().map(rebuild_chunk).collect();
 
         // Assign the meshes/textures ONE AT A TIME after using one WRITE ref
         for chunk_update in new_meshes {
-            if let Some(
-                (chunk_index, mut new_mesh, mut new_mesh_transparent, image)
-            ) = chunk_update {
+            if let Some((chunk_index, mut new_mesh, mut new_mesh_transparent, image)) = chunk_update
+            {
                 // Upload the mega texture to the GPU (on the main thread)
                 let mega_texture = Texture2D::from_image(&image);
                 mega_texture.set_filter(FilterMode::Nearest);
@@ -176,15 +161,11 @@ impl World {
 
     /// Magically loads a chunk out of thin air. Do this from disk when wanted.
     pub fn load_chunk(&mut self, position: IVec3) {
-        let chunk_global_position = self.get_position_in_chunk_space(
-            position.as_f32()
-        );
+        let chunk_global_position = self.get_position_in_chunk_space(position.as_f32());
 
         if !self.chunks.contains_key(&chunk_global_position) {
-            self.chunks.insert(
-                chunk_global_position,
-                Chunk::new(chunk_global_position)
-            );
+            self.chunks
+                .insert(chunk_global_position, Chunk::new(chunk_global_position));
         }
     }
 
@@ -197,8 +178,7 @@ impl World {
 
         if self.chunks.contains_key(&chunk_space) {
             Some(chunk_space)
-        }
-        else {
+        } else {
             None
         }
     }
@@ -214,21 +194,16 @@ impl World {
         let y_max = aabb.max.y.max(aabb.min.y).round() as i32;
         let z_max = aabb.max.z.max(aabb.min.z).round() as i32;
 
-        for x in x_min ..= x_max {
-            for y in y_min ..= y_max {
-                for z in z_min ..= z_max {
+        for x in x_min..=x_max {
+            for y in y_min..=y_max {
+                for z in z_min..=z_max {
                     let block_position = ivec3(x, y, z);
 
                     if let Some(block) = self.get_block_at(block_position) {
-                        aabbs.push(
-                            (
-                                AABB::from_box(
-                                    block_position.as_f32(),
-                                    Vec3::ONE * VOXEL_HALF
-                                ),
-                                block
-                            )
-                        )
+                        aabbs.push((
+                            AABB::from_box(block_position.as_f32(), Vec3::ONE * VOXEL_HALF),
+                            block,
+                        ))
                     }
                 }
             }
@@ -239,7 +214,14 @@ impl World {
 }
 
 #[derive(Clone, Copy)]
-pub enum Direction { Front, Back, Top, Bottom, Right, Left, }
+pub enum Direction {
+    Front,
+    Back,
+    Top,
+    Bottom,
+    Right,
+    Left,
+}
 impl Direction {
     pub fn iter() -> impl Iterator<Item = Direction> {
         [
@@ -248,8 +230,10 @@ impl Direction {
             Direction::Top,
             Direction::Bottom,
             Direction::Right,
-            Direction::Left
-        ].iter().cloned()
+            Direction::Left,
+        ]
+        .iter()
+        .cloned()
     }
 }
 
@@ -291,18 +275,14 @@ impl Chunk {
         ivec3(
             index as i32 % CHUNK_SIZE as i32,
             index as i32 / CHUNK_SIZE as i32 % CHUNK_SIZE as i32,
-            index as i32 / (CHUNK_SIZE * CHUNK_SIZE) as i32
+            index as i32 / (CHUNK_SIZE * CHUNK_SIZE) as i32,
         )
     }
 
     /// Since positions are just positive-only offsets from the chunk's
     /// position, they are never negative.
     pub fn get_index_from_local_position(&self, position: IVec3) -> usize {
-        (
-            (position.z * CHUNK_SIZE as i32 + position.y) *
-            CHUNK_SIZE as i32 +
-            position.x
-        ) as usize
+        ((position.z * CHUNK_SIZE as i32 + position.y) * CHUNK_SIZE as i32 + position.x) as usize
     }
 
     pub fn get_position_in_chunk_space(&self, position: Vec3) -> IVec3 {
@@ -312,37 +292,28 @@ impl Chunk {
     pub fn chunk_contains_point(
         &self,
         position: IVec3,
-        chunks: &HashMap<IVec3, Chunk>
-    ) -> Option<IVec3>
-    {
+        chunks: &HashMap<IVec3, Chunk>,
+    ) -> Option<IVec3> {
         let chunk_space = self.get_position_in_chunk_space(position.as_f32());
 
         if chunks.contains_key(&chunk_space) {
             Some(chunk_space)
-        }
-        else {
+        } else {
             None
         }
     }
 
-    pub fn get_block_at(
-        &self,
-        position: IVec3,
-        chunks: &HashMap<IVec3, Chunk>
-    ) -> Option<Block>
-    {
+    pub fn get_block_at(&self, position: IVec3, chunks: &HashMap<IVec3, Chunk>) -> Option<Block> {
         match self.chunk_contains_point(position, chunks) {
             Some(chunk_position) => {
                 let block_chunk_offset = position - chunk_position;
                 // Already checked that it exists
                 let chunk = chunks.get(&chunk_position).unwrap();
-                let block_index = chunk.get_index_from_local_position(
-                    block_chunk_offset
-                );
+                let block_index = chunk.get_index_from_local_position(block_chunk_offset);
                 chunk.data[block_index]
             }
 
-            None => None
+            None => None,
         }
     }
 
@@ -352,42 +323,42 @@ impl Chunk {
                 vec3(VOXEL_HALF, VOXEL_HALF, -VOXEL_HALF),
                 vec3(VOXEL_HALF, VOXEL_HALF, VOXEL_HALF),
                 vec3(VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF),
-                vec3(VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF)
+                vec3(VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF),
             ],
 
             Direction::Left => [
                 vec3(-VOXEL_HALF, VOXEL_HALF, -VOXEL_HALF),
                 vec3(-VOXEL_HALF, VOXEL_HALF, VOXEL_HALF),
                 vec3(-VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF),
-                vec3(-VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF)
+                vec3(-VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF),
             ],
 
             Direction::Top => [
                 vec3(-VOXEL_HALF, VOXEL_HALF, -VOXEL_HALF),
                 vec3(VOXEL_HALF, VOXEL_HALF, -VOXEL_HALF),
                 vec3(VOXEL_HALF, VOXEL_HALF, VOXEL_HALF),
-                vec3(-VOXEL_HALF, VOXEL_HALF, VOXEL_HALF)
+                vec3(-VOXEL_HALF, VOXEL_HALF, VOXEL_HALF),
             ],
 
             Direction::Bottom => [
                 vec3(-VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF),
                 vec3(VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF),
                 vec3(VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF),
-                vec3(-VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF)
+                vec3(-VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF),
             ],
 
             Direction::Front => [
                 vec3(-VOXEL_HALF, VOXEL_HALF, VOXEL_HALF),
                 vec3(VOXEL_HALF, VOXEL_HALF, VOXEL_HALF),
                 vec3(VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF),
-                vec3(-VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF)
+                vec3(-VOXEL_HALF, -VOXEL_HALF, VOXEL_HALF),
             ],
 
             Direction::Back => [
                 vec3(-VOXEL_HALF, VOXEL_HALF, -VOXEL_HALF),
                 vec3(VOXEL_HALF, VOXEL_HALF, -VOXEL_HALF),
                 vec3(VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF),
-                vec3(-VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF)
+                vec3(-VOXEL_HALF, -VOXEL_HALF, -VOXEL_HALF),
             ],
         }
     }
@@ -403,8 +374,7 @@ impl Chunk {
         uv: Vec4,
         vertices: &mut Vec<Vert>,
         indices: &mut Vec<u16>,
-    )
-    {
+    ) {
         let block_chunk_offset = self.get_local_position_from_index(index);
         let global_block_position = self.position + block_chunk_offset;
         let mut generate_face = true;
@@ -419,26 +389,22 @@ impl Chunk {
 
         // Check accross chunk boundaries to ensure that the least amount of
         // faces are being generated
-        if let Some(other_block) = self.get_block_at(
-            global_block_position + direction.into(),
-            other_chunks
-        ) {
+        if let Some(other_block) =
+            self.get_block_at(global_block_position + direction.into(), other_chunks)
+        {
             let other_block_type = &block_types[other_block.typ as usize];
 
             let same_type = this_block.typ == other_block.typ;
-            let same_opaque =
-                this_block_type.opaque == other_block_type.opaque;
+            let same_opaque = this_block_type.opaque == other_block_type.opaque;
 
             // Water + Water, Stone + Stone
             if same_type && same_opaque {
                 generate_face = false;
             }
-
             // Stone + Dirt, Water + Lava
             else if !same_type && same_opaque {
                 generate_face = !this_block_type.opaque;
             }
-
             // Stone + Water
             else if !same_type && !same_opaque {
                 // Generate face only for opaque blocks that are adjacent to
@@ -451,36 +417,33 @@ impl Chunk {
             let face = self.face_vertices(direction);
             let base_indices = [0u16, 1u16, 2u16, 0u16, 2u16, 3u16];
 
-            indices.extend(
-                base_indices.iter().map(|i| i + vertices.len() as u16)
-            );
+            indices.extend(base_indices.iter().map(|i| i + vertices.len() as u16));
 
-            let global_block_position =
-                self.position.as_f32() + block_chunk_offset.as_f32();
+            let global_block_position = self.position.as_f32() + block_chunk_offset.as_f32();
             let color = WHITE;
 
             vertices.push(Vert {
                 position: global_block_position + face[0],
                 uv: uv.xy(),
-                color: color
+                color: color,
             });
 
             vertices.push(Vert {
                 position: global_block_position + face[1],
                 uv: uv.zy(),
-                color: color
+                color: color,
             });
 
             vertices.push(Vert {
                 position: global_block_position + face[2],
                 uv: uv.zw(),
-                color: color
+                color: color,
             });
 
             vertices.push(Vert {
                 position: global_block_position + face[3],
                 uv: uv.xw(),
-                color: color
+                color: color,
             });
         }
     }
@@ -490,8 +453,7 @@ impl Chunk {
         other_chunks: &HashMap<IVec3, Chunk>,
         block_types: &Vec<BlockType>,
         texture_cache: &HashMap<String, Image>,
-    ) -> (IVec3, Mesh, Mesh, Image)
-    {
+    ) -> (IVec3, Mesh, Mesh, Image) {
         // Get number of unique textures so megatexture size can be determined
         let mut unique_textures = HashSet::new();
 
@@ -505,25 +467,21 @@ impl Chunk {
             }
         }
 
-        let mega_texture_num_tiles_xy = (unique_textures.len() as f32)
-            .sqrt()
-            .ceil();
+        let mega_texture_num_tiles_xy = (unique_textures.len() as f32).sqrt().ceil();
 
         // Build a new mega texture
-        let width_and_height = 
-            mega_texture_num_tiles_xy as u16 * PIXELS_PER_TEXTURE as u16;
+        let width_and_height = mega_texture_num_tiles_xy as u16 * PIXELS_PER_TEXTURE as u16;
 
         let mut mega = Image::gen_image_color(
             width_and_height,
             width_and_height,
-            Color::new(0.0, 0.0, 0.0, 0.0)
+            Color::new(0.0, 0.0, 0.0, 0.0),
         );
         let (mut col, mut row) = (0u32, 0u32);
         let mut tiles = HashMap::<u16, Vec4>::new();
 
         // Draw each unique texture onto the mega texture and store its UVs
-        for block_type_id in unique_textures
-        {
+        for block_type_id in unique_textures {
             // Textures are loaded when block types are registered, so these
             // are guaranteed to succeed
             let block_type = &block_types[block_type_id as usize];
@@ -533,7 +491,7 @@ impl Chunk {
                 &mut mega,
                 &texture,
                 col * PIXELS_PER_TEXTURE as u32,
-                row * PIXELS_PER_TEXTURE as u32
+                row * PIXELS_PER_TEXTURE as u32,
             );
 
             // Store the tile for UV generation later
@@ -544,7 +502,7 @@ impl Chunk {
 
             tiles.insert(
                 block_type_id,
-                vec4(top_left.x, top_left.y, lower_right.x, lower_right.y)
+                vec4(top_left.x, top_left.y, lower_right.x, lower_right.y),
             );
 
             col += 1u32;
@@ -571,8 +529,7 @@ impl Chunk {
 
                 let (verts, inds) = if block_type.opaque {
                     (&mut vertices, &mut indices)
-                }
-                else {
+                } else {
                     (&mut vertices_transparent, &mut indices_transparent)
                 };
 
@@ -588,7 +545,7 @@ impl Chunk {
                         block_types,
                         uv,
                         verts,
-                        inds
+                        inds,
                     );
                 }
             }
@@ -597,13 +554,17 @@ impl Chunk {
         // Return the newly created chunk!
         (
             self.position,
-            Mesh { vertices, indices, texture: None},
+            Mesh {
+                vertices,
+                indices,
+                texture: None,
+            },
             Mesh {
                 vertices: vertices_transparent,
                 indices: indices_transparent,
-                texture: None
+                texture: None,
             },
-            mega
+            mega,
         )
     }
 }
@@ -612,8 +573,8 @@ fn draw_image(destination: &mut Image, source: &Image, at_x: u32, at_y: u32) {
     assert!(destination.width() as u32 >= source.width() as u32 + at_x);
     assert!(destination.height() as u32 >= source.height() as u32 + at_y);
 
-    for y in 0u32 .. source.height() as u32 {
-        for x in 0u32 .. source.width() as u32 {
+    for y in 0u32..source.height() as u32 {
+        for x in 0u32..source.width() as u32 {
             let pixel = source.get_pixel(x, y);
             destination.set_pixel(at_x + x, at_y + y, pixel);
         }

@@ -1,5 +1,5 @@
-use macroquad::prelude::*;
 use crate::aabb::AABB;
+use macroquad::prelude::*;
 
 pub const GRAVITY: f32 = -0.56;
 pub const EPSILON: f32 = 0.01;
@@ -12,7 +12,7 @@ fn move_and_collide(
     position: &mut Vec3,
     radius_bounds: Vec3,
     velocity: Vec3,
-    aabbs: &Vec<AABB>
+    aabbs: &Vec<AABB>,
 ) -> Vec3 {
     // This is the ideal velocity that will be equal to starting velocity if
     // there are no collisions on any axis
@@ -24,22 +24,15 @@ fn move_and_collide(
         let movement = moved_velocity[movement_axis];
         let sign = movement.signum();
         let desired_axis_velocity = *axis * movement;
-        let mut moved = AABB::from_box(
-            *position + desired_axis_velocity,
-            radius_bounds
-        );
+        let mut moved = AABB::from_box(*position + desired_axis_velocity, radius_bounds);
 
         for other_aabb in aabbs.iter() {
             if moved.is_colliding(*other_aabb) {
                 let collision_depth = moved.get_collision_depth(*other_aabb);
                 let depth_on_this_axis_only = collision_depth[movement_axis];
 
-                moved_velocity[movement_axis] += 
-                    -sign * (depth_on_this_axis_only + EPSILON);
-                moved = AABB::from_box(
-                    *position + desired_axis_velocity,
-                    radius_bounds
-                );
+                moved_velocity[movement_axis] += -sign * (depth_on_this_axis_only + EPSILON);
+                moved = AABB::from_box(*position + desired_axis_velocity, radius_bounds);
 
                 // Stop moving in directions that result in a hard stop
                 if moved_velocity[movement_axis].abs() <= EPSILON {
@@ -62,22 +55,17 @@ pub fn physics_move(
     position: &mut Vec3,
     radius_bounds: Vec3,
     velocity: &mut Vec3,
-    aabbs: &Vec<AABB>
+    aabbs: &Vec<AABB>,
 ) {
     // Apply gravity first since a collision will trigger the velocity to zero
     // out (don't fall down if on floor)
     *velocity += Vec3::Y * GRAVITY * get_frame_time();
 
     // Attempt to move by velocity
-    let actual_moved_velocity = move_and_collide(
-        position,
-        radius_bounds,
-        *velocity,
-        aabbs
-    );
+    let actual_moved_velocity = move_and_collide(position, radius_bounds, *velocity, aabbs);
 
     // Now handle physics now that the entity has been safely moved
-    for axis in 0 .. 3 {
+    for axis in 0..3 {
         // Update the actual velocity so that movement does not continue on
         // axes that result in continued collision
         if actual_moved_velocity[axis].abs() < velocity[axis].abs() {

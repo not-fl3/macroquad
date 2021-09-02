@@ -8,23 +8,21 @@ pub struct FirstPersonCamera {
     pub position: Vec3,
     pub up: Vec3,
     pub field_of_view: f32,
-    pub facing: Vec3,  // Facing vector without rotation for head tilt
+    pub facing: Vec3, // Facing vector without rotation for head tilt
     pub right: Vec3,
     pub move_speed: f32,
     pub world_up: Vec3,
-    pub ghost: bool,  // Full flying camera (not using `self.facing`)
+    pub ghost: bool, // Full flying camera (not using `self.facing`)
     pub boost: bool,
 
     yaw: f32,
     pitch: f32,
 
     pub last_mouse_position: Vec2,
-    pub enabled: bool
+    pub enabled: bool,
 }
 
-
-impl FirstPersonCamera
-{
+impl FirstPersonCamera {
     pub fn new() -> Self {
         Self {
             front: vec3(0.0, 0.0, 1.0),
@@ -41,21 +39,39 @@ impl FirstPersonCamera
             boost: false,
 
             last_mouse_position: Vec2::new(0.0, 0.0),
-            enabled: true
+            enabled: true,
         }
     }
 
     pub fn update(&mut self, delta: f32) {
-        if !self.enabled { return; }
+        if !self.enabled {
+            return;
+        }
 
-        if is_key_down(KeyCode::Up) { self.position += self.front * MOVE_SPEED; }
-        if is_key_down(KeyCode::Down) { self.position -= self.front * MOVE_SPEED; }
-        if is_key_down(KeyCode::Right) { self.position += self.right * MOVE_SPEED; }
-        if is_key_down(KeyCode::Left) { self.position -= self.right * MOVE_SPEED; }
-        if is_key_down(KeyCode::W) { self.position += self.front * MOVE_SPEED; }
-        if is_key_down(KeyCode::S) { self.position -= self.front * MOVE_SPEED; }
-        if is_key_down(KeyCode::D) { self.position += self.right * MOVE_SPEED; }
-        if is_key_down(KeyCode::A) { self.position -= self.right * MOVE_SPEED; }
+        if is_key_down(KeyCode::Up) {
+            self.position += self.front * MOVE_SPEED;
+        }
+        if is_key_down(KeyCode::Down) {
+            self.position -= self.front * MOVE_SPEED;
+        }
+        if is_key_down(KeyCode::Right) {
+            self.position += self.right * MOVE_SPEED;
+        }
+        if is_key_down(KeyCode::Left) {
+            self.position -= self.right * MOVE_SPEED;
+        }
+        if is_key_down(KeyCode::W) {
+            self.position += self.front * MOVE_SPEED;
+        }
+        if is_key_down(KeyCode::S) {
+            self.position -= self.front * MOVE_SPEED;
+        }
+        if is_key_down(KeyCode::D) {
+            self.position += self.right * MOVE_SPEED;
+        }
+        if is_key_down(KeyCode::A) {
+            self.position -= self.right * MOVE_SPEED;
+        }
 
         let mouse_position: Vec2 = mouse_position().into();
         let mouse_delta = mouse_position - self.last_mouse_position;
@@ -69,13 +85,10 @@ impl FirstPersonCamera
             self.yaw.cos() * self.pitch.cos(),
             self.pitch.sin(),
             self.yaw.sin() * self.pitch.cos(),
-        ).normalize();
+        )
+        .normalize();
 
-        self.facing = vec3(
-            self.front.x,
-            0.0,
-            self.front.z
-        ).normalize();
+        self.facing = vec3(self.front.x, 0.0, self.front.z).normalize();
 
         self.right = self.front.cross(self.world_up).normalize();
         self.up = self.right.cross(self.front).normalize();

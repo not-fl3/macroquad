@@ -1,13 +1,13 @@
-mod camera;
 mod aabb;
+mod camera;
 mod physics;
 mod world;
 
-use macroquad::prelude::*;
+use aabb::AABB;
 use camera::FirstPersonCamera;
+use macroquad::prelude::*;
 use physics::physics_move;
 use world::*;
-use aabb::AABB;
 
 // Macroquad max vertices are 8000 and max indices are 4000
 pub const CHUNK_SIZE: usize = 8;
@@ -20,7 +20,7 @@ pub const SPEED: f32 = 0.4;
 async fn main() {
     show_mouse(false);
     set_cursor_grab(true);
-    
+
     let mut camera = FirstPersonCamera::new();
     camera.position = vec3(5.0, 5.0, 5.0);
 
@@ -55,8 +55,7 @@ async fn main() {
         if toggle_camera_fly {
             // Player follows camera (so it can fall properly when off)
             origin = camera.position;
-        }
-        else {
+        } else {
             // Camera follows player (so it falls properly when on)
             let head_level = origin + vec3(0.0, VOXEL_SIZE, 0.0);
             camera.position = head_level;
@@ -71,21 +70,20 @@ async fn main() {
             draw_mesh(&chunk.mesh_transparent);
 
             if toggle_draw_chunk_boundaries {
-                let offset = 
-                    Vec3::ONE * (CHUNK_SIZE as f32 / 2.0 - VOXEL_HALF);
-                draw_cube_wires(  // Draw the chunk AABB
+                let offset = Vec3::ONE * (CHUNK_SIZE as f32 / 2.0 - VOXEL_HALF);
+                draw_cube_wires(
+                    // Draw the chunk AABB
                     Vec3::ONE * chunk.position.as_f32() + offset,
                     Vec3::ONE * CHUNK_SIZE as f32,
-                    DARKGREEN
+                    DARKGREEN,
                 );
             }
         }
 
         // Physics Update
         let radius = 4.0;
-        let collidables = game_world.get_collidable_blocks(
-            AABB::from_box(camera.position, Vec3::ONE * radius)
-        );
+        let collidables =
+            game_world.get_collidable_blocks(AABB::from_box(camera.position, Vec3::ONE * radius));
         let mut block_aabbs = Vec::with_capacity(collidables.len());
 
         let mut closest_distance = f32::INFINITY;
@@ -93,11 +91,7 @@ async fn main() {
 
         for (aabb, _block) in collidables {
             if toggle_draw_block_colliders {
-                draw_cube_wires(
-                    aabb.get_center(),
-                    Vec3::ONE,
-                    BLUE
-                );
+                draw_cube_wires(aabb.get_center(), Vec3::ONE, BLUE);
             }
             block_aabbs.push(aabb);
 
@@ -116,22 +110,18 @@ async fn main() {
                 aabb.get_center(),
                 Vec3::ONE * VOXEL_SIZE + vec3(0.01, 0.01, 0.01),
                 None,
-                Color::new(0.0, 0.0, 0.0, 0.5)
+                Color::new(0.0, 0.0, 0.0, 0.5),
             );
 
             if is_mouse_button_pressed(MouseButton::Left) {
                 game_world.queue_place_block(
-                    aabb.get_center().as_i32() + ivec3(
-                        0,
-                        VOXEL_SIZE as i32,
-                        0
-                    ),
-                    Block {typ: selected_block_index as u16}
+                    aabb.get_center().as_i32() + ivec3(0, VOXEL_SIZE as i32, 0),
+                    Block {
+                        typ: selected_block_index as u16,
+                    },
                 );
                 game_world.rebuild_all();
-            }
-
-            else if is_mouse_button_pressed(MouseButton::Right) {
+            } else if is_mouse_button_pressed(MouseButton::Right) {
                 game_world.queue_remove_block(aabb.get_center().as_i32());
                 game_world.rebuild_all();
             }
@@ -148,7 +138,7 @@ async fn main() {
                 *block_type,
                 32.0 + i as f32 * (block_type.width() + 16.0),
                 screen_height() - (block_type.height() + 16.0),
-                WHITE
+                WHITE,
             );
 
             if i == selected_block_index as usize {
@@ -158,7 +148,7 @@ async fn main() {
                     block_type.width(),
                     block_type.height(),
                     2.0,
-                    RED
+                    RED,
                 );
             }
         }
@@ -168,7 +158,7 @@ async fn main() {
             16.0,
             32.0 * 1.0,
             32.0,
-            BLACK
+            BLACK,
         );
 
         draw_text(
@@ -176,29 +166,23 @@ async fn main() {
             16.0,
             32.0 * 2.0,
             32.0,
-            BLACK
+            BLACK,
         );
 
         draw_text(
-            format!(
-                "Key2: Show Chunk Bounds: {}",
-                toggle_draw_chunk_boundaries
-            ).as_str(),
+            format!("Key2: Show Chunk Bounds: {}", toggle_draw_chunk_boundaries).as_str(),
             16.0,
             32.0 * 3.0,
             32.0,
-            BLACK
+            BLACK,
         );
 
         draw_text(
-            format!(
-                "Key3: Show Block AABBs: {}",
-                toggle_draw_block_colliders
-            ).as_str(),
+            format!("Key3: Show Block AABBs: {}", toggle_draw_block_colliders).as_str(),
             16.0,
             32.0 * 4.0,
             32.0,
-            BLACK
+            BLACK,
         );
 
         draw_text(
@@ -206,7 +190,7 @@ async fn main() {
             16.0,
             32.0 * 5.0,
             32.0,
-            BLACK
+            BLACK,
         );
 
         draw_text(
@@ -214,7 +198,7 @@ async fn main() {
             16.0,
             32.0 * 6.0,
             32.0,
-            BLACK
+            BLACK,
         );
 
         draw_text(
@@ -222,33 +206,23 @@ async fn main() {
             16.0,
             32.0 * 7.0,
             32.0,
-            BLACK
+            BLACK,
         );
 
         // Player input controlls
         if mouse_wheel().1 > 0.0 {
-            selected_block_index = (selected_block_index + 1i32).clamp(
-                0,
-                loaded_block_types.len() as i32 - 1i32
-            );
+            selected_block_index =
+                (selected_block_index + 1i32).clamp(0, loaded_block_types.len() as i32 - 1i32);
         }
         if mouse_wheel().1 < 0.0 {
-            selected_block_index = (selected_block_index - 1i32).clamp(
-                0,
-                loaded_block_types.len() as i32 - 1i32
-            );
+            selected_block_index =
+                (selected_block_index - 1i32).clamp(0, loaded_block_types.len() as i32 - 1i32);
         }
         if is_key_down(KeyCode::Down) {
-            velocity += 
-                -(camera.front * vec3(1.0, 0.0, 1.0)) *
-                SPEED *
-                get_frame_time();
+            velocity += -(camera.front * vec3(1.0, 0.0, 1.0)) * SPEED * get_frame_time();
         }
         if is_key_down(KeyCode::Up) {
-            velocity += 
-                (camera.front * vec3(1.0, 0.0, 1.0)) *
-                SPEED *
-                get_frame_time();
+            velocity += (camera.front * vec3(1.0, 0.0, 1.0)) * SPEED * get_frame_time();
         }
         if is_key_down(KeyCode::Right) {
             velocity += camera.right * SPEED * get_frame_time();
@@ -277,85 +251,79 @@ async fn main() {
 }
 
 pub async fn init_world(world: &mut World) {
-    let lab_tile = world.register(
-        BlockType {
+    let lab_tile = world
+        .register(BlockType {
             texture: String::from("examples/res/LabTile.png"),
-            opaque: true 
-        }
-    ).await;
+            opaque: true,
+        })
+        .await;
 
-    let water = world.register(
-        BlockType {
+    let water = world
+        .register(BlockType {
             texture: String::from("examples/res/Water.png"),
-            opaque: false
-        }
-    ).await;
+            opaque: false,
+        })
+        .await;
 
-    let lava = world.register(
-        BlockType {
+    let lava = world
+        .register(BlockType {
             texture: String::from("examples/res/Lava.png"),
-            opaque: false
-        }
-    ).await;
+            opaque: false,
+        })
+        .await;
 
-    world.register(
-        BlockType {
+    world
+        .register(BlockType {
             texture: String::from("examples/res/DesertMountain1.png"),
-            opaque: true
-        }
-    ).await;
+            opaque: true,
+        })
+        .await;
 
-    let wall = world.register(
-        BlockType {
+    let wall = world
+        .register(BlockType {
             texture: String::from("examples/res/MetalPanel.png"),
-            opaque: true
-        }
-    ).await;
+            opaque: true,
+        })
+        .await;
 
-    world.register(
-        BlockType {
+    world
+        .register(BlockType {
             texture: String::from("examples/res/Sand1.png"),
-            opaque: true
-        }
-    ).await;
+            opaque: true,
+        })
+        .await;
 
     border_area(
         world,
         ivec3(0, 0, 0),
         ivec3(12, 12, 12),
-        Block { typ: lab_tile }
+        Block { typ: lab_tile },
     );
 
     let size = 24i32;
-    for x in -size / 4i32 .. (size / 4i32) {
-        for z in -size / 4i32 .. (size / 4i32) {
+    for x in -size / 4i32..(size / 4i32) {
+        for z in -size / 4i32..(size / 4i32) {
             world.queue_place_block(ivec3(x, 4, z), Block { typ: lab_tile });
 
-            if x == -(size / 4i32) ||
-                x == (size / 4i32 - 1i32) ||
-                z == -(size / 4i32) ||
-                z == (size / 4i32 - 1i32)
+            if x == -(size / 4i32)
+                || x == (size / 4i32 - 1i32)
+                || z == -(size / 4i32)
+                || z == (size / 4i32 - 1i32)
             {
                 world.queue_place_block(ivec3(x, 5, z), Block { typ: wall });
             }
         }
     }
 
-    world.queue_place_block(ivec3(0, -11, 0), Block {typ: lava});
-    world.queue_place_block(ivec3(1, -11, 0), Block {typ: water});
-    world.queue_place_block(ivec3(-1, -11, 0), Block {typ: water});
-    world.queue_place_block(ivec3(0, -11, 1), Block {typ: water});
-    world.queue_place_block(ivec3(0, -11, -1), Block {typ: water});
+    world.queue_place_block(ivec3(0, -11, 0), Block { typ: lava });
+    world.queue_place_block(ivec3(1, -11, 0), Block { typ: water });
+    world.queue_place_block(ivec3(-1, -11, 0), Block { typ: water });
+    world.queue_place_block(ivec3(0, -11, 1), Block { typ: water });
+    world.queue_place_block(ivec3(0, -11, -1), Block { typ: water });
     world.rebuild_all();
 }
 
-fn border_area(
-    game_world: &mut World,
-    position: IVec3,
-    volume: IVec3,
-    block: Block
-)
-{
+fn border_area(game_world: &mut World, position: IVec3, volume: IVec3, block: Block) {
     let aabb = AABB::from_box(position.as_f32(), volume.as_f32());
 
     let x_min = aabb.min.x.min(aabb.max.x).round() as i32;
@@ -365,15 +333,10 @@ fn border_area(
     let y_max = aabb.max.y.max(aabb.min.y).round() as i32;
     let z_max = aabb.max.z.max(aabb.min.z).round() as i32;
 
-    for x in x_min ..= x_max {
-        for y in y_min ..= y_max {
-            for z in z_min ..= z_max {
-                if x == x_min ||
-                    x == x_max ||
-                    y == y_min ||
-                    y == y_max ||
-                    z == z_min ||
-                    z == z_max
+    for x in x_min..=x_max {
+        for y in y_min..=y_max {
+            for z in z_min..=z_max {
+                if x == x_min || x == x_max || y == y_min || y == y_max || z == z_min || z == z_max
                 {
                     game_world.queue_place_block(ivec3(x, y, z), block);
                 }

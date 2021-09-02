@@ -67,7 +67,9 @@ async fn main() {
     let skin2 = {
         let label_style = root_ui()
             .style_builder()
-            .font(include_bytes!("../examples/res/ui_assets/MinimalPixel v2.ttf"))
+            .font(include_bytes!(
+                "../examples/res/ui_assets/MinimalPixel v2.ttf"
+            ))
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
@@ -98,7 +100,9 @@ async fn main() {
                 include_bytes!("../examples/res/ui_assets/button_clicked_background_2.png"),
                 None,
             ))
-            .font(include_bytes!("../examples/res/ui_assets/MinimalPixel v2.ttf"))
+            .font(include_bytes!(
+                "../examples/res/ui_assets/MinimalPixel v2.ttf"
+            ))
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
             .font_size(40)
@@ -127,7 +131,9 @@ async fn main() {
                 None,
             ))
             .background_margin(RectOffset::new(2., 2., 2., 2.))
-            .font(include_bytes!("../examples/res/ui_assets/MinimalPixel v2.ttf"))
+            .font(include_bytes!(
+                "../examples/res/ui_assets/MinimalPixel v2.ttf"
+            ))
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
