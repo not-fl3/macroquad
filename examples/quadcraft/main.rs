@@ -95,6 +95,20 @@ async fn main() {
                 );
             }
             block_aabbs.push(aabb);
+
+            // Check for mouse look intersection
+            let ray_origin = camera.position;
+            let ray_direction = camera.front;
+            let hit = aabb.intersects_ray(ray_origin, ray_direction);
+            if hit > 0.0 {
+                println!("hit {}", hit);
+                draw_cube(
+                    aabb.get_center(),
+                    Vec3::ONE,
+                    None,
+                    Color::new(0.0, 0.0, 0.0, 0.5)
+                );
+            }
         }
 
         physics_move(&mut origin, bounds, &mut velocity, &block_aabbs);
