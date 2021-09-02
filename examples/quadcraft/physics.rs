@@ -20,7 +20,7 @@ fn move_and_collide(
 
     // For each axis, move, collide, move back out, reset velocity
     let axes = [Vec3::X, Vec3::Y, Vec3::Z];
-    for (movement_axis, axis) in axes.into_iter().enumerate() {
+    for (movement_axis, axis) in axes.iter().enumerate() {
         let movement = moved_velocity[movement_axis];
         let sign = movement.signum();
         let desired_axis_velocity = *axis * movement;
@@ -34,9 +34,8 @@ fn move_and_collide(
                 let collision_depth = moved.get_collision_depth(*other_aabb);
                 let depth_on_this_axis_only = collision_depth[movement_axis];
 
-                moved_velocity[movement_axis] += (
-                    -sign * (depth_on_this_axis_only + EPSILON)
-                );
+                moved_velocity[movement_axis] += 
+                    -sign * (depth_on_this_axis_only + EPSILON);
                 moved = AABB::from_box(
                     *position + desired_axis_velocity,
                     radius_bounds

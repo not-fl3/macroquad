@@ -62,15 +62,15 @@ async fn main() {
 
         // Game Rendering 3D
         set_camera(&camera.get_macroquad_camera());
+        draw_gizmo(vec3(0.0, -10.0, 0.0));
 
         for chunk in game_world.chunks.values() {
             draw_mesh(&chunk.mesh_opaque);
             draw_mesh(&chunk.mesh_transparent);
 
             if toggle_draw_chunk_boundaries {
-                let offset = (
-                    Vec3::ONE * (CHUNK_SIZE as f32 / 2.0 - VOXEL_HALF)
-                );
+                let offset = 
+                    Vec3::ONE * (CHUNK_SIZE as f32 / 2.0 - VOXEL_HALF);
                 draw_cube_wires(  // Draw the chunk AABB
                     Vec3::ONE * chunk.position.as_f32() + offset,
                     Vec3::ONE * CHUNK_SIZE as f32,
@@ -86,7 +86,7 @@ async fn main() {
         );
         let mut block_aabbs = Vec::with_capacity(collidables.len());
 
-        for (aabb, block) in collidables {
+        for (aabb, _block) in collidables {
             if toggle_draw_block_colliders {
                 draw_cube_wires(
                     aabb.get_center(),
@@ -142,18 +142,16 @@ async fn main() {
 
         // Player input controlls
         if is_key_down(KeyCode::Down) {
-            velocity += (
+            velocity += 
                 -(camera.front * vec3(1.0, 0.0, 1.0)) *
                 SPEED *
-                get_frame_time()
-            );
+                get_frame_time();
         }
         if is_key_down(KeyCode::Up) {
-            velocity += (
+            velocity += 
                 (camera.front * vec3(1.0, 0.0, 1.0)) *
                 SPEED *
-                get_frame_time()
-            );
+                get_frame_time();
         }
         if is_key_down(KeyCode::Right) {
             velocity += camera.right * SPEED * get_frame_time();
@@ -246,7 +244,7 @@ pub async fn init_world(world: &mut World) {
         }
     }
 
-    world.queue_place_block(ivec3(0, -11, 0), Block {typ: water});
+    world.queue_place_block(ivec3(0, -11, 0), Block {typ: lava});
     world.queue_place_block(ivec3(1, -11, 0), Block {typ: water});
     world.queue_place_block(ivec3(-1, -11, 0), Block {typ: water});
     world.queue_place_block(ivec3(0, -11, 1), Block {typ: water});

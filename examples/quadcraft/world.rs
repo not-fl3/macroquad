@@ -431,9 +431,8 @@ impl Chunk {
             let other_block_type = &block_types[other_block.typ as usize];
 
             let same_type = this_block.typ == other_block.typ;
-            let same_opaque = (
-                this_block_type.opaque == other_block_type.opaque
-            );
+            let same_opaque =
+                this_block_type.opaque == other_block_type.opaque;
 
             // Water + Water, Stone + Stone
             if same_type && same_opaque {
@@ -461,9 +460,8 @@ impl Chunk {
                 base_indices.iter().map(|i| i + vertices.len() as u16)
             );
 
-            let global_block_position = (
-                self.position.as_f32() + block_chunk_offset.as_f32()
-            );
+            let global_block_position =
+                self.position.as_f32() + block_chunk_offset.as_f32();
             let color = WHITE;
 
             vertices.push(Vert {
@@ -517,9 +515,8 @@ impl Chunk {
             .ceil();
 
         // Build a new mega texture
-        let width_and_height = (
-            mega_texture_num_tiles_xy as u16 * PIXELS_PER_TEXTURE as u16
-        );
+        let width_and_height = 
+            mega_texture_num_tiles_xy as u16 * PIXELS_PER_TEXTURE as u16;
 
         let mut mega = Image::gen_image_color(
             width_and_height,

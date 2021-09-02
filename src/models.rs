@@ -346,7 +346,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
     );
 }
 
-fn draw_gizmo(at: Vec3) {
+pub fn draw_gizmo(at: Vec3) {
     // Y (up & down)
     draw_line_3d(at, at + vec3(0.0, 0.5, 0.0), GREEN);
 
