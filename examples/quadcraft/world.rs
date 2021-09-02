@@ -569,7 +569,6 @@ impl Chunk {
         // Triangle count * num sides
         let mut indices_transparent = Vec::with_capacity(num_blocks * 6 * 6);
 
-        // ? Pre-compute noise per chunk? That way it is a simple lookup
         for (index, block_slot) in self.data.iter().enumerate() {
             if let Some(block) = block_slot {
                 let block_type = &block_types[block.typ as usize];

@@ -1,10 +1,3 @@
-/*
-- Draw Chunk boundaries
-- Have toggle labels for stuff
-- Toggle camera fly
-- Remove all notes from code
-*/
-
 mod camera;
 mod aabb;
 mod physics;
