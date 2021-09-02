@@ -86,6 +86,9 @@ async fn main() {
         );
         let mut block_aabbs = Vec::with_capacity(collidables.len());
 
+        let mut closest_distance = f32::INFINITY;
+        let mut closest_aabb = None;
+
         for (aabb, _block) in collidables {
             if toggle_draw_block_colliders {
                 draw_cube_wires(
@@ -100,14 +103,31 @@ async fn main() {
             let ray_origin = camera.position;
             let ray_direction = camera.front;
             let hit = aabb.intersects_ray(ray_origin, ray_direction);
-            if hit > 0.0 {
-                println!("hit {}", hit);
-                draw_cube(
-                    aabb.get_center(),
-                    Vec3::ONE,
-                    None,
-                    Color::new(0.0, 0.0, 0.0, 0.5)
+            if hit > 0.0 && hit < closest_distance {
+                closest_distance = hit;
+                closest_aabb = Some(aabb);
+            }
+        }
+
+        if let Some(aabb) = closest_aabb {
+            draw_cube(
+                aabb.get_center(),
+                Vec3::ONE,
+                None,
+                Color::new(0.0, 0.0, 0.0, 0.5)
+            );
+
+            if is_mouse_button_down(MouseButton::Left) {
+                let whatever_block_was_first = 1;
+                game_world.queue_place_block(
+                    aabb.get_center().as_i32() + ivec3(
+                        0,
+                        VOXEL_SIZE as i32,
+                        0
+                    ),
+                    Block {typ: whatever_block_was_first}
                 );
+                game_world.rebuild_all();
             }
         }
 
