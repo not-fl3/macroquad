@@ -3,6 +3,7 @@
 use crate::{color::Color, get_context};
 
 use crate::{quad_gl::DrawMode, texture::Texture2D};
+use crate::prelude::{RED, GREEN, BLUE};
 use glam::{vec2, vec3, Vec2, Vec3};
 
 #[derive(Clone, Debug, Copy)]
@@ -343,6 +344,17 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
         vec3(x + width / 2., y - height / 2., z - length / 2.),
         color,
     );
+}
+
+fn draw_gizmo(at: Vec3) {
+    // Y (up & down)
+    draw_line_3d(at, at + vec3(0.0, 0.5, 0.0), GREEN);
+
+    // X (left & right)
+    draw_line_3d(at, at + vec3(0.5, 0.0, 0.0), RED);
+
+    // Z (forward & back)
+    draw_line_3d(at, at + vec3(0.0, 0.0, 0.5), BLUE);
 }
 
 #[derive(Debug, Clone)]
