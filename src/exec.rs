@@ -5,30 +5,26 @@ use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
 // "resume" sets this to true once SEEN_FRAME is true
 static NEXT_FRAME: AtomicBool = AtomicBool::new(false);
-static SEEN_FRAME: AtomicBool = AtomicBool::new(false);
 
 // Returns Pending as long as its inner bool is false.
-pub struct FrameFuture;
-impl Unpin for FrameFuture {}
-
-/// Flips a bool if it is the given value. Returns whether the flip was successful.
-fn flip_if(atomic: &AtomicBool, current: bool) -> bool {
-    atomic
-        .compare_exchange(current, !current, Ordering::Relaxed, Ordering::Relaxed)
-        .is_ok()
+#[derive(Default)]
+pub struct FrameFuture {
+    done: bool,
 }
+impl Unpin for FrameFuture {}
 
 impl Future for FrameFuture {
     type Output = ();
 
-    fn poll(self: Pin<&mut Self>, _context: &mut Context) -> Poll<Self::Output> {
-        if flip_if(&NEXT_FRAME, true) {
+    fn poll(mut self: Pin<&mut Self>, _context: &mut Context) -> Poll<Self::Output> {
+        if self.done {
             // We were told to step, meaning this future gets destroyed and we run
             // the main future until we call next_frame again and end up in this poll
             // function again.
             Poll::Ready(())
         } else {
-            assert!(flip_if(&SEEN_FRAME, false), "invalid state in frame static");
+            self.done = true;
+            NEXT_FRAME.store(true, Ordering::Relaxed);
             Poll::Pending
         }
     }
@@ -61,7 +57,7 @@ impl Future for FileLoadingFuture {
     }
 }
 
-pub fn dummy_waker() -> Waker {
+fn dummy_waker() -> Waker {
     unsafe fn clone(data: *const ()) -> RawWaker {
         RawWaker::new(data, &VTABLE)
     }
@@ -85,12 +81,12 @@ pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
     let waker = dummy_waker();
     let mut futures_context = std::task::Context::from_waker(&waker);
 
+    NEXT_FRAME.store(false, Ordering::Relaxed);
     loop {
         if matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(_)) {
             return true;
         }
-        if flip_if(&SEEN_FRAME, true) {
-            NEXT_FRAME.store(true, Ordering::Relaxed);
+        if NEXT_FRAME.load(Ordering::Relaxed) {
             return false;
         }
     }
