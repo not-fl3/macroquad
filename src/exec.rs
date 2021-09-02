@@ -57,7 +57,7 @@ impl Future for FileLoadingFuture {
     }
 }
 
-fn dummy_waker() -> Waker {
+pub fn dummy_waker() -> Waker {
     unsafe fn clone(data: *const ()) -> RawWaker {
         RawWaker::new(data, &VTABLE)
     }

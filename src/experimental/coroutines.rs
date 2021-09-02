@@ -7,7 +7,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use crate::exec::resume;
+use crate::exec::dummy_waker;
 use crate::get_context;
 
 pub(crate) struct CoroutinesContext {
@@ -24,7 +24,9 @@ impl CoroutinesContext {
     pub fn update(&mut self) {
         for future in &mut self.futures {
             if let Some(f) = future {
-                if resume(f) {
+                let waker = dummy_waker();
+                let mut futures_context = std::task::Context::from_waker(&waker);
+                if matches!(f.as_mut().poll(&mut futures_context), Poll::Ready(_)) {
                     *future = None;
                 }
             }
