@@ -204,8 +204,7 @@ impl World {
     }
 
     /// Calling AABB::get_center() will yield the block's position.
-    pub fn get_collidable_blocks(&self, aabb: AABB) -> Vec<(AABB, Block)>
-    {
+    pub fn get_collidable_blocks(&self, aabb: AABB) -> Vec<(AABB, Block)> {
         let mut aabbs = Vec::new();
 
         let x_min = aabb.min.x.min(aabb.max.x).round() as i32;
@@ -215,16 +214,12 @@ impl World {
         let y_max = aabb.max.y.max(aabb.min.y).round() as i32;
         let z_max = aabb.max.z.max(aabb.min.z).round() as i32;
 
-        for x in x_min ..= x_max
-        {
-            for y in y_min ..= y_max
-            {
-                for z in z_min ..= z_max
-                {
+        for x in x_min ..= x_max {
+            for y in y_min ..= y_max {
+                for z in z_min ..= z_max {
                     let block_position = ivec3(x, y, z);
 
-                    if let Some(block) = self.get_block_at(block_position)
-                    {
+                    if let Some(block) = self.get_block_at(block_position) {
                         aabbs.push(
                             (
                                 AABB::from_box(
