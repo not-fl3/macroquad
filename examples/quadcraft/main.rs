@@ -112,13 +112,13 @@ async fn main() {
         if let Some(aabb) = closest_aabb {
             draw_cube(
                 aabb.get_center(),
-                Vec3::ONE,
+                Vec3::ONE * VOXEL_SIZE + vec3(0.01, 0.01, 0.01),
                 None,
                 Color::new(0.0, 0.0, 0.0, 0.5)
             );
 
-            if is_mouse_button_down(MouseButton::Left) {
-                let whatever_block_was_first = 1;
+            if is_mouse_button_pressed(MouseButton::Left) {
+                let whatever_block_was_first = 0;
                 game_world.queue_place_block(
                     aabb.get_center().as_i32() + ivec3(
                         0,
@@ -127,6 +127,11 @@ async fn main() {
                     ),
                     Block {typ: whatever_block_was_first}
                 );
+                game_world.rebuild_all();
+            }
+
+            else if is_mouse_button_pressed(MouseButton::Right) {
+                game_world.queue_remove_block(aabb.get_center().as_i32());
                 game_world.rebuild_all();
             }
         }
