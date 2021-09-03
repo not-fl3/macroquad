@@ -61,7 +61,7 @@ impl Future for FileLoadingFuture {
     }
 }
 
-pub fn waker() -> Waker {
+fn waker() -> Waker {
     unsafe fn clone(data: *const ()) -> RawWaker {
         RawWaker::new(data, &VTABLE)
     }
@@ -82,21 +82,23 @@ pub fn waker() -> Waker {
     unsafe { Waker::from_raw(raw_waker) }
 }
 
-/// returns true if future is done
-pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
-    #[cfg(debug_assertions)]
-    NEXT_FRAME.store(false, Ordering::Relaxed);
+/// returns true if future is done, false if it would block
+pub(crate) fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
     let waker = waker();
     let mut futures_context = std::task::Context::from_waker(&waker);
-    match future.as_mut().poll(&mut futures_context) {
-        Poll::Ready(()) => true,
-        Poll::Pending => {
-            #[cfg(debug_assertions)]
-            assert!(
-                NEXT_FRAME.load(Ordering::Relaxed),
-                "your macroquad main loop blocked on a future other than a file load or next_frame"
-            );
-            false
-        }
-    }
+    matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(()))
+}
+
+/// Steps the main future.
+pub fn resume_main(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
+    #[cfg(debug_assertions)]
+    NEXT_FRAME.store(false, Ordering::Relaxed);
+    let done = resume(future);
+
+    #[cfg(debug_assertions)]
+    assert!(
+        !done || NEXT_FRAME.load(Ordering::Relaxed),
+        "your macroquad main loop blocked on a future other than a file load or next_frame"
+    );
+    done
 }
