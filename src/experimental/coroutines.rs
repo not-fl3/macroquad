@@ -62,7 +62,12 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
 pub fn stop_all_coroutines() {
     let context = &mut get_context().coroutines_context;
 
-    context.futures.clear();
+    // Cannot clear the vector as there may still be outstanding Coroutines
+    // so their ids would now point into nothingness or later point into
+    // different Coroutines.
+    for future in &mut context.futures {
+        *future = None;
+    }
 }
 
 pub fn stop_coroutine(coroutine: Coroutine) {
