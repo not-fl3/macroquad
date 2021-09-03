@@ -86,6 +86,12 @@ pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
         if matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(_)) {
             return true;
         }
+        if cfg!(target_arch = "wasm32") {
+            // Cannot wait for futures to resolve on wasm, always must yield and
+            // try again in the next frame.
+            // FIXME: re-run resume from wasm until a frame future is hit.
+            return false;
+        }
         if NEXT_FRAME.load(Ordering::Relaxed) {
             return false;
         }
