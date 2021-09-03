@@ -35,8 +35,6 @@ impl CoroutinesContext {
 }
 #[derive(Clone, Copy, Debug)]
 pub struct Coroutine {
-    // We use nonzero here so that Option<Coroutine> is the same size as usize,
-    // allowing us to use it as the waker payload which is exactly a pointer/usize
     id: usize,
 }
 
