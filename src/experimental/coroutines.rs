@@ -77,7 +77,6 @@ pub struct TimerDelayFuture {
     pub(crate) start_time: f64,
     pub(crate) time: f32,
 }
-impl Unpin for TimerDelayFuture {}
 
 impl Future for TimerDelayFuture {
     type Output = Option<()>;
