@@ -38,8 +38,8 @@ pub async fn load_file(path: &str) -> Result<Vec<u8>, FileError> {
             let err_path = path.clone();
 
             miniquad::fs::load_file(&path, move |bytes| {
-                let mut contents = contents.borrow_mut();
-                *contents = Some(bytes.map_err(|kind| FileError::new(kind, &err_path)));
+                *contents.borrow_mut() =
+                    Some(bytes.map_err(|kind| FileError::new(kind, &err_path)));
             });
         }
 
