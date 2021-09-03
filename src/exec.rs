@@ -1,19 +1,12 @@
 use std::future::Future;
 use std::pin::Pin;
-#[cfg(debug_assertions)]
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
-
-// Used to detect "bad" futures being used
-#[cfg(debug_assertions)]
-static NEXT_FRAME: AtomicBool = AtomicBool::new(false);
 
 // Returns Pending as long as its inner bool is false.
 #[derive(Default)]
 pub struct FrameFuture {
     done: bool,
 }
-impl Unpin for FrameFuture {}
 
 impl Future for FrameFuture {
     type Output = ();
@@ -25,8 +18,6 @@ impl Future for FrameFuture {
             // function again.
             Poll::Ready(())
         } else {
-            #[cfg(debug_assertions)]
-            NEXT_FRAME.store(true, Ordering::Relaxed);
             self.done = true;
             Poll::Pending
         }
@@ -39,13 +30,6 @@ pub struct FileLoadingFuture {
     pub contents: std::rc::Rc<std::cell::RefCell<Option<FileResult<Vec<u8>>>>>,
 }
 
-// TODO: use mutex(?) instead of refcell here
-// this is still safe tho - macroquad's executor is refcell-safe
-// but this just look too bad
-unsafe impl Send for FileLoadingFuture {}
-unsafe impl Sync for FileLoadingFuture {}
-
-impl Unpin for FileLoadingFuture {}
 impl Future for FileLoadingFuture {
     type Output = FileResult<Vec<u8>>;
 
@@ -54,8 +38,6 @@ impl Future for FileLoadingFuture {
         if let Some(contents) = contents.take() {
             Poll::Ready(contents)
         } else {
-            #[cfg(debug_assertions)]
-            NEXT_FRAME.store(true, Ordering::Relaxed);
             Poll::Pending
         }
     }
@@ -87,18 +69,4 @@ pub(crate) fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
     let waker = waker();
     let mut futures_context = std::task::Context::from_waker(&waker);
     matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(()))
-}
-
-/// Steps the main future.
-pub fn resume_main(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
-    #[cfg(debug_assertions)]
-    NEXT_FRAME.store(false, Ordering::Relaxed);
-    let done = resume(future);
-
-    #[cfg(debug_assertions)]
-    assert!(
-        !done || NEXT_FRAME.load(Ordering::Relaxed),
-        "your macroquad main loop blocked on a future other than a file load or next_frame"
-    );
-    done
 }
