@@ -30,7 +30,7 @@ pub async fn load_file(path: &str) -> Result<Vec<u8>, FileError> {
         use std::cell::RefCell;
         use std::rc::Rc;
 
-        let contents = Rc::new(RefCell::new((None, None)));
+        let contents = Rc::new(RefCell::new(None));
         let path = path.to_owned();
 
         {
@@ -39,10 +39,7 @@ pub async fn load_file(path: &str) -> Result<Vec<u8>, FileError> {
 
             miniquad::fs::load_file(&path, move |bytes| {
                 let mut contents = contents.borrow_mut();
-                contents.1 = Some(bytes.map_err(|kind| FileError::new(kind, &err_path)));
-                if let Some(waker) = contents.0.take() {
-                    std::task::Waker::wake(waker);
-                }
+                *contents = Some(bytes.map_err(|kind| FileError::new(kind, &err_path)));
             });
         }
 
