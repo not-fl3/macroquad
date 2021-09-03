@@ -1,27 +1,33 @@
 use std::future::Future;
 use std::pin::Pin;
-use std::task::{Context, Poll};
+#[cfg(debug_assertions)]
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
-#[derive(Debug, PartialEq)]
-pub enum ExecState {
-    RunOnce,
-    Waiting,
-    Wake,
+// Used to detect "bad" futures being used
+#[cfg(debug_assertions)]
+static NEXT_FRAME: AtomicBool = AtomicBool::new(false);
+
+// Returns Pending as long as its inner bool is false.
+#[derive(Default)]
+pub struct FrameFuture {
+    done: bool,
 }
-
-pub struct FrameFuture;
 impl Unpin for FrameFuture {}
 
 impl Future for FrameFuture {
     type Output = ();
 
-    fn poll(self: Pin<&mut Self>, context: &mut Context) -> Poll<Self::Output> {
-        let context: &mut ExecState = unsafe { std::mem::transmute(context) };
-
-        if *context == ExecState::RunOnce {
-            *context = ExecState::Waiting;
+    fn poll(mut self: Pin<&mut Self>, _context: &mut Context) -> Poll<Self::Output> {
+        if self.done {
+            // We were told to step, meaning this future gets destroyed and we run
+            // the main future until we call next_frame again and end up in this poll
+            // function again.
             Poll::Ready(())
         } else {
+            #[cfg(debug_assertions)]
+            NEXT_FRAME.store(true, Ordering::Relaxed);
+            self.done = true;
             Poll::Pending
         }
     }
@@ -43,31 +49,56 @@ impl Unpin for FileLoadingFuture {}
 impl Future for FileLoadingFuture {
     type Output = FileResult<Vec<u8>>;
 
-    fn poll(self: Pin<&mut Self>, context: &mut Context) -> Poll<Self::Output> {
-        let context: &mut ExecState = unsafe { std::mem::transmute(context) };
-
-        if *context == ExecState::Waiting {
-            Poll::Pending
-        } else if let Some(contents) = self.contents.borrow_mut().take() {
-            *context = ExecState::Wake;
+    fn poll(self: Pin<&mut Self>, _context: &mut Context) -> Poll<Self::Output> {
+        let mut contents = self.contents.borrow_mut();
+        if let Some(contents) = contents.take() {
             Poll::Ready(contents)
         } else {
+            #[cfg(debug_assertions)]
+            NEXT_FRAME.store(true, Ordering::Relaxed);
             Poll::Pending
         }
     }
 }
 
-/// returns true if future is done
-pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
-    let mut futures_context = ExecState::RunOnce;
-    let futures_context_ref: &mut _ = unsafe { std::mem::transmute(&mut futures_context) };
-
-    if matches!(future.as_mut().poll(futures_context_ref), Poll::Ready(_)) {
-        return true;
+fn waker() -> Waker {
+    unsafe fn clone(data: *const ()) -> RawWaker {
+        RawWaker::new(data, &VTABLE)
     }
-
-    if futures_context == ExecState::Wake {
-        return resume(future);
+    unsafe fn wake(_data: *const ()) {
+        panic!(
+            "macroquad does not support waking futures, please use coroutines, \
+            otherwise your pending future will block until the next frame"
+        )
     }
-    false
+    unsafe fn wake_by_ref(data: *const ()) {
+        wake(data)
+    }
+    unsafe fn drop(_data: *const ()) {
+        // Nothing to do
+    }
+    const VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake_by_ref, drop);
+    let raw_waker = RawWaker::new(std::ptr::null(), &VTABLE);
+    unsafe { Waker::from_raw(raw_waker) }
+}
+
+/// returns true if future is done, false if it would block
+pub(crate) fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
+    let waker = waker();
+    let mut futures_context = std::task::Context::from_waker(&waker);
+    matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(()))
+}
+
+/// Steps the main future.
+pub fn resume_main(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
+    #[cfg(debug_assertions)]
+    NEXT_FRAME.store(false, Ordering::Relaxed);
+    let done = resume(future);
+
+    #[cfg(debug_assertions)]
+    assert!(
+        !done || NEXT_FRAME.load(Ordering::Relaxed),
+        "your macroquad main loop blocked on a future other than a file load or next_frame"
+    );
+    done
 }

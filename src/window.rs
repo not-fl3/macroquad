@@ -11,7 +11,7 @@ pub use miniquad::conf::Conf;
 
 /// Block execution until the next frame.
 pub fn next_frame() -> crate::exec::FrameFuture {
-    crate::exec::FrameFuture
+    crate::exec::FrameFuture::default()
 }
 
 /// Fill window background with solid color.

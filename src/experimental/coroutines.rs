@@ -7,10 +7,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use crate::{exec::ExecState, get_context};
+use crate::exec::resume;
+use crate::get_context;
 
 pub(crate) struct CoroutinesContext {
-    futures: Vec<Option<(Pin<Box<dyn Future<Output = ()>>>, ExecState)>>,
+    futures: Vec<Option<Pin<Box<dyn Future<Output = ()>>>>>,
 }
 
 impl CoroutinesContext {
@@ -22,18 +23,14 @@ impl CoroutinesContext {
 
     pub fn update(&mut self) {
         for future in &mut self.futures {
-            if let Some((f, context)) = future {
-                *context = ExecState::RunOnce;
-
-                let futures_context_ref: &mut _ = unsafe { std::mem::transmute(context) };
-                if matches!(f.as_mut().poll(futures_context_ref), Poll::Ready(_)) {
+            if let Some(f) = future {
+                if resume(f) {
                     *future = None;
                 }
             }
         }
     }
 }
-
 #[derive(Clone, Copy, Debug)]
 pub struct Coroutine {
     id: usize,
@@ -51,11 +48,8 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
     let context = &mut get_context().coroutines_context;
 
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
-    let boxed_future = unsafe { std::mem::transmute(boxed_future) };
 
-    context
-        .futures
-        .push(Some((boxed_future, ExecState::RunOnce)));
+    context.futures.push(Some(boxed_future));
 
     Coroutine {
         id: context.futures.len() - 1,
@@ -65,7 +59,12 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
 pub fn stop_all_coroutines() {
     let context = &mut get_context().coroutines_context;
 
-    context.futures.clear();
+    // Cannot clear the vector as there may still be outstanding Coroutines
+    // so their ids would now point into nothingness or later point into
+    // different Coroutines.
+    for future in &mut context.futures {
+        *future = None;
+    }
 }
 
 pub fn stop_coroutine(coroutine: Coroutine) {
