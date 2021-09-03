@@ -4,10 +4,12 @@
 //!
 
 use std::future::Future;
+use std::num::NonZeroUsize;
 use std::pin::Pin;
+use std::sync::atomic::Ordering;
 use std::task::{Context, Poll};
 
-use crate::exec::dummy_waker;
+use crate::exec::{waker, NEXT_FRAME};
 use crate::get_context;
 
 pub(crate) struct CoroutinesContext {
@@ -22,28 +24,42 @@ impl CoroutinesContext {
     }
 
     pub fn update(&mut self) {
-        for future in &mut self.futures {
-            if let Some(f) = future {
-                let waker = dummy_waker();
-                let mut futures_context = std::task::Context::from_waker(&waker);
-                if matches!(f.as_mut().poll(&mut futures_context), Poll::Ready(_)) {
-                    *future = None;
-                }
-            }
+        for (i, future) in self.futures.iter_mut().enumerate() {
+            let coroutine = Coroutine {
+                id: NonZeroUsize::new(i + 1).unwrap(),
+            };
+
+            NEXT_FRAME.store(true, Ordering::Relaxed);
+            step_coroutine_inner(future, coroutine)
+        }
+    }
+}
+
+fn step_coroutine_inner(
+    future: &mut Option<Pin<Box<dyn Future<Output = ()>>>>,
+    coroutine: Coroutine,
+) {
+    if let Some(f) = future {
+        let waker = waker(Some(coroutine));
+        let mut futures_context = std::task::Context::from_waker(&waker);
+        if matches!(f.as_mut().poll(&mut futures_context), Poll::Ready(_)) {
+            *future = None;
         }
     }
 }
 
 #[derive(Clone, Copy, Debug)]
 pub struct Coroutine {
-    id: usize,
+    // We use nonzero here so that Option<Coroutine> is the same size as usize,
+    // allowing us to use it as the waker payload which is exactly a pointer/usize
+    id: NonZeroUsize,
 }
 
 impl Coroutine {
     pub fn is_done(&self) -> bool {
         let context = &get_context().coroutines_context;
 
-        context.futures[self.id].is_none()
+        context.futures[self.id.get() - 1].is_none()
     }
 }
 
@@ -55,7 +71,7 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
     context.futures.push(Some(boxed_future));
 
     Coroutine {
-        id: context.futures.len() - 1,
+        id: NonZeroUsize::new(context.futures.len()).unwrap(),
     }
 }
 
@@ -73,7 +89,15 @@ pub fn stop_all_coroutines() {
 pub fn stop_coroutine(coroutine: Coroutine) {
     let context = &mut get_context().coroutines_context;
 
-    context.futures[coroutine.id] = None;
+    context.futures[coroutine.id.get() - 1] = None;
+}
+
+/// Step a coroutine. This is not necessary, as coroutines get stepped automatically.
+/// It is still useful so that wakers can run a woken coroutine immediately.
+pub(crate) fn step_coroutine(coroutine: Coroutine) {
+    let context = &mut get_context().coroutines_context;
+
+    step_coroutine_inner(&mut context.futures[coroutine.id.get() - 1], coroutine);
 }
 
 pub struct TimerDelayFuture {

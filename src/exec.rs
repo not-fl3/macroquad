@@ -3,8 +3,11 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
+use crate::prelude::coroutines::{step_coroutine, Coroutine};
+use crate::MAIN_FUTURE;
+
 // "resume" sets this to true once SEEN_FRAME is true
-static NEXT_FRAME: AtomicBool = AtomicBool::new(false);
+pub(crate) static NEXT_FRAME: AtomicBool = AtomicBool::new(false);
 
 // Returns Pending as long as its inner bool is false.
 #[derive(Default)]
@@ -17,14 +20,13 @@ impl Future for FrameFuture {
     type Output = ();
 
     fn poll(mut self: Pin<&mut Self>, _context: &mut Context) -> Poll<Self::Output> {
-        if self.done {
+        if self.done && NEXT_FRAME.load(Ordering::Relaxed) {
             // We were told to step, meaning this future gets destroyed and we run
             // the main future until we call next_frame again and end up in this poll
             // function again.
             Poll::Ready(())
         } else {
             self.done = true;
-            NEXT_FRAME.store(true, Ordering::Relaxed);
             Poll::Pending
         }
     }
@@ -57,13 +59,21 @@ impl Future for FileLoadingFuture {
     }
 }
 
-pub fn dummy_waker() -> Waker {
+pub fn waker(coroutine: Option<Coroutine>) -> Waker {
     unsafe fn clone(data: *const ()) -> RawWaker {
         RawWaker::new(data, &VTABLE)
     }
-    unsafe fn wake(_data: *const ()) {
-        // We don't actually do anything, we just hard loop on the futures
-        // until we hit a frame boundary.
+    unsafe fn wake(data: *const ()) {
+        // SAFETY: the only place a data field has been set is in the transmute
+        // further down, and we only transmute from an Option<Coroutine>.
+        let coroutine: Option<Coroutine> = std::mem::transmute(data);
+        if let Some(coroutine) = coroutine {
+            step_coroutine(coroutine);
+        } else {
+            if let Some(future) = MAIN_FUTURE.as_mut() {
+                resume(future, false);
+            }
+        }
     }
     unsafe fn wake_by_ref(data: *const ()) {
         wake(data)
@@ -72,28 +82,18 @@ pub fn dummy_waker() -> Waker {
         // Nothing to do
     }
     const VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake_by_ref, drop);
-    let raw_waker = RawWaker::new(std::ptr::null(), &VTABLE);
+    // SAFETY: transmute ensures that the sizes match up. This transmute to a raw pointer
+    // is safe because there is nothing acting on its value except the other functions declared
+    // in this function.
+    let data = unsafe { std::mem::transmute(coroutine) };
+    let raw_waker = RawWaker::new(data, &VTABLE);
     unsafe { Waker::from_raw(raw_waker) }
 }
 
 /// returns true if future is done
-pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
-    let waker = dummy_waker();
+pub fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>, over_frame: bool) -> bool {
+    NEXT_FRAME.store(over_frame, Ordering::Relaxed);
+    let waker = waker(None);
     let mut futures_context = std::task::Context::from_waker(&waker);
-
-    NEXT_FRAME.store(false, Ordering::Relaxed);
-    loop {
-        if matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(_)) {
-            return true;
-        }
-        if cfg!(target_arch = "wasm32") {
-            // Cannot wait for futures to resolve on wasm, always must yield and
-            // try again in the next frame.
-            // FIXME: re-run resume from wasm until a frame future is hit.
-            return false;
-        }
-        if NEXT_FRAME.load(Ordering::Relaxed) {
-            return false;
-        }
-    }
+    matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(_))
 }
