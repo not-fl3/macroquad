@@ -1,7 +1,7 @@
 use std::{future::Future, task::Poll};
 
-#[macroquad::main("back to the future")]
-async fn main() {
+#[macroquad::test]
+async fn back_to_the_future() {
     struct Kaboom;
     impl Future for Kaboom {
         type Output = ();

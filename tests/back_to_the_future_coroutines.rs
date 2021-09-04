@@ -5,8 +5,8 @@ use macroquad::prelude::{
     next_frame,
 };
 
-#[macroquad::main("back to the future")]
-async fn main() {
+#[macroquad::test]
+async fn back_to_the_future_coroutine() {
     struct Player {
         on_ground: bool,
         allow_movement: bool,
