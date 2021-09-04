@@ -144,6 +144,72 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     prelude
 }
 
+// Right now it is a copy-paste from "main"
+// maybe it is worth it to move reuse the code from main (it would be easy -
+// test is pretty much the same thing, but adding #[test] and not panicing when
+// function is not called "main")
+// But for now I am not really sure what exactly #[macroquad::test] should do,
+// so for easier modifications - it is decoupled from #[macroquad::main]
+#[proc_macro_attribute]
+pub fn test(_attr: TokenStream, item: TokenStream) -> TokenStream {
+    let mut modified = TokenStream::new();
+    let mut source = item.into_iter().peekable();
+
+    while let Some(TokenTree::Punct(punct)) = source.peek() {
+        assert_eq!(format!("{}", punct), "#");
+        // skip '#'
+        let _ = source.next().unwrap();
+        let _group = next_group(&mut source);
+    }
+
+    if let TokenTree::Ident(ident) = source.next().unwrap() {
+        assert_eq!(format!("{}", ident), "async");
+
+        modified.extend(std::iter::once(TokenTree::Ident(ident)));
+    } else {
+        panic!("[macroquad::test] is allowed only for async functions");
+    }
+
+    if let TokenTree::Ident(ident) = source.next().unwrap() {
+        assert_eq!(format!("{}", ident), "fn");
+
+        modified.extend(std::iter::once(TokenTree::Ident(ident)));
+    } else {
+        panic!("[macroquad::test] is allowed only for functions");
+    }
+
+    let test_name = if let TokenTree::Ident(ident) = source.next().unwrap() {
+        let test_name = format!("{}", ident);
+
+        modified.extend(std::iter::once(TokenTree::Ident(Ident::new(
+            &format!("{}_async", test_name),
+            ident.span(),
+        ))));
+        test_name
+    } else {
+        panic!("[macroquad::test] expecting main function");
+    };
+
+    modified.extend(std::iter::once(source.next().unwrap()));
+
+    modified.extend(source);
+
+    let mut prelude: TokenStream = format!(
+        "
+    #[test]
+    fn {test_name}() {{
+        macroquad::Window::new(\"test\", {test_name}_async());
+    }}
+    ",
+        test_name = test_name,
+    )
+    .parse()
+    .unwrap();
+    prelude.extend(modified);
+
+    prelude
+}
+
 /// Very experimental thing for macroquad::experimantal::scene
 /// Maybe will go away in future versions
 #[doc(hidden)]

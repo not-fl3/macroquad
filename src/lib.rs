@@ -118,6 +118,14 @@ pub mod telemetry;
 /// ```
 pub use macroquad_macro::main;
 
+/// #[macroquad::test] fn test() {}
+///
+/// Very similar to macroquad::main
+/// Right now it will still spawn a window, just like ::main, therefore
+/// is not really usefull for anything than developping macroquad itself
+#[doc(hidden)]
+pub use macroquad_macro::test;
+
 /// Cross platform random generator.
 pub mod rand {
     pub use quad_rand::*;
