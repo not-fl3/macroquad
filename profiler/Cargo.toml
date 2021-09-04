@@ -1,6 +1,6 @@
 [package]
 name = "macroquad-profiler"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Fedor Logachev <not.fl3@gmail.com>"]
 edition = "2018"
 description = "Profiler UI for macroquad"
