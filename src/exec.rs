@@ -1,5 +1,6 @@
 use std::future::Future;
 use std::pin::Pin;
+use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
 // Returns Pending as long as its inner bool is false.
@@ -27,14 +28,14 @@ impl Future for FrameFuture {
 type FileResult<T> = Result<T, crate::file::FileError>;
 
 pub struct FileLoadingFuture {
-    pub contents: std::rc::Rc<std::cell::RefCell<Option<FileResult<Vec<u8>>>>>,
+    pub contents: Arc<Mutex<Option<FileResult<Vec<u8>>>>>,
 }
 
 impl Future for FileLoadingFuture {
     type Output = FileResult<Vec<u8>>;
 
     fn poll(self: Pin<&mut Self>, _context: &mut Context) -> Poll<Self::Output> {
-        let mut contents = self.contents.borrow_mut();
+        let mut contents = self.contents.lock().unwrap();
         if let Some(contents) = contents.take() {
             Poll::Ready(contents)
         } else {

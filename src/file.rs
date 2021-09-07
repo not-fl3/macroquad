@@ -27,10 +27,9 @@ impl FileError {
 /// Will use filesystem on PC and do http request on web
 pub async fn load_file(path: &str) -> Result<Vec<u8>, FileError> {
     fn load_file_inner(path: &str) -> exec::FileLoadingFuture {
-        use std::cell::RefCell;
-        use std::rc::Rc;
+        use std::sync::{Arc, Mutex};
 
-        let contents = Rc::new(RefCell::new(None));
+        let contents = Arc::new(Mutex::new(None));
         let path = path.to_owned();
 
         {
@@ -38,7 +37,7 @@ pub async fn load_file(path: &str) -> Result<Vec<u8>, FileError> {
             let err_path = path.clone();
 
             miniquad::fs::load_file(&path, move |bytes| {
-                *contents.borrow_mut() =
+                *contents.lock().unwrap() =
                     Some(bytes.map_err(|kind| FileError::new(kind, &err_path)));
             });
         }
