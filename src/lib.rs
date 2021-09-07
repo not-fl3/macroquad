@@ -402,6 +402,14 @@ impl Context {
 #[no_mangle]
 static mut CONTEXT: Option<Context> = None;
 
+// unfortunately #[cfg(test)] do not work with integration tests
+// so this module should be publicly available
+#[doc(hidden)]
+pub mod test {
+    pub static mut MUTEX: Option<std::sync::Mutex<()>> = None;
+    pub static ONCE: std::sync::Once = std::sync::Once::new();
+}
+
 fn get_context() -> &'static mut Context {
     unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
 }

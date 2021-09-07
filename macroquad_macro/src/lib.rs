@@ -198,6 +198,12 @@ pub fn test(_attr: TokenStream, item: TokenStream) -> TokenStream {
         "
     #[test]
     fn {test_name}() {{
+        let _lock = unsafe {{
+          let mutex = macroquad::test::ONCE.call_once(|| {{
+            macroquad::test::MUTEX = Some(std::sync::Mutex::new(()));
+          }});
+          macroquad::test::MUTEX.as_mut().unwrap().lock()
+        }};
         macroquad::Window::new(\"test\", {test_name}_async());
     }}
     ",
