@@ -10,21 +10,31 @@ use std::task::{Context, Poll};
 use crate::exec::resume;
 use crate::get_context;
 
+struct CoroutineInternal {
+    future: Pin<Box<dyn Future<Output = ()>>>,
+    manual_poll: bool,
+    manual_time: Option<f64>,
+}
+
 pub(crate) struct CoroutinesContext {
-    futures: Vec<Option<Pin<Box<dyn Future<Output = ()>>>>>,
+    coroutines: Vec<Option<CoroutineInternal>>,
+    active_coroutine_now: Option<f64>,
+    active_coroutine_delta: Option<f64>,
 }
 
 impl CoroutinesContext {
     pub fn new() -> CoroutinesContext {
         CoroutinesContext {
-            futures: Vec::with_capacity(1000),
+            coroutines: Vec::with_capacity(1000),
+            active_coroutine_now: None,
+            active_coroutine_delta: None,
         }
     }
 
     pub fn update(&mut self) {
-        for future in &mut self.futures {
+        for future in &mut self.coroutines {
             if let Some(f) = future {
-                if resume(f) {
+                if f.manual_poll == false && resume(&mut f.future) {
                     *future = None;
                 }
             }
@@ -40,7 +50,59 @@ impl Coroutine {
     pub fn is_done(&self) -> bool {
         let context = &get_context().coroutines_context;
 
-        context.futures[self.id].is_none()
+        context.coroutines[self.id].is_none()
+    }
+
+    /// By default coroutines are being polled each frame, inside the "next_frame()"
+    ///
+    /// ```skip
+    /// start_coroutine(async move {
+    ///    println!("a");
+    ///    next_frame().await;
+    ///    println!("b");
+    /// }); // <- coroutine is created, but not yet polled
+    /// println!("c"); // <- first print, "c"
+    /// next_frame().await; // coroutine will be polled for the first time
+    ///                     // will print "a"
+    /// println!("d");      // "d"
+    /// next_frame().await; // coroutine will be polled second time, pass next_frame().await and will print "b"
+    /// ```
+    /// will print "cadb" (there is a test for it, "tests/coroutine.rs:coroutine_execution_order" )
+    ///
+    /// But, sometimes, automatic polling is not nice
+    /// good example - game pause. Imagine a player that have some "update" function
+    /// and some coroutines runned. During the pause "update" just early quit, but
+    /// what with the coroutines?
+    ///
+    /// "set_manual_poll" allows to control how coroutine is beng polled
+    /// after set_manual_poll() coroutine will never be polled automatically
+    /// so player will need to poll all its coroutines inside "update" function
+    pub fn set_manual_poll(&mut self) {
+        let context = &mut get_context().coroutines_context;
+
+        if let Some(coroutine) = &mut context.coroutines[self.id] {
+            coroutine.manual_time = Some(0.);
+            coroutine.manual_poll = true;
+        }
+    }
+
+    /// Poll coroutine once and advance coroutine's timeline by `delta_time`
+    /// Things like `wait_for_seconds` will wait for time in this local timeline`
+    /// Will panic if coroutine.manual_poll == false
+    pub fn poll(&mut self, delta_time: f64) {
+        let context = &mut get_context().coroutines_context;
+
+        let coroutine = &mut context.coroutines[self.id];
+        if let Some(f) = coroutine {
+            context.active_coroutine_now = f.manual_time;
+            context.active_coroutine_delta = Some(delta_time);
+            *f.manual_time.as_mut().unwrap() += delta_time;
+            if resume(&mut f.future) {
+                *coroutine = None;
+            }
+            context.active_coroutine_now = None;
+            context.active_coroutine_delta = None;
+        }
     }
 }
 
@@ -49,10 +111,14 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
 
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
 
-    context.futures.push(Some(boxed_future));
+    context.coroutines.push(Some(CoroutineInternal {
+        future: boxed_future,
+        manual_poll: false,
+        manual_time: None,
+    }));
 
     Coroutine {
-        id: context.futures.len() - 1,
+        id: context.coroutines.len() - 1,
     }
 }
 
@@ -62,7 +128,7 @@ pub fn stop_all_coroutines() {
     // Cannot clear the vector as there may still be outstanding Coroutines
     // so their ids would now point into nothingness or later point into
     // different Coroutines.
-    for future in &mut context.futures {
+    for future in &mut context.coroutines {
         *future = None;
     }
 }
@@ -70,19 +136,25 @@ pub fn stop_all_coroutines() {
 pub fn stop_coroutine(coroutine: Coroutine) {
     let context = &mut get_context().coroutines_context;
 
-    context.futures[coroutine.id] = None;
+    context.coroutines[coroutine.id] = None;
 }
 
 pub struct TimerDelayFuture {
-    pub(crate) start_time: f64,
-    pub(crate) time: f32,
+    pub(crate) remaining_time: f32,
 }
 
 impl Future for TimerDelayFuture {
     type Output = Option<()>;
 
-    fn poll(self: Pin<&mut Self>, _: &mut Context) -> Poll<Self::Output> {
-        if miniquad::date::now() - self.start_time >= self.time as f64 {
+    fn poll(mut self: Pin<&mut Self>, _: &mut Context) -> Poll<Self::Output> {
+        let delta = get_context()
+            .coroutines_context
+            .active_coroutine_delta
+            .unwrap_or(crate::time::get_frame_time() as _);
+
+        self.remaining_time -= delta as f32;
+
+        if self.remaining_time <= 0.0 {
             Poll::Ready(Some(()))
         } else {
             Poll::Pending
@@ -92,8 +164,7 @@ impl Future for TimerDelayFuture {
 
 pub fn wait_seconds(time: f32) -> TimerDelayFuture {
     TimerDelayFuture {
-        start_time: miniquad::date::now(),
-        time,
+        remaining_time: time,
     }
 }
 
