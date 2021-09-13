@@ -180,11 +180,11 @@ impl DrawList {
             .extend(indices.iter().map(|i| i + indices_offset));
     }
 
-    fn draw_triangle(&mut self, p0: Vec2, p1: Vec2, p2: Vec2, color: Color) {
+    fn draw_triangle(&mut self, p0: Vec2, p1: Vec2, p2: Vec2, source: Rect, color: Color) {
         let vertices = [
-            Vertex::new(p0.x, p0.y, 0.0, 0.0, color),
-            Vertex::new(p1.x, p1.y, 0.0, 0.0, color),
-            Vertex::new(p2.x, p2.y, 0.0, 0.0, color),
+            Vertex::new(p0.x, p0.y, source.x, source.y, color),
+            Vertex::new(p1.x, p1.y, source.x, source.y, color),
+            Vertex::new(p2.x, p2.y, source.x, source.y, color),
         ];
         let indices: [u16; 3] = [0, 1, 2];
 
@@ -337,8 +337,14 @@ pub(crate) fn render_command(draw_lists: &mut Vec<DrawList>, command: DrawComman
                 Color::new(1., 1., 1., 1.),
             );
         }
-        DrawCommand::DrawTriangle { p0, p1, p2, color } => {
-            active_draw_list.draw_triangle(p0, p1, p2, color);
+        DrawCommand::DrawTriangle {
+            p0,
+            p1,
+            p2,
+            source,
+            color,
+        } => {
+            active_draw_list.draw_triangle(p0, p1, p2, source, color);
         }
     }
 }

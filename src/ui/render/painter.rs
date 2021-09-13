@@ -43,6 +43,7 @@ pub(crate) enum DrawCommand {
         p0: Vec2,
         p1: Vec2,
         p2: Vec2,
+        source: Rect,
         color: Color,
     },
     DrawLine {
@@ -111,10 +112,17 @@ impl DrawCommand {
                 source,
                 color,
             },
-            DrawCommand::DrawTriangle { p0, p1, p2, color } => DrawCommand::DrawTriangle {
+            DrawCommand::DrawTriangle {
+                p0,
+                p1,
+                p2,
+                source,
+                color,
+            } => DrawCommand::DrawTriangle {
                 p0: p0 + offset,
                 p1: p1 + offset,
                 p2: p2 + offset,
+                source,
                 color,
             },
             DrawCommand::Clip { rect } => DrawCommand::Clip {
@@ -454,10 +462,13 @@ impl Painter {
             return;
         }
 
+        let source = self.font_atlas.borrow().get_uv_rect(0).unwrap();
+
         self.add_command(DrawCommand::DrawTriangle {
             p0,
             p1,
             p2,
+            source,
             color: color.into(),
         })
     }
