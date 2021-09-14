@@ -1,13 +1,13 @@
 use crate::{
-    color::Color,
     math::{vec2, Rect, Vec2},
-    ui::{ElementState, Id, Layout, Ui},
+    ui::{ElementState, Id, Layout, Ui, UiContent},
 };
 
 pub struct ComboBox<'a, 'b, 'c> {
     id: Id,
     label: &'a str,
     variants: &'b [&'c str],
+    ratio: f32,
 }
 
 impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
@@ -16,6 +16,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
             id,
             label: "",
             variants,
+            ratio: 0.5,
         }
     }
 
@@ -24,29 +25,28 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
             id: self.id,
             variants: self.variants,
             label,
+            ratio: self.ratio,
         }
     }
 
+    pub fn ratio(self, ratio: f32) -> Self {
+        Self { ratio, ..self }
+    }
     pub fn ui(self, ui: &mut Ui, data: &mut usize) -> usize {
         let mut context = ui.get_active_window_context();
 
-        let window_margin = context
-            .style
-            .window_style
-            .background_margin
-            .map_or(0.0, |x| x.left);
+        let line_height = context.style.label_style.font_size;
 
-        let size = Vec2::new(
-            context.window.cursor.area.w
-                - context.style.margin * 2.
-                - context.window.cursor.ident
-                - window_margin,
-            19.,
+        let size = vec2(
+            context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
+            (line_height as f32 + 4.).max(19.),
         );
-        let pos = context.window.cursor.fit(size, Layout::Vertical) + vec2(window_margin / 2., 0.0);
 
-        let active_area_w = size.x / 2.;
-        let triangle_area_w = 19.;
+        let combobox_area_w = size.x * self.ratio - 15.;
+
+        let pos = context.window.cursor.fit(size, Layout::Vertical);
+
+        let active_area_w = size.x * self.ratio;
 
         let text_measures = {
             let font = &mut *context.style.label_style.font.borrow_mut();
@@ -70,46 +70,29 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
             *state = false;
         }
 
-        // TODO: not checkbox!
-        let color = context.style.checkbox_style.color(ElementState {
-            focused: context.focused,
-            hovered,
-            clicked: hovered && context.input.is_mouse_down,
-            selected: false,
-        });
+        context.window.painter.draw_element_background(
+            &context.style.combobox_style,
+            pos,
+            vec2(combobox_area_w, size.y),
+            ElementState {
+                focused: context.focused,
+                hovered,
+                clicked: hovered && context.input.is_mouse_down,
+                ..Default::default()
+            },
+        );
 
-        context
-            .window
-            .painter
-            .draw_rect(clickable_rect, color, None);
-
-        context.window.painter.draw_element_label(
+        context.window.painter.draw_element_content(
             &context.style.label_style,
-            Vec2::new(pos.x, pos.y),
-            self.variants[*data],
+            pos,
+            vec2(combobox_area_w, size.y),
+            &UiContent::Label((&*self.variants[*data]).into()),
             ElementState {
                 focused: context.focused,
                 hovered,
                 clicked: hovered && context.input.is_mouse_down,
                 selected: false,
             },
-        );
-
-        context.window.painter.draw_rect(
-            Rect::new(
-                pos.x + active_area_w - triangle_area_w,
-                pos.y,
-                triangle_area_w,
-                size.y,
-            ),
-            color,
-            None,
-        );
-        context.window.painter.draw_triangle(
-            Vec2::new(pos.x + active_area_w - triangle_area_w + 4.0, pos.y + 4.0),
-            Vec2::new(pos.x + active_area_w - 4.0, pos.y + 4.0),
-            Vec2::new(pos.x + active_area_w - triangle_area_w / 2.0, pos.y + 15.0),
-            Color::new(0.7, 0.7, 0.7, 1.0),
         );
 
         {
@@ -125,8 +108,8 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
             );
         }
 
-        let modal_size = Vec2::new(200.0, self.variants.len() as f32 * 20.0);
-        let modal_rect = Rect::new(pos.x, pos.y + 20.0, modal_size.x, modal_size.y);
+        let modal_size = Vec2::new(active_area_w, self.variants.len() as f32 * size.y);
+        let modal_rect = Rect::new(pos.x, pos.y + size.y, modal_size.x, modal_size.y);
 
         if *state == false && context.focused && hovered && context.input.click_down {
             *state = true;
@@ -153,13 +136,13 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
             for (i, variant) in self.variants.iter().enumerate() {
                 let rect = Rect::new(
                     pos.x + 5.0,
-                    pos.y + i as f32 * 20.0 + 20.0,
+                    pos.y + i as f32 * size.y + size.y,
                     active_area_w - 5.0,
-                    20.0,
+                    size.y,
                 );
                 let hovered = rect.contains(context.input.mouse_position);
 
-                let color = context.style.checkbox_style.color(ElementState {
+                let color = context.style.combobox_style.color(ElementState {
                     focused: context.focused,
                     hovered,
                     clicked: hovered && context.input.is_mouse_down,
@@ -182,9 +165,9 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
                     variant,
                     Vec2::new(
                         pos.x + 7.,
-                        pos.y + i as f32 * 20. + 20.0 + 2.0 + text_measures.offset_y,
+                        pos.y + i as f32 * size.y + size.y + 2.0 + text_measures.offset_y,
                     ),
-                    context.style.label_style.text_color,
+                    context.style.combobox_style.text_color,
                     font,
                     font_size,
                 );

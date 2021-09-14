@@ -133,12 +133,27 @@ async fn main() {
             .font_size(25)
             .build();
 
+        let combobox_style = root_ui()
+            .style_builder()
+            .background(Image::from_file_with_format(
+                include_bytes!("../examples/ui_assets/combobox_background.png"),
+                None,
+            ))
+            .background_margin(RectOffset::new(4., 25., 6., 6.))
+            .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .unwrap()
+            .text_color(Color::from_rgba(120, 120, 120, 255))
+            .color(Color::from_rgba(210, 210, 210, 255))
+            .font_size(25)
+            .build();
+
         Skin {
             window_style,
             button_style,
             label_style,
             checkbox_style,
             editbox_style,
+            combobox_style,
             ..root_ui().default_skin()
         }
     };
@@ -150,6 +165,7 @@ async fn main() {
     let mut checkbox = false;
     let mut text = String::new();
     let mut number = 0.0f32;
+    let mut combobox = 0;
 
     loop {
         clear_background(GRAY);
@@ -198,16 +214,22 @@ async fn main() {
         root_ui().pop_skin();
 
         root_ui().push_skin(&window2_skin);
-        root_ui().window(hash!(), vec2(250., 20.), vec2(500., 200.), |ui| {
+        root_ui().window(hash!(), vec2(250., 20.), vec2(500., 250.), |ui| {
             ui.checkbox(hash!(), "Checkbox 1", &mut checkbox);
+            ui.combo_box(
+                hash!(),
+                "Combobox",
+                &["First option", "Second option"],
+                &mut combobox,
+            );
             ui.input_text(hash!(), "Text", &mut text);
             ui.drag(hash!(), "Drag", None, &mut number);
 
             widgets::Button::new("Apply")
-                .position(vec2(80.0, 100.0))
+                .position(vec2(80.0, 150.0))
                 .ui(ui);
             widgets::Button::new("Cancel")
-                .position(vec2(280.0, 100.0))
+                .position(vec2(280.0, 150.0))
                 .ui(ui);
         });
         root_ui().pop_skin();

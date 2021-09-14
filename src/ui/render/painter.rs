@@ -19,6 +19,7 @@ pub struct ElementState {
     pub selected: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub(crate) enum DrawCommand {
     DrawCharacter {
@@ -452,6 +453,7 @@ impl Painter {
         })
     }
 
+    #[allow(dead_code)]
     pub fn draw_triangle<T>(&mut self, p0: Vec2, p1: Vec2, p2: Vec2, color: T)
     where
         T: Into<Color>,

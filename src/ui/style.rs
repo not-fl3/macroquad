@@ -324,6 +324,7 @@ pub struct Skin {
     pub label_style: Style,
     pub button_style: Style,
     pub tabbar_style: Style,
+    pub combobox_style: Style,
     pub window_style: Style,
     pub editbox_style: Style,
     pub window_titlebar_style: Style,
@@ -356,6 +357,17 @@ impl Skin {
                 text_color: Color::from_rgba(0, 0, 0, 255),
                 ..Style::default(default_font.clone())
             },
+            combobox_style: StyleBuilder::new(default_font.clone(), atlas.clone())
+                .background_margin(RectOffset::new(1., 14., 1., 1.))
+                .color_inactive(Color::from_rgba(238, 238, 238, 128))
+                .text_color(Color::from_rgba(0, 0, 0, 255))
+                .color(Color::from_rgba(220, 220, 220, 255))
+                .background(Image {
+                    width: 16,
+                    height: 30,
+                    bytes: include_bytes!("combobox.img").to_vec(),
+                })
+                .build(),
             tabbar_style: Style {
                 margin: Some(RectOffset::new(2., 2., 2., 2.)),
                 color: Color::from_rgba(220, 220, 220, 235),
