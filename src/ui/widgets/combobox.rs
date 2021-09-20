@@ -96,15 +96,14 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
         );
 
         {
-            let font = &mut *context.style.label_style.font.borrow_mut();
-            let font_size = context.style.label_style.font_size;
-
-            context.window.painter.draw_label(
+            context.window.painter.draw_element_label(
+                &context.style.label_style,
+                Vec2::new(pos.x + size.x * self.ratio, pos.y),
                 self.label,
-                Vec2::new(pos.x + size.x / 2. + 5., pos.y + text_measures.offset_y),
-                context.style.label_style.text_color,
-                font,
-                font_size,
+                ElementState {
+                    focused: context.focused,
+                    ..Default::default()
+                },
             );
         }
 
