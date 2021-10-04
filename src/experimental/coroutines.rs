@@ -12,6 +12,8 @@ use crate::get_context;
 
 struct CoroutineInternal {
     future: Pin<Box<dyn Future<Output = ()>>>,
+    safe_serializable: bool,
+    size: usize,
     manual_poll: bool,
     manual_time: Option<f64>,
 }
@@ -35,7 +37,8 @@ impl CoroutinesContext {
         for future in &mut self.coroutines {
             if let Some(f) = future {
                 if f.manual_poll == false && resume(&mut f.future) {
-                    *future = None;
+                    let future = std::mem::replace(future, None);
+                    std::mem::forget(future);
                 }
             }
         }
@@ -46,11 +49,75 @@ pub struct Coroutine {
     id: usize,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct UnsafeCoroutineState {
+    id: usize,
+    bytes: Option<Vec<u8>>,
+    vtable: Option<*mut ()>,
+}
+
+impl UnsafeCoroutineState {
+    pub unsafe fn recover(&self) -> Coroutine {
+        let context = &mut get_context().coroutines_context;
+
+        if self.bytes.is_none() {
+            context.coroutines[self.id] = None;
+        }
+
+        if let (Some(bytes), Some(vtable)) = (&self.bytes, self.vtable) {
+            let context = &mut get_context().coroutines_context;
+
+            let bytes = bytes.clone();
+            let boxed_future: Pin<Box<dyn Future<Output = ()>>> =
+                std::mem::transmute((bytes.as_ptr(), vtable));
+            let size = bytes.len();
+            std::mem::forget(bytes);
+
+            context.coroutines[self.id] = Some(CoroutineInternal {
+                size,
+                future: boxed_future,
+                safe_serializable: true,
+                // TODO
+                manual_poll: true,
+                manual_time: Some(0.),
+            });
+        }
+
+        Coroutine { id: self.id }
+    }
+}
 impl Coroutine {
     pub fn is_done(&self) -> bool {
         let context = &get_context().coroutines_context;
 
         context.coroutines[self.id].is_none()
+    }
+
+    pub fn save_state(&self) -> UnsafeCoroutineState {
+        let context = &mut get_context().coroutines_context;
+
+        if let Some(coroutine) = &mut context.coroutines[self.id] {
+            //assert!(coroutine.safe_serializable);
+
+            let mut bytes = vec![0; coroutine.size];
+
+            unsafe {
+                let trait_obj: &dyn Future<Output = ()> = &*coroutine.future;
+                let (ptr, vtable): (*mut (), *mut ()) = std::mem::transmute(trait_obj);
+                std::ptr::copy_nonoverlapping(ptr as *mut u8, bytes.as_mut_ptr(), coroutine.size);
+                return UnsafeCoroutineState {
+                    id: self.id,
+                    bytes: Some(bytes),
+                    vtable: Some(vtable),
+                };
+            }
+        }
+
+        UnsafeCoroutineState {
+            id: self.id,
+            bytes: None,
+            vtable: None,
+        }
     }
 
     /// By default coroutines are being polled each frame, inside the "next_frame()"
@@ -106,12 +173,14 @@ impl Coroutine {
     }
 }
 
-pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Coroutine {
+pub fn start_coroutine<T: Future<Output = ()> + 'static + Send>(future: T) -> Coroutine {
     let context = &mut get_context().coroutines_context;
 
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
 
     context.coroutines.push(Some(CoroutineInternal {
+        safe_serializable: std::mem::needs_drop::<T>(),
+        size: std::mem::size_of::<T>(),
         future: boxed_future,
         manual_poll: false,
         manual_time: None,

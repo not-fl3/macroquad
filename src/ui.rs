@@ -635,6 +635,8 @@ impl Ui {
             .cache_sprite(0, Image::gen_image_color(1, 1, crate::WHITE));
 
         let font = Rc::new(RefCell::new(font));
+        let (w, h) = ctx.screen_size();
+
         Ui {
             input: Input::default(),
             default_font: font.clone(),
@@ -648,12 +650,7 @@ impl Ui {
                     0,
                     None,
                     Vec2::new(0., 0.),
-                    // this is not going to be used anywhere but for clipping out
-                    // child window.
-                    // Scissor test is not going to be used by the root window size,
-                    // so this is fine to use weird hardcoded consts here.
-                    // mostly
-                    Vec2::new(10000., 10000.),
+                    Vec2::new(w, h),
                     0.0,
                     RectOffset::new(0.0, 0.0, 0.0, 0.0),
                     0.0,
@@ -1037,6 +1034,11 @@ impl Ui {
         self.tab_selector.new_frame();
 
         self.key_repeat.new_frame(self.time);
+
+        self.root_window.size = crate::math::vec2(
+            crate::window::screen_width(),
+            crate::window::screen_height(),
+        );
 
         for (_, window) in &mut self.windows {
             window.painter.clear();
