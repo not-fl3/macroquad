@@ -31,8 +31,11 @@ pub struct Camera2D {
     pub render_target: Option<RenderTarget>,
 
     /// Part of the screen to render to
+    ///
     /// None means the whole screen
+    /// 
     /// Viewport do not affect camera space, just the render position on the screen
+    /// 
     /// Usefull for things like splitscreen
     pub viewport: Option<(i32, i32, i32, i32)>,
 }
