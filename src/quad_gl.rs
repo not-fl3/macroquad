@@ -386,6 +386,15 @@ impl PipelinesStorage {
                 BlendFactor::Value(BlendValue::SourceAlpha),
                 BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
             )),
+            alpha_blend: Some(BlendState::new(
+                Equation::Add,
+                BlendFactor::Zero,
+                BlendFactor::One,
+            )),
+            // Allow the new pixel if it has a greater/equal Z value,
+            // in accordance of opengl having +Z be out of the screen.
+            depth_test: Comparison::GreaterOrEqual,
+            depth_write: true,
             ..Default::default()
         };
 
@@ -561,7 +570,7 @@ impl QuadGl {
                 draw_mode: DrawMode::Triangles,
                 pipeline: None,
                 break_batching: false,
-                depth_test_enable: false,
+                depth_test_enable: true,
                 snapshotter: MagicSnapshotter::new(ctx),
                 render_pass: None,
                 capture: false,
@@ -610,7 +619,7 @@ impl QuadGl {
         }
 
         let shader = Shader::new(ctx, vertex_shader, fragment_shader, shader_meta)?;
-        let wants_screen_texture = fragment_shader.find("_ScreenTexture").is_some();
+        let wants_screen_texture = fragment_shader.contains("_ScreenTexture");
 
         Ok(self.pipelines.make_pipeline(
             ctx,
@@ -623,7 +632,13 @@ impl QuadGl {
     }
 
     pub(crate) fn clear(&mut self, ctx: &mut miniquad::Context, color: Color) {
-        let clear = PassAction::clear_color(color.r, color.g, color.b, color.a);
+        let clear = PassAction::Clear {
+            color: Some((color.r, color.g, color.b, color.a)),
+            // MAX here seems strange; openGL convention is that negative Z goes into the screen.
+            // This also agrees with what I figured out from `draw_texture_ex`... who knows.
+            depth: Some(f32::MAX),
+            stencil: None,
+        };
 
         if let Some(current_pass) = self.state.render_pass {
             ctx.begin_pass(current_pass, clear);
@@ -997,7 +1012,9 @@ mod shader {
     uniform sampler2D Texture;
 
     void main() {
-        gl_FragColor = color * texture2D(Texture, uv) ;
+        gl_FragColor = color * texture2D(Texture, uv);
+        if (gl_FragColor.a < 0.0001)
+            discard;
     }"#;
 
     pub fn uniforms() -> Vec<(&'static str, UniformType)> {

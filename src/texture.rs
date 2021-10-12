@@ -274,8 +274,22 @@ pub struct DrawTextureParams {
     /// Rotate around this point.
     /// When `None`, rotate around the texture's center.
     /// When `Some`, the coordinates are in screen-space.
-    /// E.g. pivot (0,0) rotates around the top left corner of the screen, not of the
+    /// E.g. pivot (0,0) rotates around the top left corner of the screen, not of the texture.
     pub pivot: Option<Vec2>,
+
+    /// Draw this with the given depth/z-value.
+    ///
+    /// Negative Z is considered to be farther away from the screen.
+    /// If a bunch of sprites are drawn on top of each other, the one with the most positive
+    /// depth value will be on top and seen.
+    ///
+    /// Is 0 by default.
+    ///
+    /// If two things are drawn with exactly the same depth, the one drawn second will be seen.
+    ///
+    /// Note that this must be in the range [-1, 1], otherwise it won't draw.
+    /// Also note that semi-transparency doesn't work too well with depth.
+    pub depth: f32,
 }
 
 impl Default for DrawTextureParams {
@@ -287,6 +301,7 @@ impl Default for DrawTextureParams {
             pivot: None,
             flip_x: false,
             flip_y: false,
+            depth: 0.0,
         }
     }
 }
@@ -334,15 +349,15 @@ pub fn draw_texture_ex(
     let mut x = x;
     let mut y = y;
     if params.flip_x {
-        x = x + w;
+        x += w;
         w = -w;
     }
     if params.flip_y {
-        y = y + h;
+        y += h;
         h = -h;
     }
 
-    let pivot = params.pivot.unwrap_or(vec2(x + w / 2., y + h / 2.));
+    let pivot = params.pivot.unwrap_or_else(|| vec2(x + w / 2., y + h / 2.));
     let m = pivot;
     let p = [
         vec2(x, y) - pivot,
@@ -369,12 +384,20 @@ pub fn draw_texture_ex(
             p[3].x * r.sin() + p[3].y * r.cos(),
         ) + m,
     ];
+
+    let depth = params.depth;
+    debug_assert!(
+        (-1.0..=1.0).contains(&depth),
+        "the depth must be between -1 and 1 but was {}",
+        depth
+    );
+
     #[rustfmt::skip]
     let vertices = [
-        Vertex::new(p[0].x, p[0].y, 0.,  sx      /texture.width(),  sy      /texture.height(), color),
-        Vertex::new(p[1].x, p[1].y, 0., (sx + sw)/texture.width(),  sy      /texture.height(), color),
-        Vertex::new(p[2].x, p[2].y, 0., (sx + sw)/texture.width(), (sy + sh)/texture.height(), color),
-        Vertex::new(p[3].x, p[3].y, 0.,  sx      /texture.width(), (sy + sh)/texture.height(), color),
+        Vertex::new(p[0].x, p[0].y, depth,  sx      /texture.width(),  sy      /texture.height(), color),
+        Vertex::new(p[1].x, p[1].y, depth, (sx + sw)/texture.width(),  sy      /texture.height(), color),
+        Vertex::new(p[2].x, p[2].y, depth, (sx + sw)/texture.width(), (sy + sh)/texture.height(), color),
+        Vertex::new(p[3].x, p[3].y, depth,  sx      /texture.width(), (sy + sh)/texture.height(), color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
