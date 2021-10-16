@@ -3,13 +3,13 @@
 use crate::{file::load_file, get_context};
 use std::collections::HashMap;
 
-#[cfg(all(feature = "audio", not(target_os = "ios")))]
+#[cfg(all(feature = "audio"))]
 use quad_snd::{AudioContext as QuadSndContext, Sound as QuadSndSound};
 
-#[cfg(all(feature = "audio", not(target_os = "ios")))]
+#[cfg(all(feature = "audio"))]
 pub use quad_snd::PlaySoundParams;
 
-#[cfg(any(not(feature = "audio"), target_os = "ios"))]
+#[cfg(not(feature = "audio"))]
 mod dummy_audio {
     use crate::audio::PlaySoundParams;
 
@@ -44,10 +44,10 @@ mod dummy_audio {
     }
 }
 
-#[cfg(any(not(feature = "audio"), target_os = "ios"))]
+#[cfg(not(feature = "audio"))]
 use dummy_audio::{AudioContext as QuadSndContext, Sound as QuadSndSound};
 
-#[cfg(any(not(feature = "audio"), target_os = "ios"))]
+#[cfg(not(feature = "audio"))]
 pub struct PlaySoundParams {
     pub looped: bool,
     pub volume: f32,
