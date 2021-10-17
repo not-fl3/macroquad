@@ -275,6 +275,7 @@ pub struct DrawTextureParams {
     /// When `None`, rotate around the texture's center.
     /// When `Some`, the coordinates are in screen-space.
     /// E.g. pivot (0,0) rotates around the top left corner of the screen, not of the
+    /// texture.
     pub pivot: Option<Vec2>,
 }
 
