@@ -2,7 +2,7 @@ use nanoserde::DeJson;
 
 use macroquad::prelude::*;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 mod error;
 mod tiled;
@@ -45,7 +45,48 @@ pub struct Layer {
     pub objects: Vec<Object>,
     pub width: u32,
     pub height: u32,
+    pub data: LayerData,
+}
+
+impl Layer {
+    #[inline]
+    fn get_tile(&self, x: i32, y: i32) -> &Option<Tile> {
+        match &self.data {
+            LayerData::Plain(tiles) => &tiles[((y as u32) * self.width + (x as u32)) as usize],
+            LayerData::Chunks(chunks) => {
+                let chunk = chunks.iter().find(|chunk| {
+                    x >= chunk.x
+                        && x < chunk.x + chunk.width as i32
+                        && y >= chunk.y
+                        && y < chunk.y + chunk.height as i32
+                });
+
+                if let Some(chunk) = chunk {
+                    let chunk_x = (x - chunk.x) as usize;
+                    let chunk_y = (y - chunk.y) as usize;
+
+                    &chunk.data[(chunk_y * chunk.width + chunk_x) as usize]
+                } else {
+                    &None
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum LayerData {
+    Plain(Vec<Option<Tile>>),
+    Chunks(Vec<Chunk>),
+}
+
+#[derive(Debug)]
+pub struct Chunk {
     pub data: Vec<Option<Tile>>,
+    pub height: usize,
+    pub width: usize,
+    pub x: i32,
+    pub y: i32,
 }
 
 #[derive(Debug)]
@@ -75,6 +116,9 @@ impl TileSet {
 pub struct Map {
     pub layers: HashMap<String, Layer>,
     pub tilesets: HashMap<String, TileSet>,
+
+    pub start_x: i32,
+    pub start_y: i32,
 
     /// Deserialized json as is
     pub raw_tiled_map: tiled::Map,
@@ -134,8 +178,8 @@ impl Map {
         assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
 
         let source = source.into().unwrap_or(Rect::new(
-            0.,
-            0.,
+            self.start_x as f32,
+            self.start_y as f32,
             self.raw_tiled_map.width as f32,
             self.raw_tiled_map.height as f32,
         ));
@@ -144,14 +188,14 @@ impl Map {
         let spr_width = dest.w / source.w;
         let spr_height = dest.h / source.h;
 
-        for y in source.y as u32..source.y as u32 + source.h as u32 {
-            for x in source.x as u32..source.x as u32 + source.w as u32 {
+        for y in source.y as i32..source.y as i32 + source.h as i32 {
+            for x in source.x as i32..source.x as i32 + source.w as i32 {
                 let pos = vec2(
-                    (x - source.x as u32) as f32 / source.w * dest.w + dest.x,
-                    (y - source.y as u32) as f32 / source.h * dest.h + dest.y,
+                    (x - source.x as i32) as f32 / source.w * dest.w + dest.x,
+                    (y - source.y as i32) as f32 / source.h * dest.h + dest.y,
                 );
 
-                if let Some(tile) = &layer.data[(y * layer.width + x) as usize] {
+                if let Some(tile) = &layer.get_tile(x, y) {
                     self.spr(
                         &tile.tileset,
                         tile.id,
@@ -183,19 +227,19 @@ impl Map {
             return &None;
         }
 
-        &layer.data[(y * layer.width + x) as usize]
+        layer.get_tile(x as i32, y as i32)
     }
 }
 
 pub struct TilesIterator<'a> {
     rect: Rect,
-    current: (u32, u32),
+    current: (i32, i32),
     layer: &'a Layer,
 }
 
 impl<'a> TilesIterator<'a> {
     fn new(layer: &'a Layer, rect: Rect) -> Self {
-        let current = (rect.x as u32, rect.y as u32);
+        let current = (rect.x as i32, rect.y as i32);
 
         TilesIterator {
             layer,
@@ -206,28 +250,28 @@ impl<'a> TilesIterator<'a> {
 }
 
 impl<'a> Iterator for TilesIterator<'a> {
-    type Item = (u32, u32, &'a Option<Tile>);
+    type Item = (i32, i32, &'a Option<Tile>);
 
     fn next(&mut self) -> Option<Self::Item> {
         let next_x;
         let next_y;
 
-        if self.current.0 + 1 >= self.rect.x as u32 + self.rect.w as u32 {
-            next_x = self.rect.x as u32;
+        if self.current.0 + 1 >= self.rect.x as i32 + self.rect.w as i32 {
+            next_x = self.rect.x as i32;
             next_y = self.current.1 + 1;
         } else {
             next_x = self.current.0 + 1;
             next_y = self.current.1;
         }
 
-        if next_y >= self.rect.y as u32 + self.rect.h as u32 {
+        if next_y >= self.rect.y as i32 + self.rect.h as i32 {
             return None;
         }
 
         let res = Some((
             self.current.0,
             self.current.1,
-            &self.layer.data[(self.current.1 * self.layer.width + self.current.0) as usize],
+            self.layer.get_tile(self.current.0, self.current.1),
         ));
         self.current = (next_x, next_y);
         res
@@ -244,11 +288,17 @@ pub fn load_map(
     textures: &[(&str, Texture2D)],
     external_tilesets: &[(&str, &str)],
 ) -> Result<Map, error::Error> {
-    let map: tiled::Map = DeJson::deserialize_json(data)?;
+    let map: tiled::Map =
+        DeJson::deserialize_json(data).map_err(|err| error::Error::TileMapLoadingFailed {
+            inner_error: Box::new(err.into()),
+        })?;
 
     let mut layers = HashMap::new();
     let mut tilesets = HashMap::new();
     let mut map_tilesets = vec![];
+
+    let mut start_x = 0;
+    let mut start_y = 0;
 
     for tileset in &map.tilesets {
         let tileset = if tileset.source.is_empty() {
@@ -257,8 +307,15 @@ pub fn load_map(
             let tileset_data = external_tilesets
                 .iter()
                 .find(|(name, _)| *name == &tileset.source)
-                .unwrap();
-            let mut map_tileset: tiled::Tileset = DeJson::deserialize_json(&tileset_data.1)?;
+                .expect(&format!(
+                    "Expected to find {} in external tilesets",
+                    tileset.source
+                ));
+            let mut map_tileset: tiled::Tileset = DeJson::deserialize_json(&tileset_data.1)
+                .map_err(|err| error::Error::TilesetLoadingFailed {
+                    tileset: tileset.source.clone(),
+                    inner_error: Box::new(err.into()),
+                })?;
             map_tileset.firstgid = tileset.firstgid;
             map_tileset
         };
@@ -293,6 +350,9 @@ pub fn load_map(
             });
         }
 
+        start_x = layer.startx.map(|sx| start_x.min(sx)).unwrap_or(start_x);
+        start_y = layer.starty.map(|sy| start_y.min(sy)).unwrap_or(start_y);
+
         let tile_width = map.tilewidth as f32;
         let tile_height = map.tileheight as f32;
 
@@ -324,32 +384,47 @@ pub fn load_map(
             })
         };
 
+        let map_tiles = |tile: &u32| {
+            find_tileset(*tile).map(|tileset| {
+                let attrs = tileset
+                    .tiles
+                    .iter()
+                    .find(|t| t.id as u32 == *tile - tileset.firstgid)
+                    .and_then(|tile| tile.ty.clone())
+                    .unwrap_or("".to_owned());
+
+                Tile {
+                    id: *tile - tileset.firstgid,
+                    tileset: tileset.name.clone(),
+                    attrs,
+                }
+            })
+        };
+
+        let layer_data = if let Some(chunks) = &layer.chunks {
+            LayerData::Chunks(
+                chunks
+                    .iter()
+                    .map(|chunk| Chunk {
+                        data: chunk.data.iter().map(map_tiles).collect(),
+                        width: chunk.height,
+                        height: chunk.height,
+                        x: chunk.x,
+                        y: chunk.y,
+                    })
+                    .collect(),
+            )
+        } else {
+            LayerData::Plain(layer.data.iter().map(map_tiles).collect::<Vec<_>>())
+        };
+
         layers.insert(
             layer.name.clone(),
             Layer {
                 objects,
                 width: layer.width,
                 height: layer.height,
-                data: layer
-                    .data
-                    .iter()
-                    .map(|tile| {
-                        find_tileset(*tile).map(|tileset| {
-                            let attrs = tileset
-                                .tiles
-                                .iter()
-                                .find(|t| t.id as u32 == *tile - tileset.firstgid)
-                                .and_then(|tile| tile.ty.clone())
-                                .unwrap_or("".to_owned());
-
-                            Tile {
-                                id: *tile - tileset.firstgid,
-                                tileset: tileset.name.clone(),
-                                attrs,
-                            }
-                        })
-                    })
-                    .collect::<Vec<_>>(),
+                data: layer_data,
             },
         );
     }
@@ -357,6 +432,8 @@ pub fn load_map(
     Ok(Map {
         layers,
         tilesets,
+        start_x,
+        start_y,
         raw_tiled_map: map,
     })
 }

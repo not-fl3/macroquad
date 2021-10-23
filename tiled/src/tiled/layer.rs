@@ -43,6 +43,10 @@ pub struct Layer {
     pub offsetx: Option<i32>,
     /// Vertical layer offset in pixels (default: 0)
     pub offsety: Option<i32>,
+    /// X coordinate where layer content starts (for infinite maps)
+    pub startx: Option<i32>,
+    /// Y coordinate where layer content starts (for infinite maps)
+    pub starty: Option<i32>,
     /// Horizontal layer offset in tiles. Always 0.
     pub x: Option<f32>,
     /// Vertical layer offset in tiles. Always 0.

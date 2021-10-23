@@ -11,6 +11,13 @@ pub enum Error {
     TextureNotFound {
         texture: String,
     },
+    TileMapLoadingFailed {
+        inner_error: Box<Error>,
+    },
+    TilesetLoadingFailed {
+        tileset: String,
+        inner_error: Box<Error>,
+    },
 }
 
 impl From<nanoserde::DeJsonErr> for Error {
@@ -31,6 +38,8 @@ impl std::fmt::Display for Error {
                 f,
                 "Layer name should be unique to load tiled level in macroquad, non-unique layer name: {}", layer
             ),
+            Error::TileMapLoadingFailed { inner_error } => write!(f, "Tile map failed to load: {}", inner_error),
+            Error::TilesetLoadingFailed { tileset, inner_error } => write!(f, "Tileset {} failed to load: {}", tileset, inner_error)
         }
     }
 }
