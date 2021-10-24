@@ -282,14 +282,17 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
+    let dpi_scaling = get_context().quad_context.dpi_scale();
+
+    let font_size = params.font_size * dpi_scaling.ceil() as u16;
 
     let mut total_width = 0.;
     for character in text.chars() {
-        if font.characters.contains_key(&(character, params.font_size)) == false {
-            font.cache_glyph(character, params.font_size);
+        if font.characters.contains_key(&(character, font_size)) == false {
+            font.cache_glyph(character, font_size);
         }
         let mut atlas = font.atlas.borrow_mut();
-        let font_data = &font.characters[&(character, params.font_size)];
+        let font_data = &font.characters[&(character, font_size)];
         let glyph = atlas.get(font_data.sprite).unwrap().rect;
         let left_coord = font_data.offset_x as f32 * font_scale_x + total_width;
         let top_coord =
@@ -298,10 +301,10 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
         total_width += font_data.advance * font_scale_x;
 
         let dest = Rect::new(
-            left_coord + x,
-            top_coord + y,
-            glyph.w as f32 * font_scale_x,
-            glyph.h as f32 * font_scale_y,
+            left_coord / dpi_scaling as f32 + x,
+            top_coord / dpi_scaling as f32 + y,
+            glyph.w as f32 / dpi_scaling as f32 * font_scale_x,
+            glyph.h as f32 / dpi_scaling as f32 * font_scale_y,
         );
 
         let source = Rect::new(

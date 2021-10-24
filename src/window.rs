@@ -56,13 +56,13 @@ pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
 pub fn screen_width() -> f32 {
     let context = get_context();
 
-    context.screen_width
+    context.screen_width / context.quad_context.dpi_scale()
 }
 
 pub fn screen_height() -> f32 {
     let context = get_context();
 
-    context.screen_height
+    context.screen_height / context.quad_context.dpi_scale()
 }
 
 /// With `set_panic_handler` set to a handler code, macroquad will use
