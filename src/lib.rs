@@ -380,8 +380,9 @@ impl Context {
 
     pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
         let (width, height) = self.quad_context.screen_size();
+        let dpi = self.quad_context.dpi_scale();
 
-        glam::Mat4::orthographic_rh_gl(0., width, height, 0., -1., 1.)
+        glam::Mat4::orthographic_rh_gl(0., width / dpi, height / dpi, 0., -1., 1.)
     }
 
     pub(crate) fn projection_matrix(&self) -> glam::Mat4 {
@@ -680,6 +681,7 @@ impl Window {
             conf::Conf {
                 sample_count: 4,
                 window_title: label.to_string(),
+                // high_dpi: true,
                 ..Default::default()
             },
             future,
