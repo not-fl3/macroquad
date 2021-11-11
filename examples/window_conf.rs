@@ -3,7 +3,12 @@ use macroquad::prelude::*;
 fn window_conf() -> Conf {
     Conf {
         window_title: "Window Conf".to_owned(),
-        fullscreen: true,
+        fullscreen: false,
+        icon: Some(Icon {
+            small: include_bytes!("./ico16.png"),
+            medium: include_bytes!("./ico32.png"),
+            big: include_bytes!("./ico64.png"),
+        }),
         ..Default::default()
     }
 }

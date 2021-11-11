@@ -7,7 +7,7 @@ use crate::color::Color;
 // miniquad is re-exported for the use in combination with `get_internal_gl`
 pub use miniquad;
 
-pub use miniquad::conf::Conf;
+pub use crate::Conf;
 
 /// Block execution until the next frame.
 pub fn next_frame() -> crate::exec::FrameFuture {

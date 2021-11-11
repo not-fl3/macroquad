@@ -67,6 +67,109 @@ pub mod prelude;
 
 pub mod telemetry;
 
+/// Window icon.
+/// Contains 3 images - 16x16, 32x32, 64x64
+/// "bytes" are ".png" bytes, and are intended to use in a combination with
+/// "include_bytes!", like this:
+/// ```skip
+/// Icon {
+///    small: include_bytes!("../assets/ico16.png"),
+///    medium: include_bytes!("../assets/ico32.png"),
+///    big: include_bytes!("../assets/ico32.png"),
+/// }
+/// ```
+/// Providing .png's not in 16x16, 32x32 and 64x64 sizes will result into an
+/// error during window creation.
+pub struct Icon {
+    pub small: &'static [u8],
+    pub medium: &'static [u8],
+    pub big: &'static [u8],
+}
+
+impl Into<miniquad::conf::Icon> for &Icon {
+    fn into(self) -> miniquad::conf::Icon {
+        use std::convert::TryInto;
+
+        let small = image::load_from_memory(&self.small)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .to_rgba8()
+            .into_raw();
+        let medium = image::load_from_memory(&self.medium)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .to_rgba8()
+            .into_raw();
+        let big = image::load_from_memory(&self.big)
+            .unwrap_or_else(|e| panic!("{}", e))
+            .to_rgba8()
+            .into_raw();
+
+        assert_eq!(small.len(), 16 * 16 * 4);
+        assert_eq!(medium.len(), 32 * 32 * 4);
+        assert_eq!(big.len(), 64 * 64 * 4);
+
+        let small: [u8; 16 * 16 * 4] = small.try_into().unwrap();
+        let medium: [u8; 32 * 32 * 4] = medium.try_into().unwrap();
+        let big: [u8; 64 * 64 * 4] = big.try_into().unwrap();
+
+        miniquad::conf::Icon { small, medium, big }
+    }
+}
+
+/// Context creation configuration
+///
+/// A [`Conf`](struct.Conf.html) struct is used to describe a hardware and platform specific setup,
+/// mostly video display settings.
+pub struct Conf {
+    /// Title of the window, defaults to an empty string.
+    pub window_title: String,
+    /// The preferred width of the window, ignored on wasm/android.
+    ///
+    /// Default: 800
+    pub window_width: i32,
+    /// The preferred height of the window, ignored on wasm/android.
+    ///
+    /// Default: 600
+    pub window_height: i32,
+    /// Whether the rendering canvas is full-resolution on HighDPI displays.
+    ///
+    /// Default: false
+    pub high_dpi: bool,
+    /// Whether the window should be created in fullscreen mode, ignored on wasm/android.
+    ///
+    /// Default: false
+    pub fullscreen: bool,
+    /// MSAA sample count
+    ///
+    /// Default: 1
+    pub sample_count: i32,
+
+    /// Determines if the application user can resize the window
+    pub window_resizable: bool,
+
+    /// Miniquad allows to change the window icon programmatically.
+    /// The icon will be used as
+    /// - taskbar and titlebar icons on Windows.
+    /// - TODO: favicon on HTML5
+    /// - TODO: taskbar and titlebar(highly dependent on the WM) icons on Linux
+    /// - TODO: dock and titlebar icon on  MacOs
+    pub icon: Option<Icon>,
+}
+
+impl Default for Conf {
+    fn default() -> Conf {
+        Conf {
+            window_title: "Macroquad".to_owned(),
+            window_width: 800,
+            window_height: 600,
+            high_dpi: false,
+            fullscreen: false,
+            sample_count: 1,
+            window_resizable: true,
+            icon: None,
+        }
+    }
+}
+
 /// Macroquad entry point.
 ///
 /// ```skip
@@ -677,7 +780,7 @@ pub struct Window {}
 impl Window {
     pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
         Window::from_config(
-            conf::Conf {
+            Conf {
                 sample_count: 4,
                 window_title: label.to_string(),
                 ..Default::default()
@@ -686,11 +789,22 @@ impl Window {
         );
     }
 
-    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
+    pub fn from_config(config: Conf, future: impl Future<Output = ()> + 'static) {
         miniquad::start(
             conf::Conf {
-                sample_count: 4,
-                ..config
+                window_title: config.window_title.clone(),
+                window_width: config.window_width,
+                window_height: config.window_height,
+                high_dpi: config.high_dpi,
+                fullscreen: config.fullscreen,
+                sample_count: config.sample_count,
+                window_resizable: config.window_resizable,
+                icon: Some(
+                    config
+                        .icon
+                        .as_ref()
+                        .map_or_else(|| miniquad::conf::Icon::miniquad_logo(), |icon| icon.into()),
+                ),
             },
             |ctx| {
                 unsafe {
