@@ -5,6 +5,7 @@ use crate::{color::Color, get_context};
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
 
+/// Draws a solid triangle between points `v1`, `v2`, and `v3` with a given `color`.
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     let context = get_context();
 
@@ -20,12 +21,15 @@ pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     context.gl.geometry(&vertices, &indices);
 }
 
+/// Draws a triangle outline between points `v1`, `v2`, and `v3` with a given line `thickness` and `color`.
 pub fn draw_triangle_lines(v1: Vec2, v2: Vec2, v3: Vec2, thickness: f32, color: Color) {
     draw_line(v1.x, v1.y, v2.x, v2.y, thickness, color);
     draw_line(v2.x, v2.y, v3.x, v3.y, thickness, color);
     draw_line(v3.x, v3.y, v1.x, v1.y, thickness, color);
 }
 
+/// Draws a solid rectangle with its top-left corner at `[x, y]` with size `[w, h]` (width going to
+/// the right, height going down), with a given `color`.
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
     let context = get_context();
 
@@ -43,6 +47,8 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
     context.gl.geometry(&vertices, &indices);
 }
 
+/// Draws a rectangle outline with its top-left corner at `[x, y]` with size `[w, h]` (width going to
+/// the right, height going down), with a given line `thickness` and `color`.
 pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
     let context = get_context();
     let t = thickness / 2.;
@@ -68,6 +74,9 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     context.gl.geometry(&vertices, &indices);
 }
 
+/// Draws an outlined solid hexagon centered at `[x, y]` with a radius `size`, outline thickness
+/// defined by `border`, orientation defined by `vertical` (when `true`, the hexagon points along
+/// the `y` axis), and colors for outline given by `border_color` and fill by `fill_color`.
 pub fn draw_hexagon(
     x: f32,
     y: f32,
@@ -84,6 +93,8 @@ pub fn draw_hexagon(
     }
 }
 
+/// Draws a solid regular polygon centered at `[x, y]` with a given number of `sides`, `radius`,
+/// clockwise `rotation` (in degrees) and `color`.
 pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color) {
     let context = get_context();
 
@@ -110,6 +121,8 @@ pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: C
     context.gl.geometry(&vertices, &indices);
 }
 
+/// Draws a regular polygon outline centered at `[x, y]` with a given number of `sides`, `radius`,
+/// clockwise `rotation` (in degrees), line `thickness`, and `color`.
 pub fn draw_poly_lines(
     x: f32,
     y: f32,
@@ -136,14 +149,17 @@ pub fn draw_poly_lines(
     }
 }
 
+/// Draws a solid circle centered at `[x, y]` with a given radius `r` and `color`.
 pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
     draw_poly(x, y, 20, r, 0., color);
 }
 
+/// Draws a circle outline centered at `[x, y]` with a given radius, line `thickness` and `color`.
 pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
     draw_poly_lines(x, y, 20, r, 0., thickness, color);
 }
 
+/// Draws a line between points `[x1, y1]` and `[x2, y2]` with a given `thickness` and `color`.
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
     let context = get_context();
     let dx = x2 - x1;
