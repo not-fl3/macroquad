@@ -1,5 +1,6 @@
 use glam::*;
 
+/// A 2D rectangle, defined by its top-left corner, width and height.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Rect {
     pub x: f32,
@@ -9,14 +10,23 @@ pub struct Rect {
 }
 
 impl Rect {
+    /// Creates a new rectangle from its top-left corner, width and height.
+    ///
+    /// # Arguments:
+    ///   * `x` - x-coordinate of the top-left corner.
+    ///   * `y` - y-coordinate of the top-left corner.
+    ///   * `w` - width of the `Rect`, going to the right.
+    ///   * `h` - height of the `Rect`, going down.
     pub fn new(x: f32, y: f32, w: f32, h: f32) -> Rect {
         Rect { x, y, w, h }
     }
 
+    /// Returns the top-left corner of the `Rect`.
     pub fn point(&self) -> Vec2 {
         vec2(self.x, self.y)
     }
 
+    /// Returns the size (width and height) of the `Rect`.
     pub fn size(&self) -> Vec2 {
         vec2(self.w, self.h)
     }
