@@ -108,6 +108,9 @@ pub struct Tileset {
     pub transparentcolor: Option<String>,
     /// The external file that contains this tilesets data
     pub source: String,
+
+    /// The JSON format version
+    pub version: Option<String>,
 }
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#map

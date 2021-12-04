@@ -1,0 +1,15 @@
+{ "columns":16,
+ "image":"mountain_landscape.png",
+ "imageheight":512,
+ "imagewidth":512,
+ "margin":0,
+ "name":"mountain_landscape",
+ "spacing":0,
+ "tilecount":256,
+ "tiledversion":"1.7.2",
+ "tileheight":32,
+ "tilewidth":32,
+ "transparentcolor":"#000000",
+ "type":"tileset",
+ "version":"1.6"
+}
