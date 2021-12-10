@@ -10,6 +10,7 @@ pub struct InputText<'a> {
     password: bool,
     numbers: bool,
     ratio: f32,
+    pos: Option<Vec2>,
 }
 
 #[deprecated(note = "Use InputText instead")]
@@ -24,6 +25,7 @@ impl<'a> InputText<'a> {
             numbers: false,
             password: false,
             ratio: 0.5,
+            pos: None,
         }
     }
 
@@ -35,12 +37,20 @@ impl<'a> InputText<'a> {
             numbers: self.numbers,
             password: self.password,
             ratio: self.ratio,
+            pos: self.pos,
         }
     }
 
     pub fn size(self, size: Vec2) -> Self {
         Self {
             size: Some(size),
+            ..self
+        }
+    }
+
+    pub fn position(self, pos: Vec2) -> Self {
+        Self {
+            pos: Some(pos),
             ..self
         }
     }
@@ -73,7 +83,9 @@ impl<'a> InputText<'a> {
             label_size.y.max(19.),
         ));
 
-        let pos = context.window.cursor.fit(size, Layout::Vertical);
+        let pos = self
+            .pos
+            .unwrap_or_else(|| context.window.cursor.fit(size, Layout::Vertical));
 
         let editbox_area_w = if self.label.is_empty() {
             size.x
