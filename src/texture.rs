@@ -9,6 +9,7 @@ use crate::{
 
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
+pub use miniquad::TextureWrap;
 
 pub use crate::quad_gl::FilterMode;
 
@@ -569,6 +570,25 @@ impl Texture2D {
         let ctx = &mut get_context().quad_context;
 
         self.texture.set_filter(ctx, filter_mode);
+    }
+
+    /// Sets the [TextureWrap] of this texture.
+    ///
+    /// Use Repeat if you need the texture to repeat, for example.
+    ///
+    /// # Example
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// # #[macroquad::main("test")]
+    /// # async fn main() {
+    /// let texture = Texture2D::empty();
+    /// texture.set_wrap(TextureWrap::Repeat);
+    /// # }
+    /// ```
+    pub fn set_wrap(&self, texture_wrap: TextureWrap) {
+        let ctx = &mut get_context().quad_context;
+
+        self.texture.set_wrap(ctx, texture_wrap);
     }
 
     /// Returns the handle for this texture.
