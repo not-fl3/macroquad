@@ -261,6 +261,29 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
     Ok(font)
 }
 
+/// Load font from bytes array, may be use in combination with include_bytes,
+/// and gives control over filter mode and the default font size for pixel perfect ascii fonts
+/// ```ignore
+/// let font = load_ttf_font_from_bytes(include_bytes!("font.ttf"));
+/// ```
+pub fn load_ttf_pixel_font_from_bytes(bytes: &[u8], 
+	filter_mode: miniquad::FilterMode, font_size: u16) -> Result<Font, FontError> {
+	let context = get_context();
+	let atlas = Rc::new(RefCell::new(Atlas::new(
+			&mut get_context().quad_context,
+			filter_mode,
+	)));
+
+	let font = context
+			.fonts_storage
+			.make_font(FontInternal::load_from_bytes(atlas.clone(), bytes)?);
+
+	font.populate_font_cache(&Font::ascii_character_list(), font_size);
+
+	Ok(font)
+}
+
+
 /// Draw text with given font_size
 pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     draw_text_ex(
