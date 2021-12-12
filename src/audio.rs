@@ -95,7 +95,6 @@ pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
 ///
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::FileError> {
-
     let sound = {
         let ctx = &mut get_context().audio_context;
         QuadSndSound::load(&mut ctx.native_ctx, data);
