@@ -98,12 +98,12 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::Fi
 
     let sound = {
         let ctx = &mut get_context().audio_context;
-        QuadSndSound::load(&mut ctx.native_ctx, data)
+        QuadSndSound::load(&mut ctx.native_ctx, data);
     };
 
     // only on wasm the sound is not ready right away
     #[cfg(target_arch = "wasm32")]
-    while sound.is_loaded() {
+    while sound.is_loaded() == false {
         crate::window::next_frame().await;
     }
 
