@@ -1,5 +1,3 @@
-#![allow(warnings)]
-
 use crate::{
     math::{vec2, Rect},
     ui::{ElementState, Id, Layout, Ui},

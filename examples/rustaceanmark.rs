@@ -1,5 +1,4 @@
 use macroquad::prelude::*;
-use std::time::Instant;
 
 struct Rustaceane {
     pos: Vec2,

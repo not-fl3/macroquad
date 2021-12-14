@@ -24,8 +24,8 @@ pub struct Layer {}
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-frame
 #[derive(Clone, Debug, Default, DeJson)]
 pub struct Frame {
-    duration: i32,
-    tileid: i32,
+    pub duration: i32,
+    pub tileid: i32,
 }
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-tile

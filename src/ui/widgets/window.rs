@@ -9,7 +9,6 @@ pub struct Window {
     position: Vec2,
     size: Vec2,
     close_button: bool,
-    enabled: bool,
     movable: bool,
     titlebar: bool,
     label: Option<String>,
@@ -22,7 +21,6 @@ impl Window {
             position,
             size,
             close_button: false,
-            enabled: true,
             movable: true,
             titlebar: true,
             label: None,
@@ -49,10 +47,6 @@ impl Window {
 
     pub fn titlebar(self, titlebar: bool) -> Window {
         Window { titlebar, ..self }
-    }
-
-    pub fn enabled(self, enabled: bool) -> Window {
-        Window { enabled, ..self }
     }
 
     pub fn ui<F: FnOnce(&mut Ui)>(self, ui: &mut Ui, f: F) -> bool {

@@ -1,5 +1,3 @@
-#![allow(warnings)]
-
 use macroquad::prelude::*;
 
 use macroquad::ui::{
