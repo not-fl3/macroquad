@@ -50,7 +50,10 @@ pub fn show_mouse(shown: bool) {
 pub fn mouse_position() -> (f32, f32) {
     let context = get_context();
 
-    (context.mouse_position.x, context.mouse_position.y)
+    (
+        context.mouse_position.x / context.quad_context.dpi_scale(),
+        context.mouse_position.y / context.quad_context.dpi_scale(),
+    )
 }
 
 /// Return mouse position in range [-1; 1].
