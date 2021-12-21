@@ -26,9 +26,9 @@ impl Circle {
         self.r *= sr;
     }
 
-    /// Checks whether the `Rect` contains a `Point`
+    /// Checks whether the `Circle` contains a `Point`
     pub fn contains(&self, pos: &Vec2) -> bool {
-        return pos.distance(vec2(self.x, self.y)) >= self.r;
+        return pos.distance(vec2(self.x, self.y)) < self.r;
     }
 
     /// Checks whether the `Circle` overlaps a `Circle`
