@@ -15,6 +15,10 @@ impl Circle {
         vec2(self.x, self.y)
     }
 
+    pub fn radius(&self) -> f32 {
+        self.r
+    }
+
     /// Moves the `Circle`'s origin to (x, y)
     pub fn move_to(&mut self, destination: Vec2) {
         self.x = destination.x;
