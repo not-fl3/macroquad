@@ -4,20 +4,48 @@ use crate::get_context;
 
 /// Struct Clock
 pub struct Clock {
-    elapsed: f32
+    elapsed: f32,
+    can_tick: bool
 }
 
 impl Clock {
     pub fn new() -> Self {
-        Self { elapsed: 0.0 }
+        Self { elapsed: 0.0, can_tick: true }
     }
 
+    // Restart clock, set elapsed time to 0
     pub fn restart(&mut self) {
         self.elapsed = 0.0;
     }
 
+    // Update clock
     pub fn tick(&mut self) {
-        self.elapsed += get_frame_time();
+        if self.can_tick {
+            self.elapsed += get_frame_time();
+        }
+    }
+
+    // Stop clock ticking
+    pub fn pause(&mut self) {
+        self.can_tick = false;
+    }
+
+    // Resume clock ticking 
+    pub fn resume(&mut self) {
+        self.can_tick = true;
+    }
+
+    // Get time spent while clock was ticking
+    pub fn get_elpased_time(&self) -> f32 {
+        self.elapsed
+    }
+
+    pub fn on(&mut self, time_spent: f32) -> bool {
+        let mut result: bool = false;
+        if self.elapsed >= time_spent {
+            result = true;
+        }
+        result
     }
 }
 
