@@ -2,6 +2,25 @@
 
 use crate::get_context;
 
+/// Struct Clock
+pub struct Clock {
+    elapsed: f32
+}
+
+impl Clock {
+    pub fn new() -> Self {
+        Self { elapsed: 0.0 }
+    }
+
+    pub fn restart(&mut self) {
+        self.elapsed = 0.0;
+    }
+
+    pub fn tick(&mut self) {
+        self.elapsed += get_frame_time();
+    }
+}
+
 /// Returns current FPS
 pub fn get_fps() -> i32 {
     let context = get_context();
