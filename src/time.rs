@@ -9,8 +9,8 @@ pub struct Clock {
 }
 
 impl Clock {
-    pub fn new(start_time: f32) -> Self {
-        Self { elapsed: start_time, can_tick: true }
+    pub fn new() -> Self {
+        Self { elapsed: 0.0, can_tick: true }
     }
 
     // Restart clock, set elapsed time to 0
