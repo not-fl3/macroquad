@@ -39,14 +39,6 @@ impl Clock {
     pub fn get_elpased_time(&self) -> f32 {
         self.elapsed
     }
-
-    pub fn is_elapsed_time(&mut self, time_spent: f32) -> bool {
-        let mut result: bool = false;
-        if self.elapsed >= time_spent {
-            result = true;
-        }
-        result
-    }
 }
 
 /// Returns current FPS
