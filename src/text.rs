@@ -220,6 +220,15 @@ pub struct TextParams {
     /// Default is 1.0
     pub font_scale_aspect: f32,
     pub color: Color,
+    pub shadow: Option<ShadowParams>,
+}
+
+/// Controls properties of the text shadow, see "TextParams".
+#[derive(Debug, Clone, Copy)]
+pub struct ShadowParams {
+    /// The pixels on the x- and y-axis that the shadow should be moved
+    offset: f32,
+    color: Color,
 }
 
 impl Default for TextParams {
@@ -230,6 +239,7 @@ impl Default for TextParams {
             font_scale: 1.0,
             font_scale_aspect: 1.0,
             color: WHITE,
+            shadow: None,
         }
     }
 }
@@ -276,6 +286,32 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     )
 }
 
+/// Draw text with given font_size and shadow
+pub fn draw_shadowed_text(
+    text: &str,
+    x: f32,
+    y: f32,
+    font_size: f32,
+    color: Color,
+    shadow_color: Color,
+) {
+    draw_text_ex(
+        text,
+        x,
+        y,
+        TextParams {
+            font_size: font_size as u16,
+            font_scale: 1.0,
+            color,
+            shadow: Some(ShadowParams {
+                offset: font_size / 10.0,
+                color: shadow_color,
+            }),
+            ..Default::default()
+        },
+    )
+}
+
 /// Draw text with custom params such as font, font size and font scale.
 pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     let font = get_context().fonts_storage.get_font_mut(params.font);
@@ -313,6 +349,20 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
             glyph.w as f32,
             glyph.h as f32,
         );
+
+        if let Some(shadow) = params.shadow {
+            crate::texture::draw_texture_ex(
+                atlas.texture(),
+                dest.x + shadow.offset,
+                dest.y + shadow.offset,
+                shadow.color,
+                crate::texture::DrawTextureParams {
+                    dest_size: Some(vec2(dest.w, dest.h)),
+                    source: Some(source),
+                    ..Default::default()
+                },
+            )
+        }
 
         crate::texture::draw_texture_ex(
             atlas.texture(),
