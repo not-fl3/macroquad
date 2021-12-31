@@ -134,7 +134,7 @@ pub mod rand {
 #[cfg(not(feature = "log-rs"))]
 /// Logging macros, available with miniquad "log-impl" feature.
 pub mod logging {
-    pub use miniquad::{debug, error, info, warn};
+    pub use miniquad::{debug, error, info, trace, warn};
 }
 #[cfg(feature = "log-rs")]
 // Use logging facade
