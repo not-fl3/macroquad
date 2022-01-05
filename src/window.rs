@@ -65,6 +65,20 @@ pub fn screen_height() -> f32 {
     context.screen_height / context.quad_context.dpi_scale()
 }
 
+/// Request the window size to be the given value. This takes DPI into account.
+///
+/// Note that the OS might decide to give a different size. Additionally, the size in macroquad won't be updated until the next `next_frame().await`.
+pub fn request_new_screen_size(width: f32, height: f32) {
+    let context = get_context();
+    context.quad_context.set_window_size(
+        (width * context.quad_context.dpi_scale()) as u32,
+        (height * context.quad_context.dpi_scale()) as u32,
+    );
+    // We do not set the context.screen_width and context.screen_height here.
+    // After `set_window_size` is called, EventHandlerFree::resize will be invoked, setting the size correctly.
+    // Because the OS might decide to give a different screen dimension, setting the context.screen_* here would be confusing.
+}
+
 /// With `set_panic_handler` set to a handler code, macroquad will use
 /// `std::panic::catch_unwind` on user code to catch some panics.
 ///
