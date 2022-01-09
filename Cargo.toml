@@ -36,6 +36,7 @@ bumpalo = "3.4"
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
+static_assertions = "1.1"
 
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
