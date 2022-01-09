@@ -2,6 +2,7 @@ use crate::time::get_time;
 
 use std::collections::HashMap;
 
+// todo: update to use `static LazyCell`
 static mut PROFILER: Option<Profiler> = None;
 
 fn get_profiler() -> &'static mut Profiler {

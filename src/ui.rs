@@ -36,7 +36,11 @@ use std::{borrow::Cow, ops::DerefMut};
 /// Root UI. Widgets drawn with the root ui will be always presented at the end of the frame with a "default" camera.
 /// UI space would be a "default" screen space (0..screen_width(), 0..screen_height())
 pub fn root_ui() -> impl DerefMut<Target = Ui> {
-    crate::get_context().ui_context.ui.borrow_mut()
+    // TODO: this is almost certainly unsound since nothing restricts the
+    // lifetime of the return value. A user can essentially keep a mutable
+    // reference to the global `Context` even though the macroquad library code
+    // will modify the Context (via unsafe).
+    unsafe { (*crate::get_context()).ui_context.ui.borrow_mut() }
 }
 
 /// Current camera world space UI.

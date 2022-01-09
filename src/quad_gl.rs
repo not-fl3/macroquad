@@ -547,6 +547,8 @@ pub struct QuadGl {
     max_indices: usize,
 }
 
+// # Safety
+// Methods in `QuadGl` are not allowed to call `get_context()`
 impl QuadGl {
     pub fn new(ctx: &mut miniquad::Context) -> QuadGl {
         let white_texture = Texture::from_rgba8(ctx, 1, 1, &[255, 255, 255, 255]);
@@ -765,7 +767,10 @@ impl QuadGl {
         // back in the days when projection was a part of static batcher
         // now it is not, so here we go with this hack
 
-        crate::get_context().projection_matrix()
+        static_assertions::assert_impl_all!(glam::Mat4: Copy);
+
+        // SAFETY: no other functions and `Mat4` is Copy
+        unsafe { (*crate::get_context()).projection_matrix() }
     }
 
     pub fn get_active_render_pass(&self) -> Option<RenderPass> {

@@ -45,6 +45,7 @@ use std::pin::Pin;
 
 mod exec;
 mod quad_gl;
+pub(crate) mod racey_cell;
 
 pub mod audio;
 pub mod camera;
@@ -144,6 +145,7 @@ pub use miniquad;
 use crate::{
     color::{colors::*, Color},
     quad_gl::QuadGl,
+    racey_cell::RacyCell,
     ui::ui_context::UiContext,
 };
 
@@ -393,6 +395,8 @@ impl Context {
         }
     }
 
+    /// # Safety
+    /// Must not call `get_context()`
     pub(crate) fn perform_render_passes(&mut self) {
         let matrix = self.projection_matrix();
 
@@ -401,20 +405,38 @@ impl Context {
 }
 
 #[no_mangle]
-static mut CONTEXT: Option<Context> = None;
+static CONTEXT: RacyCell<Option<Context>> = RacyCell::new(None);
 
 // unfortunately #[cfg(test)] do not work with integration tests
 // so this module should be publicly available
 #[doc(hidden)]
 pub mod test {
+    // todo: update to use `static LazyCell` instead of `static mut`
     pub static mut MUTEX: Option<std::sync::Mutex<()>> = None;
     pub static ONCE: std::sync::Once = std::sync::Once::new();
 }
 
-fn get_context() -> &'static mut Context {
-    unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
+/// # Panic
+/// [`init_context()`] must be called before this function.
+///
+/// # Safety
+/// This function must only be called from the "main" thread. Since all `static`
+/// variables must be `Sync`, this invariant cannot be enforced by the compiler.
+///
+/// If the result is converted to a mutable reference, then that reference
+/// should NOT be live when calling another function that could mutate the
+/// underlying `Context` (AKA a user-defined or macroquad function).
+///
+/// The easiest way to achieve that requirement is by not calling any other
+/// functions that could mutate the underlying `Context`.
+unsafe fn get_context() -> *mut Context {
+    match CONTEXT.get_ref_mut() {
+        None => panic!(),
+        Some(x) => x,
+    }
 }
 
+// todo: update to use `static LazyCell`
 static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
 struct Stage {}
@@ -422,12 +444,15 @@ struct Stage {}
 impl EventHandlerFree for Stage {
     fn resize_event(&mut self, width: f32, height: f32) {
         let _z = telemetry::ZoneGuard::new("Event::resize_event");
-        get_context().screen_width = width;
-        get_context().screen_height = height;
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
+        context.screen_width = width;
+        context.screen_height = height;
     }
 
     fn raw_mouse_motion(&mut self, x: f32, y: f32) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
 
         if context.cursor_grabbed {
             context.mouse_position += Vec2::new(x, y);
@@ -444,7 +469,8 @@ impl EventHandlerFree for Stage {
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
 
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
@@ -457,7 +483,8 @@ impl EventHandlerFree for Stage {
     }
 
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
 
         context.mouse_wheel.x = x;
         context.mouse_wheel.y = y;
@@ -469,7 +496,8 @@ impl EventHandlerFree for Stage {
     }
 
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
 
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
@@ -485,7 +513,8 @@ impl EventHandlerFree for Stage {
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
 
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
@@ -501,18 +530,23 @@ impl EventHandlerFree for Stage {
     }
 
     fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
-        let context = get_context();
+        let simulate_mouse_with_touch = {
+            // SAFETY: no calls to other macroquad functions in scope
+            let context = unsafe { &mut *get_context() };
 
-        context.touches.insert(
-            id,
-            input::Touch {
+            context.touches.insert(
                 id,
-                phase: phase.into(),
-                position: Vec2::new(x, y),
-            },
-        );
+                input::Touch {
+                    id,
+                    phase: phase.into(),
+                    position: Vec2::new(x, y),
+                },
+            );
+            context.simulate_mouse_with_touch
+        };
 
-        if context.simulate_mouse_with_touch {
+        // SAFETY: context mut ref has been dropped
+        if simulate_mouse_with_touch {
             if phase == TouchPhase::Started {
                 self.mouse_button_down_event(MouseButton::Left, x, y);
             }
@@ -526,6 +560,8 @@ impl EventHandlerFree for Stage {
             }
         };
 
+        // SAFETY: no calls to other macroquad functions in rest of function
+        let context = unsafe { &mut *get_context() };
         context
             .input_events
             .iter_mut()
@@ -533,7 +569,8 @@ impl EventHandlerFree for Stage {
     }
 
     fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
 
         context.chars_pressed_queue.push(character);
         context.chars_pressed_ui_queue.push(character);
@@ -548,7 +585,9 @@ impl EventHandlerFree for Stage {
     }
 
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
+
         context.keys_down.insert(keycode);
         if repeat == false {
             context.keys_pressed.insert(keycode);
@@ -564,7 +603,9 @@ impl EventHandlerFree for Stage {
     }
 
     fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
-        let context = get_context();
+        // SAFETY: no calls to other macroquad functions
+        let context = unsafe { &mut *get_context() };
+
         context.keys_down.remove(&keycode);
         context.keys_released.insert(keycode);
 
@@ -577,9 +618,15 @@ impl EventHandlerFree for Stage {
     fn update(&mut self) {
         let _z = telemetry::ZoneGuard::new("Event::update");
 
-        // Unless called every frame, cursor will not remain grabbed
-        let context = get_context();
-        context.quad_context.set_cursor_grab(context.cursor_grabbed);
+        // SAFETY: uses raw pointer to avoid possible mut ptr aliasing
+        unsafe {
+            let context_ptr: *mut Context = get_context();
+
+            // Unless called every frame, cursor will not remain grabbed
+            (*context_ptr)
+                .quad_context
+                .set_cursor_grab((*context_ptr).cursor_grabbed);
+        }
 
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -594,9 +641,14 @@ impl EventHandlerFree for Stage {
 
             use std::panic;
 
+            // SAFETY: use raw pointer to avoid mut ref aliasing
+            let context_ptr: *mut Context = unsafe { get_context() };
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
-                get_context().begin_frame();
+                // SAFETY: use raw pointer to avoid mut ref aliasing
+                unsafe {
+                    (*context_ptr).begin_frame();
+                }
             }
 
             fn maybe_unwind(unwind: bool, f: impl FnOnce() + Sized + panic::UnwindSafe) -> bool {
@@ -608,7 +660,9 @@ impl EventHandlerFree for Stage {
                 }
             }
 
-            let result = maybe_unwind(get_context().unwind, || {
+            // SAFETY: use raw pointer to avoid mut ref aliasing
+            // todo: look at unwind safety
+            let result = maybe_unwind(unsafe { (*context_ptr).unwind }, || {
                 if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
                     let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
@@ -616,15 +670,15 @@ impl EventHandlerFree for Stage {
                         unsafe {
                             MAIN_FUTURE = None;
                         }
-                        get_context().quad_context.quit();
+                        unsafe { (*context_ptr).quad_context.quit() };
                         return;
                     }
-                    get_context().coroutines_context.update();
+                    unsafe { (*context_ptr).coroutines_context.update() };
                 }
             });
 
             if result == false {
-                if let Some(recovery_future) = get_context().recovery_future.take() {
+                if let Some(recovery_future) = unsafe { (*context_ptr).recovery_future.take() } {
                     unsafe {
                         MAIN_FUTURE = Some(recovery_future);
                     }
@@ -633,10 +687,14 @@ impl EventHandlerFree for Stage {
 
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
-                get_context().end_frame();
+                unsafe {
+                    (*context_ptr).end_frame();
+                }
             }
-            get_context().frame_time = date::now() - get_context().last_frame_time;
-            get_context().last_frame_time = date::now();
+            unsafe {
+                (*context_ptr).frame_time = date::now() - (*context_ptr).last_frame_time;
+                (*context_ptr).last_frame_time = date::now();
+            }
 
             #[cfg(any(target_arch = "wasm32", target_os = "linux"))]
             {
@@ -663,10 +721,14 @@ impl EventHandlerFree for Stage {
     }
 
     fn quit_requested_event(&mut self) {
-        let context = get_context();
-        if context.prevent_quit_event {
-            context.quad_context.cancel_quit();
-            context.quit_requested = true;
+        // SAFETY: use raw mut pointer to avoid possible pointer aliasing
+        unsafe {
+            let context: *mut Context = get_context();
+
+            if (*context).prevent_quit_event {
+                (*context).quad_context.cancel_quit();
+                (*context).quit_requested = true;
+            }
         }
     }
 }
@@ -698,7 +760,7 @@ impl Window {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
-                unsafe { CONTEXT = Some(Context::new(ctx)) };
+                unsafe { CONTEXT = RacyCell::new(Some(Context::new(ctx))) };
                 UserData::free(Stage {})
             },
         );

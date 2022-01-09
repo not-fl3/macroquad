@@ -96,7 +96,9 @@ pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::FileError> {
     let sound = {
-        let ctx = &mut get_context().audio_context;
+        // SAFETY: using raw pointer to hand out mut ref as `ctx`, which avoids aliasing
+        let ctx = unsafe { &mut (*get_context()).audio_context };
+
         QuadSndSound::load(&mut ctx.native_ctx, data)
     };
 
@@ -106,7 +108,8 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::Fi
         crate::window::next_frame().await;
     }
 
-    let ctx = &mut get_context().audio_context;
+    // SAFETY: no calls to other macroquad functions
+    let ctx = unsafe { &mut (*get_context()).audio_context };
 
     let id = ctx.id;
     ctx.sounds.insert(id, sound);
@@ -115,9 +118,11 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::Fi
 }
 
 pub fn play_sound_once(sound: Sound) {
-    let ctx = &mut get_context().audio_context;
-    let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
+    // SAFETY: no calls to other macroquad functions
+    // QuadSndSound is a miniquad type
+    let ctx = unsafe { &mut (*get_context()).audio_context };
 
+    let sound: &mut QuadSndSound = ctx.sounds.get_mut(&sound.0).unwrap();
     sound.play(
         &mut ctx.native_ctx,
         PlaySoundParams {
@@ -128,21 +133,28 @@ pub fn play_sound_once(sound: Sound) {
 }
 
 pub fn play_sound(sound: Sound, params: PlaySoundParams) {
-    let ctx = &mut get_context().audio_context;
-    let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
+    // SAFETY: no calls to other macroquad functions since QuadSndSound is a
+    // miniquad type
+    let ctx = unsafe { &mut (*get_context()).audio_context };
 
+    let sound: &mut QuadSndSound = ctx.sounds.get_mut(&sound.0).unwrap();
     sound.play(&mut ctx.native_ctx, params);
 }
 
 pub fn stop_sound(sound: Sound) {
-    let ctx = &mut get_context().audio_context;
-    let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
+    // SAFETY: no calls to other macroquad functions since QuadSndSound is a
+    // miniquad type
+    let ctx = unsafe { &mut (*get_context()).audio_context };
 
+    let sound = ctx.sounds.get_mut(&sound.0).unwrap();
     sound.stop(&mut ctx.native_ctx);
 }
 
 pub fn set_sound_volume(sound: Sound, volume: f32) {
-    let ctx = &mut get_context().audio_context;
-    let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
+    // SAFETY: no calls to other macroquad functions since QuadSndSound is a
+    // miniquad type
+    let ctx = unsafe { &mut (*get_context()).audio_context };
+
+    let sound = ctx.sounds.get_mut(&sound.0).unwrap();
     sound.set_volume(&mut ctx.native_ctx, volume)
 }

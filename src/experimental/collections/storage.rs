@@ -23,6 +23,7 @@ use std::{
     rc::Rc,
 };
 
+// todo: update to use `static LazyCell`
 static mut STORAGE: Option<HashMap<TypeId, Box<dyn Any>>> = None;
 
 /// Store data in global storage.
