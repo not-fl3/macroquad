@@ -649,7 +649,8 @@ impl QuadGl {
         self.draw_calls_count = 0;
     }
 
-    pub fn draw(&mut self, ctx: &mut miniquad::Context, projection: glam::Mat4) {
+    pub fn draw(&mut self, context: &mut crate::Context, projection: glam::Mat4) {
+        let ctx = &mut context.quad_context;
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
             let vertex_buffer = Buffer::stream(
                 ctx,
@@ -746,7 +747,7 @@ impl QuadGl {
             ctx.end_render_pass();
 
             if dc.capture {
-                telemetry::track_drawcall(&pipeline.pipeline, bindings, dc.indices_count);
+                telemetry::track_drawcall(context, &pipeline.pipeline, bindings, dc.indices_count);
             }
 
             dc.vertices_count = 0;
@@ -760,12 +761,12 @@ impl QuadGl {
         self.state.capture = capture;
     }
 
-    pub fn get_projection_matrix(&self) -> glam::Mat4 {
+    pub fn get_projection_matrix(&self, context: &crate::Context) -> glam::Mat4 {
         // get_projection_matrix is a way plugins used to get macroquad's current projection
         // back in the days when projection was a part of static batcher
         // now it is not, so here we go with this hack
 
-        crate::get_context().projection_matrix()
+        context.projection_matrix()
     }
 
     pub fn get_active_render_pass(&self) -> Option<RenderPass> {
@@ -796,12 +797,12 @@ impl QuadGl {
         self.state.viewport = viewport;
     }
 
-    pub fn get_viewport(&self) -> (i32, i32, i32, i32) {
+    pub fn get_viewport(&self, context: &mut crate::Context) -> (i32, i32, i32, i32) {
         self.state.viewport.unwrap_or((
             0,
             0,
-            crate::window::screen_width() as _,
-            crate::window::screen_height() as _,
+            crate::window::screen_width(context) as _,
+            crate::window::screen_height(context) as _,
         ))
     }
 

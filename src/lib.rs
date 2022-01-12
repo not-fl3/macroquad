@@ -321,6 +321,12 @@ impl Context {
         }
     }
 
+    /// Draw all the batched stuff and reset the internal state cache
+    /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
+    pub fn flush(&mut self) {
+        self.perform_render_passes();
+    }
+
     fn begin_frame(&mut self) {
         telemetry::begin_gpu_query("GPU");
 
@@ -400,9 +406,6 @@ impl Context {
     }
 }
 
-#[no_mangle]
-static mut CONTEXT: Option<Context> = None;
-
 // unfortunately #[cfg(test)] do not work with integration tests
 // so this module should be publicly available
 #[doc(hidden)]
@@ -411,14 +414,11 @@ pub mod test {
     pub static ONCE: std::sync::Once = std::sync::Once::new();
 }
 
-fn get_context() -> &'static mut Context {
-    unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
-}
-
 static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
 struct Stage {}
 
+/*
 impl EventHandlerFree for Stage {
     fn resize_event(&mut self, width: f32, height: f32) {
         let _z = telemetry::ZoneGuard::new("Event::resize_event");
@@ -670,6 +670,7 @@ impl EventHandlerFree for Stage {
         }
     }
 }
+*/
 
 /// Not meant to be used directly, only from the macro.
 #[doc(hidden)]
@@ -688,7 +689,8 @@ impl Window {
         );
     }
 
-    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
+    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) -> Context {
+        let context: Context;
         miniquad::start(
             conf::Conf {
                 sample_count: 4,
@@ -698,9 +700,10 @@ impl Window {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
-                unsafe { CONTEXT = Some(Context::new(ctx)) };
+                context = Context::new(ctx);
                 UserData::free(Stage {})
             },
         );
+        context
     }
 }

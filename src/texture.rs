@@ -3,7 +3,6 @@
 use crate::{
     color::Color,
     file::{load_file, FileError},
-    get_context,
     math::Rect,
 };
 
@@ -203,17 +202,20 @@ impl Image {
 }
 
 /// Loads an [Image] from a file into CPU memory.
-pub async fn load_image(path: &str) -> Result<Image, FileError> {
-    let bytes = load_file(path).await?;
+pub async fn load_image(context: &mut crate::Context, path: &str) -> Result<Image, FileError> {
+    let bytes = load_file(context, path).await?;
 
     Ok(Image::from_file_with_format(&bytes, None))
 }
 
 /// Loads a [Texture2D] from a file into GPU memory.
-pub async fn load_texture(path: &str) -> Result<Texture2D, FileError> {
-    let bytes = load_file(path).await?;
+pub async fn load_texture(
+    context: &mut crate::Context,
+    path: &str,
+) -> Result<Texture2D, FileError> {
+    let bytes = load_file(context, path).await?;
 
-    Ok(Texture2D::from_file_with_format(&bytes[..], None))
+    Ok(Texture2D::from_file_with_format(context, &bytes[..], None))
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -223,16 +225,16 @@ pub struct RenderTarget {
 }
 
 impl RenderTarget {
-    pub fn delete(&self) {
+    pub fn delete(&self, context: &mut crate::Context) {
         self.texture.delete();
 
-        let context = &mut get_context().quad_context;
+        let context = &mut context.quad_context;
         self.render_pass.delete(context);
     }
 }
 
-pub fn render_target(width: u32, height: u32) -> RenderTarget {
-    let context = &mut get_context().quad_context;
+pub fn render_target(context: &mut crate::Context, width: u32, height: u32) -> RenderTarget {
+    let context = &mut context.quad_context;
 
     let texture = miniquad::Texture::new_render_texture(
         context,
@@ -292,19 +294,24 @@ impl Default for DrawTextureParams {
     }
 }
 
-pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
-    draw_texture_ex(texture, x, y, color, Default::default());
+pub fn draw_texture(
+    context: &mut crate::Context,
+    texture: Texture2D,
+    x: f32,
+    y: f32,
+    color: Color,
+) {
+    draw_texture_ex(context, texture, x, y, color, Default::default());
 }
 
 pub fn draw_texture_ex(
+    context: &mut crate::Context,
     texture: Texture2D,
     x: f32,
     y: f32,
     color: Color,
     params: DrawTextureParams,
 ) {
-    let context = get_context();
-
     let Rect {
         x: mut sx,
         y: mut sy,
@@ -319,7 +326,7 @@ pub fn draw_texture_ex(
 
     let mut texture = texture;
 
-    if let Some(batched) = context.texture_batcher.get(texture) {
+    if let Some(batched) = context.texture_batcher.get(context, texture) {
         texture = batched.0;
 
         sx = batched.1.x * texture.width();
@@ -386,6 +393,7 @@ pub fn draw_texture_ex(
 
 #[deprecated(since = "0.3.0", note = "Use draw_texture_ex instead")]
 pub fn draw_texture_rec(
+    context: &mut crate::Context,
     texture: Texture2D,
     x: f32,
     y: f32,
@@ -398,6 +406,7 @@ pub fn draw_texture_rec(
     color: Color,
 ) {
     draw_texture_ex(
+        context,
         texture,
         x,
         y,
@@ -416,12 +425,8 @@ pub fn draw_texture_rec(
 }
 
 /// Get pixel data from screen buffer and return an Image (screenshot)
-pub fn get_screen_data() -> Image {
-    unsafe {
-        crate::window::get_internal_gl().flush();
-    }
-
-    let context = get_context();
+pub fn get_screen_data(context: &mut crate::Context) -> Image {
+    context.flush();
 
     let texture = Texture2D::from_miniquad_texture(miniquad::Texture::new_render_texture(
         &mut context.quad_context,
@@ -477,6 +482,7 @@ impl Texture2D {
     /// # }
     /// ```
     pub fn from_file_with_format<'a>(
+        context: &mut crate::Context,
         bytes: &[u8],
         format: Option<image::ImageFormat>,
     ) -> Texture2D {
@@ -493,12 +499,12 @@ impl Texture2D {
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        Self::from_rgba8(width, height, &bytes)
+        Self::from_rgba8(context, width, height, &bytes)
     }
 
     /// Creates a Texture2D from an [Image].
-    pub fn from_image(image: &Image) -> Texture2D {
-        Texture2D::from_rgba8(image.width, image.height, &image.bytes)
+    pub fn from_image(context: &mut crate::Context, image: &Image) -> Texture2D {
+        Texture2D::from_rgba8(context, image.width, image.height, &image.bytes)
     }
 
     /// Creates a Texture2D from a miniquad
@@ -521,23 +527,27 @@ impl Texture2D {
     /// let texture = Texture2D::from_rgba8(2, 2, &bytes);
     /// # }
     /// ```
-    pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
-        let ctx = get_context();
-
-        let texture = miniquad::Texture::from_rgba8(&mut ctx.quad_context, width, height, bytes);
+    pub fn from_rgba8(
+        context: &mut crate::Context,
+        width: u16,
+        height: u16,
+        bytes: &[u8],
+    ) -> Texture2D {
+        let texture =
+            miniquad::Texture::from_rgba8(&mut context.quad_context, width, height, bytes);
         let texture = Texture2D { texture };
 
-        ctx.texture_batcher.add_unbatched(texture);
+        context.texture_batcher.add_unbatched(texture);
 
         texture
     }
 
     /// Uploads [Image] data to this texture.
-    pub fn update(&self, image: &Image) {
+    pub fn update(&self, context: &mut crate::Context, image: &Image) {
         assert_eq!(self.texture.width, image.width as u32);
         assert_eq!(self.texture.height, image.height as u32);
 
-        let ctx = &mut get_context().quad_context;
+        let ctx = &mut context.quad_context;
 
         self.texture.update(ctx, &image.bytes);
     }
@@ -565,8 +575,8 @@ impl Texture2D {
     /// texture.set_filter(FilterMode::Linear);
     /// # }
     /// ```
-    pub fn set_filter(&self, filter_mode: FilterMode) {
-        let ctx = &mut get_context().quad_context;
+    pub fn set_filter(&self, context: &mut crate::Context, filter_mode: FilterMode) {
+        let ctx = &mut context.quad_context;
 
         self.texture.set_filter(ctx, filter_mode);
     }
@@ -637,11 +647,15 @@ impl Batcher {
         self.unbatched.push(texture);
     }
 
-    pub fn get(&mut self, texture: Texture2D) -> Option<(Texture2D, Rect)> {
+    pub fn get(
+        &mut self,
+        context: &mut crate::Context,
+        texture: Texture2D,
+    ) -> Option<(Texture2D, Rect)> {
         let id = texture.raw_miniquad_texture_handle().gl_internal_id();
         let uv_rect = self.atlas.get_uv_rect(id as _)?;
 
-        Some((self.atlas.texture(), uv_rect))
+        Some((self.atlas.texture(context), uv_rect))
     }
 }
 
@@ -650,9 +664,7 @@ impl Batcher {
 /// the one from the atlas
 /// NOTE: the GPU memory and texture itself in Texture2D will still be allocated
 /// and Texture->Image conversions will work with Texture2D content, not the atlas
-pub fn build_textures_atlas() {
-    let context = get_context();
-
+pub fn build_textures_atlas(context: &mut crate::Context) {
     for texture in context.texture_batcher.unbatched.drain(0..) {
         let sprite: Image = texture.get_texture_data();
         let id = texture.raw_miniquad_texture_handle().gl_internal_id();
@@ -660,6 +672,6 @@ pub fn build_textures_atlas() {
         context.texture_batcher.atlas.cache_sprite(id as _, sprite);
     }
 
-    let texture = context.texture_batcher.atlas.texture();
+    let texture = context.texture_batcher.atlas.texture(context);
     crate::telemetry::log_string(&format!("Atlas: {} {}", texture.width(), texture.height()));
 }

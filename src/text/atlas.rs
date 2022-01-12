@@ -72,7 +72,7 @@ impl Atlas {
         self.image.height
     }
 
-    pub fn texture(&mut self) -> Texture2D {
+    pub fn texture(&mut self, context: &mut crate::Context) -> Texture2D {
         if self.dirty {
             self.dirty = false;
             if self.texture.width() != self.image.width as _
@@ -81,14 +81,15 @@ impl Atlas {
                 self.texture.delete();
 
                 self.texture = Texture2D::from_rgba8(
+                    context,
                     self.image.width,
                     self.image.height,
                     &self.image.bytes[..],
                 );
-                self.texture.set_filter(self.filter);
+                self.texture.set_filter(context, self.filter);
             }
 
-            self.texture.update(&self.image);
+            self.texture.update(context, &self.image);
         }
 
         self.texture

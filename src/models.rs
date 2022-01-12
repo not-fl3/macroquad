@@ -1,6 +1,6 @@
 //! 3D shapes and models, loading 3d models from files, drawing 3D primitives.
 
-use crate::{color::Color, get_context};
+use crate::color::Color;
 
 use crate::{quad_gl::DrawMode, texture::Texture2D};
 use glam::{vec2, vec3, Vec2, Vec3};
@@ -28,16 +28,13 @@ pub struct Mesh {
     pub texture: Option<Texture2D>,
 }
 
-pub fn draw_mesh(mesh: &Mesh) {
-    let context = get_context();
-
+pub fn draw_mesh(context: &mut crate::Context, mesh: &Mesh) {
     context.gl.texture(mesh.texture);
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
 }
 
-fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
-    let context = get_context();
+fn draw_quad(context: &mut crate::Context, vertices: [(Vec3, Vec2, Color); 4]) {
     let indices = [0, 1, 2, 0, 2, 3];
     let quad = [
         (
@@ -66,8 +63,7 @@ fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
     context.gl.geometry(&quad[..], &indices);
 }
 
-pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
-    let context = get_context();
+pub fn draw_line_3d(context: &mut crate::Context, start: Vec3, end: Vec3, color: Color) {
     let uv = [0., 0.];
     let color: [f32; 4] = color.into();
     let indices = [0, 1];
@@ -82,17 +78,25 @@ pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
 }
 
 /// Draw a grid centered at (0, 0, 0)
-pub fn draw_grid(slices: u32, spacing: f32, axes_color: Color, other_color: Color) {
+pub fn draw_grid(
+    context: &mut crate::Context,
+    slices: u32,
+    spacing: f32,
+    axes_color: Color,
+    other_color: Color,
+) {
     let half_slices = (slices as i32) / 2;
     for i in -half_slices..half_slices + 1 {
         let color = if i == 0 { axes_color } else { other_color };
 
         draw_line_3d(
+            context,
             vec3(i as f32 * spacing, 0., -half_slices as f32 * spacing),
             vec3(i as f32 * spacing, 0., half_slices as f32 * spacing),
             color,
         );
         draw_line_3d(
+            context,
             vec3(-half_slices as f32 * spacing, 0., i as f32 * spacing),
             vec3(half_slices as f32 * spacing, 0., i as f32 * spacing),
             color,
@@ -100,7 +104,13 @@ pub fn draw_grid(slices: u32, spacing: f32, axes_color: Color, other_color: Colo
     }
 }
 
-pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>>, color: Color) {
+pub fn draw_plane(
+    context: &mut crate::Context,
+    center: Vec3,
+    size: Vec2,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+) {
     let v1 = (
         (center + vec3(-size.x, 0., -size.y)).into(),
         vec2(0., 0.),
@@ -123,14 +133,18 @@ pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>
     );
 
     {
-        let context = get_context();
         context.gl.texture(texture.into());
     }
-    draw_quad([v1, v2, v3, v4]);
+    draw_quad(context, [v1, v2, v3, v4]);
 }
 
-pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D>>, color: Color) {
-    let context = get_context();
+pub fn draw_cube(
+    context: &mut crate::Context,
+    position: Vec3,
+    size: Vec3,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+) {
     context.gl.texture(texture.into());
 
     let (x, y, z) = (position.x, position.y, position.z);
@@ -148,12 +162,15 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let tl_pos = vec3(x - width / 2., y + height / 2., z + length / 2.);
     let tl_uv = vec2(0., 1.);
 
-    draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
-    ]);
+    draw_quad(
+        context,
+        [
+            (bl_pos, bl_uv, color),
+            (br_pos, br_uv, color),
+            (tr_pos, tr_uv, color),
+            (tl_pos, tl_uv, color),
+        ],
+    );
 
     // Back face
     let bl_pos = vec3(x - width / 2., y - height / 2., z - length / 2.);
@@ -167,12 +184,15 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let tl_pos = vec3(x - width / 2., y + height / 2., z - length / 2.);
     let tl_uv = vec2(0., 1.);
 
-    draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
-    ]);
+    draw_quad(
+        context,
+        [
+            (bl_pos, bl_uv, color),
+            (br_pos, br_uv, color),
+            (tr_pos, tr_uv, color),
+            (tl_pos, tl_uv, color),
+        ],
+    );
 
     // Top face
     let bl_pos = vec3(x - width / 2., y + height / 2., z - length / 2.);
@@ -186,12 +206,15 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let tl_pos = vec3(x + width / 2., y + height / 2., z - length / 2.);
     let tl_uv = vec2(1., 1.);
 
-    draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
-    ]);
+    draw_quad(
+        context,
+        [
+            (bl_pos, bl_uv, color),
+            (br_pos, br_uv, color),
+            (tr_pos, tr_uv, color),
+            (tl_pos, tl_uv, color),
+        ],
+    );
 
     // Bottom face
     let bl_pos = vec3(x - width / 2., y - height / 2., z - length / 2.);
@@ -205,12 +228,15 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let tl_pos = vec3(x + width / 2., y - height / 2., z - length / 2.);
     let tl_uv = vec2(1., 1.);
 
-    draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
-    ]);
+    draw_quad(
+        context,
+        [
+            (bl_pos, bl_uv, color),
+            (br_pos, br_uv, color),
+            (tr_pos, tr_uv, color),
+            (tl_pos, tl_uv, color),
+        ],
+    );
 
     // Right face
     let bl_pos = vec3(x + width / 2., y - height / 2., z - length / 2.);
@@ -224,12 +250,15 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let tl_pos = vec3(x + width / 2., y - height / 2., z + length / 2.);
     let tl_uv = vec2(1., 1.);
 
-    draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
-    ]);
+    draw_quad(
+        context,
+        [
+            (bl_pos, bl_uv, color),
+            (br_pos, br_uv, color),
+            (tr_pos, tr_uv, color),
+            (tl_pos, tl_uv, color),
+        ],
+    );
 
     // Left face
     let bl_pos = vec3(x - width / 2., y - height / 2., z - length / 2.);
@@ -243,15 +272,18 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D
     let tl_pos = vec3(x - width / 2., y - height / 2., z + length / 2.);
     let tl_uv = vec2(1., 1.);
 
-    draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
-    ]);
+    draw_quad(
+        context,
+        [
+            (bl_pos, bl_uv, color),
+            (br_pos, br_uv, color),
+            (tr_pos, tr_uv, color),
+            (tl_pos, tl_uv, color),
+        ],
+    );
 }
 
-pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
+pub fn draw_cube_wires(context: &mut crate::Context, position: Vec3, size: Vec3, color: Color) {
     let (x, y, z) = (position.x, position.y, position.z);
     let (width, height, length) = (size.x, size.y, size.z);
 
@@ -259,6 +291,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Bottom Line
     draw_line_3d(
+        context,
         vec3(x - width / 2., y - height / 2., z + length / 2.),
         vec3(x + width / 2., y - height / 2., z + length / 2.),
         color,
@@ -266,6 +299,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Left Line
     draw_line_3d(
+        context,
         vec3(x + width / 2., y - height / 2., z + length / 2.),
         vec3(x + width / 2., y + height / 2., z + length / 2.),
         color,
@@ -273,6 +307,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Top Line
     draw_line_3d(
+        context,
         vec3(x + width / 2., y + height / 2., z + length / 2.),
         vec3(x - width / 2., y + height / 2., z + length / 2.),
         color,
@@ -280,6 +315,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Right Line
     draw_line_3d(
+        context,
         vec3(x - width / 2., y + height / 2., z + length / 2.),
         vec3(x - width / 2., y - height / 2., z + length / 2.),
         color,
@@ -288,6 +324,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
     // Back Face
     // Bottom Line
     draw_line_3d(
+        context,
         vec3(x - width / 2., y - height / 2., z - length / 2.),
         vec3(x + width / 2., y - height / 2., z - length / 2.),
         color,
@@ -295,6 +332,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Left Line
     draw_line_3d(
+        context,
         vec3(x + width / 2., y - height / 2., z - length / 2.),
         vec3(x + width / 2., y + height / 2., z - length / 2.),
         color,
@@ -302,6 +340,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Top Line
     draw_line_3d(
+        context,
         vec3(x + width / 2., y + height / 2., z - length / 2.),
         vec3(x - width / 2., y + height / 2., z - length / 2.),
         color,
@@ -309,6 +348,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Right Line
     draw_line_3d(
+        context,
         vec3(x - width / 2., y + height / 2., z - length / 2.),
         vec3(x - width / 2., y - height / 2., z - length / 2.),
         color,
@@ -317,6 +357,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
     // Top Face
     // Left Line
     draw_line_3d(
+        context,
         vec3(x - width / 2., y + height / 2., z + length / 2.),
         vec3(x - width / 2., y + height / 2., z - length / 2.),
         color,
@@ -324,6 +365,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Right Line
     draw_line_3d(
+        context,
         vec3(x + width / 2., y + height / 2., z + length / 2.),
         vec3(x + width / 2., y + height / 2., z - length / 2.),
         color,
@@ -332,6 +374,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
     // Bottom Face
     // Left Line
     draw_line_3d(
+        context,
         vec3(x - width / 2., y - height / 2., z + length / 2.),
         vec3(x - width / 2., y - height / 2., z - length / 2.),
         color,
@@ -339,6 +382,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
 
     // Right Line
     draw_line_3d(
+        context,
         vec3(x + width / 2., y - height / 2., z + length / 2.),
         vec3(x + width / 2., y - height / 2., z - length / 2.),
         color,
@@ -362,11 +406,18 @@ impl Default for DrawSphereParams {
     }
 }
 
-pub fn draw_sphere(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
-    draw_sphere_ex(center, radius, texture, color, Default::default());
+pub fn draw_sphere(
+    context: &mut crate::Context,
+    center: Vec3,
+    radius: f32,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+) {
+    draw_sphere_ex(context, center, radius, texture, color, Default::default());
 }
 
 pub fn draw_sphere_wires(
+    context: &mut crate::Context,
     center: Vec3,
     radius: f32,
     texture: impl Into<Option<Texture2D>>,
@@ -376,18 +427,17 @@ pub fn draw_sphere_wires(
         draw_mode: DrawMode::Lines,
         ..Default::default()
     };
-    draw_sphere_ex(center, radius, texture, color, params);
+    draw_sphere_ex(context, center, radius, texture, color, params);
 }
 
 pub fn draw_sphere_ex(
+    context: &mut crate::Context,
     center: Vec3,
     radius: f32,
     texture: impl Into<Option<Texture2D>>,
     color: Color,
     params: DrawSphereParams,
 ) {
-    let context = get_context();
-
     let rings = params.rings;
     let slices = params.slices;
 

@@ -1,14 +1,12 @@
 //! 2D shapes rendering.
 
-use crate::{color::Color, get_context};
+use crate::color::Color;
 
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
 
 /// Draws a solid triangle between points `v1`, `v2`, and `v3` with a given `color`.
-pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
-    let context = get_context();
-
+pub fn draw_triangle(context: &mut crate::Context, v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     let mut vertices = Vec::<Vertex>::with_capacity(3);
 
     vertices.push(Vertex::new(v1.x, v1.y, 0., 0., 0., color));
@@ -22,17 +20,22 @@ pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
 }
 
 /// Draws a triangle outline between points `v1`, `v2`, and `v3` with a given line `thickness` and `color`.
-pub fn draw_triangle_lines(v1: Vec2, v2: Vec2, v3: Vec2, thickness: f32, color: Color) {
-    draw_line(v1.x, v1.y, v2.x, v2.y, thickness, color);
-    draw_line(v2.x, v2.y, v3.x, v3.y, thickness, color);
-    draw_line(v3.x, v3.y, v1.x, v1.y, thickness, color);
+pub fn draw_triangle_lines(
+    context: &mut crate::Context,
+    v1: Vec2,
+    v2: Vec2,
+    v3: Vec2,
+    thickness: f32,
+    color: Color,
+) {
+    draw_line(context, v1.x, v1.y, v2.x, v2.y, thickness, color);
+    draw_line(context, v2.x, v2.y, v3.x, v3.y, thickness, color);
+    draw_line(context, v3.x, v3.y, v1.x, v1.y, thickness, color);
 }
 
 /// Draws a solid rectangle with its top-left corner at `[x, y]` with size `[w, h]` (width going to
 /// the right, height going down), with a given `color`.
-pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
-    let context = get_context();
-
+pub fn draw_rectangle(context: &mut crate::Context, x: f32, y: f32, w: f32, h: f32, color: Color) {
     #[rustfmt::skip]
     let vertices = [
         Vertex::new(x    , y    , 0., 0.0, 0.0, color),
@@ -49,8 +52,15 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 
 /// Draws a rectangle outline with its top-left corner at `[x, y]` with size `[w, h]` (width going to
 /// the right, height going down), with a given line `thickness` and `color`.
-pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
-    let context = get_context();
+pub fn draw_rectangle_lines(
+    context: &mut crate::Context,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    thickness: f32,
+    color: Color,
+) {
     let t = thickness / 2.;
 
     #[rustfmt::skip]
@@ -78,6 +88,7 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
 /// defined by `border`, orientation defined by `vertical` (when `true`, the hexagon points along
 /// the `y` axis), and colors for outline given by `border_color` and fill by `fill_color`.
 pub fn draw_hexagon(
+    context: &mut crate::Context,
     x: f32,
     y: f32,
     size: f32,
@@ -87,17 +98,23 @@ pub fn draw_hexagon(
     fill_color: Color,
 ) {
     let rotation = if vertical { 90. } else { 0. };
-    draw_poly(x, y, 6, size, rotation, fill_color);
+    draw_poly(context, x, y, 6, size, rotation, fill_color);
     if border > 0. {
-        draw_poly_lines(x, y, 6, size, rotation, border, border_color);
+        draw_poly_lines(context, x, y, 6, size, rotation, border, border_color);
     }
 }
 
 /// Draws a solid regular polygon centered at `[x, y]` with a given number of `sides`, `radius`,
 /// clockwise `rotation` (in degrees) and `color`.
-pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color) {
-    let context = get_context();
-
+pub fn draw_poly(
+    context: &mut crate::Context,
+    x: f32,
+    y: f32,
+    sides: u8,
+    radius: f32,
+    rotation: f32,
+    color: Color,
+) {
     let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
     let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
 
@@ -124,6 +141,7 @@ pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: C
 /// Draws a regular polygon outline centered at `[x, y]` with a given number of `sides`, `radius`,
 /// clockwise `rotation` (in degrees), line `thickness`, and `color`.
 pub fn draw_poly_lines(
+    context: &mut crate::Context,
     x: f32,
     y: f32,
     sides: u8,
@@ -145,23 +163,37 @@ pub fn draw_poly_lines(
 
         let p1 = vec2(x + radius * rx, y + radius * ry);
 
-        draw_line(p0.x, p0.y, p1.x, p1.y, thickness, color);
+        draw_line(context, p0.x, p0.y, p1.x, p1.y, thickness, color);
     }
 }
 
 /// Draws a solid circle centered at `[x, y]` with a given radius `r` and `color`.
-pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
-    draw_poly(x, y, 20, r, 0., color);
+pub fn draw_circle(context: &mut crate::Context, x: f32, y: f32, r: f32, color: Color) {
+    draw_poly(context, x, y, 20, r, 0., color);
 }
 
 /// Draws a circle outline centered at `[x, y]` with a given radius, line `thickness` and `color`.
-pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
-    draw_poly_lines(x, y, 20, r, 0., thickness, color);
+pub fn draw_circle_lines(
+    context: &mut crate::Context,
+    x: f32,
+    y: f32,
+    r: f32,
+    thickness: f32,
+    color: Color,
+) {
+    draw_poly_lines(context, x, y, 20, r, 0., thickness, color);
 }
 
 /// Draws a line between points `[x1, y1]` and `[x2, y2]` with a given `thickness` and `color`.
-pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
-    let context = get_context();
+pub fn draw_line(
+    context: &mut crate::Context,
+    x1: f32,
+    y1: f32,
+    x2: f32,
+    y2: f32,
+    thickness: f32,
+    color: Color,
+) {
     let dx = x2 - x1;
     let dy = y2 - y1;
 

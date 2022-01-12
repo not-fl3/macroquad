@@ -68,6 +68,7 @@ impl<'a> Editbox<'a> {
 
     fn apply_keyboard_input(
         &self,
+        context: &mut crate::Context,
         input_buffer: &mut Vec<InputCharacter>,
         clipboard: &mut dyn crate::ui::ClipboardObject,
         text: &mut String,
@@ -124,7 +125,7 @@ impl<'a> Editbox<'a> {
                     modifier_ctrl: true,
                     ..
                 } => {
-                    if let Some(clipboard) = clipboard.get() {
+                    if let Some(clipboard) = clipboard.get(context) {
                         if clipboard.len() != 0 {
                             if state.selection.is_some() {
                                 state.delete_selected(text);
@@ -248,27 +249,27 @@ impl<'a> Editbox<'a> {
         }
     }
 
-    pub fn ui(self, ui: &mut Ui, text: &mut String) -> bool {
+    pub fn ui(self, context: &mut crate::Context, ui: &mut Ui, text: &mut String) -> bool {
         let time = ui.time;
 
-        let context = ui.get_active_window_context();
+        let ctx = ui.get_active_window_context();
 
         let pos = self
             .pos
-            .unwrap_or_else(|| context.window.cursor.fit(self.size, Layout::Vertical));
+            .unwrap_or_else(|| ctx.window.cursor.fit(self.size, Layout::Vertical));
 
         let rect = Rect::new(pos.x, pos.y, self.size.x, self.size.y);
 
-        let hovered = rect.contains(context.input.mouse_position);
+        let hovered = rect.contains(ctx.input.mouse_position);
 
-        if context.input.click_down() && hovered {
-            *context.input_focus = Some(self.id);
+        if ctx.input.click_down() && hovered {
+            *ctx.input_focus = Some(self.id);
         }
-        if context.input_focused(self.id) && context.input.click_down() && hovered == false {
-            *context.input_focus = None;
+        if ctx.input_focused(self.id) && ctx.input.click_down() && hovered == false {
+            *ctx.input_focus = None;
         }
 
-        let mut state = context
+        let mut state = ctx
             .storage_any
             .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
 
@@ -280,25 +281,24 @@ impl<'a> Editbox<'a> {
         }
 
         if let Some(selected) = state.selected_text(text) {
-            *context.clipboard_selection = selected.to_owned();
+            *ctx.clipboard_selection = selected.to_owned();
         }
         // in case the string was updated outside of editbox
         if state.cursor > text.len() as u32 {
             state.cursor = text.len() as u32;
         }
 
-        let input_focused =
-            context.input_focus.map_or(false, |id| id == self.id) && context.focused;
+        let input_focused = ctx.input_focus.map_or(false, |id| id == self.id) && ctx.focused;
 
-        let is_tab_selected = context
+        let is_tab_selected = ctx
             .tab_selector
-            .register_selectable_widget(input_focused, context.input);
+            .register_selectable_widget(input_focused, ctx.input);
         if is_tab_selected {
-            *context.input_focus = Some(self.id);
+            *ctx.input_focus = Some(self.id);
         }
 
         // reset selection state when lost focus
-        if context.focused == false || input_focused == false {
+        if ctx.focused == false || input_focused == false {
             state.deselect();
             state.clicks_counter = 0;
         }
@@ -307,25 +307,26 @@ impl<'a> Editbox<'a> {
         }
 
         let mut edited = false;
-        if context.focused && input_focused {
-            edited = context.input.input_buffer.len() != 0;
+        if ctx.focused && input_focused {
+            edited = ctx.input.input_buffer.len() != 0;
             self.apply_keyboard_input(
-                &mut context.input.input_buffer,
-                &mut *context.clipboard,
+                context,
+                &mut ctx.input.input_buffer,
+                &mut *ctx.clipboard,
                 text,
                 &mut state,
             );
         }
         // draw rect in parent window
 
-        let text_color = context.style.editbox_style.text_color;
+        let text_color = ctx.style.editbox_style.text_color;
 
-        context.window.painter.draw_element_background(
-            &context.style.editbox_style,
+        ctx.window.painter.draw_element_background(
+            &ctx.style.editbox_style,
             pos,
             self.size,
             ElementState {
-                focused: context.focused,
+                focused: ctx.focused,
                 clicked: input_focused,
                 ..Default::default()
             },
@@ -482,7 +483,13 @@ impl<'a> Editbox<'a> {
 }
 
 impl Ui {
-    pub fn editbox(&mut self, id: Id, size: Vec2, text: &mut String) -> bool {
-        Editbox::new(id, size).ui(self, text)
+    pub fn editbox(
+        &mut self,
+        context: &mut crate::Context,
+        id: Id,
+        size: Vec2,
+        text: &mut String,
+    ) -> bool {
+        Editbox::new(id, size).ui(context, self, text)
     }
 }

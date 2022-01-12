@@ -4,7 +4,6 @@ use std::collections::HashMap;
 
 use crate::{
     color::Color,
-    get_context,
     math::{vec3, Rect},
     texture::Image,
 };
@@ -191,8 +190,13 @@ impl Font {
             .collect()
     }
 
-    pub fn populate_font_cache(&self, characters: &[char], size: u16) {
-        let font = get_context().fonts_storage.get_font_mut(*self);
+    pub fn populate_font_cache(
+        &self,
+        context: &mut crate::Context,
+        characters: &[char],
+        size: u16,
+    ) {
+        let font = context.fonts_storage.get_font_mut(*self);
 
         for character in characters {
             font.cache_glyph(*character, size);
@@ -235,20 +239,22 @@ impl Default for TextParams {
 }
 
 /// Load font from file with "path"
-pub async fn load_ttf_font(path: &str) -> Result<Font, FontError> {
-    let bytes = crate::file::load_file(path).await.unwrap();
+pub async fn load_ttf_font(context: &mut crate::Context, path: &str) -> Result<Font, FontError> {
+    let bytes = crate::file::load_file(context, path).await.unwrap();
 
-    load_ttf_font_from_bytes(&bytes[..])
+    load_ttf_font_from_bytes(context, &bytes[..])
 }
 
 /// Load font from bytes array, may be use in combination with include_bytes!
 /// ```ignore
 /// let font = load_ttf_font_from_bytes(include_bytes!("font.ttf"));
 /// ```
-pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
-    let context = get_context();
+pub fn load_ttf_font_from_bytes(
+    context: &mut crate::Context,
+    bytes: &[u8],
+) -> Result<Font, FontError> {
     let atlas = Rc::new(RefCell::new(Atlas::new(
-        &mut get_context().quad_context,
+        &mut context.quad_context,
         miniquad::FilterMode::Linear,
     )));
 
@@ -256,14 +262,22 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
         .fonts_storage
         .make_font(FontInternal::load_from_bytes(atlas.clone(), bytes)?);
 
-    font.populate_font_cache(&Font::ascii_character_list(), 15);
+    font.populate_font_cache(context, &Font::ascii_character_list(), 15);
 
     Ok(font)
 }
 
 /// Draw text with given font_size
-pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+pub fn draw_text(
+    context: &mut crate::Context,
+    text: &str,
+    x: f32,
+    y: f32,
+    font_size: f32,
+    color: Color,
+) {
     draw_text_ex(
+        context,
         text,
         x,
         y,
@@ -277,12 +291,12 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
 }
 
 /// Draw text with custom params such as font, font size and font scale.
-pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
-    let font = get_context().fonts_storage.get_font_mut(params.font);
+pub fn draw_text_ex(context: &mut crate::Context, text: &str, x: f32, y: f32, params: TextParams) {
+    let font = context.fonts_storage.get_font_mut(params.font);
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
-    let dpi_scaling = get_context().quad_context.dpi_scale();
+    let dpi_scaling = context.quad_context.dpi_scale();
 
     let font_size = params.font_size * dpi_scaling.ceil() as u16;
 
@@ -315,7 +329,8 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
         );
 
         crate::texture::draw_texture_ex(
-            atlas.texture(),
+            context,
+            atlas.texture(context),
             dest.x,
             dest.y,
             params.color,
@@ -341,12 +356,13 @@ pub struct TextDimensions {
 }
 
 pub fn measure_text(
+    context: &mut crate::Context,
     text: &str,
     font: Option<Font>,
     font_size: u16,
     font_scale: f32,
 ) -> TextDimensions {
-    let font = get_context()
+    let font = context
         .fonts_storage
         .get_font_mut(font.unwrap_or(Font::default()));
 
@@ -382,8 +398,7 @@ impl FontsStorage {
 /// From given font size in world space gives
 /// (font_size, font_scale and font_aspect) params to make rasterized font
 /// looks good in currently active camera
-pub fn camera_font_scale(world_font_size: f32) -> (u16, f32, f32) {
-    let context = get_context();
+pub fn camera_font_scale(context: &mut crate::Context, world_font_size: f32) -> (u16, f32, f32) {
     let (scr_w, scr_h) = context.quad_context.screen_size();
     let cam_space = context
         .projection_matrix()

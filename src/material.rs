@@ -1,6 +1,5 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::get_context;
 use crate::prelude::Texture2D;
 use crate::quad_gl::GlPipeline;
 use miniquad::{PipelineParams, ShaderError, UniformType};
@@ -15,18 +14,18 @@ impl Material {
     /// Set GPU uniform value for this material.
     /// "name" should be from "uniforms" list used for material creation.
     /// Otherwise uniform value would be silently ignored.
-    pub fn set_uniform<T>(&self, name: &str, uniform: T) {
-        get_context().gl.set_uniform(self.pipeline, name, uniform);
+    pub fn set_uniform<T>(&self, context: &mut crate::Context, name: &str, uniform: T) {
+        context.gl.set_uniform(self.pipeline, name, uniform);
     }
 
-    pub fn set_texture(&self, name: &str, texture: Texture2D) {
-        get_context().gl.set_texture(self.pipeline, name, texture);
+    pub fn set_texture(&self, context: &mut crate::Context, name: &str, texture: Texture2D) {
+        context.gl.set_texture(self.pipeline, name, texture);
     }
 
     /// Delete this material. Using deleted material for either rendering
     /// or uniforms manipulation will result internal GL errors.
-    pub fn delete(&mut self) {
-        get_context().gl.delete_pipeline(self.pipeline);
+    pub fn delete(&mut self, context: &mut crate::Context) {
+        context.gl.delete_pipeline(self.pipeline);
     }
 }
 
@@ -56,12 +55,11 @@ impl Default for MaterialParams {
 }
 
 pub fn load_material(
+    context: &mut crate::Context,
     vertex_shader: &str,
     fragment_shader: &str,
     params: MaterialParams,
 ) -> Result<Material, ShaderError> {
-    let context = &mut get_context();
-
     let pipeline = context.gl.make_pipeline(
         &mut context.quad_context,
         vertex_shader,
@@ -75,13 +73,13 @@ pub fn load_material(
 }
 
 /// All following macroquad rendering calls will use the given material.
-pub fn gl_use_material(material: Material) {
-    get_context().gl.pipeline(Some(material.pipeline));
+pub fn gl_use_material(context: &mut crate::Context, material: Material) {
+    context.gl.pipeline(Some(material.pipeline));
 }
 
 /// Use default macroquad material.
-pub fn gl_use_default_material() {
-    get_context().gl.pipeline(None);
+pub fn gl_use_default_material(context: &mut crate::Context) {
+    context.gl.pipeline(None);
 }
 
 #[doc(hidden)]

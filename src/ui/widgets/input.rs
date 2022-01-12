@@ -70,22 +70,22 @@ impl<'a> InputText<'a> {
         }
     }
 
-    pub fn ui(self, ui: &mut Ui, data: &mut String) {
-        let context = ui.get_active_window_context();
+    pub fn ui(self, context: &mut crate::Context, ui: &mut Ui, data: &mut String) {
+        let ctx = ui.get_active_window_context();
 
-        let label_size = context.window.painter.content_with_margins_size(
-            &context.style.editbox_style,
+        let label_size = ctx.window.painter.content_with_margins_size(
+            &ctx.style.editbox_style,
             &UiContent::Label((&*data).into()),
         );
 
         let size = self.size.unwrap_or(vec2(
-            context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
+            ctx.window.cursor.area.w - ctx.style.margin * 2. - ctx.window.cursor.ident,
             label_size.y.max(19.),
         ));
 
         let pos = self
             .pos
-            .unwrap_or_else(|| context.window.cursor.fit(size, Layout::Vertical));
+            .unwrap_or_else(|| ctx.window.cursor.fit(size, Layout::Vertical));
 
         let editbox_area_w = if self.label.is_empty() {
             size.x
@@ -101,7 +101,7 @@ impl<'a> InputText<'a> {
             editbox = editbox
                 .filter(&|character| character.is_digit(10) || character == '.' || character == '-')
         }
-        editbox.ui(ui, data);
+        editbox.ui(context, ui, data);
 
         let context = ui.get_active_window_context();
 

@@ -1,7 +1,5 @@
 //! Window and associated to window rendering context related functions.
 
-use crate::get_context;
-
 use crate::color::Color;
 
 // miniquad is re-exported for the use in combination with `get_internal_gl`
@@ -17,59 +15,33 @@ pub fn next_frame() -> crate::exec::FrameFuture {
 /// Fill window background with solid color.
 /// Note: even when "clear_background" was not called explicitly
 /// screen will be cleared at the beginning of the frame.
-pub fn clear_background(color: Color) {
-    let context = get_context();
-
+pub fn clear_background(context: &mut crate::Context, color: Color) {
     context.gl.clear(&mut context.quad_context, color);
 }
 
 #[doc(hidden)]
-pub fn gl_set_drawcall_buffer_capacity(max_vertices: usize, max_indices: usize) {
-    let context = get_context();
+pub fn gl_set_drawcall_buffer_capacity(
+    context: &mut crate::Context,
+    max_vertices: usize,
+    max_indices: usize,
+) {
     context
         .gl
         .update_drawcall_capacity(&mut context.quad_context, max_vertices, max_indices);
 }
 
-pub struct InternalGlContext<'a> {
-    pub quad_context: &'a mut miniquad::Context,
-    pub quad_gl: &'a mut crate::quad_gl::QuadGl,
-}
-
-impl<'a> InternalGlContext<'a> {
-    /// Draw all the batched stuff and reset the internal state cache
-    /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
-    pub fn flush(&mut self) {
-        get_context().perform_render_passes();
-    }
-}
-
-pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
-    let context = get_context();
-
-    InternalGlContext {
-        quad_context: &mut context.quad_context,
-        quad_gl: &mut context.gl,
-    }
-}
-
-pub fn screen_width() -> f32 {
-    let context = get_context();
-
+pub fn screen_width(context: &crate::Context) -> f32 {
     context.screen_width / context.quad_context.dpi_scale()
 }
 
-pub fn screen_height() -> f32 {
-    let context = get_context();
-
+pub fn screen_height(context: &crate::Context) -> f32 {
     context.screen_height / context.quad_context.dpi_scale()
 }
 
 /// Request the window size to be the given value. This takes DPI into account.
 ///
 /// Note that the OS might decide to give a different size. Additionally, the size in macroquad won't be updated until the next `next_frame().await`.
-pub fn request_new_screen_size(width: f32, height: f32) {
-    let context = get_context();
+pub fn request_new_screen_size(context: &mut crate::Context, width: f32, height: f32) {
     context.quad_context.set_window_size(
         (width * context.quad_context.dpi_scale()) as u32,
         (height * context.quad_context.dpi_scale()) as u32,
@@ -110,7 +82,7 @@ pub fn request_new_screen_size(width: f32, height: f32) {
 /// actual backtrace. Otherwise only panic location and message will be available.
 /// NOTE: on android, even with "backtrace" nice backtrace is available only if the game is compiled with sdk >= 21.
 /// To use sdk >= 21 add "min_sdk_version = 21" to Cargo.toml
-pub fn set_panic_handler<T, F>(future: F)
+pub fn set_panic_handler<T, F>(context: &mut crate::Context, future: F)
 where
     T: std::future::Future<Output = ()> + 'static,
     F: Fn(String, String) -> T + Send + Sync + 'static,
@@ -124,8 +96,8 @@ where
         crate::logging::error!("{}", message);
         crate::logging::error!("{}", backtrace_string);
 
-        crate::get_context().recovery_future = Some(Box::pin(future(message, backtrace_string)));
+        context.recovery_future = Some(Box::pin(future(message, backtrace_string)));
     }));
 
-    crate::get_context().unwind = true;
+    context.unwind = true;
 }

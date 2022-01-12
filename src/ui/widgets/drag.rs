@@ -77,24 +77,24 @@ impl<'a> Drag<'a> {
     //     Self { step, ..self }
     // }
 
-    pub fn ui<T>(self, ui: &mut Ui, data: &mut T)
+    pub fn ui<T>(self, context: &mut crate::Context, ui: &mut Ui, data: &mut T)
     where
         T: std::any::Any + Num,
     {
-        let context = ui.get_active_window_context();
+        let ctx = ui.get_active_window_context();
         let state_hash = hash!(self.id, "input_float_state");
-        let mut s: State = std::mem::take(context.storage_any.get_or_default(state_hash));
+        let mut s: State = std::mem::take(ctx.storage_any.get_or_default(state_hash));
 
-        let label_size = context.window.painter.content_with_margins_size(
-            &context.style.label_style,
+        let label_size = ctx.window.painter.content_with_margins_size(
+            &ctx.style.label_style,
             &UiContent::Label(self.label.into()),
         );
         let size = vec2(
-            context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
+            ctx.window.cursor.area.w - ctx.style.margin * 2. - ctx.window.cursor.ident,
             label_size.y.max(22.),
         );
 
-        let pos = context.window.cursor.fit(size, Layout::Vertical);
+        let pos = ctx.window.cursor.fit(size, Layout::Vertical);
         let editbox_area = Vec2::new(
             if self.label.is_empty() {
                 size.x
@@ -104,17 +104,17 @@ impl<'a> Drag<'a> {
             size.y,
         );
         let hovered = Rect::new(pos.x, pos.y, editbox_area.x, editbox_area.y)
-            .contains(context.input.mouse_position);
+            .contains(ctx.input.mouse_position);
 
         // state transition between editbox and dragbox
         if s.in_editbox == false {
-            if hovered && context.input.is_mouse_down() && context.input.modifier_ctrl {
+            if hovered && ctx.input.is_mouse_down() && ctx.input.modifier_ctrl {
                 s.in_editbox = true;
             }
         } else {
-            if context.input.escape
-                || context.input.enter
-                || (hovered == false && context.input.is_mouse_down())
+            if ctx.input.escape
+                || ctx.input.enter
+                || (hovered == false && ctx.input.is_mouse_down())
             {
                 s.in_editbox = false;
             }
@@ -191,7 +191,7 @@ impl<'a> Drag<'a> {
             Editbox::new(self.id, editbox_area)
                 .position(pos)
                 .multiline(false)
-                .ui(ui, &mut s.string);
+                .ui(context, ui, &mut s.string);
 
             if let Ok(n) = s.string.parse() {
                 *data = n;
@@ -232,6 +232,7 @@ impl Num for f32 {}
 impl Ui {
     pub fn drag<T: Num, T1: Into<Option<(T, T)>>>(
         &mut self,
+        context: &mut crate::Context,
         id: Id,
         label: &str,
         range: T1,
@@ -239,6 +240,9 @@ impl Ui {
     ) {
         let range = range.into();
 
-        Drag::new(id).label(label).range(range).ui(self, data)
+        Drag::new(id)
+            .label(label)
+            .range(range)
+            .ui(context, self, data)
     }
 }

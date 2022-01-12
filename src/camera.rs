@@ -1,7 +1,6 @@
 //! 2D and 3D camera.
 
 use crate::{
-    get_context,
     math::Rect,
     texture::RenderTarget,
     window::{screen_height, screen_width},
@@ -9,7 +8,7 @@ use crate::{
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 
 pub trait Camera {
-    fn matrix(&self) -> Mat4;
+    fn matrix(&self, context: &crate::Context) -> Mat4;
     fn depth_enabled(&self) -> bool;
     fn render_pass(&self) -> Option<miniquad::RenderPass>;
     fn viewport(&self) -> Option<(i32, i32, i32, i32)>;
@@ -72,7 +71,7 @@ impl Default for Camera2D {
 }
 
 impl Camera for Camera2D {
-    fn matrix(&self) -> Mat4 {
+    fn matrix(&self, _context: &crate::Context) -> Mat4 {
         // gleaned from https://github.com/raysan5/raylib/blob/master/src/core.c#L1528
 
         // The camera in world-space is set by
@@ -113,24 +112,24 @@ impl Camera for Camera2D {
 impl Camera2D {
     /// Returns the screen space position for a 2d camera world space position
     /// Screen position in window space - from (0, 0) to (screen_width, screen_height())
-    pub fn world_to_screen(&self, point: Vec2) -> Vec2 {
-        let mat = self.matrix();
+    pub fn world_to_screen(&self, context: &crate::Context, point: Vec2) -> Vec2 {
+        let mat = self.matrix(context);
         let transform = mat.transform_point3(vec3(point.x, point.y, 0.));
 
         vec2(
-            (transform.x / 2. + 0.5) * screen_width(),
-            (0.5 - transform.y / 2.) * screen_height(),
+            (transform.x / 2. + 0.5) * screen_width(context),
+            (0.5 - transform.y / 2.) * screen_height(context),
         )
     }
 
     // Returns the world space position for a 2d camera screen space position
     // Point is a screen space position, often mouse x and y
-    pub fn screen_to_world(&self, point: Vec2) -> Vec2 {
+    pub fn screen_to_world(&self, context: &mut crate::Context, point: Vec2) -> Vec2 {
         let point = vec2(
-            point.x / screen_width() * 2. - 1.,
-            1. - point.y / screen_height() * 2.,
+            point.x / screen_width(context) * 2. - 1.,
+            1. - point.y / screen_height(context) * 2.,
         );
-        let inv_mat = self.matrix().inverse();
+        let inv_mat = self.matrix(context).inverse();
         let transform = inv_mat.transform_point3(vec3(point.x, point.y, 0.));
 
         vec2(transform.x, transform.y)
@@ -192,8 +191,10 @@ impl Camera3D {
 }
 
 impl Camera for Camera3D {
-    fn matrix(&self) -> Mat4 {
-        let aspect = self.aspect.unwrap_or(screen_width() / screen_height());
+    fn matrix(&self, context: &crate::Context) -> Mat4 {
+        let aspect = self
+            .aspect
+            .unwrap_or(screen_width(context) / screen_height(context));
 
         match self.projection {
             Projection::Perspective => {
@@ -224,22 +225,18 @@ impl Camera for Camera3D {
 }
 
 /// Set active 2D or 3D camera
-pub fn set_camera(camera: &dyn Camera) {
-    let context = get_context();
-
+pub fn set_camera(context: &mut crate::Context, camera: &dyn Camera) {
     // flush previous camera draw calls
     context.perform_render_passes();
 
     context.gl.render_pass(camera.render_pass());
     context.gl.viewport(camera.viewport());
     context.gl.depth_test(camera.depth_enabled());
-    context.camera_matrix = Some(camera.matrix());
+    context.camera_matrix = Some(camera.matrix(context));
 }
 
 /// Reset default 2D camera mode
-pub fn set_default_camera() {
-    let context = get_context();
-
+pub fn set_default_camera(context: &mut crate::Context) {
     // flush previous camera draw calls
     context.perform_render_passes();
 
@@ -254,9 +251,7 @@ pub(crate) struct CameraState {
     matrix: Option<Mat4>,
 }
 
-pub fn push_camera_state() {
-    let context = get_context();
-
+pub fn push_camera_state(context: &mut crate::Context) {
     let camera_state = CameraState {
         render_pass: context.gl.get_active_render_pass(),
         depth_test: context.gl.is_depth_test_enabled(),
@@ -265,9 +260,7 @@ pub fn push_camera_state() {
     context.camera_stack.push(camera_state);
 }
 
-pub fn pop_camera_state() {
-    let context = get_context();
-
+pub fn pop_camera_state(context: &mut crate::Context) {
     if let Some(camera_state) = context.camera_stack.pop() {
         context.perform_render_passes();
 

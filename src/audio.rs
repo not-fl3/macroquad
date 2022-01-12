@@ -1,6 +1,6 @@
 //! Loading and playing sounds.
 
-use crate::{file::load_file, get_context};
+use crate::file::load_file;
 use std::collections::HashMap;
 
 #[cfg(all(feature = "audio"))]
@@ -85,20 +85,23 @@ pub struct Sound(usize);
 /// Load audio file.
 ///
 /// Attempts to automatically detect the format of the source of data.
-pub async fn load_sound(path: &str) -> Result<Sound, crate::file::FileError> {
-    let data = load_file(path).await?;
+pub async fn load_sound(
+    context: &mut crate::Context,
+    path: &str,
+) -> Result<Sound, crate::file::FileError> {
+    let data = load_file(context, path).await?;
 
-    load_sound_from_bytes(&data).await
+    load_sound_from_bytes(context, &data).await
 }
 
 /// Load audio data.
 ///
 /// Attempts to automatically detect the format of the source of data.
-pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::FileError> {
-    let sound = {
-        let ctx = &mut get_context().audio_context;
-        QuadSndSound::load(&mut ctx.native_ctx, data)
-    };
+pub async fn load_sound_from_bytes(
+    context: &mut crate::Context,
+    data: &[u8],
+) -> Result<Sound, crate::file::FileError> {
+    let sound = { QuadSndSound::load(&mut context.audio_context.native_ctx, data) };
 
     // only on wasm the sound is not ready right away
     #[cfg(target_arch = "wasm32")]
@@ -106,16 +109,17 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, crate::file::Fi
         crate::window::next_frame().await;
     }
 
-    let ctx = &mut get_context().audio_context;
+    let ctx = &mut context.audio_context;
 
     let id = ctx.id;
     ctx.sounds.insert(id, sound);
     ctx.id += 1;
+
     Ok(Sound(id))
 }
 
-pub fn play_sound_once(sound: Sound) {
-    let ctx = &mut get_context().audio_context;
+pub fn play_sound_once(context: &crate::Context, sound: Sound) {
+    let ctx = context.audio_context;
     let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
 
     sound.play(
@@ -127,22 +131,22 @@ pub fn play_sound_once(sound: Sound) {
     );
 }
 
-pub fn play_sound(sound: Sound, params: PlaySoundParams) {
-    let ctx = &mut get_context().audio_context;
+pub fn play_sound(context: &mut crate::Context, sound: Sound, params: PlaySoundParams) {
+    let ctx = context.audio_context;
     let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
 
     sound.play(&mut ctx.native_ctx, params);
 }
 
-pub fn stop_sound(sound: Sound) {
-    let ctx = &mut get_context().audio_context;
+pub fn stop_sound(context: &mut crate::Context, sound: Sound) {
+    let ctx = context.audio_context;
     let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
 
     sound.stop(&mut ctx.native_ctx);
 }
 
-pub fn set_sound_volume(sound: Sound, volume: f32) {
-    let ctx = &mut get_context().audio_context;
+pub fn set_sound_volume(context: &mut crate::Context, sound: Sound, volume: f32) {
+    let ctx = context.audio_context;
     let sound = &mut ctx.sounds.get_mut(&sound.0).unwrap();
     sound.set_volume(&mut ctx.native_ctx, volume)
 }

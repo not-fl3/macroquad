@@ -8,7 +8,6 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::exec::resume;
-use crate::get_context;
 
 struct CoroutineInternal {
     future: Pin<Box<dyn Future<Output = ()>>>,
@@ -47,10 +46,8 @@ pub struct Coroutine {
 }
 
 impl Coroutine {
-    pub fn is_done(&self) -> bool {
-        let context = &get_context().coroutines_context;
-
-        context.coroutines[self.id].is_none()
+    pub fn is_done(&self, context: &mut crate::Context) -> bool {
+        context.coroutines_context.coroutines[self.id].is_none()
     }
 
     /// By default coroutines are being polled each frame, inside the "next_frame()"
@@ -77,8 +74,8 @@ impl Coroutine {
     /// "set_manual_poll" allows to control how coroutine is beng polled
     /// after set_manual_poll() coroutine will never be polled automatically
     /// so player will need to poll all its coroutines inside "update" function
-    pub fn set_manual_poll(&mut self) {
-        let context = &mut get_context().coroutines_context;
+    pub fn set_manual_poll(&mut self, context: &mut crate::Context) {
+        let context = &mut context.coroutines_context;
 
         if let Some(coroutine) = &mut context.coroutines[self.id] {
             coroutine.manual_time = Some(0.);
@@ -89,8 +86,8 @@ impl Coroutine {
     /// Poll coroutine once and advance coroutine's timeline by `delta_time`
     /// Things like `wait_for_seconds` will wait for time in this local timeline`
     /// Will panic if coroutine.manual_poll == false
-    pub fn poll(&mut self, delta_time: f64) {
-        let context = &mut get_context().coroutines_context;
+    pub fn poll(&mut self, context: &mut crate::Context, delta_time: f64) {
+        let context = &mut context.coroutines_context;
 
         let coroutine = &mut context.coroutines[self.id];
         if let Some(f) = coroutine {
@@ -106,8 +103,11 @@ impl Coroutine {
     }
 }
 
-pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Coroutine {
-    let context = &mut get_context().coroutines_context;
+pub fn start_coroutine(
+    context: &mut crate::Context,
+    future: impl Future<Output = ()> + 'static + Send,
+) -> Coroutine {
+    let context = &mut context.coroutines_context;
 
     let boxed_future: Pin<Box<dyn Future<Output = ()>>> = Box::pin(future);
 
@@ -122,8 +122,8 @@ pub fn start_coroutine(future: impl Future<Output = ()> + 'static + Send) -> Cor
     }
 }
 
-pub fn stop_all_coroutines() {
-    let context = &mut get_context().coroutines_context;
+pub fn stop_all_coroutines(context: &mut crate::Context) {
+    let context = &mut context.coroutines_context;
 
     // Cannot clear the vector as there may still be outstanding Coroutines
     // so their ids would now point into nothingness or later point into
@@ -133,24 +133,26 @@ pub fn stop_all_coroutines() {
     }
 }
 
-pub fn stop_coroutine(coroutine: Coroutine) {
-    let context = &mut get_context().coroutines_context;
+pub fn stop_coroutine(context: &mut crate::Context, coroutine: Coroutine) {
+    let context = &mut context.coroutines_context;
 
     context.coroutines[coroutine.id] = None;
 }
 
-pub struct TimerDelayFuture {
+pub struct TimerDelayFuture<'a> {
     pub(crate) remaining_time: f32,
+    macroquad_context: &'a crate::Context,
 }
 
-impl Future for TimerDelayFuture {
+impl<'a> Future for TimerDelayFuture<'a> {
     type Output = Option<()>;
 
     fn poll(mut self: Pin<&mut Self>, _: &mut Context) -> Poll<Self::Output> {
-        let delta = get_context()
+        let delta = self
+            .macroquad_context
             .coroutines_context
             .active_coroutine_delta
-            .unwrap_or(crate::time::get_frame_time() as _);
+            .unwrap_or(crate::time::get_frame_time(self.macroquad_context) as _);
 
         self.remaining_time -= delta as f32;
 
@@ -162,9 +164,10 @@ impl Future for TimerDelayFuture {
     }
 }
 
-pub fn wait_seconds(time: f32) -> TimerDelayFuture {
+pub fn wait_seconds(time: f32, context: &mut crate::Context) -> TimerDelayFuture {
     TimerDelayFuture {
         remaining_time: time,
+        macroquad_context: context,
     }
 }
 

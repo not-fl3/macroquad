@@ -35,8 +35,8 @@ use std::{borrow::Cow, ops::DerefMut};
 
 /// Root UI. Widgets drawn with the root ui will be always presented at the end of the frame with a "default" camera.
 /// UI space would be a "default" screen space (0..screen_width(), 0..screen_height())
-pub fn root_ui() -> impl DerefMut<Target = Ui> {
-    crate::get_context().ui_context.ui.borrow_mut()
+pub fn root_ui<'a>(context: &'a mut crate::Context) -> impl DerefMut<Target = Ui> + 'a {
+    context.ui_context.ui.borrow_mut()
 }
 
 /// Current camera world space UI.
@@ -500,7 +500,7 @@ impl<'a> WindowContext<'a> {
 }
 
 impl InputHandler for Ui {
-    fn mouse_down(&mut self, position: (f32, f32)) {
+    fn mouse_down(&mut self, context: &mut crate::Context, position: (f32, f32)) {
         let position = Vec2::new(position.0, position.1);
 
         self.input.is_mouse_down = true;
@@ -541,17 +541,17 @@ impl InputHandler for Ui {
         }
     }
 
-    fn mouse_up(&mut self, _: (f32, f32)) {
+    fn mouse_up(&mut self, context: &mut crate::Context, _: (f32, f32)) {
         self.input.is_mouse_down = false;
         self.input.click_up = true;
         self.moving = None;
     }
 
-    fn mouse_wheel(&mut self, x: f32, y: f32) {
+    fn mouse_wheel(&mut self, context: &mut crate::Context, x: f32, y: f32) {
         self.input.mouse_wheel = Vec2::new(x, y);
     }
 
-    fn mouse_move(&mut self, position: (f32, f32)) {
+    fn mouse_move(&mut self, context: &mut crate::Context, position: (f32, f32)) {
         let position = Vec2::new(position.0, position.1);
 
         // assuming that the click was to the root window
@@ -584,7 +584,13 @@ impl InputHandler for Ui {
         }
     }
 
-    fn char_event(&mut self, character: char, shift: bool, ctrl: bool) {
+    fn char_event(
+        &mut self,
+        context: &mut crate::Context,
+        character: char,
+        shift: bool,
+        ctrl: bool,
+    ) {
         self.input.modifier_ctrl = ctrl;
         self.input.input_buffer.push(input::InputCharacter {
             key: input::Key::Char(character),
@@ -593,7 +599,7 @@ impl InputHandler for Ui {
         });
     }
 
-    fn key_down(&mut self, key: KeyCode, shift: bool, ctrl: bool) {
+    fn key_down(&mut self, context: &mut crate::Context, key: KeyCode, shift: bool, ctrl: bool) {
         self.input.modifier_ctrl = ctrl;
 
         if key == KeyCode::Escape {
@@ -604,7 +610,7 @@ impl InputHandler for Ui {
         }
 
         if ctrl && (key == KeyCode::C || key == KeyCode::X) {
-            self.clipboard.set(&self.clipboard_selection);
+            self.clipboard.set(context, &self.clipboard_selection);
         }
 
         if key != KeyCode::Control && self.key_repeat.add_repeat_gap(key, self.time) {
@@ -1181,10 +1187,10 @@ pub(crate) mod ui_context {
             }
         }
 
-        pub(crate) fn process_input(&mut self) {
+        pub(crate) fn process_input(&mut self, context: &mut crate::Context) {
             use megaui::InputHandler;
 
-            let mouse_position = mouse_position();
+            let mouse_position = mouse_position(context);
 
             let mut ui = self.ui.borrow_mut();
             ui.mouse_move(mouse_position);
@@ -1306,20 +1312,12 @@ pub(crate) mod ui_context {
     pub struct ClipboardObject;
 
     impl megaui::ClipboardObject for ClipboardObject {
-        fn get(&self) -> Option<String> {
-            let InternalGlContext {
-                quad_context: ctx, ..
-            } = unsafe { get_internal_gl() };
-
-            miniquad::clipboard::get(ctx)
+        fn get(&self, context: &mut crate::Context) -> Option<String> {
+            miniquad::clipboard::get(&mut context.quad_context)
         }
 
-        fn set(&mut self, data: &str) {
-            let InternalGlContext {
-                quad_context: ctx, ..
-            } = unsafe { get_internal_gl() };
-
-            miniquad::clipboard::set(ctx, data)
+        fn set(&mut self, context: &mut crate::Context, data: &str) {
+            miniquad::clipboard::set(&mut context.quad_context, data)
         }
     }
 

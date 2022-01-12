@@ -78,7 +78,7 @@ pub fn begin_zone(name: &str) {
     }
 }
 
-pub fn end_zone() {
+pub fn end_zone(context: &crate::Context) {
     if get_profiler().enabled {
         get_profiler().end_zone();
     }
@@ -94,20 +94,20 @@ pub fn end_gpu_query() {
 
 /// Workaround to stop gl capture on debug rendering
 #[doc(hidden)]
-pub fn pause_gl_capture() {
+pub fn pause_gl_capture(context: &mut crate::Context) {
     if get_profiler().capture {
-        crate::get_context().gl.capture(false);
+        context.gl.capture(false);
     }
 }
 
 /// Workaround to stop gl capture on debug rendering
-pub fn resume_gl_capture() {
+pub fn resume_gl_capture(context: &mut crate::Context) {
     if get_profiler().capture {
-        crate::get_context().gl.capture(false);
+        context.gl.capture(false);
     }
 }
 
-pub(crate) fn reset() {
+pub(crate) fn reset(context: &mut crate::Context) {
     let profiler = get_profiler();
 
     assert!(
@@ -115,7 +115,7 @@ pub(crate) fn reset() {
         "New frame started with unpaired begin/end zones."
     );
 
-    profiler.frame.full_frame_time = crate::time::get_frame_time();
+    profiler.frame.full_frame_time = crate::time::get_frame_time(context);
 
     std::mem::swap(&mut profiler.prev_frame, &mut profiler.frame);
     profiler.frame = Frame::new();
@@ -126,13 +126,13 @@ pub(crate) fn reset() {
 
     if profiler.capture {
         profiler.capture = false;
-        crate::get_context().gl.capture(false);
+        context.gl.capture(false);
     }
 
     if profiler.capture_request {
         profiler.drawcalls.clear();
         profiler.capture = true;
-        crate::get_context().gl.capture(true);
+        context.gl.capture(true);
         profiler.capture_request = false;
     }
 }
@@ -241,7 +241,7 @@ impl Profiler {
         }
     }
 
-    fn begin_zone(&mut self, name: &str) {
+    fn begin_zone(&mut self, context: &crate::Context, name: &str) {
         let zones = if self.frame.active_zone.is_null() {
             &mut self.frame.zones
         } else {
@@ -250,7 +250,7 @@ impl Profiler {
 
         zones.push(Zone {
             name: name.to_string(),
-            start_time: get_time(),
+            start_time: get_time(context),
             duration: 0.0,
             parent: self.frame.active_zone,
             children: vec![],
@@ -258,14 +258,14 @@ impl Profiler {
         self.frame.active_zone = zones.last_mut().unwrap() as _;
     }
 
-    fn end_zone(&mut self) {
+    fn end_zone(&mut self, context: &crate::Context) {
         assert!(
             self.frame.active_zone.is_null() == false,
             "end_zone called without begin_zone"
         );
 
         let start_time = unsafe { (&mut *self.frame.active_zone).start_time };
-        let duration = get_time() - start_time;
+        let duration = get_time(&context) - start_time;
 
         unsafe { (&mut *self.frame.active_zone).duration = duration };
         self.frame.active_zone = unsafe { (&mut *self.frame.active_zone).parent };
@@ -296,13 +296,14 @@ pub fn scene_allocated_memory() -> usize {
 pub struct LogTimeGuard<'a> {
     name: &'a str,
     start_time: f64,
+    context: &'a crate::Context,
 }
 
 impl<'a> LogTimeGuard<'a> {
-    pub fn new(name: &'a str) -> LogTimeGuard {
+    pub fn new(context: &'a crate::Context, name: &'a str) -> LogTimeGuard<'a> {
         LogTimeGuard {
             name,
-            start_time: get_time(),
+            start_time: get_time(context),
         }
     }
 }
@@ -340,11 +341,11 @@ pub struct DrawCallTelemetry {
 }
 
 pub(crate) fn track_drawcall(
+    ctx: &mut crate::Context,
     pipeline: &miniquad::Pipeline,
     bindings: &miniquad::Bindings,
     indices_count: usize,
 ) {
-    let ctx = crate::get_context();
     let texture = miniquad::Texture::new_render_texture(
         &mut ctx.quad_context,
         miniquad::TextureParams {
