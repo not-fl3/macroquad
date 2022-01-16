@@ -118,13 +118,14 @@ pub struct Map {
 
 impl Map {
     pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
-        if self.tilesets.contains_key(tileset) == false {
-            panic!(
-                "No such tileset: {}, tilesets available: {:?}",
+
+        let ts = self.tilesets.get(tileset)
+            .expect(
+                &format!("No such tileset: {}, tilesets available: {:?}",
                 tileset,
                 self.tilesets.keys()
-            )
-        }
+                ));
+
         let tileset = &self.tilesets[tileset];
 
         tileset.spr(sprite, dest);
