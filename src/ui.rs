@@ -122,6 +122,9 @@ pub(crate) struct Window {
     pub childs: Vec<Id>,
     pub want_close: bool,
     pub force_focus: bool,
+
+    margin: f32,
+    window_margin: RectOffset,
 }
 
 impl Window {
@@ -156,11 +159,29 @@ impl Window {
                 ),
                 margin,
             ),
+            margin,
+            window_margin,
             childs: vec![],
             want_close: false,
             movable,
             force_focus,
         }
+    }
+
+    pub fn resize(&mut self, size: Vec2) {
+        self.size = size;
+        self.cursor = Cursor::new(
+            Rect::new(
+                self.position.x + self.window_margin.left,
+                self.position.y + self.title_height + self.window_margin.top,
+                self.size.x - self.window_margin.left - self.window_margin.right,
+                self.size.y
+                    - self.title_height
+                    - self.window_margin.top
+                    - self.window_margin.bottom,
+            ),
+            self.margin,
+        );
     }
 
     pub fn top_level(&self) -> bool {
@@ -618,7 +639,7 @@ impl InputHandler for Ui {
 }
 
 impl Ui {
-    pub fn new(ctx: &mut miniquad::Context) -> Ui {
+    pub fn new(ctx: &mut miniquad::Context, screen_width: f32, screen_height: f32) -> Ui {
         let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Nearest)));
         let mut font = crate::text::FontInternal::load_from_bytes(
             atlas.clone(),
@@ -648,12 +669,7 @@ impl Ui {
                     0,
                     None,
                     Vec2::new(0., 0.),
-                    // this is not going to be used anywhere but for clipping out
-                    // child window.
-                    // Scissor test is not going to be used by the root window size,
-                    // so this is fine to use weird hardcoded consts here.
-                    // mostly
-                    Vec2::new(10000., 10000.),
+                    Vec2::new(screen_width, screen_height),
                     0.0,
                     RectOffset::new(0.0, 0.0, 0.0, 0.0),
                     0.0,
@@ -1023,6 +1039,11 @@ impl Ui {
     }
 
     pub fn new_frame(&mut self, delta: f32) {
+        self.root_window.resize(crate::math::vec2(
+            crate::window::screen_width(),
+            crate::window::screen_height(),
+        ));
+
         self.frame += 1;
         self.time += delta;
 
@@ -1171,8 +1192,12 @@ pub(crate) mod ui_context {
     }
 
     impl UiContext {
-        pub(crate) fn new(ctx: &mut miniquad::Context) -> UiContext {
-            let ui = megaui::Ui::new(ctx);
+        pub(crate) fn new(
+            ctx: &mut miniquad::Context,
+            screen_width: f32,
+            screen_height: f32,
+        ) -> UiContext {
+            let ui = megaui::Ui::new(ctx, screen_width, screen_height);
 
             UiContext {
                 ui: Rc::new(RefCell::new(ui)),

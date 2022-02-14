@@ -299,7 +299,7 @@ impl Context {
             camera_matrix: None,
             gl: QuadGl::new(&mut ctx),
 
-            ui_context: UiContext::new(&mut ctx),
+            ui_context: UiContext::new(&mut ctx, screen_width, screen_height),
             fonts_storage: text::FontsStorage::new(&mut ctx),
             texture_batcher: texture::Batcher::new(&mut ctx),
             camera_stack: vec![],

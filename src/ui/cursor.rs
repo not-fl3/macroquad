@@ -15,6 +15,7 @@ pub struct Scroll {
     pub inner_rect_previous_frame: Rect,
     pub initial_scroll: Vec2,
 }
+
 impl Scroll {
     pub fn scroll_to(&mut self, y: f32) {
         self.rect.y = y
