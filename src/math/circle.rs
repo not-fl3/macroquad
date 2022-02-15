@@ -1,9 +1,10 @@
 use crate::math::{vec2, Rect, Vec2};
 
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Circle {
-    x: f32,
-    y: f32,
-    r: f32,
+    pub x: f32,
+    pub y: f32,
+    pub r: f32,
 }
 
 impl Circle {
