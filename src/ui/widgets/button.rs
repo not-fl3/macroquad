@@ -7,6 +7,7 @@ pub struct Button<'a> {
     position: Option<Vec2>,
     size: Option<Vec2>,
     content: UiContent<'a>,
+    selected: bool,
 }
 
 impl<'a> Button<'a> {
@@ -18,6 +19,7 @@ impl<'a> Button<'a> {
             position: None,
             size: None,
             content: content.into(),
+            selected: false,
         }
     }
 
@@ -32,6 +34,10 @@ impl<'a> Button<'a> {
             size: Some(size),
             ..self
         }
+    }
+
+    pub fn selected(self, selected: bool) -> Self {
+        Button { selected, ..self }
     }
 
     pub fn ui(self, ui: &mut Ui) -> bool {
@@ -60,7 +66,7 @@ impl<'a> Button<'a> {
                     focused: context.focused,
                     hovered,
                     clicked: hovered && context.input.is_mouse_down,
-                    selected: false,
+                    selected: self.selected,
                 },
             );
         }
@@ -74,7 +80,7 @@ impl<'a> Button<'a> {
                 focused: context.focused,
                 hovered,
                 clicked: hovered && context.input.is_mouse_down,
-                selected: false,
+                selected: self.selected,
             },
         );
 
