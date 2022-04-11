@@ -257,7 +257,7 @@ impl World {
         let pushing_rect = Rect::new(
             collider.pos.x + move_x as f32,
             collider.pos.y,
-            collider.width as f32 - 1.0,
+            collider.width as f32,
             collider.height as f32,
         );
 
