@@ -131,6 +131,9 @@ impl FontInternal {
         font_scale_x: f32,
         font_scale_y: f32,
     ) -> TextDimensions {
+        let dpi_scaling = get_context().quad_context.dpi_scale();
+        let font_size = font_size * dpi_scaling.ceil() as u16;
+
         for character in text.chars() {
             if self.characters.contains_key(&(character, font_size)) == false {
                 self.cache_glyph(character, font_size);
@@ -161,8 +164,8 @@ impl FontInternal {
 
         let height = max_y - min_y;
         TextDimensions {
-            width,
-            height: height,
+            width: width / dpi_scaling,
+            height: height / dpi_scaling,
             offset_y: max_y,
         }
     }
