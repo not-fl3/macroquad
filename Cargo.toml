@@ -26,7 +26,7 @@ opt-level = 3
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.3.0-alpha.46", features = ["log-impl"] }
+miniquad = { git = "https://github.com/not-fl3/miniquad/", rev = "8ad337af4b53f9e65deccf2fd9681936a344b30a", features = ["log-impl"] }
 quad-rand = "0.2.1"
 glam = {version = "0.14", features = ["scalar-math"] }
 image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
