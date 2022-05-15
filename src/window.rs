@@ -32,7 +32,7 @@ pub fn gl_set_drawcall_buffer_capacity(max_vertices: usize, max_indices: usize) 
 }
 
 pub struct InternalGlContext<'a> {
-    pub quad_context: &'a mut miniquad::Context,
+    pub quad_context: &'a mut miniquad::Context<'static, 'static>,
     pub quad_gl: &'a mut crate::quad_gl::QuadGl,
 }
 

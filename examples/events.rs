@@ -19,10 +19,8 @@ async fn main() {
                 .ui(ui, |ui| {
                     ui.label(None, "Pressed kbd keys");
 
-                    for key_code in (0..1000).map(|key_code| From::from(key_code)) {
-                        if is_key_down(key_code) {
-                            ui.label(None, &format!("{:?}", key_code))
-                        }
+                    if let Some(key) = get_last_key_pressed() {
+                        ui.label(None, &format!("{:?}", key))
                     }
                 });
 

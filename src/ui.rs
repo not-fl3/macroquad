@@ -1336,7 +1336,7 @@ pub(crate) mod ui_context {
                 quad_context: ctx, ..
             } = unsafe { get_internal_gl() };
 
-            miniquad::clipboard::get(ctx)
+            ctx.clipboard_get()
         }
 
         fn set(&mut self, data: &str) {
@@ -1344,7 +1344,7 @@ pub(crate) mod ui_context {
                 quad_context: ctx, ..
             } = unsafe { get_internal_gl() };
 
-            miniquad::clipboard::set(ctx, data)
+            ctx.clipboard_set(data)
         }
     }
 

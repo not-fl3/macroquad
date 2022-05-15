@@ -150,7 +150,7 @@ use crate::{
 use glam::{vec2, Mat4, Vec2};
 
 struct Context {
-    quad_context: QuadContext,
+    quad_context: QuadContext<'static, 'static>,
     audio_context: audio::AudioContext,
 
     screen_width: f32,
@@ -268,7 +268,7 @@ impl MiniquadInputEvent {
 impl Context {
     const DEFAULT_BG_COLOR: Color = BLACK;
 
-    fn new(mut ctx: QuadContext) -> Context {
+    fn new(ctx: &mut QuadContext) -> Context {
         let (screen_width, screen_height) = ctx.screen_size();
 
         Context {
@@ -297,14 +297,23 @@ impl Context {
             input_events: Vec::new(),
 
             camera_matrix: None,
-            gl: QuadGl::new(&mut ctx),
+            gl: QuadGl::new(ctx),
 
-            ui_context: UiContext::new(&mut ctx, screen_width, screen_height),
-            fonts_storage: text::FontsStorage::new(&mut ctx),
-            texture_batcher: texture::Batcher::new(&mut ctx),
+            ui_context: UiContext::new(ctx, screen_width, screen_height),
+            fonts_storage: text::FontsStorage::new(ctx),
+            texture_batcher: texture::Batcher::new(ctx),
             camera_stack: vec![],
 
-            quad_context: ctx,
+            quad_context: {
+                // well, there are certain reasons to believe that this is actually
+                // safe. Context consist of two references and I know for certain that
+                // both references are actually pinned deep inside miniquad.
+                // Using ctx from EventHandler would still be UB
+                // and even without ctx from EventHandler it is (probably) still an UB from aliasing
+                let static_context = unsafe { std::mem::transmute_copy(ctx) };
+
+                static_context
+            },
             audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
 
@@ -419,14 +428,14 @@ static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
 struct Stage {}
 
-impl EventHandlerFree for Stage {
-    fn resize_event(&mut self, width: f32, height: f32) {
+impl EventHandler for Stage {
+    fn resize_event(&mut self, _: &mut miniquad::Context, width: f32, height: f32) {
         let _z = telemetry::ZoneGuard::new("Event::resize_event");
         get_context().screen_width = width;
         get_context().screen_height = height;
     }
 
-    fn raw_mouse_motion(&mut self, x: f32, y: f32) {
+    fn raw_mouse_motion(&mut self, _: &mut miniquad::Context, x: f32, y: f32) {
         let context = get_context();
 
         if context.cursor_grabbed {
@@ -443,7 +452,7 @@ impl EventHandlerFree for Stage {
         }
     }
 
-    fn mouse_motion_event(&mut self, x: f32, y: f32) {
+    fn mouse_motion_event(&mut self, _: &mut miniquad::Context, x: f32, y: f32) {
         let context = get_context();
 
         if !context.cursor_grabbed {
@@ -456,7 +465,7 @@ impl EventHandlerFree for Stage {
         }
     }
 
-    fn mouse_wheel_event(&mut self, x: f32, y: f32) {
+    fn mouse_wheel_event(&mut self, _: &mut miniquad::Context, x: f32, y: f32) {
         let context = get_context();
 
         context.mouse_wheel.x = x;
@@ -468,7 +477,13 @@ impl EventHandlerFree for Stage {
             .for_each(|arr| arr.push(MiniquadInputEvent::MouseWheel { x, y }));
     }
 
-    fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
+    fn mouse_button_down_event(
+        &mut self,
+        _: &mut miniquad::Context,
+        btn: MouseButton,
+        x: f32,
+        y: f32,
+    ) {
         let context = get_context();
 
         context.mouse_down.insert(btn);
@@ -484,7 +499,13 @@ impl EventHandlerFree for Stage {
         }
     }
 
-    fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
+    fn mouse_button_up_event(
+        &mut self,
+        _: &mut miniquad::Context,
+        btn: MouseButton,
+        x: f32,
+        y: f32,
+    ) {
         let context = get_context();
 
         context.mouse_down.remove(&btn);
@@ -500,7 +521,14 @@ impl EventHandlerFree for Stage {
         }
     }
 
-    fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
+    fn touch_event(
+        &mut self,
+        ctx: &mut miniquad::Context,
+        phase: TouchPhase,
+        id: u64,
+        x: f32,
+        y: f32,
+    ) {
         let context = get_context();
 
         context.touches.insert(
@@ -514,15 +542,15 @@ impl EventHandlerFree for Stage {
 
         if context.simulate_mouse_with_touch {
             if phase == TouchPhase::Started {
-                self.mouse_button_down_event(MouseButton::Left, x, y);
+                self.mouse_button_down_event(ctx, MouseButton::Left, x, y);
             }
 
             if phase == TouchPhase::Ended {
-                self.mouse_button_up_event(MouseButton::Left, x, y);
+                self.mouse_button_up_event(ctx, MouseButton::Left, x, y);
             }
 
             if phase == TouchPhase::Moved {
-                self.mouse_motion_event(x, y);
+                self.mouse_motion_event(ctx, x, y);
             }
         };
 
@@ -532,7 +560,13 @@ impl EventHandlerFree for Stage {
             .for_each(|arr| arr.push(MiniquadInputEvent::Touch { phase, id, x, y }));
     }
 
-    fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
+    fn char_event(
+        &mut self,
+        _: &mut miniquad::Context,
+        character: char,
+        modifiers: KeyMods,
+        repeat: bool,
+    ) {
         let context = get_context();
 
         context.chars_pressed_queue.push(character);
@@ -547,7 +581,13 @@ impl EventHandlerFree for Stage {
         });
     }
 
-    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
+    fn key_down_event(
+        &mut self,
+        _: &mut miniquad::Context,
+        keycode: KeyCode,
+        modifiers: KeyMods,
+        repeat: bool,
+    ) {
         let context = get_context();
         context.keys_down.insert(keycode);
         if repeat == false {
@@ -563,7 +603,7 @@ impl EventHandlerFree for Stage {
         });
     }
 
-    fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
+    fn key_up_event(&mut self, _: &mut miniquad::Context, keycode: KeyCode, modifiers: KeyMods) {
         let context = get_context();
         context.keys_down.remove(&keycode);
         context.keys_released.insert(keycode);
@@ -574,7 +614,7 @@ impl EventHandlerFree for Stage {
             .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
     }
 
-    fn update(&mut self) {
+    fn update(&mut self, _: &mut miniquad::Context) {
         let _z = telemetry::ZoneGuard::new("Event::update");
 
         // Unless called every frame, cursor will not remain grabbed
@@ -588,7 +628,7 @@ impl EventHandlerFree for Stage {
         }
     }
 
-    fn draw(&mut self) {
+    fn draw(&mut self, _: &mut miniquad::Context) {
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
@@ -652,17 +692,17 @@ impl EventHandlerFree for Stage {
         telemetry::reset();
     }
 
-    fn window_restored_event(&mut self) {
+    fn window_restored_event(&mut self, _: &mut miniquad::Context) {
         #[cfg(target_os = "android")]
         get_context().audio_context.resume();
     }
 
-    fn window_minimized_event(&mut self) {
+    fn window_minimized_event(&mut self, _: &mut miniquad::Context) {
         #[cfg(target_os = "android")]
         get_context().audio_context.pause();
     }
 
-    fn quit_requested_event(&mut self) {
+    fn quit_requested_event(&mut self, _: &mut miniquad::Context) {
         let context = get_context();
         if context.prevent_quit_event {
             context.quad_context.cancel_quit();
@@ -699,7 +739,7 @@ impl Window {
                     MAIN_FUTURE = Some(Box::pin(future));
                 }
                 unsafe { CONTEXT = Some(Context::new(ctx)) };
-                UserData::free(Stage {})
+                Box::new(Stage {})
             },
         );
     }
