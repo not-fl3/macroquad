@@ -32,10 +32,6 @@ mod dummy_audio {
             Sound {}
         }
 
-        pub fn is_loaded(&self) -> bool {
-            true
-        }
-
         pub fn play(&mut self, _ctx: &mut AudioContext, _params: PlaySoundParams) {}
 
         pub fn stop(&mut self, _ctx: &mut AudioContext) {}

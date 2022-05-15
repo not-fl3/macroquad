@@ -330,6 +330,12 @@ impl Context {
         }
     }
 
+    // this is very very bad
+    // trust me, macroquad will get rid of this!
+    fn set_quad_context(&mut self, ctx: &mut miniquad::Context) {
+        self.quad_context = unsafe { std::mem::transmute_copy(ctx) };
+    }
+
     fn begin_frame(&mut self) {
         telemetry::begin_gpu_query("GPU");
 
@@ -389,6 +395,7 @@ impl Context {
 
     pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
         let (width, height) = self.quad_context.screen_size();
+
         let dpi = self.quad_context.dpi_scale();
 
         glam::Mat4::orthographic_rh_gl(0., width / dpi, height / dpi, 0., -1., 1.)
@@ -412,6 +419,8 @@ impl Context {
 #[no_mangle]
 static mut CONTEXT: Option<Context> = None;
 
+// This is required for #[macroquad::test]
+//
 // unfortunately #[cfg(test)] do not work with integration tests
 // so this module should be publicly available
 #[doc(hidden)]
@@ -429,7 +438,9 @@ static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 struct Stage {}
 
 impl EventHandler for Stage {
-    fn resize_event(&mut self, _: &mut miniquad::Context, width: f32, height: f32) {
+    fn resize_event(&mut self, ctx: &mut miniquad::Context, width: f32, height: f32) {
+        get_context().set_quad_context(ctx);
+
         let _z = telemetry::ZoneGuard::new("Event::resize_event");
         get_context().screen_width = width;
         get_context().screen_height = height;
@@ -614,7 +625,8 @@ impl EventHandler for Stage {
             .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
     }
 
-    fn update(&mut self, _: &mut miniquad::Context) {
+    fn update(&mut self, ctx: &mut miniquad::Context) {
+        get_context().set_quad_context(ctx);
         let _z = telemetry::ZoneGuard::new("Event::update");
 
         // Unless called every frame, cursor will not remain grabbed
@@ -628,7 +640,8 @@ impl EventHandler for Stage {
         }
     }
 
-    fn draw(&mut self, _: &mut miniquad::Context) {
+    fn draw(&mut self, ctx: &mut miniquad::Context) {
+        get_context().set_quad_context(ctx);
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
