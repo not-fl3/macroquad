@@ -489,13 +489,13 @@ impl EventHandler for Stage {
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
 
+        context
+            .input_events
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
+
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
-
-            context
-                .input_events
-                .iter_mut()
-                .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
         }
     }
 
@@ -511,13 +511,13 @@ impl EventHandler for Stage {
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
 
+        context
+            .input_events
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
+
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
-
-            context
-                .input_events
-                .iter_mut()
-                .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
         }
     }
 
