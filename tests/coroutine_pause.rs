@@ -15,12 +15,12 @@ async fn coroutine_value() {
 
     coroutine.set_manual_poll();
 
-    assert_eq!(coroutine.retreive(), None);
+    assert_eq!(coroutine.retrieve(), None);
 
     coroutine.poll(0.0);
     coroutine.poll(0.0);
 
-    assert_eq!(coroutine.retreive(), Some(1));
+    assert_eq!(coroutine.retrieve(), Some(1));
 }
 
 #[macroquad::test]

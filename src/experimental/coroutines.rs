@@ -86,7 +86,7 @@ impl<T: 'static> Coroutine<T> {
         context.coroutines[self.id].is_value() || context.coroutines[self.id].is_nothing()
     }
 
-    pub fn retreive(self) -> Option<T> {
+    pub fn retrieve(self) -> Option<T> {
         let context = &mut get_context().coroutines_context;
 
         if let Some(v) = context.coroutines[self.id].take_value() {
