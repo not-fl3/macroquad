@@ -652,7 +652,7 @@ impl EventHandler for Stage {
                 if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
                     let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
-                    if exec::resume(future) {
+                    if exec::resume(future).is_some() {
                         unsafe {
                             MAIN_FUTURE = None;
                         }

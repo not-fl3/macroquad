@@ -65,9 +65,12 @@ fn waker() -> Waker {
     unsafe { Waker::from_raw(raw_waker) }
 }
 
-/// returns true if future is done, false if it would block
-pub(crate) fn resume(future: &mut Pin<Box<dyn Future<Output = ()>>>) -> bool {
+/// returns Some(T) if future is done, None if it would block
+pub(crate) fn resume<T>(future: &mut Pin<Box<dyn Future<Output = T>>>) -> Option<T> {
     let waker = waker();
     let mut futures_context = std::task::Context::from_waker(&waker);
-    matches!(future.as_mut().poll(&mut futures_context), Poll::Ready(()))
+    match future.as_mut().poll(&mut futures_context) {
+        Poll::Ready(v) => Some(v),
+        Poll::Pending => None,
+    }
 }
