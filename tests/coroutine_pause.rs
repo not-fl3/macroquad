@@ -7,23 +7,6 @@ use macroquad::{
 };
 
 #[macroquad::test]
-async fn coroutine_value() {
-    let mut coroutine = start_coroutine(async move {
-        next_frame().await;
-        1
-    });
-
-    coroutine.set_manual_poll();
-
-    assert_eq!(coroutine.retrieve(), None);
-
-    coroutine.poll(0.0);
-    coroutine.poll(0.0);
-
-    assert_eq!(coroutine.retrieve(), Some(1));
-}
-
-#[macroquad::test]
 async fn coroutine_execution_order() {
     start_coroutine(async move {
         println!("a");
