@@ -222,6 +222,9 @@ pub struct TextParams {
     /// and Y axis would be scaled by font_scale
     /// Default is 1.0
     pub font_scale_aspect: f32,
+    /// Text rotation in radian
+    /// Default is 0.0
+    pub rotation: f32,
     pub color: Color,
 }
 
@@ -233,6 +236,7 @@ impl Default for TextParams {
             font_scale: 1.0,
             font_scale_aspect: 1.0,
             color: WHITE,
+            rotation: 0.0,
         }
     }
 }
@@ -291,15 +295,19 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 
     let mut total_width = 0.;
     for character in text.chars() {
-        if font.characters.contains_key(&(character, font_size)) == false {
+        if !font.characters.contains_key(&(character, font_size)) {
             font.cache_glyph(character, font_size);
         }
         let mut atlas = font.atlas.borrow_mut();
         let font_data = &font.characters[&(character, font_size)];
         let glyph = atlas.get(font_data.sprite).unwrap().rect;
-        let left_coord = font_data.offset_x as f32 * font_scale_x + total_width;
-        let top_coord =
-            0.0 - glyph.h as f32 * font_scale_y - font_data.offset_y as f32 * font_scale_y;
+        let angle_rad = params.rotation;
+        let left_coord = (font_data.offset_x as f32 * font_scale_x + total_width) * angle_rad.cos()
+            + (glyph.h as f32 * font_scale_y + font_data.offset_y as f32 * font_scale_y)
+                * angle_rad.sin();
+        let top_coord = (font_data.offset_x as f32 * font_scale_x + total_width) * angle_rad.sin()
+            + (0.0 - glyph.h as f32 * font_scale_y - font_data.offset_y as f32 * font_scale_y)
+                * angle_rad.cos();
 
         total_width += font_data.advance * font_scale_x;
 
@@ -325,6 +333,8 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
             crate::texture::DrawTextureParams {
                 dest_size: Some(vec2(dest.w, dest.h)),
                 source: Some(source),
+                rotation: angle_rad,
+                pivot: Option::Some(vec2(dest.x, dest.y)),
                 ..Default::default()
             },
         );

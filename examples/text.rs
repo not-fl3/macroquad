@@ -6,6 +6,8 @@ async fn main() {
         .await
         .unwrap();
 
+    let mut angle = 0.0;
+
     loop {
         clear_background(BLACK);
 
@@ -57,6 +59,20 @@ async fn main() {
                 ..Default::default()
             },
         );
+
+        draw_text_ex(
+            "abcd",
+            550.0,
+            370.0,
+            TextParams {
+                font_size: 100,
+                font,
+                rotation: angle,
+                ..Default::default()
+            },
+        );
+
+        angle -= 0.07;
 
         next_frame().await
     }
