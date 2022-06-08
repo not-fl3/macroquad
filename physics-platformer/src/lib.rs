@@ -368,11 +368,16 @@ impl World {
             tag: layer_tag,
         } in &self.static_tiled_layers
         {
+            let layer_height = static_colliders.len() / layer_width;
             let check = |pos: Vec2| {
                 let y = (pos.y / tile_width) as i32;
                 let x = (pos.x / tile_height) as i32;
                 let ix = y * (*layer_width as i32) + x;
-                if ix >= 0
+                if y >= 0
+                    && y < layer_height as i32
+                    && x >= 0
+                    && x < *layer_width as i32
+                    && ix >= 0
                     && ix < static_colliders.len() as i32
                     && *layer_tag == tag
                     && static_colliders[ix as usize] != Tile::Empty
