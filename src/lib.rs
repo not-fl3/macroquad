@@ -150,7 +150,6 @@ use crate::{
 use glam::{vec2, Mat4, Vec2};
 
 struct Context {
-    quad_context: QuadContext<'static, 'static>,
     audio_context: audio::AudioContext,
 
     screen_width: f32,
@@ -304,16 +303,6 @@ impl Context {
             texture_batcher: texture::Batcher::new(ctx),
             camera_stack: vec![],
 
-            quad_context: {
-                // well, there are certain reasons to believe that this is actually
-                // safe. Context consist of two references and I know for certain that
-                // both references are actually pinned deep inside miniquad.
-                // Using ctx from EventHandler would still be UB
-                // and even without ctx from EventHandler it is (probably) still an UB from aliasing
-                let static_context = unsafe { std::mem::transmute_copy(ctx) };
-
-                static_context
-            },
             audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
 
@@ -330,17 +319,15 @@ impl Context {
         }
     }
 
-    // this is very very bad
-    // trust me, macroquad will get rid of this!
-    fn set_quad_context(&mut self, ctx: &mut miniquad::Context) {
-        self.quad_context = unsafe { std::mem::transmute_copy(ctx) };
-    }
-
     fn begin_frame(&mut self) {
         telemetry::begin_gpu_query("GPU");
 
         self.ui_context.process_input();
-        self.clear(Self::DEFAULT_BG_COLOR);
+
+        let color = Self::DEFAULT_BG_COLOR;
+
+        get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
+        self.gl.reset();
     }
 
     fn end_frame(&mut self) {
@@ -348,11 +335,11 @@ impl Context {
 
         self.perform_render_passes();
 
-        self.ui_context.draw(&mut self.quad_context, &mut self.gl);
+        self.ui_context.draw(get_quad_context(), &mut self.gl);
         let screen_mat = self.pixel_perfect_projection_matrix();
-        self.gl.draw(&mut self.quad_context, screen_mat);
+        self.gl.draw(get_quad_context(), screen_mat);
 
-        self.quad_context.commit_frame();
+        get_quad_context().commit_frame();
 
         #[cfg(one_screenshot)]
         {
@@ -387,16 +374,10 @@ impl Context {
         }
     }
 
-    fn clear(&mut self, color: Color) {
-        self.quad_context
-            .clear(Some((color.r, color.g, color.b, color.a)), None, None);
-        self.gl.reset();
-    }
-
     pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
-        let (width, height) = self.quad_context.screen_size();
+        let (width, height) = get_quad_context().screen_size();
 
-        let dpi = self.quad_context.dpi_scale();
+        let dpi = get_quad_context().dpi_scale();
 
         glam::Mat4::orthographic_rh_gl(0., width / dpi, height / dpi, 0., -1., 1.)
     }
@@ -412,12 +393,20 @@ impl Context {
     pub(crate) fn perform_render_passes(&mut self) {
         let matrix = self.projection_matrix();
 
-        self.gl.draw(&mut self.quad_context, matrix);
+        self.gl.draw(&mut get_quad_context(), matrix);
     }
 }
 
 #[no_mangle]
 static mut CONTEXT: Option<Context> = None;
+
+static mut QUAD_CONTEXT: *mut miniquad::Context = std::ptr::null_mut();
+
+// this is very very bad
+// trust me, macroquad will get rid of this!
+fn set_quad_context(ctx: &mut miniquad::Context) {
+    unsafe { QUAD_CONTEXT = std::mem::transmute(ctx) };
+}
 
 // This is required for #[macroquad::test]
 //
@@ -433,13 +422,21 @@ fn get_context() -> &'static mut Context {
     unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
 }
 
+fn get_quad_context() -> &'static mut QuadContext {
+    unsafe {
+        assert!(!QUAD_CONTEXT.is_null());
+    }
+
+    unsafe { &mut *QUAD_CONTEXT }
+}
+
 static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
 struct Stage {}
 
 impl EventHandler for Stage {
     fn resize_event(&mut self, ctx: &mut miniquad::Context, width: f32, height: f32) {
-        get_context().set_quad_context(ctx);
+        set_quad_context(ctx);
 
         let _z = telemetry::ZoneGuard::new("Event::resize_event");
         get_context().screen_width = width;
@@ -626,12 +623,11 @@ impl EventHandler for Stage {
     }
 
     fn update(&mut self, ctx: &mut miniquad::Context) {
-        get_context().set_quad_context(ctx);
+        set_quad_context(ctx);
         let _z = telemetry::ZoneGuard::new("Event::update");
 
         // Unless called every frame, cursor will not remain grabbed
-        let context = get_context();
-        context.quad_context.set_cursor_grab(context.cursor_grabbed);
+        get_quad_context().set_cursor_grab(get_context().cursor_grabbed);
 
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -641,7 +637,7 @@ impl EventHandler for Stage {
     }
 
     fn draw(&mut self, ctx: &mut miniquad::Context) {
-        get_context().set_quad_context(ctx);
+        set_quad_context(ctx);
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
@@ -669,7 +665,7 @@ impl EventHandler for Stage {
                         unsafe {
                             MAIN_FUTURE = None;
                         }
-                        get_context().quad_context.quit();
+                        get_quad_context().quit();
                         return;
                     }
                     get_context().coroutines_context.update();
@@ -715,10 +711,10 @@ impl EventHandler for Stage {
         get_context().audio_context.pause();
     }
 
-    fn quit_requested_event(&mut self, _: &mut miniquad::Context) {
+    fn quit_requested_event(&mut self, ctx: &mut miniquad::Context) {
         let context = get_context();
         if context.prevent_quit_event {
-            context.quad_context.cancel_quit();
+            ctx.cancel_quit();
             context.quit_requested = true;
         }
     }

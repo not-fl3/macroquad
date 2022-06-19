@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     color::Color,
-    get_context,
+    get_context, get_quad_context,
     math::{vec3, Rect},
     texture::Image,
 };
@@ -131,7 +131,7 @@ impl FontInternal {
         font_scale_x: f32,
         font_scale_y: f32,
     ) -> TextDimensions {
-        let dpi_scaling = get_context().quad_context.dpi_scale();
+        let dpi_scaling = get_quad_context().dpi_scale();
         let font_size = font_size * dpi_scaling.ceil() as u16;
 
         for character in text.chars() {
@@ -251,7 +251,7 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, FontError> {
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
     let context = get_context();
     let atlas = Rc::new(RefCell::new(Atlas::new(
-        &mut get_context().quad_context,
+        get_quad_context(),
         miniquad::FilterMode::Linear,
     )));
 
@@ -285,7 +285,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
-    let dpi_scaling = get_context().quad_context.dpi_scale();
+    let dpi_scaling = get_quad_context().dpi_scale();
 
     let font_size = params.font_size * dpi_scaling.ceil() as u16;
 
@@ -387,7 +387,7 @@ impl FontsStorage {
 /// looks good in currently active camera
 pub fn camera_font_scale(world_font_size: f32) -> (u16, f32, f32) {
     let context = get_context();
-    let (scr_w, scr_h) = context.quad_context.screen_size();
+    let (scr_w, scr_h) = get_quad_context().screen_size();
     let cam_space = context
         .projection_matrix()
         .inverse()

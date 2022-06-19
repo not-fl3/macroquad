@@ -1,4 +1,4 @@
-use crate::{get_context, time::get_time};
+use crate::{get_context, get_quad_context, time::get_time};
 
 use std::collections::HashMap;
 
@@ -353,9 +353,8 @@ pub(crate) fn track_drawcall(
     bindings: &miniquad::Bindings,
     indices_count: usize,
 ) {
-    let ctx = crate::get_context();
     let texture = miniquad::Texture::new_render_texture(
-        &mut ctx.quad_context,
+        get_quad_context(),
         miniquad::TextureParams {
             width: 128,
             height: 128,
@@ -363,17 +362,12 @@ pub(crate) fn track_drawcall(
         },
     );
 
-    let pass = Some(miniquad::RenderPass::new(
-        &mut ctx.quad_context,
-        texture,
-        None,
-    ));
-    ctx.quad_context
-        .begin_pass(pass, miniquad::PassAction::clear_color(0.4, 0.8, 0.4, 1.));
-    ctx.quad_context.apply_pipeline(pipeline);
-    ctx.quad_context.apply_bindings(bindings);
-    ctx.quad_context.draw(0, indices_count as _, 1);
-    ctx.quad_context.end_render_pass();
+    let pass = Some(miniquad::RenderPass::new(get_quad_context(), texture, None));
+    get_quad_context().begin_pass(pass, miniquad::PassAction::clear_color(0.4, 0.8, 0.4, 1.));
+    get_quad_context().apply_pipeline(pipeline);
+    get_quad_context().apply_bindings(bindings);
+    get_quad_context().draw(0, indices_count as _, 1);
+    get_quad_context().end_render_pass();
 
     get_profiler().drawcalls.push(DrawCallTelemetry {
         indices_count,

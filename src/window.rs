@@ -1,6 +1,6 @@
 //! Window and associated to window rendering context related functions.
 
-use crate::get_context;
+use crate::{get_context, get_quad_context};
 
 use crate::color::Color;
 
@@ -20,7 +20,7 @@ pub fn next_frame() -> crate::exec::FrameFuture {
 pub fn clear_background(color: Color) {
     let context = get_context();
 
-    context.gl.clear(&mut context.quad_context, color);
+    context.gl.clear(get_quad_context(), color);
 }
 
 #[doc(hidden)]
@@ -28,11 +28,11 @@ pub fn gl_set_drawcall_buffer_capacity(max_vertices: usize, max_indices: usize) 
     let context = get_context();
     context
         .gl
-        .update_drawcall_capacity(&mut context.quad_context, max_vertices, max_indices);
+        .update_drawcall_capacity(get_quad_context(), max_vertices, max_indices);
 }
 
 pub struct InternalGlContext<'a> {
-    pub quad_context: &'a mut miniquad::Context<'static, 'static>,
+    pub quad_context: &'a mut miniquad::Context,
     pub quad_gl: &'a mut crate::quad_gl::QuadGl,
 }
 
@@ -48,7 +48,7 @@ pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
     let context = get_context();
 
     InternalGlContext {
-        quad_context: &mut context.quad_context,
+        quad_context: get_quad_context(),
         quad_gl: &mut context.gl,
     }
 }
@@ -56,23 +56,22 @@ pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
 pub fn screen_width() -> f32 {
     let context = get_context();
 
-    context.screen_width / context.quad_context.dpi_scale()
+    context.screen_width / get_quad_context().dpi_scale()
 }
 
 pub fn screen_height() -> f32 {
     let context = get_context();
 
-    context.screen_height / context.quad_context.dpi_scale()
+    context.screen_height / get_quad_context().dpi_scale()
 }
 
 /// Request the window size to be the given value. This takes DPI into account.
 ///
 /// Note that the OS might decide to give a different size. Additionally, the size in macroquad won't be updated until the next `next_frame().await`.
 pub fn request_new_screen_size(width: f32, height: f32) {
-    let context = get_context();
-    context.quad_context.set_window_size(
-        (width * context.quad_context.dpi_scale()) as u32,
-        (height * context.quad_context.dpi_scale()) as u32,
+    get_quad_context().set_window_size(
+        (width * get_quad_context().dpi_scale()) as u32,
+        (height * get_quad_context().dpi_scale()) as u32,
     );
     // We do not set the context.screen_width and context.screen_height here.
     // After `set_window_size` is called, EventHandlerFree::resize will be invoked, setting the size correctly.

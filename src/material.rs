@@ -1,8 +1,8 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::get_context;
 use crate::prelude::Texture2D;
 use crate::quad_gl::GlPipeline;
+use crate::{get_context, get_quad_context};
 use miniquad::{PipelineParams, ShaderError, UniformType};
 
 /// Material instance loaded on GPU.
@@ -63,7 +63,7 @@ pub fn load_material(
     let context = &mut get_context();
 
     let pipeline = context.gl.make_pipeline(
-        &mut context.quad_context,
+        get_quad_context(),
         vertex_shader,
         fragment_shader,
         params.pipeline_params,

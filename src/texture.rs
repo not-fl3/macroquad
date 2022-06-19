@@ -3,7 +3,7 @@
 use crate::{
     color::Color,
     file::{load_file, FileError},
-    get_context,
+    get_context, get_quad_context,
     math::Rect,
 };
 
@@ -226,13 +226,13 @@ impl RenderTarget {
     pub fn delete(&self) {
         self.texture.delete();
 
-        let context = &mut get_context().quad_context;
+        let context = get_quad_context();
         self.render_pass.delete(context);
     }
 }
 
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
-    let context = &mut get_context().quad_context;
+    let context = get_quad_context();
 
     let texture = miniquad::Texture::new_render_texture(
         context,
@@ -424,7 +424,7 @@ pub fn get_screen_data() -> Image {
     let context = get_context();
 
     let texture = Texture2D::from_miniquad_texture(miniquad::Texture::new_render_texture(
-        &mut context.quad_context,
+        get_quad_context(),
         miniquad::TextureParams {
             width: context.screen_width as _,
             height: context.screen_height as _,
@@ -524,7 +524,7 @@ impl Texture2D {
     pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
         let ctx = get_context();
 
-        let texture = miniquad::Texture::from_rgba8(&mut ctx.quad_context, width, height, bytes);
+        let texture = miniquad::Texture::from_rgba8(get_quad_context(), width, height, bytes);
         let texture = Texture2D { texture };
 
         ctx.texture_batcher.add_unbatched(texture);
@@ -537,7 +537,7 @@ impl Texture2D {
         assert_eq!(self.texture.width, image.width as u32);
         assert_eq!(self.texture.height, image.height as u32);
 
-        let ctx = &mut get_context().quad_context;
+        let ctx = get_quad_context();
 
         self.texture.update(ctx, &image.bytes);
     }
@@ -566,7 +566,7 @@ impl Texture2D {
     /// # }
     /// ```
     pub fn set_filter(&self, filter_mode: FilterMode) {
-        let ctx = &mut get_context().quad_context;
+        let ctx = get_quad_context();
 
         self.texture.set_filter(ctx, filter_mode);
     }
