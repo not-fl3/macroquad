@@ -79,7 +79,7 @@ impl Color {
     }
 
     /// Build a color from 4 0..255 components
-    /// Unfortunately it may not be const fn due to https://github.com/rust-lang/rust/issues/57241
+    /// Unfortunately it can't be const fn due to https://github.com/rust-lang/rust/issues/57241
     /// When const version is needed "color_u8" macro may be a workaround
     pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
         Color::new(
