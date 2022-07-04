@@ -8,6 +8,7 @@ use std::borrow::Cow;
 pub struct Label<'a> {
     position: Option<Vec2>,
     _multiline: Option<f32>,
+    size: Option<Vec2>,
     label: Cow<'a, str>,
 }
 
@@ -19,6 +20,7 @@ impl<'a> Label<'a> {
         Label {
             position: None,
             _multiline: None,
+            size: None,
             label: label.into(),
         }
     }
@@ -36,13 +38,22 @@ impl<'a> Label<'a> {
         Label { position, ..self }
     }
 
+    pub fn size(self, size: Vec2) -> Self {
+        Label {
+            size: Some(size),
+            ..self
+        }
+    }
+
     pub fn ui(self, ui: &mut Ui) {
         let context = ui.get_active_window_context();
 
-        let size = context.window.painter.content_with_margins_size(
-            &context.style.label_style,
-            &UiContent::Label(self.label.clone()),
-        );
+        let size = self.size.unwrap_or_else(|| {
+            context.window.painter.content_with_margins_size(
+                &context.style.label_style,
+                &UiContent::Label(self.label.clone()),
+            )
+        });
 
         let pos = context
             .window
