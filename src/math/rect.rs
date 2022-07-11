@@ -31,6 +31,11 @@ impl Rect {
         vec2(self.w, self.h)
     }
 
+    /// Returns the center position of the `Rect`.
+    pub fn center(&self) -> Vec2 {
+        vec2(self.x + self.w * 0.5f32, self.y + self.h * 0.5f32)
+    }
+
     /// Returns the left edge of the `Rect`
     pub fn left(&self) -> f32 {
         self.x
