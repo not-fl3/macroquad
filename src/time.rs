@@ -32,3 +32,62 @@ pub fn get_time() -> f64 {
 
     miniquad::date::now() - context.start_time
 }
+
+#[derive(PartialEq)]
+pub enum TimerState {
+    Running,
+    Paused,
+    Finished,
+}
+
+pub struct Timer {
+    duration: f32,
+    elapsed: f32,
+    state: TimerState,
+}
+
+impl Timer {
+    pub fn new(duration: f32) -> Self {
+        Self {
+            duration,
+            elapsed: 0.0,
+            state: TimerState::Running,
+        }
+    }
+
+    pub fn tick(&mut self) {
+        if self.state != TimerState::Running {
+            return;
+        }
+
+        self.elapsed += get_frame_time();
+
+        if self.elapsed > self.duration {
+            self.finish();
+        }
+    }
+
+    pub fn pause(&mut self) {
+        self.state = TimerState::Paused;
+    }
+
+    pub fn finish(&mut self) {
+        self.state = TimerState::Finished;
+    }
+
+    pub fn start(&mut self) {
+        self.state = TimerState::Running;
+    }
+
+    pub fn reset(&mut self) {
+        self.elapsed = 0.0;
+    }
+
+    pub fn get_state(&self) -> &TimerState {
+        return &self.state;
+    }
+
+    pub fn get_elapsed(&self) -> f32 {
+        return self.elapsed;
+    }
+}
