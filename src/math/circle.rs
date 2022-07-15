@@ -57,7 +57,7 @@ impl Circle {
         return dist_sq <= self.r * self.r;
     }
 
-    /// Translate rect origin by `offset` vector
+    /// Translate `Circle` origin by `offset` vector
     pub fn offset(self, offset: Vec2) -> Circle {
         Circle::new(self.x + offset.x, self.y + offset.y, self.r)
     }
