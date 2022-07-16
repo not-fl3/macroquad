@@ -783,7 +783,7 @@ impl Emitter {
                 }
 
                 let x = cpu.frame % atlas.n;
-                let y = cpu.frame / atlas.m;
+                let y = cpu.frame / atlas.n;
 
                 gpu.uv = vec4(
                     x as f32 / atlas.n as f32,
