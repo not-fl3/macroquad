@@ -32,7 +32,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         let label = format!(
             "{}: {:.4}ms {:.1}(1/t)",
             zone.name,
-            zone.duration,
+            zone.duration * 1000.0,
             1.0 / zone.duration
         );
         if zone.children.len() != 0 {
@@ -107,7 +107,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
             None,
             &format!(
                 "Full frame time: {:.3}ms {:.1}(1/t)",
-                frame.full_frame_time,
+                frame.full_frame_time * 1000.0,
                 (1.0 / frame.full_frame_time)
             ),
         );
@@ -149,7 +149,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
             let t = query.1 as f64 / 1_000_000_000.0;
             ui.label(
                 None,
-                &format!("{}: {:.3}ms {:.1}(1/t)", query.0, t, 1.0 / t),
+                &format!("{}: {:.3}ms {:.1}(1/t)", query.0, t * 1000.0, 1.0 / t),
             );
         }
     });
