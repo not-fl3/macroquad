@@ -1,5 +1,6 @@
 use crate::{
-    math::{vec2, Rect, Vec2}, prelude::get_frame_time,
+    math::{vec2, Rect, Vec2},
+    time::get_frame_time,
     
 };
 
