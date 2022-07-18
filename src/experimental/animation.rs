@@ -1,6 +1,6 @@
 use crate::{
-    math::{vec2, Rect, Vec2},
-    time::get_frame_time,
+    math::{vec2, Rect, Vec2}, prelude::get_frame_time,
+    
 };
 
 #[derive(Clone, Debug)]
@@ -45,6 +45,22 @@ impl AnimatedSprite {
             playing,
         }
     }
+
+    pub fn get_animation_index(&self, name: String) -> Option<usize> {
+        self.animations.iter().position(|animation| animation.name == name)
+    }
+
+    pub fn set_animation_str(&mut self, name: String) {
+        self.current_animation = self.get_animation_index(name.clone()).expect(&format!("{} is not a valid animation for this sprite!", name));
+    }
+    pub fn current_animation_str(&self) -> String {
+        self.animations[self.current_animation].name.clone()
+    }
+
+
+
+
+
 
     pub fn set_animation(&mut self, animation: usize) {
         self.current_animation = animation;
