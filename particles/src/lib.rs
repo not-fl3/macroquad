@@ -687,7 +687,7 @@ impl Emitter {
 
         let particle = if self.config.local_coords {
             GpuParticle {
-                pos: vec4(offset.x, offset.y, self.config.initial_rotation, r),
+                pos: vec4(offset.x, offset.y, rotation, r),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
                 data: vec4(self.particles_spawned as f32, 0.0, 0.0, 0.0),
                 color: self.config.colors_curve.start.to_vec(),
