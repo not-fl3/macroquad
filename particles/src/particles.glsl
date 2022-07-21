@@ -10,16 +10,20 @@ uniform mat4 _mvp;
 uniform float _local_coords;
 uniform vec3 _emitter_position;
 
+lowp mat2 rotate2d(float angle){
+    return mat2(cos(angle),-sin(angle),
+                sin(angle),cos(angle));
+}
 vec4 particle_transform_vertex() {
      vec4 transformed = vec4(0.0, 0.0, 0.0, 0.0);
-
+     mat2 rot = rotate2d(in_attr_inst_pos.z);
+     vec4 in_attr_inst_pos = vec4(in_attr_inst_pos.xy, 0.0, in_attr_inst_pos.w);
      if (_local_coords == 0.0) {
-        transformed = vec4(in_attr_pos * in_attr_inst_pos.w + in_attr_inst_pos.xyz, 1.0);
+        transformed = vec4(vec3(rot * in_attr_pos.xy, in_attr_pos.z) * in_attr_inst_pos.w + in_attr_inst_pos.xyz, 1.0);
      } else {
-        transformed = vec4(in_attr_pos * in_attr_inst_pos.w + in_attr_inst_pos.xyz +
+        transformed = vec4(vec3(rot * in_attr_pos.xy, in_attr_pos.z) * in_attr_inst_pos.w + in_attr_inst_pos.xyz +
                         _emitter_position.xyz, 1.0);
      }
-
      return _mvp * transformed;
 }
 

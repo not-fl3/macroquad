@@ -193,6 +193,21 @@ pub struct EmitterConfig {
     /// Velocity acceleration applied to each particle in the direction of motion.
     pub linear_accel: f32,
 
+    // Initial rotation for each emitted particle.
+    pub initial_rotation: f32,
+    /// Initial rotation randomness.
+    /// Each particle will spawned with "initial_rotation = initial_rotation - initial_rotation * rand::gen_range(0.0, initial_rotation_randomness)".
+    pub initial_rotation_randomness: f32,
+    // Initial rotational speed
+    pub initial_angular_velocity: f32,
+    /// Initial angular velocity randomness.
+    /// Each particle will spawned with "initial_angular_velocity = initial_angular_velocity - initial_angular_velocity * rand::gen_range(0.0, initial_angular_velocity_randomness)".
+    pub initial_angular_velocity_randomness: f32,
+    /// Angular velocity acceleration applied to each particle .
+    pub angular_accel: f32,
+    /// Angluar velocity damping
+    /// Each frame angular velocity will be transformed "angular_velocity *= (1.0 - angular_damping)".
+    pub angular_damping: f32,
     /// Each particle is a "size x size" square.
     pub size: f32,
     /// Each particle will spawned with "size = size - size * rand::gen_range(0.0, size_randomness)".
@@ -277,7 +292,7 @@ impl ParticleShape {
             ParticleShape::Rectangle { aspect_ratio } => {
                 #[rustfmt::skip]
                 let vertices: &[f32] = &[
-                    // positions       uv         colors
+                    // positions          uv          colors
                     -1.0 * aspect_ratio, -1.0, 0.0,   0.0, 0.0,  1.0, 1.0, 1.0, 1.0,
                      1.0 * aspect_ratio, -1.0, 0.0,   1.0, 0.0,  1.0, 1.0, 1.0, 1.0,
                      1.0 * aspect_ratio,  1.0, 0.0,   1.0, 1.0,  1.0, 1.0, 1.0, 1.0,
@@ -424,6 +439,12 @@ impl Default for EmitterConfig {
             initial_velocity: 50.0,
             initial_velocity_randomness: 0.0,
             linear_accel: 0.0,
+            initial_rotation: 0.0,
+            initial_rotation_randomness: 0.0,
+            initial_angular_velocity: 0.0,
+            initial_angular_velocity_randomness: 0.0,
+            angular_accel: 0.0,
+            angular_damping: 0.0,
             size: 10.0,
             size_randomness: 0.0,
             size_curve: None,
@@ -448,6 +469,7 @@ struct GpuParticle {
 
 struct CpuParticle {
     velocity: Vec2,
+    angular_velocity: f32,
     lived: f32,
     lifetime: f32,
     frame: u16,
@@ -659,9 +681,13 @@ impl Emitter {
         let r =
             self.config.size - self.config.size * rand::gen_range(0.0, self.config.size_randomness);
 
+        let rotation = self.config.initial_rotation
+            - self.config.initial_rotation
+                * rand::gen_range(0.0, self.config.initial_rotation_randomness);
+
         let particle = if self.config.local_coords {
             GpuParticle {
-                pos: vec4(offset.x, offset.y, 0.0, r),
+                pos: vec4(offset.x, offset.y, self.config.initial_rotation, r),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
                 data: vec4(self.particles_spawned as f32, 0.0, 0.0, 0.0),
                 color: self.config.colors_curve.start.to_vec(),
@@ -671,7 +697,7 @@ impl Emitter {
                 pos: vec4(
                     self.position.x + offset.x,
                     self.position.y + offset.y,
-                    0.0,
+                    rotation,
                     r,
                 ),
                 uv: vec4(1.0, 1.0, 0.0, 0.0),
@@ -693,6 +719,9 @@ impl Emitter {
                     - self.config.initial_velocity
                         * rand::gen_range(0.0, self.config.initial_velocity_randomness),
             ),
+            angular_velocity: self.config.initial_angular_velocity
+                - self.config.initial_angular_velocity
+                    * rand::gen_range(0.0, self.config.initial_angular_velocity_randomness),
             lived: 0.0,
             lifetime: self.config.lifetime
                 - self.config.lifetime * rand::gen_range(0.0, self.config.lifetime_randomness),
@@ -747,6 +776,8 @@ impl Emitter {
             // TODO: this is not quite the way to apply acceleration, this is not
             // fps independent and just wrong
             cpu.velocity += cpu.velocity * self.config.linear_accel * dt;
+            cpu.angular_velocity += cpu.angular_velocity * self.config.angular_accel * dt;
+            cpu.angular_velocity *= 1.0 - self.config.angular_damping;
 
             gpu.color = {
                 let t = cpu.lived / cpu.lifetime;
@@ -760,7 +791,7 @@ impl Emitter {
                         + self.config.colors_curve.end.to_vec() * t
                 }
             };
-            gpu.pos += vec4(cpu.velocity.x, cpu.velocity.y, 0.0, 0.0) * dt;
+            gpu.pos += vec4(cpu.velocity.x, cpu.velocity.y, cpu.angular_velocity, 0.0) * dt;
 
             gpu.pos.w = cpu.initial_size
                 * self
