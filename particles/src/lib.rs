@@ -254,7 +254,9 @@ pub struct PostProcessing;
 #[derive(Clone, PartialEq, Debug)]
 #[cfg_attr(feature = "nanoserde", derive(DeJson, SerJson))]
 pub enum ParticleShape {
-    Rectangle,
+    Rectangle {
+        aspect_ratio: f32,
+    },
     Circle {
         subdivisions: u32,
     },
@@ -272,14 +274,14 @@ impl ParticleShape {
         texture: Option<Texture2D>,
     ) -> Bindings {
         let (geometry_vertex_buffer, index_buffer) = match self {
-            ParticleShape::Rectangle => {
+            ParticleShape::Rectangle { aspect_ratio } => {
                 #[rustfmt::skip]
                 let vertices: &[f32] = &[
                     // positions       uv         colors
-                    -1.0, -1.0, 0.0,   0.0, 0.0,  1.0, 1.0, 1.0, 1.0,
-                     1.0, -1.0, 0.0,   1.0, 0.0,  1.0, 1.0, 1.0, 1.0,
-                     1.0,  1.0, 0.0,   1.0, 1.0,  1.0, 1.0, 1.0, 1.0,
-                    -1.0,  1.0, 0.0,   0.0, 1.0,  1.0, 1.0, 1.0, 1.0,
+                    -1.0 * aspect_ratio, -1.0, 0.0,   0.0, 0.0,  1.0, 1.0, 1.0, 1.0,
+                     1.0 * aspect_ratio, -1.0, 0.0,   1.0, 0.0,  1.0, 1.0, 1.0, 1.0,
+                     1.0 * aspect_ratio,  1.0, 0.0,   1.0, 1.0,  1.0, 1.0, 1.0, 1.0,
+                    -1.0 * aspect_ratio,  1.0, 0.0,   0.0, 1.0,  1.0, 1.0, 1.0, 1.0,
                 ];
 
                 let vertex_buffer = Buffer::immutable(ctx, BufferType::VertexBuffer, &vertices);
@@ -414,7 +416,7 @@ impl Default for EmitterConfig {
             lifetime: 1.0,
             lifetime_randomness: 0.0,
             amount: 8,
-            shape: ParticleShape::Rectangle,
+            shape: ParticleShape::Rectangle { aspect_ratio: 1.0 },
             explosiveness: 0.0,
             emitting: true,
             initial_direction: vec2(0., -1.),
