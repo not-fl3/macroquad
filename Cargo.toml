@@ -28,10 +28,10 @@ all-features = true
 [dependencies]
 miniquad = { version = "=0.3.11", features = ["log-impl"] }
 quad-rand = "0.2.1"
-glam = {version = "0.14", features = ["scalar-math"] }
-image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
+glam = {version = "0.21", features = ["scalar-math"] }
+image = { version = "0.24", default-features = false, features = ["png", "tga"] }
 macroquad_macro = { version = "0.1.7", path = "macroquad_macro" }
-fontdue = "0.5.0"
+fontdue = "0.7"
 bumpalo = "3.4"
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
@@ -51,5 +51,3 @@ macroquad = { path = './' }
 
 #miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}
-
-
