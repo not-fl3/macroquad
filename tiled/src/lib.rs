@@ -144,20 +144,30 @@ impl Map {
         let spr_width = dest.w / source.w;
         let spr_height = dest.h / source.h;
 
+        let mut separated_by_ts: HashMap<&str, Vec<(&Tile, Rect)>> = HashMap::new();
+
         for y in source.y as u32..source.y as u32 + source.h as u32 {
             for x in source.x as u32..source.x as u32 + source.w as u32 {
-                let pos = vec2(
-                    (x - source.x as u32) as f32 / source.w * dest.w + dest.x,
-                    (y - source.y as u32) as f32 / source.h * dest.h + dest.y,
-                );
-
                 if let Some(tile) = &layer.data[(y * layer.width + x) as usize] {
-                    self.spr(
-                        &tile.tileset,
-                        tile.id,
-                        Rect::new(pos.x, pos.y, spr_width, spr_height),
+                    if !separated_by_ts.contains_key(tile.tileset.as_str()) {
+                        separated_by_ts.insert(&tile.tileset, vec![]);
+                    }
+
+                    let pos = vec2(
+                        (x - source.x as u32) as f32 / source.w * dest.w + dest.x,
+                        (y - source.y as u32) as f32 / source.h * dest.h + dest.y,
                     );
+                    separated_by_ts
+                        .get_mut(tile.tileset.as_str())
+                        .unwrap()
+                        .push((&tile, Rect::new(pos.x, pos.y, spr_width, spr_height)));
                 }
+            }
+        }
+
+        for (tileset, tileset_layer) in &separated_by_ts {
+            for (tile, rect) in tileset_layer {
+                self.spr(tileset, tile.id, *rect);
             }
         }
     }
