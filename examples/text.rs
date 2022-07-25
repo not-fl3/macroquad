@@ -58,6 +58,9 @@ async fn main() {
             },
         );
 
+        draw_text_ex("Shadowed font:", 400.0, 200.0, TextParams::default());
+        draw_shadowed_text("abcd", 400.0, 250.0, 50.0, ORANGE, BLUE);
+
         next_frame().await
     }
 }
