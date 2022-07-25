@@ -40,9 +40,9 @@ struct DrawCall {
 #[repr(C)]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Vertex {
-    pos: [f32; 3],
-    uv: [f32; 2],
-    color: [u8; 4],
+    pub(crate) pos: [f32; 3],
+    pub(crate) uv: [f32; 2],
+    pub(crate) color: [u8; 4],
 }
 
 pub type VertexInterop = ([f32; 3], [f32; 2], [f32; 4]);
