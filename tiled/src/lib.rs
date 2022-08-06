@@ -148,7 +148,11 @@ impl Map {
 
         for y in source.y as u32..source.y as u32 + source.h as u32 {
             for x in source.x as u32..source.x as u32 + source.w as u32 {
-                if let Some(tile) = &layer.data[(y * layer.width + x) as usize] {
+                if let Some(tile) = &layer
+                    .data
+                    .get((y * layer.width + x) as usize)
+                    .unwrap_or(&None)
+                {
                     if !separated_by_ts.contains_key(tile.tileset.as_str()) {
                         separated_by_ts.insert(&tile.tileset, vec![]);
                     }
