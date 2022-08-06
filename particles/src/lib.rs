@@ -832,12 +832,14 @@ impl Emitter {
         for i in (0..self.gpu_particles.len()).rev() {
             // second if clause is just for the case when lifetime was changed in the editor
             // normally particle lifetime is always less or equal config lifetime
-            if self.cpu_counterpart[i].lived > self.cpu_counterpart[i].lifetime
+            if self.cpu_counterpart[i].lived >= self.cpu_counterpart[i].lifetime
                 || self.cpu_counterpart[i].lived > self.config.lifetime
             {
+                if self.cpu_counterpart[i].lived != self.cpu_counterpart[i].lifetime {
+                    self.particles_spawned -= 1;
+                }
                 self.gpu_particles.remove(i);
                 self.cpu_counterpart.remove(i);
-                self.particles_spawned -= 1;
             }
         }
 
