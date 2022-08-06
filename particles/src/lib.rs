@@ -803,7 +803,7 @@ impl Emitter {
                 gpu.data.y = cpu.lived / cpu.lifetime;
             }
 
-            cpu.lived += dt;
+            cpu.lived = f32::min(cpu.lived + dt, cpu.lifetime);
 
             cpu.velocity += self.config.gravity * dt;
 
