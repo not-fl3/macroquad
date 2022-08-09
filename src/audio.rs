@@ -19,9 +19,11 @@ mod dummy_audio {
         pub fn new() -> AudioContext {
             AudioContext {}
         }
-
+        
+        #[cfg(target_os = "android")]
         pub fn pause(&mut self) {}
 
+        #[cfg(target_os = "android")]
         pub fn resume(&mut self) {}
     }
 
