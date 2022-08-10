@@ -11,22 +11,22 @@
 
 ## Features
 
-* Same code for all supported platforms, no platform dependent defines required
-* Efficient 2D rendering with automatic geometry batching
-* Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6years old laptop)
-* Immediate mode UI library included
-* Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples)
+* Same code for all supported platforms, no platform dependent defines required.
+* Efficient 2D rendering with automatic geometry batching.
+* Minimal amount of dependencies: build after `cargo clean` takes only 16s on x230(~6 years old laptop).
+* Immediate mode UI library included.
+* Single command deploy for both WASM and Android [build instructions](https://github.com/not-fl3/miniquad/#building-examples).
 
-## Supported platforms
+## Supported Platforms
 
-* PC: Windows/Linux/MacOs
-* HTML5
-* Android
-* IOS
+* PC: Windows/Linux/macOS;
+* HTML5;
+* Android;
+* IOS.
 
-## Build instructions
+## Build Instructions
 
-### Setting up a macroquad project
+### Setting Up a Macroquad Project
 
 Macroquad is a normal rust dependency, therefore an empty macroquad project may be created with:
 
@@ -67,9 +67,9 @@ And to run it natively:
 cargo run
 ```
 
-For more examples take a look on [Macroquad examples folder](https://github.com/not-fl3/macroquad/tree/master/examples)
+For more examples take a look at [Macroquad examples folder](https://github.com/not-fl3/macroquad/tree/master/examples)
 
-### linux
+### Linux
 
 ```bash
 # ubuntu system dependencies
@@ -82,7 +82,7 @@ dnf install libX11-devel libXi-devel mesa-libGL-devel alsa-lib-devel
  pacman -S pkg-config libx11 libxi mesa-libgl alsa-lib
 ```
 
-### windows
+### Windows
 
 On windows both MSVC and GNU target are supported, no additional dependencies required. 
 
@@ -94,7 +94,7 @@ rustup target add x86_64-pc-windows-gnu
 cargo run --target x86_64-pc-windows-gnu
 ```
 
-### wasm
+### WASM
 
 ```sh
 rustup target add wasm32-unknown-unknown
@@ -148,7 +148,7 @@ basic-http-server .
 ```
 
 <details>
-<summary>tips</summary>
+<summary>Tips</summary>
 Adding the following snippet to your Cargo.toml ensures that all dependencies compile in release even in debug mode. In macroquad, this has the effect of making images load several times faster and your applications much more performant, while keeping compile times miraculously low.
 
 ```toml
@@ -163,7 +163,7 @@ While macroquad attempts to use as few Rust-specific concepts as possible, `.awa
 Rust's `async/await` is used to solve just one problem - cross platform main loop organization.
 
 <details>
-<summary>details</summary>
+<summary>Details</summary>
 
 
 The problem: on WASM and android it's not really easy to organize the main loop like this:
@@ -186,10 +186,10 @@ It is fixable on Android with threads, but on web there is not way to "pause" an
 While that loop is blocking for the entire game execution!
 The C++ solution for that problem: https://kripken.github.io/blog/wasm/2019/07/16/asyncify.html
 
-But in Rust we have async/await. Rust's `futures` is basically a continuations - `future`'s stack may be store into a variable to later pause/resume execution of future's code.
+But in Rust we have async/await. Rust's `futures` are basically continuations - `future`'s stack may be stored into a variable to pause/resume execution of future's code at a later point.
 
-async/await in macroquad is used without any external dependencies - no runtime, executor or even futures-rs are involved. It's just a way to preserve `main`'s stack on WASM and keep the code cross platform without any WASM-specific main loop.
-</details>
+async/await support in macroquad comes without any external dependencies - no runtime, no executors and futures-rs is not involved. It's just a way to preserve `main`'s stack on WASM and keep the code cross platform without any WASM-specific main loop.
+</Details>
 
 ## Community
 
