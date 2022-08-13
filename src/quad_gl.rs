@@ -340,8 +340,8 @@ impl PipelineExt {
             warn!(
                 "Trying to set uniform {} sized {} bytes value of {} bytes",
                 name,
-                std::mem::size_of::<T>(),
-                uniform_byte_size
+                uniform_byte_size,
+                std::mem::size_of::<T>()
             );
             return;
         }
