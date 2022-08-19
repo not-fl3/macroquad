@@ -512,7 +512,7 @@ impl Emitter {
         let positions_vertex_buffer = Buffer::stream(
             ctx,
             BufferType::VertexBuffer,
-            Self::MAX_PARTICLES * std::mem::size_of::<Vec3>(),
+            Self::MAX_PARTICLES * std::mem::size_of::<GpuParticle>(),
         );
 
         let bindings = config
