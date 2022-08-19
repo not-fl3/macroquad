@@ -319,13 +319,13 @@ pub fn draw_texture_ex(
 
     let mut texture = texture;
 
-    if let Some(batched) = context.texture_batcher.get(texture) {
-        texture = batched.0;
+    if let Some((batched_texture, uv)) = context.texture_batcher.get(texture) {
+        sx = ((sx / texture.width()) * uv.w + uv.x) * batched_texture.width();
+        sy = ((sy / texture.height()) * uv.h + uv.y) * batched_texture.height();
+        sw = (sw / texture.width()) * uv.w * batched_texture.width();
+        sh = (sh / texture.height()) * uv.h * batched_texture.height();
 
-        sx = batched.1.x * texture.width();
-        sy = batched.1.y * texture.height();
-        sw = batched.1.w * texture.width();
-        sh = batched.1.h * texture.height();
+        texture = batched_texture;
     }
 
     let (mut w, mut h) = match params.dest_size {
