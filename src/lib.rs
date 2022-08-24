@@ -122,7 +122,7 @@ pub use macroquad_macro::main;
 ///
 /// Very similar to macroquad::main
 /// Right now it will still spawn a window, just like ::main, therefore
-/// is not really usefull for anything than developping macroquad itself
+/// is not really useful for anything than developping macroquad itself
 #[doc(hidden)]
 pub use macroquad_macro::test;
 
