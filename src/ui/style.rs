@@ -14,6 +14,7 @@ pub struct StyleBuilder {
     font: Rc<RefCell<FontInternal>>,
     font_size: u16,
     text_color: Color,
+    text_color_hovered: Color,
     background_margin: Option<RectOffset>,
     margin: Option<RectOffset>,
     background: Option<Image>,
@@ -38,6 +39,7 @@ impl StyleBuilder {
             font: default_font,
             font_size: 16,
             text_color: Color::from_rgba(0, 0, 0, 255),
+            text_color_hovered: Color::from_rgba(0, 0, 0, 255),
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
             color_clicked: Color::from_rgba(255, 255, 255, 255),
@@ -103,6 +105,14 @@ impl StyleBuilder {
             ..self
         }
     }
+
+    pub fn text_color_hovered(self, color_hovered: Color) -> StyleBuilder {
+        StyleBuilder {
+            text_color_hovered: color_hovered,
+            ..self
+        }
+    }
+
     pub fn font_size(self, font_size: u16) -> StyleBuilder {
         StyleBuilder { font_size, ..self }
     }
@@ -188,6 +198,7 @@ impl StyleBuilder {
             color_selected_hovered: self.color_selected_hovered,
             font: self.font,
             text_color: self.text_color,
+            text_color_hovered: self.text_color_hovered,
             font_size: self.font_size,
             reverse_background_z: self.reverse_background_z,
         }
@@ -217,6 +228,7 @@ pub struct Style {
     pub(crate) margin: Option<RectOffset>,
     pub(crate) font: Rc<RefCell<FontInternal>>,
     pub(crate) text_color: Color,
+    pub(crate) text_color_hovered: Color,
     pub(crate) font_size: u16,
     pub(crate) reverse_background_z: bool,
 }
@@ -231,6 +243,7 @@ impl Style {
             background_clicked: None,
             font,
             text_color: Color::from_rgba(0, 0, 0, 255),
+            text_color_hovered: Color::from_rgba(0, 0, 0, 255),
             font_size: 16,
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
@@ -255,10 +268,14 @@ impl Style {
     }
 
     pub(crate) fn text_color(&self, element_state: ElementState) -> Color {
-        let ElementState { focused, .. } = element_state;
+        let ElementState {
+            focused, hovered, ..
+        } = element_state;
 
         if focused {
             self.text_color
+        } else if hovered {
+            self.text_color_hovered
         } else {
             Color::new(
                 self.text_color.r * 0.6,
