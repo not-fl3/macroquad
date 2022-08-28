@@ -15,6 +15,7 @@ pub struct StyleBuilder {
     font_size: u16,
     text_color: Color,
     text_color_hovered: Color,
+    text_color_clicked: Color,
     background_margin: Option<RectOffset>,
     margin: Option<RectOffset>,
     background: Option<Image>,
@@ -40,6 +41,7 @@ impl StyleBuilder {
             font_size: 16,
             text_color: Color::from_rgba(0, 0, 0, 255),
             text_color_hovered: Color::from_rgba(0, 0, 0, 255),
+            text_color_clicked: Color::from_rgba(0, 0, 0, 255),
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
             color_clicked: Color::from_rgba(255, 255, 255, 255),
@@ -109,6 +111,13 @@ impl StyleBuilder {
     pub fn text_color_hovered(self, color_hovered: Color) -> StyleBuilder {
         StyleBuilder {
             text_color_hovered: color_hovered,
+            ..self
+        }
+    }
+
+    pub fn text_color_clicked(self, color_clicked: Color) -> StyleBuilder {
+        StyleBuilder {
+            text_color_clicked: color_clicked,
             ..self
         }
     }
@@ -199,6 +208,7 @@ impl StyleBuilder {
             font: self.font,
             text_color: self.text_color,
             text_color_hovered: self.text_color_hovered,
+            text_color_clicked: self.text_color_clicked,
             font_size: self.font_size,
             reverse_background_z: self.reverse_background_z,
         }
@@ -229,6 +239,7 @@ pub struct Style {
     pub(crate) font: Rc<RefCell<FontInternal>>,
     pub(crate) text_color: Color,
     pub(crate) text_color_hovered: Color,
+    pub(crate) text_color_clicked: Color,
     pub(crate) font_size: u16,
     pub(crate) reverse_background_z: bool,
 }
@@ -244,6 +255,7 @@ impl Style {
             font,
             text_color: Color::from_rgba(0, 0, 0, 255),
             text_color_hovered: Color::from_rgba(0, 0, 0, 255),
+            text_color_clicked: Color::from_rgba(0, 0, 0, 255),
             font_size: 16,
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
@@ -269,10 +281,15 @@ impl Style {
 
     pub(crate) fn text_color(&self, element_state: ElementState) -> Color {
         let ElementState {
-            focused, hovered, ..
+            focused,
+            hovered,
+            clicked,
+            ..
         } = element_state;
 
-        if hovered {
+        if clicked {
+            self.text_color_clicked
+        } else if hovered {
             self.text_color_hovered
         } else if focused {
             self.text_color
