@@ -272,10 +272,10 @@ impl Style {
             focused, hovered, ..
         } = element_state;
 
-        if focused {
-            self.text_color
-        } else if hovered {
+        if hovered {
             self.text_color_hovered
+        } else if focused {
+            self.text_color
         } else {
             Color::new(
                 self.text_color.r * 0.6,
