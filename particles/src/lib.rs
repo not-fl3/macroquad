@@ -563,6 +563,11 @@ impl Emitter {
             shader,
             PipelineParams {
                 color_blend: Some(blend_mode),
+                alpha_blend: Some(BlendState::new(
+                    Equation::Add,
+                    BlendFactor::Zero,
+                    BlendFactor::One,
+                )),
                 ..Default::default()
             },
         );
