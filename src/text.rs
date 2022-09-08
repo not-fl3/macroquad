@@ -132,7 +132,7 @@ impl FontInternal {
         font_scale_y: f32,
     ) -> TextDimensions {
         let dpi_scaling = get_quad_context().dpi_scale();
-        let font_size = font_size * dpi_scaling.ceil() as u16;
+        let font_size = (font_size as f32 * dpi_scaling).ceil() as u16;
 
         for character in text.chars() {
             if self.characters.contains_key(&(character, font_size)) == false {
