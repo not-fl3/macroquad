@@ -16,11 +16,9 @@ async fn main() {
 
     let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
 
-    for y in 0..h {
-        for x in 0..w {
-            if rand::gen_range(0, 5) == 0 {
-                cells[y * w + x] = CellState::Alive;
-            }
+    for cell in cells.iter_mut() {
+        if rand::gen_range(0, 5) == 0 {
+            *cell = CellState::Alive;
         }
     }
     let texture = Texture2D::from_image(&image);
