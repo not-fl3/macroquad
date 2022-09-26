@@ -341,6 +341,22 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     }
 }
 
+/// Get the text center.
+pub fn get_text_center(
+    text: &str,
+    font: Option<Font>,
+    font_size: u16,
+    font_scale: f32,
+    rotation: f32,
+) -> crate::Vec2 {
+    let measure = measure_text(text, font, font_size, font_scale);
+
+    let x_center = measure.width / 2.0 * rotation.cos() + measure.height / 2.0 * rotation.sin();
+    let y_center = measure.width / 2.0 * rotation.sin() - measure.height / 2.0 * rotation.cos();
+
+    crate::Vec2::new(x_center, y_center)
+}
+
 /// World space dimensions of the text, measured by "measure_text" function
 pub struct TextDimensions {
     /// Distance from very left to very right of the rasterized text
