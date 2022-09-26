@@ -62,17 +62,29 @@ async fn main() {
 
         draw_text_ex(
             "abcd",
-            550.0,
-            370.0,
+            screen_width() / 4.0 * 2.0,
+            screen_height() / 3.0 * 2.0,
             TextParams {
-                font_size: 100,
+                font_size: 70,
                 font,
                 rotation: angle,
                 ..Default::default()
             },
         );
 
-        angle -= 0.07;
+        let center = get_text_center("abcd", Option::None, 70, 1.0, angle * 2.0);
+        draw_text_ex(
+            "abcd",
+            screen_width() / 4.0 * 3.0 - center.x,
+            screen_height() / 3.0 * 2.0 - center.y,
+            TextParams {
+                font_size: 70,
+                rotation: angle * 2.0,
+                ..Default::default()
+            },
+        );
+
+        angle -= 0.030;
 
         next_frame().await
     }
