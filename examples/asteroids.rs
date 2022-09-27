@@ -56,7 +56,7 @@ async fn main() {
     let mut gameover = false;
 
     let mut screen_center = Vec2::new(screen_width() / 2., screen_height() / 2.);
-    
+
     loop {
         if gameover {
             clear_background(LIGHTGRAY);
@@ -106,7 +106,6 @@ async fn main() {
         let frame_t = get_time();
         let rotation = ship.rot.to_radians();
 
-        
         let mut acc = -ship.vel / 100.; // Friction
 
         // Forward
@@ -140,7 +139,7 @@ async fn main() {
         }
         ship.pos += ship.vel;
         ship.pos = wrap_around(&ship.pos);
-        
+
         // Move each bullet
         for bullet in bullets.iter_mut() {
             bullet.pos += bullet.vel;
@@ -156,10 +155,8 @@ async fn main() {
         // Bullet lifetime
         bullets.retain(|bullet| bullet.shot_at + 1.5 > frame_t);
 
-
         let mut new_asteroids = Vec::new();
         for asteroid in asteroids.iter_mut() {
-
             // Asteroid/ship collision
             if (asteroid.pos - ship.pos).length() < asteroid.size + SHIP_HEIGHT / 3. {
                 gameover = true;
