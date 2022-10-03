@@ -9,7 +9,7 @@ use crate::{
 
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
-use image::ImageResult;
+use image::{ImageError, ImageResult};
 
 pub use crate::quad_gl::FilterMode;
 
@@ -202,18 +202,36 @@ impl Image {
     }
 }
 
+#[derive(Debug)]
+pub enum LoadError {
+    Image(ImageError),
+    File(FileError),
+}
+
+impl From<ImageError> for LoadError {
+    fn from(e: ImageError) -> Self {
+        LoadError::Image(e)
+    }
+}
+
+impl From<FileError> for LoadError {
+    fn from(e: FileError) -> Self {
+        LoadError::File(e)
+    }
+}
+
 /// Loads an [Image] from a file into CPU memory.
-pub async fn load_image(path: &str) -> Result<Image, FileError> {
+pub async fn load_image(path: &str) -> Result<Image, LoadError> {
     let bytes = load_file(path).await?;
 
-    Ok(Image::from_file_with_format(&bytes, None).expect("Valid image required"))
+    Ok(Image::from_file_with_format(&bytes, None)?)
 }
 
 /// Loads a [Texture2D] from a file into GPU memory.
-pub async fn load_texture(path: &str) -> Result<Texture2D, FileError> {
+pub async fn load_texture(path: &str) -> Result<Texture2D, LoadError> {
     let bytes = load_file(path).await?;
 
-    Ok(Texture2D::from_file_with_format(&bytes[..], None).expect("Valid image required"))
+    Ok(Texture2D::from_file_with_format(&bytes[..], None)?)
 }
 
 #[derive(Clone, Copy, Debug)]
