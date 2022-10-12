@@ -358,6 +358,7 @@ pub fn get_text_center(
 }
 
 /// World space dimensions of the text, measured by "measure_text" function
+#[derive(Debug, Clone, Copy)]
 pub struct TextDimensions {
     /// Distance from very left to very right of the rasterized text
     pub width: f32,
