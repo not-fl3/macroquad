@@ -1,6 +1,7 @@
 //! Color types and helpers.
 
 pub use colors::*;
+use crate::hexadecimal::*;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -89,6 +90,23 @@ impl Color {
             a as f32 / 255.,
         )
     }
+
+    /// Build a color from a hexadecimal str
+	/// Supported formats: #RRGGBB and #RRGGBBAA
+	pub fn from_hex(hex: &str) -> Color {
+		let hex = hex.replace('#', "");
+		if hex.len() != 6
+		&& hex.len() != 8 {
+			panic!("Invalid hex code: {}", hex);
+		}
+
+		let r = hex_pair_to_u8(&hex[0..2]);
+		let g = hex_pair_to_u8(&hex[2..4]);
+		let b = hex_pair_to_u8(&hex[4..6]);
+		let a = if hex.len() == 8 { hex_pair_to_u8(&hex[6..8]) } else { 255 };
+
+		Self::from_rgba(r, g, b, a)
+	}
 
     pub fn to_vec(&self) -> glam::Vec4 {
         glam::Vec4::new(self.r, self.g, self.b, self.a)
