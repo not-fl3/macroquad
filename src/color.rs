@@ -1,7 +1,6 @@
 //! Color types and helpers.
 
 pub use colors::*;
-use crate::hexadecimal::*;
 
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -91,21 +90,17 @@ impl Color {
         )
     }
 
-    /// Build a color from a hexadecimal str
-	/// Supported formats: #RRGGBB and #RRGGBBAA
-	pub fn from_hex(hex: &str) -> Color {
-		let hex = hex.replace('#', "");
-		if hex.len() != 6
-		&& hex.len() != 8 {
-			panic!("Invalid hex code: {}", hex);
-		}
+    /// Build a color from a hexadecimal u32
+    /// Example: 0x3CA7D5 - a light blue
+	pub fn from_hex(hex: u32) -> Color {
+		let bytes: [u8; 4] = hex.to_be_bytes();
 
-		let r = hex_pair_to_u8(&hex[0..2]);
-		let g = hex_pair_to_u8(&hex[2..4]);
-		let b = hex_pair_to_u8(&hex[4..6]);
-		let a = if hex.len() == 8 { hex_pair_to_u8(&hex[6..8]) } else { 255 };
-
-		Self::from_rgba(r, g, b, a)
+		Self::from_rgba(
+			bytes[1],
+			bytes[2],
+			bytes[3],
+			0,
+		)
 	}
 
     pub fn to_vec(&self) -> glam::Vec4 {

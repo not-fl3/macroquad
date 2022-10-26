@@ -50,7 +50,6 @@ pub mod audio;
 pub mod camera;
 pub mod color;
 pub mod file;
-pub mod hexadecimal;
 pub mod input;
 pub mod material;
 pub mod math;
