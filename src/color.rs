@@ -99,7 +99,7 @@ impl Color {
 			bytes[1],
 			bytes[2],
 			bytes[3],
-			0,
+			255,
 		)
 	}
 
