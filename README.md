@@ -147,6 +147,41 @@ cargo install basic-http-server
 basic-http-server .
 ```
 
+### IOS
+
+To run on the simulator:
+
+```
+mkdir MyGame.app
+cargo build --target x86_64-apple-ios --release
+cp target/release/mygame MyGame.app
+# only if the game have any assets
+cp -r assets MyGame.app
+cat > MyGame.app/Info.plist << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+<key>CFBundleExecutable</key>
+<string>mygame</string>
+<key>CFBundleIdentifier</key>
+<string>com.mygame</string>
+<key>CFBundleName</key>
+<string>mygame</string>
+<key>CFBundleVersion</key>
+<string>1</string>
+<key>CFBundleShortVersionString</key>
+<string>1.0</string>
+</dict>
+</plist>
+EOF
+
+xcrun simctl install booted MyGame.app/
+xcrun simctl launch booted com.mygame
+```
+
+For details and instructions on provisioning for real iphone, check [https://macroquad.rs/articles/ios/](https://macroquad.rs/articles/ios/)
+
 <details>
 <summary>Tips</summary>
 Adding the following snippet to your Cargo.toml ensures that all dependencies compile in release even in debug mode. In macroquad, this has the effect of making images load several times faster and your applications much more performant, while keeping compile times miraculously low.
