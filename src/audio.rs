@@ -39,6 +39,13 @@ mod dummy_audio {
         pub fn stop(&mut self, _ctx: &mut AudioContext) {}
 
         pub fn set_volume(&mut self, _ctx: &mut AudioContext, _volume: f32) {}
+
+
+        pub fn is_loaded(&self) -> bool{
+            false
+        }
+
+        pub fn delete(&self, _ctx: &AudioContext){}
     }
 }
 
