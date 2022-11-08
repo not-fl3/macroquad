@@ -509,7 +509,7 @@ impl Scene {
         let mut frame_time = new_time - self.current_time;
 
         // https://medium.com/@tglaiel/how-to-make-your-game-run-at-60fps-24c61210fe75x
-        if (frame_time - 1.0 / 1200.0).abs() < 0.0002 {
+        if (frame_time - 1.0 / 120.0).abs() < 0.0002 {
             frame_time = 1.0 / 120.0;
         } else if (frame_time - 1.0 / 60.0).abs() < 0.0002 {
             frame_time = 1.0 / 60.0;
