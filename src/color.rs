@@ -224,3 +224,13 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
 
     (h, s, l)
 }
+
+pub fn mix_colors(first: &Color, second: &Color, amount: f32) -> Color {
+    let amount_s = 1.0 - amount;
+    Color::new(
+        first.r * amount + second.r * amount_s,
+        first.g * amount + second.g * amount_s,
+        first.b * amount + second.b * amount_s,
+        first.a * amount + second.a * amount_s,
+    )
+}
