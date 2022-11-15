@@ -74,8 +74,8 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     context.gl.geometry(&vertices, &indices);
 }
 
-/// Draws a solid rectangle with its center at `position` with `size` (width going to
-/// the right, height going down), with a given `color`.
+/// Draws a solid rectangle with its center at `position` with `size`,
+/// with rotation (in degrees), with a given `color`.
 pub fn draw_rectangle_pro(position: Vec2, rotation: f32, size: Vec2, color: Color) {
     let context = get_context();
     let transform_matrix = Mat4::from_translation(vec3(position.x, position.y, 0.0))
