@@ -74,28 +74,51 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     context.gl.geometry(&vertices, &indices);
 }
 
-/// Draws a solid rectangle with its center at `position` with `size`,
-/// with rotation (in degrees), with a given `color`.
-pub fn draw_rectangle_pro(position: Vec2, rotation: f32, size: Vec2, color: Color) {
+#[derive(Debug, Clone)]
+pub struct DrawRectangleParams {
+    /// Adds an offset to the position
+    /// E.g. offset (0,0) positions the rectangle at the top left corner of the screen, while offset
+    /// (0.5, 0.5) centers it
+    pub offset: Vec2,
+
+    /// Rotation in radians
+    pub rotation: f32,
+
+    pub color: Color,
+}
+
+impl Default for DrawRectangleParams {
+    fn default() -> Self {
+        Self {
+            offset: vec2(0.0, 0.0),
+            rotation: 0.0,
+            color: Color::from_rgba(255, 255, 255, 255),
+        }
+    }
+}
+
+/// Draws a solid rectangle with its position at `[x, y]` with size `[w, h]`,
+/// with parameters.
+pub fn draw_rectangle_ex(x: f32, y: f32, w: f32, h: f32, params: DrawRectangleParams) {
     let context = get_context();
-    let transform_matrix = Mat4::from_translation(vec3(position.x, position.y, 0.0))
-        * Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), rotation.to_radians())
-        * Mat4::from_scale(vec3(size.x, size.y, 1.0));
+    let transform_matrix = Mat4::from_translation(vec3(x, y, 0.0))
+        * Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), params.rotation)
+        * Mat4::from_scale(vec3(w, h, 1.0));
 
     #[rustfmt::skip]
     let v = [
-        transform_matrix * vec4(-0.5,  0.5, 0.0, 1.0),
-        transform_matrix * vec4(-0.5, -0.5, 0.0, 1.0),
-        transform_matrix * vec4( 0.5, -0.5, 0.0, 1.0),
-        transform_matrix * vec4( 0.5,  0.5, 0.0, 1.0),
+        transform_matrix * vec4( 0.0 - params.offset.x,  0.0 - params.offset.y, 0.0, 1.0),
+        transform_matrix * vec4( 0.0 - params.offset.x,  1.0 - params.offset.y, 0.0, 1.0),
+        transform_matrix * vec4( 1.0 - params.offset.x,  1.0 - params.offset.y, 0.0, 1.0),
+        transform_matrix * vec4( 1.0 - params.offset.x,  0.0 - params.offset.y, 0.0, 1.0),
     ];
 
     #[rustfmt::skip]
     let vertices = [
-        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 1.0, color),
-        Vertex::new(v[1].x, v[1].y, v[1].z, 1.0, 0.0, color),
-        Vertex::new(v[2].x, v[2].y, v[2].z, 1.0, 1.0, color),
-        Vertex::new(v[3].x, v[3].y, v[3].z, 1.0, 0.0, color),
+        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 1.0, params.color),
+        Vertex::new(v[1].x, v[1].y, v[1].z, 1.0, 0.0, params.color),
+        Vertex::new(v[2].x, v[2].y, v[2].z, 1.0, 1.0, params.color),
+        Vertex::new(v[3].x, v[3].y, v[3].z, 1.0, 0.0, params.color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
