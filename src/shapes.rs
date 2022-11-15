@@ -3,7 +3,7 @@
 use crate::{color::Color, get_context};
 
 use crate::quad_gl::{DrawMode, Vertex};
-use glam::{vec2, Vec2};
+use glam::{vec2, vec3, vec4, Mat4, Vec2};
 
 /// Draws a solid triangle between points `v1`, `v2`, and `v3` with a given `color`.
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
@@ -68,6 +68,36 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     let indices: [u16; 24] = [
         0, 1, 4, 1, 4, 5, 1, 5, 6, 1, 2, 6, 3, 7, 2, 2, 7, 6, 0, 4, 3, 3, 4, 7,
     ];
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
+}
+
+/// Draws a solid rectangle with its center at `position` with `size` (width going to
+/// the right, height going down), with a given `color`.
+pub fn draw_rectangle_pro(position: Vec2, rotation: f32, size: Vec2, color: Color) {
+    let context = get_context();
+    let transform_matrix = Mat4::from_translation(vec3(position.x, position.y, 0.0))
+        * Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), rotation.to_radians())
+        * Mat4::from_scale(vec3(size.x, size.y, 1.0));
+
+    #[rustfmt::skip]
+    let v = [
+        transform_matrix * vec4(-0.5,  0.5, 0.0, 1.0),
+        transform_matrix * vec4(-0.5, -0.5, 0.0, 1.0),
+        transform_matrix * vec4( 0.5, -0.5, 0.0, 1.0),
+        transform_matrix * vec4( 0.5,  0.5, 0.0, 1.0),
+    ];
+
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 1.0, color),
+        Vertex::new(v[1].x, v[1].y, v[1].z, 1.0, 0.0, color),
+        Vertex::new(v[2].x, v[2].y, v[2].z, 1.0, 1.0, color),
+        Vertex::new(v[3].x, v[3].y, v[3].z, 1.0, 0.0, color),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
     context.gl.texture(None);
     context.gl.draw_mode(DrawMode::Triangles);
