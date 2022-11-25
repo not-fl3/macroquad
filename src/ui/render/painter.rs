@@ -272,7 +272,7 @@ impl Painter {
 
                 let left_coord = (element_size.x - text_measures.width) / 2.;
                 let top_coord =
-                    element_size.y / 2. - text_measures.height / 2. + text_measures.offset_y;
+                    element_size.y / 2. - text_measures.height / 2. + text_measures.offset_y / crate::get_quad_context().dpi_scale();
 
                 self.draw_label(
                     &*data,
@@ -502,8 +502,11 @@ impl Painter {
             None
         };
 
-
-        self.add_command(DrawCommand::Clip { rect: self.clipping_zone });
+        let scaled_clipping_zone = self.clipping_zone.map(|rect| {
+            let dpi = crate::get_quad_context().dpi_scale();
+            Rect::new(rect.x * dpi, rect.y * dpi, rect.w * dpi, rect.h * dpi)
+        });
+        self.add_command(DrawCommand::Clip { rect: scaled_clipping_zone });
     }
 }
 
