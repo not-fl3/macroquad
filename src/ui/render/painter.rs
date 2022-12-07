@@ -271,8 +271,8 @@ impl Painter {
                 let text_measures = self.label_size(data, None, font, font_size);
 
                 let left_coord = (element_size.x - text_measures.width) / 2.;
-                let top_coord =
-                    element_size.y / 2. - text_measures.height / 2. + text_measures.offset_y / crate::get_quad_context().dpi_scale();
+                let top_coord = element_size.y / 2. - text_measures.height / 2.
+                    + text_measures.offset_y / crate::get_quad_context().dpi_scale();
 
                 self.draw_label(
                     &*data,
