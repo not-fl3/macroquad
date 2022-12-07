@@ -1,7 +1,9 @@
 use crate::{
     math::{vec2, Rect, Vec2},
-    ui::{ElementState, Id, InputCharacter, Key, KeyCode, Layout, Ui}, get_quad_context,
+    ui::{ElementState, Id, InputCharacter, Key, KeyCode, Layout, Ui},
 };
+#[cfg(target_os = "android")]
+use crate::get_quad_context;
 
 pub struct Editbox<'a> {
     id: Id,
