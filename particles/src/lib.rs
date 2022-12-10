@@ -843,8 +843,8 @@ impl Emitter {
                 if self.cpu_counterpart[i].lived != self.cpu_counterpart[i].lifetime {
                     self.particles_spawned -= 1;
                 }
-                self.gpu_particles.remove(i);
-                self.cpu_counterpart.remove(i);
+                self.gpu_particles.swap_remove(i);
+                self.cpu_counterpart.swap_remove(i);
             }
         }
 
