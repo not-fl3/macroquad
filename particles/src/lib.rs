@@ -896,6 +896,8 @@ impl Emitter {
         };
 
         ctx.apply_pipeline(&self.pipeline);
+        let (x, y, w, h) = quad_gl.get_viewport();
+        ctx.apply_viewport(x, y, w, h);
     }
 
     pub fn end_render_pass(&mut self, quad_gl: &QuadGl, ctx: &mut Context) {
