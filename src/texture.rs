@@ -542,6 +542,21 @@ impl Texture2D {
         self.texture.update(ctx, &image.bytes);
     }
 
+    /// Uploads [Image] data to part of this texture.
+    pub fn update_part(
+        &self,
+        image: &Image,
+        x_offset: i32,
+        y_offset: i32,
+        width: i32,
+        height: i32,
+    ) {
+        let ctx = get_quad_context();
+
+        self.texture
+            .update_texture_part(ctx, x_offset, y_offset, width, height, &image.bytes)
+    }
+
     /// Returns the width of this texture.
     pub fn width(&self) -> f32 {
         self.texture.width as f32
