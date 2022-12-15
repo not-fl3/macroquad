@@ -3,6 +3,27 @@ use macroquad::prelude::*;
 use std::f32::consts::PI;
 use std::fmt::{Display, Formatter};
 
+const MISSILE_LENGTH: f32 = 4.;
+const TRACE_TICKNESS: f32 = 3.;
+const CURSOR_LENGTH: f32 = 10.;
+const MAX_MISSILE_COUNT_SAME_TIME: i32 = 5;
+const MISSILE_SPEED_FACTOR: f32 = 0.35;
+const BASE_LENGTH: f32 = 32.;
+const WINDOW_WITH: i32 = 1024;
+const WINDOW_HEIGHT: i32 = 768;
+const MAX_LIFT_OFF_TIME: i32 = 500;
+const MAX_CITY_HEALTH: i32 = 1000;
+const CITY_HEIGHT: f32 = 100.;
+const PENALTY_VALUE: i32 = 100;
+const TURRET_MULTIPLIER: f32 = 30.;
+const TURRET_THICKNESS: f32 = 3.;
+const BULLET_WIDTH: f32 = 4.;
+const BULLET_SPEED_FACTOR: f32 = 2.;
+const MAX_BULLET_ON_GAME: usize = 3;
+const EXPLOSION_LIFE_TIME: usize = 100;
+const EXPLOSION_THICKNESS: f32 = 1.;
+const EXPLOSION_RADIUS_RATE: f32 = 0.25;
+
 #[macroquad::main(window_conf)]
 async fn main() {
     show_mouse(false);
@@ -613,6 +634,12 @@ impl Turret {
     }
 }
 
+impl Default for Turret {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub fn find_right_angle(unit_vector: Vec2) -> Vec2 {
     let f = Vec2::new(1., 0.);
     let angle = unit_vector.angle_between(f);
@@ -626,24 +653,3 @@ pub fn find_right_angle(unit_vector: Vec2) -> Vec2 {
     }
     Vec2::new(angle.cos(), angle.sin())
 }
-
-const MISSILE_LENGTH: f32 = 4.;
-const TRACE_TICKNESS: f32 = 3.;
-const CURSOR_LENGTH: f32 = 10.;
-const MAX_MISSILE_COUNT_SAME_TIME: i32 = 5;
-const MISSILE_SPEED_FACTOR: f32 = 0.35;
-const BASE_LENGTH: f32 = 32.;
-const WINDOW_WITH: i32 = 1024;
-const WINDOW_HEIGHT: i32 = 768;
-const MAX_LIFT_OFF_TIME: i32 = 500;
-const MAX_CITY_HEALTH: i32 = 1000;
-const CITY_HEIGHT: f32 = 100.;
-const PENALTY_VALUE: i32 = 100;
-const TURRET_MULTIPLIER: f32 = 30.;
-const TURRET_THICKNESS: f32 = 3.;
-const BULLET_WIDTH: f32 = 4.;
-const BULLET_SPEED_FACTOR: f32 = 2.;
-const MAX_BULLET_ON_GAME: usize = 3;
-const EXPLOSION_LIFE_TIME: usize = 100;
-const EXPLOSION_THICKNESS: f32 = 1.;
-const EXPLOSION_RADIUS_RATE: f32 = 0.25;
