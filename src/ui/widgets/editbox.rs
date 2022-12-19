@@ -392,10 +392,6 @@ impl<'a> Editbox<'a> {
                     None,
                 );
             }
-            // hack to draw a caret after text but do not bother with the extra symbol
-            if n == text.len() {
-                break;
-            }
 
             let mut font = context.style.editbox_style.font.borrow_mut();
             let font_size = context.style.editbox_style.font_size;
