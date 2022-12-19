@@ -239,6 +239,7 @@ impl Painter {
         let background_margin = style.background_margin.unwrap_or_default();
         let margin = style.margin.unwrap_or_default();
 
+        let dpi = crate::get_quad_context().dpi_scale();
         let top_coord = (font_size as f32) / 2. - (text_measures.height / 2.).trunc()
             + margin.top
             + background_margin.top;
@@ -247,7 +248,7 @@ impl Painter {
             label,
             pos + Vec2::new(
                 margin.left + background_margin.left,
-                top_coord + text_measures.offset_y,
+                top_coord + text_measures.offset_y / dpi,
             ),
             Some(style.text_color(element_state)),
             font,
