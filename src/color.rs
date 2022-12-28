@@ -90,6 +90,14 @@ impl Color {
         )
     }
 
+    /// Build a color from a hexadecimal u32
+    /// Example: 0x3CA7D5 - a light blue
+    pub fn from_hex(hex: u32) -> Color {
+        let bytes: [u8; 4] = hex.to_be_bytes();
+
+        Self::from_rgba(bytes[1], bytes[2], bytes[3], 255)
+    }
+
     pub fn to_vec(&self) -> glam::Vec4 {
         glam::Vec4::new(self.r, self.g, self.b, self.a)
     }
