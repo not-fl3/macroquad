@@ -106,10 +106,8 @@ impl Camera for Camera2D {
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
-        match self.viewport {
-            Some((x, y, w, h)) => Some((x * get_quad_context().dpi_scale() as i32, y * get_quad_context().dpi_scale() as i32, w * get_quad_context().dpi_scale() as i32, h * get_quad_context().dpi_scale() as i32)),
-            None => self.viewport,
-        }
+        let dpi_scale = get_quad_context().dpi_scale() as i32;
+        self.viewport.map(|(x, y, w, h)| (x * dpi_scale, y * dpi_scale, w * dpi_scale, h * dpi_scale))        
     }
 }
 
