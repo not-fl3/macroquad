@@ -4,7 +4,7 @@ use crate::{
     get_context,
     math::Rect,
     texture::RenderTarget,
-    window::{screen_height, screen_width},
+    window::{screen_height, screen_width}, get_quad_context,
 };
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 
@@ -106,7 +106,10 @@ impl Camera for Camera2D {
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
-        self.viewport
+        match self.viewport {
+            Some((x, y, w, h)) => Some((x * get_quad_context().dpi_scale() as i32, y * get_quad_context().dpi_scale() as i32, w * get_quad_context().dpi_scale() as i32, h * get_quad_context().dpi_scale() as i32)),
+            None => self.viewport,
+        }
     }
 }
 
