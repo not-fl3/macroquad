@@ -89,11 +89,9 @@ impl<'a> Editbox<'a> {
                     modifier_ctrl: false,
                     ..
                 } => {
-                    if character != 13 as char
-                        && character != 10 as char
-                        && character != 8 as char
-                        && character != 127 as char // Backspace on Macbook
-                        && character.is_ascii()
+                    // Don't insert spaces for control characters
+                    if character.is_ascii()
+                        && !character.is_ascii_control()
                         && self.filter.as_ref().map_or(true, |f| f(character))
                     {
                         if state.selection.is_some() {
