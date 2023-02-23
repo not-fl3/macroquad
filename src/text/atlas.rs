@@ -60,6 +60,11 @@ impl Atlas {
         self.unique_id
     }
 
+    pub fn set_filter(&mut self, filter_mode: miniquad::FilterMode) {
+        self.filter = filter_mode;
+        self.texture.set_filter(filter_mode);
+    }
+
     pub fn get(&self, key: u64) -> Option<Sprite> {
         self.sprites.get(&key).cloned()
     }

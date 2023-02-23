@@ -202,6 +202,25 @@ impl Font {
         }
     }
 
+    /// Sets the [FilterMode] of this font's texture atlas.
+    ///
+    /// Use Nearest if you need integer-ratio scaling for pixel art, for example.
+    ///
+    /// # Example
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// # #[macroquad::main("test")]
+    /// # async fn main() {
+    /// let font = Font::default();
+    /// font.set_filter(FilterMode::Linear);
+    /// # }
+    /// ```
+    pub fn set_filter(&self, filter_mode: miniquad::FilterMode) {
+        let font = get_context().fonts_storage.get_font_mut(*self);
+
+        font.atlas.borrow_mut().set_filter(filter_mode);
+    }
+
     // pub fn texture(&self) -> Texture2D {
     //     let font = get_context().fonts_storage.get_font(*self);
 
