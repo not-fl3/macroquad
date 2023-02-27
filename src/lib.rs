@@ -167,7 +167,7 @@ struct Context {
     chars_pressed_queue: Vec<char>,
     chars_pressed_ui_queue: Vec<char>,
     mouse_position: Vec2,
-    last_mouse_position: Vec2,
+    last_mouse_position: Option<Vec2>,
     mouse_wheel: Vec2,
 
     prevent_quit_event: bool,
@@ -287,7 +287,7 @@ impl Context {
             mouse_released: HashSet::new(),
             touches: HashMap::new(),
             mouse_position: vec2(0., 0.),
-            last_mouse_position: vec2(0.,0.),
+            last_mouse_position: None,
             mouse_wheel: vec2(0., 0.),
 
             prevent_quit_event: false,
