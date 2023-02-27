@@ -66,14 +66,14 @@ pub fn mouse_position_local() -> Vec2 {
 pub fn mouse_delta_position() -> Vec2 {
     let context = get_context();
 
-    let last_position = context.last_mouse_position;
     let current_position = mouse_position_local();
+    let last_position = context.last_mouse_position.unwrap_or(current_position);
 
     // Calculate the delta
     let delta = last_position - current_position;
 
     // Store the current mouse position for the next frame
-    context.last_mouse_position = current_position;
+    context.last_mouse_position = Some(current_position);
 
     delta
 }
