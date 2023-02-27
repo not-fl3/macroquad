@@ -62,6 +62,22 @@ pub fn mouse_position_local() -> Vec2 {
     convert_to_local(Vec2::new(pixels_x, pixels_y))
 }
 
+/// Returns the difference between the current mouse position and the mouse position on the previous frame.
+pub fn mouse_delta_position() -> Vec2 {
+    let context = get_context();
+
+    let current_position = mouse_position_local();
+    let last_position = context.last_mouse_position.unwrap_or(current_position);
+
+    // Calculate the delta
+    let delta = last_position - current_position;
+
+    // Store the current mouse position for the next frame
+    context.last_mouse_position = Some(current_position);
+
+    delta
+}
+
 /// This is set to true by default, meaning touches will raise mouse events in addition to raising touch events.
 /// If set to false, touches won't affect mouse events.
 pub fn is_simulating_mouse_with_touch() -> bool {
