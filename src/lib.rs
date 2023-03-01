@@ -436,6 +436,14 @@ static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
 struct Stage {}
 
+impl Drop for Stage {
+    fn drop(&mut self) {
+        unsafe {
+            MAIN_FUTURE.take();
+        }
+    }
+}
+
 impl EventHandler for Stage {
     fn resize_event(&mut self, ctx: &mut miniquad::Context, width: f32, height: f32) {
         set_quad_context(ctx);
