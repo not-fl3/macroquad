@@ -130,7 +130,7 @@ pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>
 }
 
 /// Draw an affine (2D) parallelogram at given position, as two triangles.
-/// 
+///
 /// The drawn parallelogram will have the vertices: `offset`, `offset + e1`, `offset + e2` and `offset + e1 + e2`
 ///
 /// # Arguments
@@ -148,28 +148,17 @@ pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>
 /// # use macroquad::prelude::*;
 /// draw_affine_parallelogram(Vec3::ZERO, 3. * Vec3::X, 5. * Vec3::Z, None, RED);
 /// ```
-pub fn draw_affine_parallelogram(offset: Vec3, e1: Vec3, e2: Vec3, texture: impl Into<Option<Texture2D>>, color: Color) {
-
-    let v1 = (
-        offset.into(),
-        vec2(0., 0.),
-        color,
-    );
-    let v2 = (
-        (offset+e1).into(),
-        vec2(0., 1.),
-        color,
-    );
-    let v3 = (
-        (offset+e1+e2).into(),
-        vec2(1., 1.),
-        color,
-    );
-    let v4 = (
-        (offset+e2).into(),
-        vec2(1., 0.),
-        color,
-    );
+pub fn draw_affine_parallelogram(
+    offset: Vec3,
+    e1: Vec3,
+    e2: Vec3,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+) {
+    let v1 = (offset.into(), vec2(0., 0.), color);
+    let v2 = ((offset + e1).into(), vec2(0., 1.), color);
+    let v3 = ((offset + e1 + e2).into(), vec2(1., 1.), color);
+    let v4 = ((offset + e2).into(), vec2(1., 0.), color);
 
     {
         let context = get_context();
@@ -179,7 +168,7 @@ pub fn draw_affine_parallelogram(offset: Vec3, e1: Vec3, e2: Vec3, texture: impl
 }
 
 /// Draw an affine (3D) parallelepiped at given position, using six parallelograms.
-/// 
+///
 /// The drawn parallelepiped will be built from the followwing parallelograms:
 ///
 /// * `offset, offset + e1, offset + e2`
@@ -204,8 +193,14 @@ pub fn draw_affine_parallelogram(offset: Vec3, e1: Vec3, e2: Vec3, texture: impl
 /// # use macroquad::prelude::*;
 /// draw_affine_parallelepiped(Vec3::ZERO, 3. * Vec3::X, 2. * Vec3::Y, 5. * Vec3::Z, None, RED);
 /// ```
-pub fn draw_affine_parallelepiped(offset: Vec3, e1: Vec3, e2: Vec3, e3 : Vec3, texture: impl Into<Option<Texture2D>>, color : Color) {
-
+pub fn draw_affine_parallelepiped(
+    offset: Vec3,
+    e1: Vec3,
+    e2: Vec3,
+    e3: Vec3,
+    texture: impl Into<Option<Texture2D>>,
+    color: Color,
+) {
     let texture_base = texture.into();
     draw_affine_parallelogram(offset, e1, e2, texture_base, color);
     draw_affine_parallelogram(offset, e1, e3, texture_base, color);
