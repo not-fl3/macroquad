@@ -48,16 +48,6 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
 
         let active_area_w = size.x * self.ratio;
 
-        let text_measures = {
-            let font = &mut *context.style.label_style.font.borrow_mut();
-            let font_size = context.style.label_style.font_size;
-
-            context
-                .window
-                .painter
-                .label_size(self.label, None, font, font_size)
-        };
-
         let clickable_rect = Rect::new(pos.x, pos.y, active_area_w, size.y);
 
         let (hovered, _) = context.register_click_intention(clickable_rect);
@@ -83,7 +73,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
         );
 
         context.window.painter.draw_element_content(
-            &context.style.label_style,
+            &context.style.combobox_style,
             pos,
             vec2(combobox_area_w, size.y),
             &UiContent::Label((&*self.variants[*data]).into()),
@@ -157,8 +147,20 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
                     color,
                 );
 
-                let font = &mut *context.style.label_style.font.borrow_mut();
-                let font_size = context.style.label_style.font_size;
+                let font = &mut *context.style.combobox_style.font.borrow_mut();
+                let font_size = context.style.combobox_style.font_size;
+
+                let text_color = context.style.combobox_style.text_color(ElementState {
+                    focused: context.focused,
+                    hovered,
+                    clicked: hovered && context.input.is_mouse_down,
+                    selected: false,
+                });
+
+                let text_measures = context
+                    .window
+                    .painter
+                    .label_size(variant, None, font, font_size);
 
                 context.window.painter.draw_label(
                     variant,
@@ -166,7 +168,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
                         pos.x + 7.,
                         pos.y + i as f32 * size.y + size.y + 2.0 + text_measures.offset_y,
                     ),
-                    context.style.combobox_style.text_color,
+                    text_color,
                     font,
                     font_size,
                 );
