@@ -19,16 +19,16 @@ pub trait Camera {
 /// # Example usage
 /// ```rust
 /// let camera = Camera2D {
-///     offset: Vec2::new(0.0,0.0), 
+///     offset: Vec2::new(0.0,0.0),
 ///     zoom: Vec2::new(1.0,1.0),
 ///     target: Vec2::new(1.0,1.0),
 ///     ..Default::default()
 /// };
-/// 
+///
 /// set_camera(&camera);
 /// draw_rectangle(1.0,1.0,1.0,1.0, BLACK); // (x1,y1,width,height,color)
 /// // This will paint the top-right half of the screen black
-/// ``` 
+/// ```
 /// When using a camera "camera" with a full viewport and no rotation. Drawing something to (x,y) is effectively like drawing something to the position:
 /// ``` rust
 /// (

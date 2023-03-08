@@ -282,7 +282,6 @@ impl Context {
             simulate_mouse_with_touch: true,
             simulate_touch_with_mouse: true,
             mouse_touch_id: rand() as u64 + ((rand() as u64) << 32),
-            
 
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),

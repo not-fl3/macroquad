@@ -1,9 +1,9 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
+use crate::math::vec2;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
 use crate::Vec2;
-use crate::math::vec2;
 use crate::{get_context, get_quad_context};
 pub use miniquad::{KeyCode, MouseButton};
 
@@ -110,7 +110,6 @@ pub fn touches_local() -> Vec<Touch> {
             touch
         })
         .collect()
-
 }
 
 fn update_mouse_touch_if_necessary() {
@@ -124,7 +123,7 @@ fn update_mouse_touch_if_necessary() {
                     touch.phase = TouchPhase::Ended;
                     remove_touch = true;
                 } else if !is_mouse_button_down(MouseButton::Left) {
-                    remove_touch = true; 
+                    remove_touch = true;
                 }
             } else {
                 if is_mouse_button_pressed(MouseButton::Left) {
@@ -136,7 +135,7 @@ fn update_mouse_touch_if_necessary() {
                             id: context.mouse_touch_id,
                             phase: TouchPhase::Started,
                             position: mouse_vec,
-                        }
+                        },
                     );
                 }
             }
@@ -144,7 +143,7 @@ fn update_mouse_touch_if_necessary() {
             if remove_touch {
                 context.touches.remove(&context.mouse_touch_id);
             }
-        } 
+        }
     }
 }
 
