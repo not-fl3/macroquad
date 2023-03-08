@@ -565,16 +565,18 @@ impl EventHandler for Stage {
         );
 
         if context.simulate_mouse_with_touch {
-            if phase == TouchPhase::Started {
-                self.mouse_button_down_event(ctx, MouseButton::Left, x, y);
-            }
+            if (!context.simulate_touch_with_mouse) || (id != context.mouse_touch_id) {
+                if phase == TouchPhase::Started {
+                    self.mouse_button_down_event(ctx, MouseButton::Left, x, y);
+                }
 
-            if phase == TouchPhase::Ended {
-                self.mouse_button_up_event(ctx, MouseButton::Left, x, y);
-            }
+                if phase == TouchPhase::Ended {
+                    self.mouse_button_up_event(ctx, MouseButton::Left, x, y);
+                }
 
-            if phase == TouchPhase::Moved {
-                self.mouse_motion_event(ctx, x, y);
+                if phase == TouchPhase::Moved {
+                    self.mouse_motion_event(ctx, x, y);
+                }
             }
         };
 
