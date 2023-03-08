@@ -16,27 +16,6 @@ pub trait Camera {
 }
 
 #[derive(Clone, Copy)]
-/// # Example usage
-/// ```rust
-/// let camera = Camera2D {
-///     offset: Vec2::new(0.0,0.0),
-///     zoom: Vec2::new(1.0,1.0),
-///     target: Vec2::new(1.0,1.0),
-///     ..Default::default()
-/// };
-///
-/// set_camera(&camera);
-/// draw_rectangle(1.0,1.0,1.0,1.0, BLACK); // (x1,y1,width,height,color)
-/// // This will paint the top-right half of the screen black
-/// ```
-/// When using a camera "camera" with a full viewport and no rotation. Drawing something to (x,y) is effectively like drawing something to the position:
-/// ``` rust
-/// (
-/// window_center().x + camera.offset.x + (x/camera.zoom.x-camera.target.x/camera.zoom.x) * (window_width() / 2.0),
-/// window_center().y + camera.offset.y + (-y/camera.zoom.y-camera.target.y/camera.zoom.y) * (window_height() / 2.0),
-/// )
-/// ```
-/// without having set a camera. **Note** that the default provided by [`Camera2D`] does not provide the same camera as the [`set_default_camera`] function does! Be wary of the minus in the formula for the new y position. Specifying a positive zoom.y will result in the coordinate system being mirrored on the y-axis!
 pub struct Camera2D {
     /// Rotation in degrees
     pub rotation: f32,
