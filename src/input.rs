@@ -116,36 +116,44 @@ fn update_mouse_touch_if_necessary() {
     let context = get_context();
 
     if context.simulate_touch_with_mouse {
-        if context.simulate_touch_with_mouse {
-            let mut remove_touch: bool = false;
-            if let Some(touch) = context.touches.get_mut(&context.mouse_touch_id) {
-                if is_mouse_button_released(MouseButton::Left) {
-                    touch.phase = TouchPhase::Ended;
-                    remove_touch = true;
-                } else if !is_mouse_button_down(MouseButton::Left) {
-                    remove_touch = true;
+        let mut remove_touch: bool = false;
+        if let Some(touch) = context.touches.get_mut(&context.mouse_touch_id) {
+
+            if is_mouse_button_released(MouseButton::Left) {
+                touch.phase = TouchPhase::Ended;
+            } else if !is_mouse_button_down(MouseButton::Left) {
+                remove_touch = true;
+            } 
+            let mouse_position = mouse_position();
+            let mouse_vec = vec2(mouse_position.0, mouse_position.1);
+
+            // phase update
+            if touch.phase != TouchPhase::Ended {
+                if touch.position != mouse_vec {
+                    touch.phase = TouchPhase::Moved;
+                } else {
+                    touch.phase = TouchPhase::Stationary;
                 }
+            } 
+
+            touch.position = mouse_vec;
+        } else {
+            if is_mouse_button_pressed(MouseButton::Left) {
                 let mouse_position = mouse_position();
                 let mouse_vec = vec2(mouse_position.0, mouse_position.1);
-                touch.position = mouse_vec;
-            } else {
-                if is_mouse_button_pressed(MouseButton::Left) {
-                    let mouse_position = mouse_position();
-                    let mouse_vec = vec2(mouse_position.0, mouse_position.1);
-                    context.touches.insert(
-                        context.mouse_touch_id,
-                        Touch {
-                            id: context.mouse_touch_id,
-                            phase: TouchPhase::Started,
-                            position: mouse_vec,
-                        },
-                    );
-                }
+                context.touches.insert(
+                    context.mouse_touch_id,
+                    Touch {
+                        id: context.mouse_touch_id,
+                        phase: TouchPhase::Started,
+                        position: mouse_vec,
+                    },
+                );
             }
+        }
 
-            if remove_touch {
-                context.touches.remove(&context.mouse_touch_id);
-            }
+        if remove_touch {
+            context.touches.remove(&context.mouse_touch_id);
         }
     }
 }
