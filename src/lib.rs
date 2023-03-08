@@ -43,6 +43,8 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
 
+use crate::rand::rand;
+
 mod exec;
 mod quad_gl;
 
@@ -156,6 +158,8 @@ struct Context {
     screen_height: f32,
 
     simulate_mouse_with_touch: bool,
+    simulate_touch_with_mouse: bool,
+    mouse_touch_id: u64,
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
@@ -276,6 +280,9 @@ impl Context {
             screen_height,
 
             simulate_mouse_with_touch: true,
+            simulate_touch_with_mouse: true,
+            mouse_touch_id: rand() as u64 + ((rand() as u64) << 32),
+            
 
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
