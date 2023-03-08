@@ -125,6 +125,9 @@ fn update_mouse_touch_if_necessary() {
                 } else if !is_mouse_button_down(MouseButton::Left) {
                     remove_touch = true;
                 }
+                let mouse_position = mouse_position();
+                let mouse_vec = vec2(mouse_position.0, mouse_position.1);
+                touch.position = mouse_vec;
             } else {
                 if is_mouse_button_pressed(MouseButton::Left) {
                     let mouse_position = mouse_position();
