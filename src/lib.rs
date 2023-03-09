@@ -161,7 +161,6 @@ struct Context {
     simulate_mouse_with_touch: bool,
     simulate_touch_with_mouse: bool,
     mouse_touch_id: u64,
-    pressed_mouse_button_amount: usize,
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
@@ -284,7 +283,6 @@ impl Context {
             simulate_mouse_with_touch: true,
             simulate_touch_with_mouse: true,
             mouse_touch_id: rand() as u64 + ((rand() as u64) << 32),
-            pressed_mouse_button_amount: 0,
 
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
