@@ -91,16 +91,19 @@ pub fn simulate_mouse_with_touch(option: bool) {
     get_context().simulate_mouse_with_touch = option;
 }
 
+/// This is set to true by default, meaning mouse events will raise touch events in addition to raising mouse events.
+/// If set to false, mouse events won't affect touch events.
+pub fn simulate_touch_with_mouse(option: bool) {
+    get_context().simulate_touch_with_mouse = option;
+}
+
 /// Return touches with positions in pixels.
 pub fn touches() -> Vec<Touch> {
-    update_mouse_touch_if_necessary();
     get_context().touches.values().cloned().collect()
 }
 
 /// Return touches with positions in range [-1; 1].
 pub fn touches_local() -> Vec<Touch> {
-    update_mouse_touch_if_necessary();
-
     get_context()
         .touches
         .values()
@@ -110,52 +113,6 @@ pub fn touches_local() -> Vec<Touch> {
             touch
         })
         .collect()
-}
-
-fn update_mouse_touch_if_necessary() {
-    let context = get_context();
-
-    if context.simulate_touch_with_mouse {
-        let mut remove_touch: bool = false;
-        if let Some(touch) = context.touches.get_mut(&context.mouse_touch_id) {
-
-            if is_mouse_button_released(MouseButton::Left) {
-                touch.phase = TouchPhase::Ended;
-            } else if !is_mouse_button_down(MouseButton::Left) {
-                remove_touch = true;
-            } 
-            let mouse_position = mouse_position();
-            let mouse_vec = vec2(mouse_position.0, mouse_position.1);
-
-            // phase update
-            if touch.phase != TouchPhase::Ended {
-                if touch.position != mouse_vec {
-                    touch.phase = TouchPhase::Moved;
-                } else {
-                    touch.phase = TouchPhase::Stationary;
-                }
-            } 
-
-            touch.position = mouse_vec;
-        } else {
-            if is_mouse_button_pressed(MouseButton::Left) {
-                let mouse_position = mouse_position();
-                let mouse_vec = vec2(mouse_position.0, mouse_position.1);
-                context.touches.insert(
-                    context.mouse_touch_id,
-                    Touch {
-                        id: context.mouse_touch_id,
-                        phase: TouchPhase::Started,
-                        position: mouse_vec,
-                    },
-                );
-            }
-        }
-
-        if remove_touch {
-            context.touches.remove(&context.mouse_touch_id);
-        }
-    }
 }
 
 pub fn mouse_wheel() -> (f32, f32) {
