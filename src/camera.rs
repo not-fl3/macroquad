@@ -36,7 +36,8 @@ pub trait Camera {
 /// window_center().y + camera.offset.y + (-y/camera.zoom.y-camera.target.y/camera.zoom.y) * (window_height() / 2.0),
 /// )
 /// ```
-/// without having set a camera. **Note** that the default provided by [`Camera2D`] does not provide the same camera as the [`set_default_camera`] function does! Be wary of the minus in the formula for the new y position. Specifying a positive zoom.y will result in the coordinate system being mirrored on the y-axis!
+/// without having set a camera. **Note** that the default provided by [`Camera2D`] does not provide the same camera as the [`set_default_camera()`] function does! Be wary of the minus in the formula for the new y position. Specifying a positive zoom.y will result in the coordinate system being mirrored on the y-axis!
+/// Usually, the **best way to get started** using a macroquad Camera2D is the [`Camera2D::from_display_rect()`] function.
 pub struct Camera2D {
     /// Rotation in degrees
     pub rotation: f32,
