@@ -482,11 +482,13 @@ impl EventHandler for Stage {
 
         if context.simulate_touch_with_mouse {
             if let Some(touch) = context.touches.get_mut(&context.mouse_touch_id) {
-                let mouse_position = mouse_position();
-                let mouse_vec = vec2(mouse_position.0, mouse_position.1);
+                if touch.phase != MacroTouchPhase::Ended {
+                    let mouse_position = mouse_position();
+                    let mouse_vec = vec2(mouse_position.0, mouse_position.1);
 
-                touch.position = mouse_vec;
-                touch.phase = MacroTouchPhase::Moved;
+                    touch.position = mouse_vec;
+                    touch.phase = MacroTouchPhase::Moved;
+                }
             }
         }
 
@@ -562,6 +564,7 @@ impl EventHandler for Stage {
         y: f32,
     ) {
         let context = get_context();
+
 
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
