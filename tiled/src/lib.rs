@@ -98,7 +98,7 @@ impl Map {
         let spr_rect = tileset.sprite_rect(sprite);
 
         draw_texture_ex(
-            tileset.texture,
+            &tileset.texture,
             dest.x,
             dest.y,
             WHITE,
@@ -119,7 +119,7 @@ impl Map {
         let tileset = &self.tilesets[tileset];
 
         draw_texture_ex(
-            tileset.texture,
+            &tileset.texture,
             dest.x,
             dest.y,
             WHITE,
@@ -185,7 +185,7 @@ impl Map {
         assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
         let layer = &self.layers[layer];
         assert!(layer.image.is_some(), "No texture found.");
-        let img_texture = layer.image.unwrap();
+        let img_texture = layer.image.clone().unwrap();
         let dest_width_frac =
             img_texture.width() / (self.raw_tiled_map.width * self.raw_tiled_map.tilewidth) as f32;
         let dest_height_frac =
@@ -193,7 +193,7 @@ impl Map {
 
         let source = source.unwrap_or(Rect::new(0., 0., img_texture.width(), img_texture.height()));
         draw_texture_ex(
-            img_texture,
+            &img_texture,
             (layer.offsetx.unwrap() - source.x) / source.w * dest.w + dest.x,
             (layer.offsety.unwrap() - source.y) / source.h * dest.h + dest.y,
             Color {
@@ -311,7 +311,7 @@ pub fn load_map(
             map_tileset
         };
 
-        let texture = textures
+        let texture = &textures
             .iter()
             .find(|(name, _)| *name == tileset.image)
             .ok_or(error::Error::TextureNotFound {
@@ -322,7 +322,7 @@ pub fn load_map(
         tilesets.insert(
             tileset.name.clone(),
             TileSet {
-                texture,
+                texture: texture.clone(),
                 columns: tileset.columns as _,
                 margin: tileset.margin,
                 spacing: tileset.spacing,
@@ -415,14 +415,14 @@ pub fn load_map(
                         Some(y) => Some(y as f32),
                         None => Some(0f32),
                     };
-                    let img_texture = textures
+                    let img_texture = &textures
                         .iter()
                         .find(|(name, _)| *name == img_name)
                         .ok_or(error::Error::TextureNotFound { texture: img_name })?
                         .1;
 
                     Layer {
-                        image: Some(img_texture),
+                        image: Some(img_texture.clone()),
                         opacity: layer.opacity,
                         offsetx,
                         offsety,

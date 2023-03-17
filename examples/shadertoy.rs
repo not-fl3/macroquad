@@ -58,8 +58,11 @@ async fn main() {
     };
 
     let mut material = load_material(
-        &vertex_shader,
-        &fragment_shader,
+        ShaderSource {
+            glsl_vertex: Some(&vertex_shader),
+            glsl_fragment: Some(&fragment_shader),
+            metal_shader: None,
+        },
         MaterialParams {
             pipeline_params,
             ..Default::default()
@@ -101,11 +104,11 @@ async fn main() {
             Color::new(0.75, 0.75, 0.75, 0.75),
         );
 
-        gl_use_material(material);
+        gl_use_material(&material);
         match mesh {
-            Mesh::Plane => draw_plane(vec3(0., 2., 0.), vec2(5., 5.), ferris, WHITE),
-            Mesh::Sphere => draw_sphere(vec3(0., 6., 0.), 5., ferris, WHITE),
-            Mesh::Cube => draw_cube(vec3(0., 5., 0.), vec3(10., 10., 10.), ferris, WHITE),
+            Mesh::Plane => draw_plane(vec3(0., 2., 0.), vec2(5., 5.), Some(&ferris), WHITE),
+            Mesh::Sphere => draw_sphere(vec3(0., 6., 0.), 5., Some(&ferris), WHITE),
+            Mesh::Cube => draw_cube(vec3(0., 5., 0.), vec3(10., 10., 10.), Some(&ferris), WHITE),
         }
         gl_use_default_material();
 
@@ -308,7 +311,7 @@ async fn main() {
                     );
                     canvas.image(
                         Rect::new(cursor.x, cursor.y + 20.0, 200.0, 200.0),
-                        color_picker_texture,
+                        &color_picker_texture,
                     );
 
                     if x >= 0 && x < 200 && y >= 0 && y < 200 {
@@ -339,8 +342,11 @@ async fn main() {
                 .collect::<Vec<_>>();
 
             match load_material(
-                &vertex_shader,
-                &fragment_shader,
+                ShaderSource {
+                    glsl_vertex: Some(&vertex_shader),
+                    glsl_fragment: Some(&fragment_shader),
+                    metal_shader: None,
+                },
                 MaterialParams {
                     pipeline_params,
                     uniforms,
@@ -348,8 +354,6 @@ async fn main() {
                 },
             ) {
                 Ok(new_material) => {
-                    material.delete();
-
                     material = new_material;
                     error = None;
                 }

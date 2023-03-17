@@ -15,7 +15,7 @@ pub trait Camera {
     fn viewport(&self) -> Option<(i32, i32, i32, i32)>;
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug)]
 pub struct Camera2D {
     /// Rotation in degrees.
     pub rotation: f32,
@@ -92,7 +92,12 @@ impl Camera for Camera2D {
         //   3. Move by -target
         let mat_origin = Mat4::from_translation(vec3(-self.target.x, -self.target.y, 0.0));
         let mat_rotation = Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), self.rotation.to_radians());
-        let mat_scale = Mat4::from_scale(vec3(self.zoom.x, self.zoom.y, 1.0));
+        let invert_y = if self.render_target.is_some() {
+            1.0
+        } else {
+            -1.0
+        };
+        let mat_scale = Mat4::from_scale(vec3(self.zoom.x, self.zoom.y * invert_y, 1.0));
         let mat_translation = Mat4::from_translation(vec3(self.offset.x, self.offset.y, 0.0));
 
         mat_translation * ((mat_scale * mat_rotation) * mat_origin)
@@ -103,7 +108,7 @@ impl Camera for Camera2D {
     }
 
     fn render_pass(&self) -> Option<miniquad::RenderPass> {
-        self.render_target.map(|rt| rt.render_pass)
+        self.render_target.as_ref().map(|rt| rt.render_pass)
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
@@ -146,7 +151,7 @@ pub enum Projection {
     Orthographics,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct Camera3D {
     /// Camera position.
     pub position: Vec3,
@@ -223,7 +228,7 @@ impl Camera for Camera3D {
     }
 
     fn render_pass(&self) -> Option<miniquad::RenderPass> {
-        self.render_target.map(|rt| rt.render_pass)
+        self.render_target.as_ref().map(|rt| rt.render_pass)
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {

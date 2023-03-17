@@ -12,7 +12,7 @@ async fn main() {
     // Setup camera for the virtual screen, that will render to 'render_target'
     let mut render_target_cam =
         Camera2D::from_display_rect(Rect::new(0., 0., VIRTUAL_WIDTH, VIRTUAL_HEIGHT));
-    render_target_cam.render_target = Some(render_target);
+    render_target_cam.render_target = Some(render_target.clone());
 
     loop {
         // Get required scaling value
@@ -37,7 +37,12 @@ async fn main() {
         draw_text("Hello Letterbox", 20.0, 20.0, 30.0, DARKGRAY);
         draw_circle(VIRTUAL_WIDTH / 2.0 - 65.0, VIRTUAL_HEIGHT / 2.0, 35.0, RED);
         draw_circle(VIRTUAL_WIDTH / 2.0 + 65.0, VIRTUAL_HEIGHT / 2.0, 35.0, BLUE);
-        draw_circle(VIRTUAL_WIDTH / 2.0, VIRTUAL_HEIGHT / 2.0 - 65.0, 35.0, YELLOW);
+        draw_circle(
+            VIRTUAL_WIDTH / 2.0,
+            VIRTUAL_HEIGHT / 2.0 - 65.0,
+            35.0,
+            YELLOW,
+        );
 
         draw_circle(virtual_mouse_pos.x, virtual_mouse_pos.y, 15.0, BLACK);
 
@@ -50,7 +55,7 @@ async fn main() {
 
         // Draw 'render_target' to window screen, porperly scaled and letterboxed
         draw_texture_ex(
-            render_target.texture,
+            &render_target.texture,
             (screen_width() - (VIRTUAL_WIDTH * scale)) * 0.5,
             (screen_height() - (VIRTUAL_HEIGHT * scale)) * 0.5,
             WHITE,

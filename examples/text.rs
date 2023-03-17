@@ -44,7 +44,7 @@ async fn main() {
             70.0,
             TextParams {
                 font_size: 50,
-                font,
+                font: Some(&font),
                 ..Default::default()
             },
         );
@@ -55,7 +55,7 @@ async fn main() {
             160.0,
             TextParams {
                 font_size: 100,
-                font,
+                font: Some(&font),
                 ..Default::default()
             },
         );
@@ -66,7 +66,7 @@ async fn main() {
             screen_height() / 3.0 * 2.0,
             TextParams {
                 font_size: 70,
-                font,
+                font: Some(&font),
                 rotation: angle,
                 ..Default::default()
             },

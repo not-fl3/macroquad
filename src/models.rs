@@ -31,7 +31,7 @@ pub struct Mesh {
 pub fn draw_mesh(mesh: &Mesh) {
     let context = get_context();
 
-    context.gl.texture(mesh.texture);
+    context.gl.texture(mesh.texture.as_ref());
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
 }
@@ -100,7 +100,7 @@ pub fn draw_grid(slices: u32, spacing: f32, axes_color: Color, other_color: Colo
     }
 }
 
-pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>>, color: Color) {
+pub fn draw_plane(center: Vec3, size: Vec2, texture: Option<&Texture2D>, color: Color) {
     let v1 = (
         (center + vec3(-size.x, 0., -size.y)).into(),
         vec2(0., 0.),
@@ -124,7 +124,7 @@ pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>
 
     {
         let context = get_context();
-        context.gl.texture(texture.into());
+        context.gl.texture(texture);
     }
     draw_quad([v1, v2, v3, v4]);
 }
@@ -152,7 +152,7 @@ pub fn draw_affine_parallelogram(
     offset: Vec3,
     e1: Vec3,
     e2: Vec3,
-    texture: impl Into<Option<Texture2D>>,
+    texture: Option<&Texture2D>,
     color: Color,
 ) {
     let v1 = (offset.into(), vec2(0., 0.), color);
@@ -162,7 +162,7 @@ pub fn draw_affine_parallelogram(
 
     {
         let context = get_context();
-        context.gl.texture(texture.into());
+        context.gl.texture(texture);
     }
     draw_quad([v1, v2, v3, v4]);
 }
@@ -198,7 +198,7 @@ pub fn draw_affine_parallelepiped(
     e1: Vec3,
     e2: Vec3,
     e3: Vec3,
-    texture: impl Into<Option<Texture2D>>,
+    texture: Option<&Texture2D>,
     color: Color,
 ) {
     let texture_base = texture.into();
@@ -211,7 +211,7 @@ pub fn draw_affine_parallelepiped(
     draw_affine_parallelogram(offset + e3, e1, e2, texture_base, color);
 }
 
-pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D>>, color: Color) {
+pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color: Color) {
     let context = get_context();
     context.gl.texture(texture.into());
 
@@ -444,16 +444,11 @@ impl Default for DrawSphereParams {
     }
 }
 
-pub fn draw_sphere(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
+pub fn draw_sphere(center: Vec3, radius: f32, texture: Option<&Texture2D>, color: Color) {
     draw_sphere_ex(center, radius, texture, color, Default::default());
 }
 
-pub fn draw_sphere_wires(
-    center: Vec3,
-    radius: f32,
-    texture: impl Into<Option<Texture2D>>,
-    color: Color,
-) {
+pub fn draw_sphere_wires(center: Vec3, radius: f32, texture: Option<&Texture2D>, color: Color) {
     let params = DrawSphereParams {
         draw_mode: DrawMode::Lines,
         ..Default::default()
@@ -464,7 +459,7 @@ pub fn draw_sphere_wires(
 pub fn draw_sphere_ex(
     center: Vec3,
     radius: f32,
-    texture: impl Into<Option<Texture2D>>,
+    texture: Option<&Texture2D>,
     color: Color,
     params: DrawSphereParams,
 ) {

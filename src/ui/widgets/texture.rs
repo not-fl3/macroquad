@@ -43,7 +43,7 @@ impl Texture {
         context
             .window
             .painter
-            .draw_raw_texture(Rect::new(pos.x, pos.y, self.w, self.h), self.texture);
+            .draw_raw_texture(Rect::new(pos.x, pos.y, self.w, self.h), &self.texture);
 
         let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
         let hovered = rect.contains(context.input.mouse_position);

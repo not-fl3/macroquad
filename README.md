@@ -7,8 +7,6 @@
 
 `macroquad` is a simple and easy to use game library for Rust programming language, heavily inspired by [raylib](https://github.com/raysan5/raylib).
 
-`macroquad` attempts to avoid any Rust-specific programming concepts like lifetimes/borrowing, making it very friendly for Rust beginners. See the [docs](https://docs.rs/macroquad/0.3.0-alpha/macroquad/index.html).
-
 ## Features
 
 * Same code for all supported platforms, no platform dependent defines required.
@@ -39,7 +37,7 @@ Add macroquad as a dependency to Cargo.toml:
 ```toml
 
 [dependencies]
-macroquad = "0.3"
+macroquad = "0.4"
 ```
 
 Put some macroquad code in `src/main.rs`:
@@ -62,7 +60,7 @@ async fn main() {
 }
 ```
 
-And to run it natively: 
+And to run it natively:
 ```bash
 cargo run
 ```
@@ -84,7 +82,7 @@ dnf install libX11-devel libXi-devel mesa-libGL-devel alsa-lib-devel
 
 ### Windows
 
-On windows both MSVC and GNU target are supported, no additional dependencies required. 
+On windows both MSVC and GNU target are supported, no additional dependencies required.
 
 Also cross-compilation to windows from linux is supported:
 
@@ -101,7 +99,7 @@ rustup target add wasm32-unknown-unknown
 cargo build --target wasm32-unknown-unknown
 ```
 
-This will produce .wasm file in `target/debug/wasm32-unknown-unknown/CRATENAME.wasm` or in `target/release/wasm32-unknown-unknown/CRATENAME.wasm` if built with `--release`. 
+This will produce .wasm file in `target/debug/wasm32-unknown-unknown/CRATENAME.wasm` or in `target/release/wasm32-unknown-unknown/CRATENAME.wasm` if built with `--release`.
 
 And then use the following .html to load it:
 

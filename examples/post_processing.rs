@@ -5,8 +5,15 @@ async fn main() {
     let render_target = render_target(320, 150);
     render_target.texture.set_filter(FilterMode::Nearest);
 
-    let material =
-        load_material(CRT_VERTEX_SHADER, CRT_FRAGMENT_SHADER, Default::default()).unwrap();
+    let material = load_material(
+        ShaderSource {
+            glsl_vertex: Some(CRT_VERTEX_SHADER),
+            glsl_fragment: Some(CRT_FRAGMENT_SHADER),
+            metal_shader: None,
+        },
+        Default::default(),
+    )
+    .unwrap();
 
     loop {
         // drawing to the texture
@@ -15,11 +22,11 @@ async fn main() {
         set_camera(&Camera2D {
             zoom: vec2(0.01, 0.01),
             target: vec2(0.0, 0.0),
-            render_target: Some(render_target),
+            render_target: Some(render_target.clone()),
             ..Default::default()
         });
 
-        clear_background(LIGHTGRAY);
+        clear_background(BLACK);
         draw_line(-30.0, 45.0, 30.0, 45.0, 3.0, BLUE);
         draw_circle(-45.0, -35.0, 20.0, YELLOW);
         draw_circle(45.0, -35.0, 20.0, GREEN);
@@ -29,9 +36,9 @@ async fn main() {
         set_default_camera();
 
         clear_background(WHITE);
-        gl_use_material(material);
+        gl_use_material(&material);
         draw_texture_ex(
-            render_target.texture,
+            &render_target.texture,
             0.,
             0.,
             WHITE,

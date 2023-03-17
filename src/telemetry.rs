@@ -345,7 +345,7 @@ pub fn capture_frame() {
 #[derive(Clone, Debug)]
 pub struct DrawCallTelemetry {
     pub indices_count: usize,
-    pub texture: miniquad::Texture,
+    pub texture: miniquad::TextureId,
 }
 
 pub(crate) fn track_drawcall(
@@ -353,16 +353,13 @@ pub(crate) fn track_drawcall(
     bindings: &miniquad::Bindings,
     indices_count: usize,
 ) {
-    let texture = miniquad::Texture::new_render_texture(
-        get_quad_context(),
-        miniquad::TextureParams {
-            width: 128,
-            height: 128,
-            ..Default::default()
-        },
-    );
+    let texture = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width: 128,
+        height: 128,
+        ..Default::default()
+    });
 
-    let pass = Some(miniquad::RenderPass::new(get_quad_context(), texture, None));
+    let pass = Some(get_quad_context().new_render_pass(texture, None));
     get_quad_context().begin_pass(pass, miniquad::PassAction::clear_color(0.4, 0.8, 0.4, 1.));
     get_quad_context().apply_pipeline(pipeline);
     get_quad_context().apply_bindings(bindings);
@@ -373,4 +370,8 @@ pub(crate) fn track_drawcall(
         indices_count,
         texture,
     });
+}
+
+pub fn textures_count() -> usize {
+    get_context().textures.len()
 }

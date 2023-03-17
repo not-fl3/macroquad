@@ -5,8 +5,11 @@ async fn main() {
     let texture: Texture2D = load_texture("examples/chess.png").await.unwrap();
 
     let lens_material = load_material(
-        LENS_VERTEX_SHADER,
-        LENS_FRAGMENT_SHADER,
+        ShaderSource {
+            glsl_vertex: Some(LENS_VERTEX_SHADER),
+            glsl_fragment: Some(LENS_FRAGMENT_SHADER),
+            metal_shader: None,
+        },
         MaterialParams {
             uniforms: vec![("Center".to_owned(), UniformType::Float2)],
             ..Default::default()
@@ -17,7 +20,7 @@ async fn main() {
     loop {
         clear_background(WHITE);
         draw_texture_ex(
-            texture,
+            &texture,
             0.0,
             0.0,
             WHITE,
@@ -31,7 +34,7 @@ async fn main() {
 
         lens_material.set_uniform("Center", lens_center);
 
-        gl_use_material(lens_material);
+        gl_use_material(&lens_material);
         draw_circle(lens_center.0, lens_center.1, 250.0, RED);
         gl_use_default_material();
 

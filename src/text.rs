@@ -6,34 +6,40 @@ use crate::{
     color::Color,
     get_context, get_quad_context,
     math::{vec3, Rect},
-    texture::Image,
+    texture::{Image, TextureHandle},
+    Error,
 };
 
 use crate::color::WHITE;
 use glam::vec2;
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
+use std::sync::{Arc, Mutex};
 pub(crate) mod atlas;
 
-use atlas::Atlas;
+use atlas::{Atlas, SpriteKey};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct CharacterInfo {
     pub offset_x: i32,
     pub offset_y: i32,
     pub advance: f32,
-    pub sprite: u64,
+    pub sprite: SpriteKey,
 }
 
-pub(crate) struct FontInternal {
+/// TTF font loaded to GPU
+#[derive(Clone)]
+pub struct Font {
     font: fontdue::Font,
-    atlas: Rc<RefCell<Atlas>>,
-    characters: HashMap<(char, u16), CharacterInfo>,
+    atlas: Arc<Mutex<Atlas>>,
+    characters: Arc<Mutex<HashMap<(char, u16), CharacterInfo>>>,
 }
 
-impl std::fmt::Debug for FontInternal {
+fn require_fn_to_be_send() {
+    fn require_send<T: Send>() {}
+    require_send::<Font>();
+}
+
+impl std::fmt::Debug for Font {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Font")
             .field("font", &"fontdue::Font")
@@ -41,31 +47,11 @@ impl std::fmt::Debug for FontInternal {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct FontError(pub &'static str);
-
-impl From<&'static str> for FontError {
-    fn from(s: &'static str) -> Self {
-        Self(s)
-    }
-}
-
-impl std::fmt::Display for FontError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "font error: {}", self.0)
-    }
-}
-
-impl std::error::Error for FontError {}
-
-impl FontInternal {
-    pub(crate) fn load_from_bytes(
-        atlas: Rc<RefCell<Atlas>>,
-        bytes: &[u8],
-    ) -> Result<FontInternal, FontError> {
-        Ok(FontInternal {
+impl Font {
+    pub(crate) fn load_from_bytes(atlas: Arc<Mutex<Atlas>>, bytes: &[u8]) -> Result<Font, Error> {
+        Ok(Font {
             font: fontdue::Font::from_bytes(&bytes[..], fontdue::FontSettings::default())?,
-            characters: HashMap::new(),
+            characters: Arc::new(Mutex::new(HashMap::new())),
             atlas,
         })
     }
@@ -81,8 +67,13 @@ impl FontInternal {
             .descent
     }
 
-    pub(crate) fn cache_glyph(&mut self, character: char, size: u16) {
-        if self.characters.contains_key(&(character, size)) {
+    pub(crate) fn cache_glyph(&self, character: char, size: u16) {
+        if self
+            .characters
+            .lock()
+            .unwrap()
+            .contains_key(&(character, size))
+        {
             return;
         }
 
@@ -94,8 +85,8 @@ impl FontInternal {
 
         let (width, height) = (metrics.width as u16, metrics.height as u16);
 
-        let sprite = self.atlas.borrow_mut().new_unique_id();
-        self.atlas.borrow_mut().cache_sprite(
+        let sprite = self.atlas.lock().unwrap().new_unique_id();
+        self.atlas.lock().unwrap().cache_sprite(
             sprite,
             Image {
                 bytes: bitmap
@@ -117,25 +108,38 @@ impl FontInternal {
             sprite,
         };
 
-        self.characters.insert((character, size), character_info);
+        self.characters
+            .lock()
+            .unwrap()
+            .insert((character, size), character_info);
     }
 
-    pub(crate) fn get(&self, character: char, size: u16) -> Option<&CharacterInfo> {
-        self.characters.get(&(character, size))
+    pub(crate) fn get(&self, character: char, size: u16) -> Option<CharacterInfo> {
+        self.characters
+            .lock()
+            .unwrap()
+            .get(&(character, size))
+            .cloned()
     }
 
     pub(crate) fn measure_text(
-        &mut self,
+        &self,
         text: &str,
         font_size: u16,
         font_scale_x: f32,
         font_scale_y: f32,
     ) -> TextDimensions {
-        let dpi_scaling = get_quad_context().dpi_scale();
+        let dpi_scaling = miniquad::window::dpi_scale();
         let font_size = (font_size as f32 * dpi_scaling).ceil() as u16;
 
         for character in text.chars() {
-            if self.characters.contains_key(&(character, font_size)) == false {
+            if self
+                .characters
+                .lock()
+                .unwrap()
+                .contains_key(&(character, font_size))
+                == false
+            {
                 self.cache_glyph(character, font_size);
             }
         }
@@ -144,10 +148,10 @@ impl FontInternal {
         let mut min_y = std::f32::MAX;
         let mut max_y = -std::f32::MAX;
 
-        let atlas = self.atlas.borrow();
+        let atlas = self.atlas.lock().unwrap();
 
         for character in text.chars() {
-            if let Some(font_data) = self.characters.get(&(character, font_size)) {
+            if let Some(font_data) = self.characters.lock().unwrap().get(&(character, font_size)) {
                 let glyph = atlas.get(font_data.sprite).unwrap().rect;
                 width += font_data.advance * font_scale_x;
 
@@ -171,16 +175,6 @@ impl FontInternal {
     }
 }
 
-/// TTF font loaded to GPU
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Font(usize);
-
-impl Default for Font {
-    fn default() -> Font {
-        Font(0)
-    }
-}
-
 impl Font {
     /// List of ascii characters, may be helpful in combination with "populate_font_cache"
     pub fn ascii_character_list() -> Vec<char> {
@@ -195,10 +189,8 @@ impl Font {
     }
 
     pub fn populate_font_cache(&self, characters: &[char], size: u16) {
-        let font = get_context().fonts_storage.get_font_mut(*self);
-
         for character in characters {
-            font.cache_glyph(*character, size);
+            self.cache_glyph(*character, size);
         }
     }
 
@@ -215,10 +207,8 @@ impl Font {
     /// font.set_filter(FilterMode::Linear);
     /// # }
     /// ```
-    pub fn set_filter(&self, filter_mode: miniquad::FilterMode) {
-        let font = get_context().fonts_storage.get_font_mut(*self);
-
-        font.atlas.borrow_mut().set_filter(filter_mode);
+    pub fn set_filter(&mut self, filter_mode: miniquad::FilterMode) {
+        self.atlas.lock().unwrap().set_filter(filter_mode);
     }
 
     // pub fn texture(&self) -> Texture2D {
@@ -229,9 +219,9 @@ impl Font {
 }
 
 /// Arguments for "draw_text_ex" function such as font, font_size etc
-#[derive(Debug, Clone, Copy)]
-pub struct TextParams {
-    pub font: Font,
+#[derive(Debug, Clone)]
+pub struct TextParams<'a> {
+    pub font: Option<&'a Font>,
     /// Base size for character height. The size in pixel used during font rasterizing.
     pub font_size: u16,
     /// The glyphs sizes actually drawn on the screen will be font_size * font_scale
@@ -247,10 +237,10 @@ pub struct TextParams {
     pub color: Color,
 }
 
-impl Default for TextParams {
-    fn default() -> TextParams {
+impl<'a> Default for TextParams<'a> {
+    fn default() -> TextParams<'a> {
         TextParams {
-            font: Font(0),
+            font: None,
             font_size: 20,
             font_scale: 1.0,
             font_scale_aspect: 1.0,
@@ -261,10 +251,10 @@ impl Default for TextParams {
 }
 
 /// Load font from file with "path"
-pub async fn load_ttf_font(path: &str) -> Result<Font, FontError> {
+pub async fn load_ttf_font(path: &str) -> Result<Font, Error> {
     let bytes = crate::file::load_file(path)
         .await
-        .map_err(|_| "The Font file couldn't be loaded")?;
+        .map_err(|_| Error::FontError("The Font file couldn't be loaded"))?;
 
     load_ttf_font_from_bytes(&bytes[..])
 }
@@ -273,16 +263,14 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, FontError> {
 /// ```ignore
 /// let font = load_ttf_font_from_bytes(include_bytes!("font.ttf"));
 /// ```
-pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
+pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
     let context = get_context();
-    let atlas = Rc::new(RefCell::new(Atlas::new(
+    let atlas = Arc::new(Mutex::new(Atlas::new(
         get_quad_context(),
         miniquad::FilterMode::Linear,
     )));
 
-    let font = context
-        .fonts_storage
-        .make_font(FontInternal::load_from_bytes(atlas.clone(), bytes)?);
+    let mut font = Font::load_from_bytes(atlas.clone(), bytes)?;
 
     font.populate_font_cache(&Font::ascii_character_list(), 15);
 
@@ -306,21 +294,28 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
 
 /// Draw text with custom params such as font, font size and font scale.
 pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
-    let font = get_context().fonts_storage.get_font_mut(params.font);
+    let font = params
+        .font
+        .unwrap_or(&get_context().fonts_storage.default_font);
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
-    let dpi_scaling = get_quad_context().dpi_scale();
+    let dpi_scaling = miniquad::window::dpi_scale();
 
     let font_size = (params.font_size as f32 * dpi_scaling).ceil() as u16;
 
     let mut total_width = 0.;
     for character in text.chars() {
-        if !font.characters.contains_key(&(character, font_size)) {
+        if !font
+            .characters
+            .lock()
+            .unwrap()
+            .contains_key(&(character, font_size))
+        {
             font.cache_glyph(character, font_size);
         }
-        let mut atlas = font.atlas.borrow_mut();
-        let font_data = &font.characters[&(character, font_size)];
+        let mut atlas = font.atlas.lock().unwrap();
+        let font_data = &font.characters.lock().unwrap()[&(character, font_size)];
         let glyph = atlas.get(font_data.sprite).unwrap().rect;
         let angle_rad = params.rotation;
         let left_coord = (font_data.offset_x as f32 * font_scale_x + total_width) * angle_rad.cos()
@@ -347,7 +342,9 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
         );
 
         crate::texture::draw_texture_ex(
-            atlas.texture(),
+            &crate::texture::Texture2D {
+                texture: TextureHandle::Unmanaged(atlas.texture()),
+            },
             dest.x,
             dest.y,
             params.color,
@@ -365,7 +362,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 /// Get the text center.
 pub fn get_text_center(
     text: &str,
-    font: Option<Font>,
+    font: Option<&Font>,
     font_size: u16,
     font_scale: f32,
     rotation: f32,
@@ -393,40 +390,25 @@ pub struct TextDimensions {
 
 pub fn measure_text(
     text: &str,
-    font: Option<Font>,
+    font: Option<&Font>,
     font_size: u16,
     font_scale: f32,
 ) -> TextDimensions {
-    let font = get_context()
-        .fonts_storage
-        .get_font_mut(font.unwrap_or(Font::default()));
+    let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
 
     font.measure_text(text, font_size, font_scale, font_scale)
 }
 
 pub(crate) struct FontsStorage {
-    fonts: Vec<FontInternal>,
+    default_font: Font,
 }
 
 impl FontsStorage {
-    pub(crate) fn new(ctx: &mut miniquad::Context) -> FontsStorage {
-        let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Linear)));
+    pub(crate) fn new(ctx: &mut dyn miniquad::RenderingBackend) -> FontsStorage {
+        let atlas = Arc::new(Mutex::new(Atlas::new(ctx, miniquad::FilterMode::Linear)));
 
-        let default_font =
-            FontInternal::load_from_bytes(atlas, include_bytes!("ProggyClean.ttf")).unwrap();
-        FontsStorage {
-            fonts: vec![default_font],
-        }
-    }
-
-    fn make_font(&mut self, font_internal: FontInternal) -> Font {
-        self.fonts.push(font_internal);
-
-        Font(self.fonts.len() - 1)
-    }
-
-    fn get_font_mut(&mut self, font: Font) -> &mut FontInternal {
-        &mut self.fonts[font.0]
+        let default_font = Font::load_from_bytes(atlas, include_bytes!("ProggyClean.ttf")).unwrap();
+        FontsStorage { default_font }
     }
 }
 
@@ -435,7 +417,7 @@ impl FontsStorage {
 /// looks good in currently active camera
 pub fn camera_font_scale(world_font_size: f32) -> (u16, f32, f32) {
     let context = get_context();
-    let (scr_w, scr_h) = get_quad_context().screen_size();
+    let (scr_w, scr_h) = miniquad::window::screen_size();
     let cam_space = context
         .projection_matrix()
         .inverse()

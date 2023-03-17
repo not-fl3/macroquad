@@ -1,16 +1,56 @@
 //! Loading and rendering textures. Also render textures, per-pixel image manipulations.
 
 use crate::{
-    color::Color,
-    file::{load_file, FileError},
-    get_context, get_quad_context,
-    math::Rect,
+    color::Color, file::load_file, get_context, get_quad_context, math::Rect,
+    text::atlas::SpriteKey, Error,
 };
 
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
 
 pub use crate::quad_gl::FilterMode;
+
+use slotmap::SlotMap;
+use std::sync::Arc;
+
+slotmap::new_key_type! {
+    pub(crate) struct TextureSlotId;
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) struct TextureSlotGuarded(pub TextureSlotId);
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum TextureHandle {
+    // texture that belongs to macroquad and follows normal garbage collection rules
+    Managed(Arc<TextureSlotGuarded>),
+    ManagedWeak(TextureSlotId),
+    // raw miniquad texture, there are no guarantees that this texture is not yet deleted
+    Unmanaged(miniquad::TextureId),
+}
+
+pub(crate) struct TexturesContext {
+    textures: SlotMap<crate::texture::TextureSlotId, miniquad::TextureId>,
+}
+impl TexturesContext {
+    pub fn new() -> TexturesContext {
+        TexturesContext {
+            textures: SlotMap::with_key(),
+        }
+    }
+    fn store_texture(&mut self, texture: miniquad::TextureId) -> TextureHandle {
+        TextureHandle::Managed(Arc::new(TextureSlotGuarded(self.textures.insert(texture))))
+    }
+    pub fn texture(&self, texture: TextureSlotId) -> Option<miniquad::TextureId> {
+        self.textures.get(texture).copied()
+    }
+    fn remove(&mut self, texture: TextureSlotId) {
+        self.textures.remove(texture);
+    }
+    pub fn len(&self) -> usize {
+        self.textures.len()
+    }
+}
 
 /// Image, data stored in CPU memory
 #[derive(Clone)]
@@ -59,25 +99,24 @@ impl Image {
     ///     Some(ImageFormat::Png),
     ///     );
     /// ```
-    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Image {
+    pub fn from_file_with_format(
+        bytes: &[u8],
+        format: Option<image::ImageFormat>,
+    ) -> Result<Image, Error> {
         let img = if let Some(fmt) = format {
-            image::load_from_memory_with_format(bytes, fmt)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
+            image::load_from_memory_with_format(bytes, fmt)?.to_rgba8()
         } else {
-            image::load_from_memory(bytes)
-                .unwrap_or_else(|e| panic!("{}", e))
-                .to_rgba8()
+            image::load_from_memory(bytes)?.to_rgba8()
         };
         let width = img.width() as u16;
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        Image {
+        Ok(Image {
             width,
             height,
             bytes,
-        }
+        })
     }
 
     /// Creates an Image filled with the provided [Color].
@@ -203,20 +242,20 @@ impl Image {
 }
 
 /// Loads an [Image] from a file into CPU memory.
-pub async fn load_image(path: &str) -> Result<Image, FileError> {
+pub async fn load_image(path: &str) -> Result<Image, Error> {
     let bytes = load_file(path).await?;
 
-    Ok(Image::from_file_with_format(&bytes, None))
+    Image::from_file_with_format(&bytes, None)
 }
 
 /// Loads a [Texture2D] from a file into GPU memory.
-pub async fn load_texture(path: &str) -> Result<Texture2D, FileError> {
+pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     let bytes = load_file(path).await?;
 
     Ok(Texture2D::from_file_with_format(&bytes[..], None))
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct RenderTarget {
     pub texture: Texture2D,
     pub render_pass: miniquad::RenderPass,
@@ -224,26 +263,22 @@ pub struct RenderTarget {
 
 impl RenderTarget {
     pub fn delete(&self) {
-        self.texture.delete();
-
         let context = get_quad_context();
-        self.render_pass.delete(context);
+        context.delete_texture(self.texture.raw_miniquad_id());
+        context.delete_render_pass(self.render_pass);
     }
 }
 
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     let context = get_quad_context();
 
-    let texture = miniquad::Texture::new_render_texture(
-        context,
-        miniquad::TextureParams {
-            width,
-            height,
-            ..Default::default()
-        },
-    );
+    let texture = context.new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        ..Default::default()
+    });
 
-    let render_pass = miniquad::RenderPass::new(context, texture, None);
+    let render_pass = context.new_render_pass(texture, None);
 
     let texture = Texture2D::from_miniquad_texture(texture);
 
@@ -292,12 +327,12 @@ impl Default for DrawTextureParams {
     }
 }
 
-pub fn draw_texture(texture: Texture2D, x: f32, y: f32, color: Color) {
+pub fn draw_texture(texture: &Texture2D, x: f32, y: f32, color: Color) {
     draw_texture_ex(texture, x, y, color, Default::default());
 }
 
 pub fn draw_texture_ex(
-    texture: Texture2D,
+    texture: &Texture2D,
     x: f32,
     y: f32,
     color: Color,
@@ -317,16 +352,18 @@ pub fn draw_texture_ex(
         h: texture.height(),
     });
 
-    let mut texture = texture;
+    let texture = context
+        .texture_batcher
+        .get(texture)
+        .map(|(batched_texture, uv)| {
+            sx = ((sx / texture.width()) * uv.w + uv.x) * batched_texture.width();
+            sy = ((sy / texture.height()) * uv.h + uv.y) * batched_texture.height();
+            sw = (sw / texture.width()) * uv.w * batched_texture.width();
+            sh = (sh / texture.height()) * uv.h * batched_texture.height();
 
-    if let Some((batched_texture, uv)) = context.texture_batcher.get(texture) {
-        sx = ((sx / texture.width()) * uv.w + uv.x) * batched_texture.width();
-        sy = ((sy / texture.height()) * uv.h + uv.y) * batched_texture.height();
-        sw = (sw / texture.width()) * uv.w * batched_texture.width();
-        sh = (sh / texture.height()) * uv.h * batched_texture.height();
-
-        texture = batched_texture;
-    }
+            batched_texture
+        })
+        .unwrap_or(texture.clone());
 
     let (mut w, mut h) = match params.dest_size {
         Some(dst) => (dst.x, dst.y),
@@ -379,40 +416,9 @@ pub fn draw_texture_ex(
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
-    context.gl.texture(Some(texture));
+    context.gl.texture(Some(&texture));
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&vertices, &indices);
-}
-
-#[deprecated(since = "0.3.0", note = "Use draw_texture_ex instead")]
-pub fn draw_texture_rec(
-    texture: Texture2D,
-    x: f32,
-    y: f32,
-    w: f32,
-    h: f32,
-    sx: f32,
-    sy: f32,
-    sw: f32,
-    sh: f32,
-    color: Color,
-) {
-    draw_texture_ex(
-        texture,
-        x,
-        y,
-        color,
-        DrawTextureParams {
-            dest_size: Some(vec2(w, h)),
-            source: Some(Rect {
-                x: sx,
-                y: sy,
-                w: sw,
-                h: sh,
-            }),
-            ..Default::default()
-        },
-    );
 }
 
 /// Get pixel data from screen buffer and return an Image (screenshot)
@@ -423,8 +429,7 @@ pub fn get_screen_data() -> Image {
 
     let context = get_context();
 
-    let texture = Texture2D::from_miniquad_texture(miniquad::Texture::new_render_texture(
-        get_quad_context(),
+    let texture = Texture2D::from_miniquad_texture(get_quad_context().new_render_texture(
         miniquad::TextureParams {
             width: context.screen_width as _,
             height: context.screen_height as _,
@@ -438,12 +443,35 @@ pub fn get_screen_data() -> Image {
 }
 
 /// Texture, data stored in GPU memory
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Texture2D {
-    pub(crate) texture: miniquad::Texture,
+    pub(crate) texture: TextureHandle,
+}
+
+impl Drop for TextureSlotGuarded {
+    fn drop(&mut self) {
+        let ctx = get_context();
+        ctx.textures.remove(self.0);
+    }
 }
 
 impl Texture2D {
+    pub fn weak_clone(&self) -> Texture2D {
+        match &self.texture {
+            TextureHandle::Unmanaged(id) => Texture2D::unmanaged(*id),
+            TextureHandle::Managed(t) => Texture2D {
+                texture: TextureHandle::ManagedWeak((**t).0),
+            },
+            TextureHandle::ManagedWeak(t) => Texture2D {
+                texture: TextureHandle::ManagedWeak(t.clone()),
+            },
+        }
+    }
+    pub(crate) fn unmanaged(texture: miniquad::TextureId) -> Texture2D {
+        Texture2D {
+            texture: TextureHandle::Unmanaged(texture),
+        }
+    }
     /// Creates an empty Texture2D.
     ///
     /// # Example
@@ -455,9 +483,9 @@ impl Texture2D {
     /// # }
     /// ```
     pub fn empty() -> Texture2D {
-        Texture2D {
-            texture: miniquad::Texture::empty(),
-        }
+        let ctx = get_context();
+
+        Texture2D::unmanaged(ctx.gl.white_texture)
     }
 
     /// Creates a Texture2D from a slice of bytes that contains an encoded image.
@@ -503,8 +531,10 @@ impl Texture2D {
 
     /// Creates a Texture2D from a miniquad
     /// [Texture](https://docs.rs/miniquad/0.3.0-alpha/miniquad/graphics/struct.Texture.html)
-    pub fn from_miniquad_texture(texture: miniquad::Texture) -> Texture2D {
-        Texture2D { texture }
+    pub fn from_miniquad_texture(texture: miniquad::TextureId) -> Texture2D {
+        Texture2D {
+            texture: TextureHandle::Unmanaged(texture),
+        }
     }
 
     /// Creates a Texture2D from a slice of bytes in an R,G,B,A sequence,
@@ -522,24 +552,25 @@ impl Texture2D {
     /// # }
     /// ```
     pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
+        let texture = get_quad_context().new_texture_from_rgba8(width, height, bytes);
         let ctx = get_context();
-
-        let texture = miniquad::Texture::from_rgba8(get_quad_context(), width, height, bytes);
+        let texture = ctx.textures.store_texture(texture);
         let texture = Texture2D { texture };
 
-        ctx.texture_batcher.add_unbatched(texture);
+        ctx.texture_batcher.add_unbatched(&texture);
 
         texture
     }
 
     /// Uploads [Image] data to this texture.
     pub fn update(&self, image: &Image) {
-        assert_eq!(self.texture.width, image.width as u32);
-        assert_eq!(self.texture.height, image.height as u32);
-
         let ctx = get_quad_context();
+        let (width, height) = ctx.texture_size(self.raw_miniquad_id());
 
-        self.texture.update(ctx, &image.bytes);
+        assert_eq!(width, image.width as u32);
+        assert_eq!(height, image.height as u32);
+
+        ctx.texture_update(self.raw_miniquad_id(), &image.bytes);
     }
 
     /// Uploads [Image] data to part of this texture.
@@ -553,18 +584,30 @@ impl Texture2D {
     ) {
         let ctx = get_quad_context();
 
-        self.texture
-            .update_texture_part(ctx, x_offset, y_offset, width, height, &image.bytes)
+        ctx.texture_update_part(
+            self.raw_miniquad_id(),
+            x_offset,
+            y_offset,
+            width,
+            height,
+            &image.bytes,
+        )
     }
 
     /// Returns the width of this texture.
     pub fn width(&self) -> f32 {
-        self.texture.width as f32
+        let ctx = get_quad_context();
+        let (width, _) = ctx.texture_size(self.raw_miniquad_id());
+
+        width as f32
     }
 
     /// Returns the height of this texture.
     pub fn height(&self) -> f32 {
-        self.texture.height as f32
+        let ctx = get_quad_context();
+        let (_, height) = ctx.texture_size(self.raw_miniquad_id());
+
+        height as f32
     }
 
     /// Sets the [FilterMode] of this texture.
@@ -583,29 +626,45 @@ impl Texture2D {
     pub fn set_filter(&self, filter_mode: FilterMode) {
         let ctx = get_quad_context();
 
-        self.texture.set_filter(ctx, filter_mode);
+        ctx.texture_set_filter(self.raw_miniquad_id(), filter_mode);
     }
 
     /// Returns the handle for this texture.
-    pub fn raw_miniquad_texture_handle(&self) -> miniquad::Texture {
-        self.texture
+    pub fn raw_miniquad_id(&self) -> miniquad::TextureId {
+        let ctx = get_context();
+
+        ctx.raw_miniquad_id(&self.texture)
     }
 
     /// Updates this texture from the screen.
     pub fn grab_screen(&self) {
         use miniquad::*;
-
-        let (internal_format, _, _) = self.texture.format.into();
+        let texture = self.raw_miniquad_id();
+        let ctx = get_quad_context();
+        let params = ctx.texture_params(texture);
+        let raw_id = match unsafe { ctx.texture_raw_id(texture) } {
+            miniquad::RawId::OpenGl(id) => id,
+            _ => unimplemented!(),
+        };
+        let internal_format = match params.format {
+            TextureFormat::RGB8 => miniquad::gl::GL_RGB,
+            TextureFormat::RGBA8 => miniquad::gl::GL_RGBA,
+            TextureFormat::Depth => miniquad::gl::GL_DEPTH_COMPONENT,
+            #[cfg(target_arch = "wasm32")]
+            TextureFormat::Alpha => miniquad::gl::GL_ALPHA,
+            #[cfg(not(target_arch = "wasm32"))]
+            TextureFormat::Alpha => miniquad::gl::GL_R8,
+        };
         unsafe {
-            gl::glBindTexture(gl::GL_TEXTURE_2D, self.texture.gl_internal_id());
+            gl::glBindTexture(gl::GL_TEXTURE_2D, raw_id);
             gl::glCopyTexImage2D(
                 gl::GL_TEXTURE_2D,
                 0,
                 internal_format,
                 0,
                 0,
-                self.texture.width as _,
-                self.texture.height as _,
+                params.width as _,
+                params.height as _,
                 0,
             );
         }
@@ -615,23 +674,15 @@ impl Texture2D {
     ///
     /// This operation can be expensive.
     pub fn get_texture_data(&self) -> Image {
+        let ctx = get_quad_context();
+        let (width, height) = ctx.texture_size(self.raw_miniquad_id());
         let mut image = Image {
-            width: self.texture.width as _,
-            height: self.texture.height as _,
-            bytes: vec![0; self.texture.width as usize * self.texture.height as usize * 4],
+            width: width as _,
+            height: height as _,
+            bytes: vec![0; width as usize * height as usize * 4],
         };
-
-        self.texture.read_pixels(&mut image.bytes);
-
+        ctx.texture_read_pixels(self.raw_miniquad_id(), &mut image.bytes);
         image
-    }
-
-    /// Unloads texture from GPU memory.
-    ///
-    /// Using a deleted texture could give different results on different
-    /// platforms and is not recommended.
-    pub fn delete(&self) {
-        self.raw_miniquad_texture_handle().delete()
     }
 }
 
@@ -641,22 +692,21 @@ pub(crate) struct Batcher {
 }
 
 impl Batcher {
-    pub fn new(ctx: &mut miniquad::Context) -> Batcher {
+    pub fn new(ctx: &mut dyn miniquad::RenderingBackend) -> Batcher {
         Batcher {
             unbatched: vec![],
             atlas: crate::text::atlas::Atlas::new(ctx, miniquad::FilterMode::Linear),
         }
     }
 
-    pub fn add_unbatched(&mut self, texture: Texture2D) {
-        self.unbatched.push(texture);
+    pub fn add_unbatched(&mut self, texture: &Texture2D) {
+        self.unbatched.push(texture.weak_clone());
     }
 
-    pub fn get(&mut self, texture: Texture2D) -> Option<(Texture2D, Rect)> {
-        let id = texture.raw_miniquad_texture_handle().gl_internal_id();
-        let uv_rect = self.atlas.get_uv_rect(id as _)?;
-
-        Some((self.atlas.texture(), uv_rect))
+    pub fn get(&mut self, texture: &Texture2D) -> Option<(Texture2D, Rect)> {
+        let id = SpriteKey::Texture(texture.raw_miniquad_id());
+        let uv_rect = self.atlas.get_uv_rect(id)?;
+        Some((Texture2D::unmanaged(self.atlas.texture()), uv_rect))
     }
 }
 
@@ -670,11 +720,12 @@ pub fn build_textures_atlas() {
 
     for texture in context.texture_batcher.unbatched.drain(0..) {
         let sprite: Image = texture.get_texture_data();
-        let id = texture.raw_miniquad_texture_handle().gl_internal_id();
+        let id = SpriteKey::Texture(texture.raw_miniquad_id());
 
-        context.texture_batcher.atlas.cache_sprite(id as _, sprite);
+        context.texture_batcher.atlas.cache_sprite(id, sprite);
     }
 
     let texture = context.texture_batcher.atlas.texture();
-    crate::telemetry::log_string(&format!("Atlas: {} {}", texture.width(), texture.height()));
+    let (w, h) = get_quad_context().texture_size(texture);
+    crate::telemetry::log_string(&format!("Atlas: {} {}", w, h));
 }

@@ -7,4 +7,4 @@ description = "Profiler UI for macroquad"
 license = "MIT/Apache-2.0"
 
 [dependencies]
-macroquad = { path = "../", version = "0.3" }
+macroquad = { path = "../", version = "0.4" }

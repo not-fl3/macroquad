@@ -6,12 +6,7 @@ async fn main() {
 
     loop {
         clear_background(LIGHTGRAY);
-        draw_texture(
-            texture,
-            screen_width() / 2. - texture.width() / 2.,
-            screen_height() / 2. - texture.height() / 2.,
-            WHITE,
-        );
+        draw_texture(&texture, 0., 0., WHITE);
         next_frame().await
     }
 }

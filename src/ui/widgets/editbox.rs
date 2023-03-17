@@ -393,7 +393,7 @@ impl<'a> Editbox<'a> {
                 );
             }
 
-            let mut font = context.style.editbox_style.font.borrow_mut();
+            let mut font = context.style.editbox_style.font.lock().unwrap();
             let font_size = context.style.editbox_style.font_size;
 
             let mut advance = 1.5; // 1.5 - hack to make cursor on newlines visible

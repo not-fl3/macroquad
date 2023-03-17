@@ -13,9 +13,6 @@ pub struct InputText<'a> {
     pos: Option<Vec2>,
 }
 
-#[deprecated(note = "Use InputText instead")]
-pub type InputField<'a> = InputText<'a>;
-
 impl<'a> InputText<'a> {
     pub fn new(id: Id) -> InputText<'a> {
         InputText {
@@ -120,11 +117,6 @@ impl<'a> InputText<'a> {
 }
 
 impl Ui {
-    #[deprecated(note = "Use input_text instead")]
-    pub fn input_field(&mut self, id: Id, label: &str, data: &mut String) {
-        InputText::new(id).label(label).ui(self, data)
-    }
-
     pub fn input_text(&mut self, id: Id, label: &str, data: &mut String) {
         InputText::new(id).label(label).ui(self, data)
     }

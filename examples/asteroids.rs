@@ -55,7 +55,7 @@ async fn main() {
     let mut asteroids = Vec::new();
     let mut gameover = false;
 
-    let mut screen_center = Vec2::new(screen_width() / 2., screen_height() / 2.);
+    let mut screen_center;
 
     loop {
         if gameover {

@@ -31,7 +31,11 @@ pub use crate::hash;
 
 pub(crate) use render::ElementState;
 
-use std::{borrow::Cow, ops::DerefMut};
+use std::{
+    borrow::Cow,
+    ops::DerefMut,
+    sync::{Arc, Mutex},
+};
 
 /// Root UI. Widgets drawn with the root ui will be always presented at the end of the frame with a "default" camera.
 /// UI space would be a "default" screen space (0..screen_width(), 0..screen_height())
@@ -61,7 +65,10 @@ pub fn camera_ui() -> impl DerefMut<Target = Ui> {
 
 use crate::{
     math::{Rect, RectOffset, Vec2},
-    text::{atlas::Atlas, FontInternal},
+    text::{
+        atlas::{Atlas, SpriteKey},
+        Font,
+    },
     texture::Image,
     ui::{canvas::DrawCanvas, render::Painter},
 };
@@ -138,7 +145,7 @@ impl Window {
         margin: f32,
         movable: bool,
         force_focus: bool,
-        atlas: Rc<RefCell<Atlas>>,
+        atlas: Arc<Mutex<Atlas>>,
     ) -> Window {
         Window {
             id,
@@ -240,7 +247,7 @@ struct StyleStack {
 }
 
 impl StyleStack {
-    fn new(atlas: Rc<RefCell<Atlas>>, default_font: Rc<RefCell<FontInternal>>) -> StyleStack {
+    fn new(atlas: Arc<Mutex<Atlas>>, default_font: Arc<Mutex<Font>>) -> StyleStack {
         StyleStack {
             default_skin: Skin::new(atlas, default_font),
             custom_skin_stack: vec![],
@@ -356,8 +363,8 @@ pub struct Ui {
     last_item_clicked: bool,
     last_item_hovered: bool,
 
-    pub(crate) atlas: Rc<RefCell<Atlas>>,
-    pub(crate) default_font: Rc<RefCell<FontInternal>>,
+    pub(crate) atlas: Arc<Mutex<Atlas>>,
+    pub(crate) default_font: Arc<Mutex<Font>>,
 
     clipboard_selection: String,
     clipboard: Box<dyn crate::ui::ClipboardObject>,
@@ -639,23 +646,26 @@ impl InputHandler for Ui {
 }
 
 impl Ui {
-    pub fn new(ctx: &mut miniquad::Context, screen_width: f32, screen_height: f32) -> Ui {
-        let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Nearest)));
-        let mut font = crate::text::FontInternal::load_from_bytes(
-            atlas.clone(),
-            include_bytes!("ProggyClean.ttf"),
-        )
-        .unwrap();
+    pub fn new(
+        ctx: &mut dyn miniquad::RenderingBackend,
+        screen_width: f32,
+        screen_height: f32,
+    ) -> Ui {
+        let atlas = Arc::new(Mutex::new(Atlas::new(ctx, miniquad::FilterMode::Nearest)));
+        let mut font =
+            crate::text::Font::load_from_bytes(atlas.clone(), include_bytes!("ProggyClean.ttf"))
+                .unwrap();
 
         for character in crate::text::Font::ascii_character_list() {
             font.cache_glyph(character, 13);
         }
 
         atlas
-            .borrow_mut()
-            .cache_sprite(0, Image::gen_image_color(1, 1, crate::WHITE));
+            .lock()
+            .unwrap()
+            .cache_sprite(SpriteKey::Id(0), Image::gen_image_color(1, 1, crate::WHITE));
 
-        let font = Rc::new(RefCell::new(font));
+        let font = Arc::new(Mutex::new(font));
         Ui {
             input: Input::default(),
             default_font: font.clone(),
@@ -1193,7 +1203,7 @@ pub(crate) mod ui_context {
 
     impl UiContext {
         pub(crate) fn new(
-            ctx: &mut miniquad::Context,
+            ctx: &mut dyn miniquad::RenderingBackend,
             screen_width: f32,
             screen_height: f32,
         ) -> UiContext {
@@ -1267,15 +1277,19 @@ pub(crate) mod ui_context {
             ui.mouse_wheel(wheel_x, -wheel_y);
         }
 
-        pub(crate) fn draw(&mut self, _ctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
+        pub(crate) fn draw(
+            &mut self,
+            _ctx: &mut dyn miniquad::RenderingBackend,
+            quad_gl: &mut QuadGl,
+        ) {
             // TODO: this belongs to new and waits for cleaning up context initialization mess
             let material = self.material.get_or_insert_with(|| {
-                let fragment_shader = FRAGMENT_SHADER.to_string();
-                let vertex_shader = VERTEX_SHADER.to_string();
-
                 load_material(
-                    &vertex_shader,
-                    &fragment_shader,
+                    ShaderSource {
+                        glsl_vertex: Some(VERTEX_SHADER),
+                        glsl_fragment: Some(FRAGMENT_SHADER),
+                        metal_shader: Some(METAL_SHADER),
+                    },
                     MaterialParams {
                         pipeline_params: PipelineParams {
                             color_blend: Some(BlendState::new(
@@ -1298,16 +1312,17 @@ pub(crate) mod ui_context {
 
             std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
-            let font_texture: Texture2D = ui.atlas.borrow_mut().texture();
-            quad_gl.texture(Some(font_texture));
+            let mut atlas = ui.atlas.lock().unwrap();
+            let font_texture = atlas.texture();
+            quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
 
-            gl_use_material(*material);
+            gl_use_material(material);
 
             for draw_command in &ui_draw_list {
-                if let Some(texture) = draw_command.texture {
+                if let Some(ref texture) = draw_command.texture {
                     quad_gl.texture(Some(texture));
                 } else {
-                    quad_gl.texture(Some(font_texture));
+                    quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
                 }
 
                 quad_gl.scissor(
@@ -1324,6 +1339,7 @@ pub(crate) mod ui_context {
 
             std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
+            drop(atlas);
             ui.new_frame(get_frame_time());
         }
     }
@@ -1332,19 +1348,11 @@ pub(crate) mod ui_context {
 
     impl megaui::ClipboardObject for ClipboardObject {
         fn get(&self) -> Option<String> {
-            let InternalGlContext {
-                quad_context: ctx, ..
-            } = unsafe { get_internal_gl() };
-
-            ctx.clipboard_get()
+            miniquad::window::clipboard_get()
         }
 
         fn set(&mut self, data: &str) {
-            let InternalGlContext {
-                quad_context: ctx, ..
-            } = unsafe { get_internal_gl() };
-
-            ctx.clipboard_set(data)
+            miniquad::window::clipboard_set(data)
         }
     }
 
@@ -1376,4 +1384,43 @@ void main() {
     gl_FragColor = texture2D(Texture, uv) * color;
 }
 ";
+    pub const METAL_SHADER: &str = r#"
+#include <metal_stdlib>
+    using namespace metal;
+
+    struct Uniforms
+    {
+        float4x4 Model;
+        float4x4 Projection;
+    };
+
+    struct Vertex
+    {
+        float3 position    [[attribute(0)]];
+        float2 texcoord    [[attribute(1)]];
+        float4 color0      [[attribute(2)]];
+    };
+
+    struct RasterizerData
+    {
+        float4 position [[position]];
+        float4 color [[user(locn0)]];
+        float2 uv [[user(locn1)]];
+    };
+
+    vertex RasterizerData vertexShader(Vertex v [[stage_in]], constant Uniforms& uniforms [[buffer(0)]])
+    {
+        RasterizerData out;
+
+        out.position = uniforms.Model * uniforms.Projection * float4(v.position, 1);
+        out.color = v.color0 / 255.0;
+        out.uv = v.texcoord;
+
+        return out;
+    }
+
+    fragment float4 fragmentShader(RasterizerData in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler texSmplr [[sampler(0)]])
+    {
+        return in.color * tex.sample(texSmplr, in.uv);
+    }"#;
 }

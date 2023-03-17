@@ -1,14 +1,28 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::prelude::Texture2D;
-use crate::quad_gl::GlPipeline;
-use crate::{get_context, get_quad_context};
-use miniquad::{PipelineParams, ShaderError, UniformType};
+use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, Error, ShaderSource};
+use miniquad::{PipelineParams, UniformType};
+use std::sync::Arc;
+
+#[derive(PartialEq)]
+struct GlPipelineGuarded(GlPipeline);
+
+impl Drop for GlPipelineGuarded {
+    fn drop(&mut self) {
+        get_context().gl.delete_pipeline(self.0);
+    }
+}
 
 /// Material instance loaded on GPU.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Material {
-    pipeline: GlPipeline,
+    pipeline: Arc<GlPipelineGuarded>,
+}
+
+impl std::fmt::Debug for Material {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Material").finish()
+    }
 }
 
 impl Material {
@@ -16,17 +30,11 @@ impl Material {
     /// "name" should be from "uniforms" list used for material creation.
     /// Otherwise uniform value would be silently ignored.
     pub fn set_uniform<T>(&self, name: &str, uniform: T) {
-        get_context().gl.set_uniform(self.pipeline, name, uniform);
+        get_context().gl.set_uniform(self.pipeline.0, name, uniform);
     }
 
     pub fn set_texture(&self, name: &str, texture: Texture2D) {
-        get_context().gl.set_texture(self.pipeline, name, texture);
-    }
-
-    /// Delete this material. Using deleted material for either rendering
-    /// or uniforms manipulation will result internal GL errors.
-    pub fn delete(&mut self) {
-        get_context().gl.delete_pipeline(self.pipeline);
+        get_context().gl.set_texture(self.pipeline.0, name, texture);
     }
 }
 
@@ -56,27 +64,27 @@ impl Default for MaterialParams {
 }
 
 pub fn load_material(
-    vertex_shader: &str,
-    fragment_shader: &str,
+    shader: crate::ShaderSource,
     params: MaterialParams,
-) -> Result<Material, ShaderError> {
+) -> Result<Material, Error> {
     let context = &mut get_context();
 
     let pipeline = context.gl.make_pipeline(
-        get_quad_context(),
-        vertex_shader,
-        fragment_shader,
+        &mut *context.quad_context,
+        shader,
         params.pipeline_params,
         params.uniforms,
         params.textures,
     )?;
 
-    Ok(Material { pipeline })
+    Ok(Material {
+        pipeline: Arc::new(GlPipelineGuarded(pipeline)),
+    })
 }
 
 /// All following macroquad rendering calls will use the given material.
-pub fn gl_use_material(material: Material) {
-    get_context().gl.pipeline(Some(material.pipeline));
+pub fn gl_use_material(material: &Material) {
+    get_context().gl.pipeline(Some(material.pipeline.0));
 }
 
 /// Use default macroquad material.
