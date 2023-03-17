@@ -43,13 +43,13 @@ fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
     (Texture2D::from_image(&image), image)
 }
 
-#[macroquad::main("Shadertoy")]
-async fn main() {
-    let ferris = load_texture("examples/rust.png").await.unwrap();
-    let (color_picker_texture, color_picker_image) = color_picker_texture(200, 200);
-
-    let mut fragment_shader = DEFAULT_FRAGMENT_SHADER.to_string();
-    let mut vertex_shader = DEFAULT_VERTEX_SHADER.to_string();
+fn load_material(
+    shader_src: &str,
+    uniforms: Vec<(String, macroquad::prelude::UniformType)>,
+    glsl_dbg: &mut String,
+    metal_dbg: &mut String,
+) -> Result<Material, String> {
+    use nanoshredder::ShaderTy;
 
     let pipeline_params = PipelineParams {
         depth_write: true,
@@ -57,15 +57,71 @@ async fn main() {
         ..Default::default()
     };
 
-    let mut material = load_material(
-        &vertex_shader,
-        &fragment_shader,
+    let mut shader = nanoshredder::Shader::new(&shader_src).map_err(|err| format!("{:?}", err))?;
+
+    shader.add_attribute("position", ShaderTy::Vec3);
+    shader.add_attribute("texcoord", ShaderTy::Vec2);
+
+    shader.add_uniform("Projection", ShaderTy::Mat4);
+    shader.add_uniform("Model", ShaderTy::Mat4);
+
+    for (uniform_name, uniform_ty) in &uniforms {
+        let ty = match uniform_ty {
+            UniformType::Float1 => ShaderTy::Float,
+            UniformType::Float2 => ShaderTy::Vec2,
+            UniformType::Float3 => ShaderTy::Vec3,
+            UniformType::Float4 => ShaderTy::Vec4,
+            _ => unimplemented!(),
+        };
+        shader.add_uniform(&uniform_name, ty);
+    }
+    shader.compile().map_err(|err| format!("{:?}", err))?;
+
+    let (vertex, fragment) = shader.generate_glsl();
+    let mut metal = std::panic::catch_unwind(move || shader.generate_metal())
+        .unwrap_or("generate_metal paniced".to_string());
+    *glsl_dbg = format!("VERTEX\n{}\nFRAGMENT\n{}\n", vertex, fragment)
+        .lines()
+        .filter(|l| l.len() != 0)
+        .map(|l| format!("{}\n", l))
+        .collect::<String>();
+    *metal_dbg = format!("{}", metal);
+
+    let len = dbg!(32 + uniforms.iter().map(|u| u.1.size() / 4).sum::<usize>());
+    let meta = miniquad::ShaderMeta {
+        images: vec!["Texture".to_string()],
+        uniforms: miniquad::UniformBlockLayout {
+            uniforms: vec![
+                miniquad::UniformDesc::new("pass_table", miniquad::UniformType::Float1).array(len),
+            ],
+        },
+    };
+
+    load_material2(
+        ShaderSource {
+            glsl_vertex: Some(&vertex),
+            glsl_fragment: Some(&fragment),
+            metal_shader: None,
+        },
         MaterialParams {
             pipeline_params,
-            ..Default::default()
+            uniforms,
+            textures: vec![],
         },
+        meta,
     )
-    .unwrap();
+    .map_err(|err| format!("{:?}", err))
+}
+
+#[macroquad::main("Shadertoy")]
+async fn main() {
+    //let ferris = load_texture("examples/rust.png").await.unwrap();
+    let (color_picker_texture, color_picker_image) = color_picker_texture(256, 256);
+
+    let mut shader_src = SHADER.to_owned();
+    let mut glsl_dbg = String::new();
+    let mut metal_dbg = String::new();
+    let mut material = load_material(&shader_src, vec![], &mut glsl_dbg, &mut metal_dbg).unwrap();
     let mut error: Option<String> = None;
 
     enum Mesh {
@@ -94,18 +150,18 @@ async fn main() {
 
         set_camera(&camera);
 
-        draw_grid(
-            20,
-            1.,
-            Color::new(0.55, 0.55, 0.55, 0.75),
-            Color::new(0.75, 0.75, 0.75, 0.75),
-        );
+        // draw_grid(
+        //     20,
+        //     1.,
+        //     Color::new(0.55, 0.55, 0.55, 0.75),
+        //     Color::new(0.75, 0.75, 0.75, 0.75),
+        // );
 
         gl_use_material(material);
         match mesh {
-            Mesh::Plane => draw_plane(vec3(0., 2., 0.), vec2(5., 5.), ferris, WHITE),
-            Mesh::Sphere => draw_sphere(vec3(0., 6., 0.), 5., ferris, WHITE),
-            Mesh::Cube => draw_cube(vec3(0., 5., 0.), vec3(10., 10., 10.), ferris, WHITE),
+            Mesh::Plane => draw_plane(vec3(0., 2., 0.), vec2(5., 5.), color_picker_texture, WHITE),
+            Mesh::Sphere => draw_sphere(vec3(0., 6., 0.), 5., color_picker_texture, WHITE),
+            Mesh::Cube => draw_cube(vec3(0., 5., 0.), vec3(10., 10., 10.), color_picker_texture, WHITE),
         }
         gl_use_default_material();
 
@@ -113,7 +169,16 @@ async fn main() {
 
         let mut need_update = false;
 
-        widgets::Window::new(hash!(), vec2(20., 20.), vec2(470., 650.))
+        widgets::Window::new(hash!(), vec2(490., 20.), vec2(450., 640.))
+            .label("dbg")
+            .ui(&mut *root_ui(), |ui| {
+                if ui.editbox(hash!(), vec2(440., 300.), &mut glsl_dbg) {};
+                ui.separator();
+                ui.separator();
+                if ui.editbox(hash!(), vec2(440., 300.), &mut metal_dbg) {};
+            });
+
+        widgets::Window::new(hash!(), vec2(20., 20.), vec2(455., 650.))
             .label("Shader")
             .ui(&mut *root_ui(), |ui| {
                 ui.label(None, "Camera: ");
@@ -150,7 +215,6 @@ async fn main() {
                         Uniform::Float1(x) => {
                             widgets::InputText::new(hash!(hash!(), i))
                                 .size(vec2(200.0, 19.0))
-                                .filter_numbers()
                                 .ui(ui, x);
 
                             if let Ok(x) = x.parse::<f32>() {
@@ -224,21 +288,23 @@ async fn main() {
                 if ui.button(None, "New uniform") {
                     new_uniform_window = true;
                 }
-                TreeNode::new(hash!(), "Fragment shader")
-                    .init_unfolded()
-                    .ui(ui, |ui| {
-                        if ui.editbox(hash!(), vec2(440., 200.), &mut fragment_shader) {
-                            need_update = true;
-                        };
-                    });
-                ui.tree_node(hash!(), "Vertex shader", |ui| {
-                    if ui.editbox(hash!(), vec2(440., 300.), &mut vertex_shader) {
-                        need_update = true;
-                    };
-                });
+
+                if ui.editbox(
+                    hash!(),
+                    vec2(440., 460. - uniforms.len() as f32 * 22.),
+                    &mut shader_src,
+                ) {
+                    need_update = true;
+                };
 
                 if let Some(ref error) = error {
-                    Label::new(error).multiline(14.0).ui(ui);
+                    let mut n = 0;
+                    let mut rest = error.to_owned();
+                    while !rest.is_empty() {
+                        let (a, b) = rest.split_at(60.min(rest.len()));
+                        Label::new(a).ui(ui);
+                        rest = b.to_string();
+                    }
                 }
             });
 
@@ -338,15 +404,7 @@ async fn main() {
                 .map(|(name, uniform)| (name.clone(), uniform.uniform_type()))
                 .collect::<Vec<_>>();
 
-            match load_material(
-                &vertex_shader,
-                &fragment_shader,
-                MaterialParams {
-                    pipeline_params,
-                    uniforms,
-                    textures: vec![],
-                },
-            ) {
+            match load_material(&shader_src, uniforms, &mut glsl_dbg, &mut metal_dbg) {
                 Ok(new_material) => {
                     material.delete();
 
@@ -363,31 +421,17 @@ async fn main() {
     }
 }
 
-const DEFAULT_FRAGMENT_SHADER: &'static str = "#version 100
-precision lowp float;
-
-varying vec2 uv;
-
-uniform sampler2D Texture;
-
-void main() {
-    gl_FragColor = texture2D(Texture, uv);
+const SHADER: &'static str = "
+varying uv: vec2
+        
+fn vertex(self) -> vec4 {
+    self.uv = self.texcoord;
+    return self.Projection
+        * self.Model
+        * vec4(self.position, 1);
 }
-";
-
-const DEFAULT_VERTEX_SHADER: &'static str = "#version 100
-precision lowp float;
-
-attribute vec3 position;
-attribute vec2 texcoord;
-
-varying vec2 uv;
-
-uniform mat4 Model;
-uniform mat4 Projection;
-
-void main() {
-    gl_Position = Projection * Model * vec4(position, 1);
-    uv = texcoord;
+        
+fn pixel(self) -> vec4 {
+    return #f0f
 }
 ";

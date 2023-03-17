@@ -26,7 +26,7 @@ opt-level = 3
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.3.14", features = ["log-impl"] }
+miniquad = { version = "=0.4.0-alpha.0", features = ["log-impl"] }
 quad-rand = "0.2.1"
 glam = {version = "0.21", features = ["scalar-math"] }
 image = { version = "0.24", default-features = false, features = ["png", "tga"] }
@@ -38,16 +38,18 @@ log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
 
 [dev-dependencies]
-macroquad-particles = { path = "./particles" }
-macroquad-tiled = { path = "./tiled" }
-macroquad-profiler = { path = "./profiler" }
-macroquad-platformer = { path = "./physics-platformer" }
+nanoshredder = {path = "../shader_compiler" }
+
+#macroquad-particles = { path = "./particles" }
+#macroquad-tiled = { path = "./tiled" }
+#macroquad-profiler = { path = "./profiler" }
+#macroquad-platformer = { path = "./physics-platformer" }
 
 # workaround to fix the examples
 # this allows to use macroquad-particles in examples without two versions of macroquad
 [patch.crates-io]
 macroquad = { path = './' }
-#quad-snd = {path = '../quad-snd'}
+quad-snd = {path = '../quad-snd'}
 
-#miniquad = { path = '../miniquad' }
+miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}

@@ -639,7 +639,11 @@ impl InputHandler for Ui {
 }
 
 impl Ui {
-    pub fn new(ctx: &mut miniquad::Context, screen_width: f32, screen_height: f32) -> Ui {
+    pub fn new(
+        ctx: &mut dyn miniquad::RenderingBackend,
+        screen_width: f32,
+        screen_height: f32,
+    ) -> Ui {
         let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Nearest)));
         let mut font = crate::text::FontInternal::load_from_bytes(
             atlas.clone(),
@@ -1193,7 +1197,7 @@ pub(crate) mod ui_context {
 
     impl UiContext {
         pub(crate) fn new(
-            ctx: &mut miniquad::Context,
+            ctx: &mut dyn miniquad::RenderingBackend,
             screen_width: f32,
             screen_height: f32,
         ) -> UiContext {
@@ -1267,15 +1271,19 @@ pub(crate) mod ui_context {
             ui.mouse_wheel(wheel_x, -wheel_y);
         }
 
-        pub(crate) fn draw(&mut self, _ctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
+        pub(crate) fn draw(
+            &mut self,
+            _ctx: &mut dyn miniquad::RenderingBackend,
+            quad_gl: &mut QuadGl,
+        ) {
             // TODO: this belongs to new and waits for cleaning up context initialization mess
             let material = self.material.get_or_insert_with(|| {
-                let fragment_shader = FRAGMENT_SHADER.to_string();
-                let vertex_shader = VERTEX_SHADER.to_string();
-
                 load_material(
-                    &vertex_shader,
-                    &fragment_shader,
+                    ShaderSource {
+                        glsl_vertex: Some(VERTEX_SHADER),
+                        glsl_fragment: Some(FRAGMENT_SHADER),
+                        metal_shader: Some(METAL_SHADER),
+                    },
                     MaterialParams {
                         pipeline_params: PipelineParams {
                             color_blend: Some(BlendState::new(
@@ -1332,19 +1340,11 @@ pub(crate) mod ui_context {
 
     impl megaui::ClipboardObject for ClipboardObject {
         fn get(&self) -> Option<String> {
-            let InternalGlContext {
-                quad_context: ctx, ..
-            } = unsafe { get_internal_gl() };
-
-            ctx.clipboard_get()
+            miniquad::window::clipboard_get()
         }
 
         fn set(&mut self, data: &str) {
-            let InternalGlContext {
-                quad_context: ctx, ..
-            } = unsafe { get_internal_gl() };
-
-            ctx.clipboard_set(data)
+            miniquad::window::clipboard_set(data)
         }
     }
 
@@ -1376,4 +1376,43 @@ void main() {
     gl_FragColor = texture2D(Texture, uv) * color;
 }
 ";
+    pub const METAL_SHADER: &str = r#"
+#include <metal_stdlib>
+    using namespace metal;
+
+    struct Uniforms
+    {
+        float4x4 Model;
+        float4x4 Projection;
+    };
+
+    struct Vertex
+    {
+        float3 position    [[attribute(0)]];
+        float2 texcoord    [[attribute(1)]];
+        float4 color0      [[attribute(2)]];
+    };
+
+    struct RasterizerData
+    {
+        float4 position [[position]];
+        float4 color [[user(locn0)]];
+        float2 uv [[user(locn1)]];
+    };
+
+    vertex RasterizerData vertexShader(Vertex v [[stage_in]], constant Uniforms& uniforms [[buffer(0)]])
+    {
+        RasterizerData out;
+
+        out.position = uniforms.Model * uniforms.Projection * float4(v.position, 1);
+        out.color = v.color0 / 255.0;
+        out.uv = v.texcoord;
+
+        return out;
+    }
+
+    fragment float4 fragmentShader(RasterizerData in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler texSmplr [[sampler(0)]])
+    {
+        return in.color * tex.sample(texSmplr, in.uv);
+    }"#;
 }

@@ -1,9 +1,9 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
+use crate::get_context;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
 use crate::Vec2;
-use crate::{get_context, get_quad_context};
 pub use miniquad::{KeyCode, MouseButton};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,12 +37,12 @@ pub struct Touch {
 pub fn set_cursor_grab(grab: bool) {
     let context = get_context();
     context.cursor_grabbed = grab;
-    get_quad_context().set_cursor_grab(grab);
+    miniquad::window::set_cursor_grab(grab);
 }
 
 /// Set mouse cursor visibility
 pub fn show_mouse(shown: bool) {
-    get_quad_context().show_mouse(shown);
+    miniquad::window::show_mouse(shown);
 }
 
 /// Return mouse position in pixels.
@@ -50,8 +50,8 @@ pub fn mouse_position() -> (f32, f32) {
     let context = get_context();
 
     (
-        context.mouse_position.x / get_quad_context().dpi_scale(),
-        context.mouse_position.y / get_quad_context().dpi_scale(),
+        context.mouse_position.x / miniquad::window::dpi_scale(),
+        context.mouse_position.y / miniquad::window::dpi_scale(),
     )
 }
 
@@ -181,7 +181,7 @@ pub fn is_quit_requested() -> bool {
 ///
 /// Functions in this module should be used by external tools that uses miniquad system, like different UI libraries. User shouldn't use this function.
 pub mod utils {
-    use crate::{get_context, get_quad_context};
+    use crate::get_context;
 
     /// Register input subscriber. Returns subscriber identifier that must be used in `repeat_all_miniquad_input`.
     pub fn register_input_subscriber() -> usize {
@@ -195,10 +195,9 @@ pub mod utils {
     /// Repeats all events that came since last call of this function with current value of `subscriber`. This function must be called at each frame.
     pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T, subscriber: usize) {
         let context = get_context();
-        let mut ctx = get_quad_context();
 
         for event in &context.input_events[subscriber] {
-            event.repeat(&mut ctx, t);
+            event.repeat(t);
         }
         context.input_events[subscriber].clear();
     }

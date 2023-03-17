@@ -32,14 +32,12 @@ impl Atlas {
     // well..
     const UNIQUENESS_OFFSET: u64 = 100000;
 
-    pub fn new(ctx: &mut miniquad::Context, filter: miniquad::FilterMode) -> Atlas {
+    pub fn new(ctx: &mut dyn miniquad::RenderingBackend, filter: miniquad::FilterMode) -> Atlas {
         let image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
         let texture = Texture2D {
-            texture: miniquad::Texture::from_rgba8(ctx, image.width, image.height, &image.bytes),
+            texture: ctx.new_texture_from_rgba8(image.width, image.height, &image.bytes),
         };
-        texture
-            .raw_miniquad_texture_handle()
-            .set_filter(ctx, filter);
+        ctx.texture_set_filter(texture.raw_miniquad_texture_handle(), miniquad::FilterMode::Nearest);
 
         Atlas {
             image,

@@ -74,7 +74,7 @@ async fn main() {
                 font_size,
                 DARKGRAY,
             );
-            if is_key_down(KeyCode::Enter) {
+            if is_key_down(KeyCode::Up) {
                 ship = Ship {
                     pos: Vec2::new(screen_width() / 2., screen_height() / 2.),
                     rot: 0.,

@@ -131,7 +131,7 @@ impl FontInternal {
         font_scale_x: f32,
         font_scale_y: f32,
     ) -> TextDimensions {
-        let dpi_scaling = get_quad_context().dpi_scale();
+        let dpi_scaling = miniquad::window::dpi_scale();
         let font_size = (font_size as f32 * dpi_scaling).ceil() as u16;
 
         for character in text.chars() {
@@ -289,7 +289,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
-    let dpi_scaling = get_quad_context().dpi_scale();
+    let dpi_scaling = miniquad::window::dpi_scale();
 
     let font_size = (params.font_size as f32 * dpi_scaling).ceil() as u16;
 
@@ -388,7 +388,7 @@ pub(crate) struct FontsStorage {
 }
 
 impl FontsStorage {
-    pub(crate) fn new(ctx: &mut miniquad::Context) -> FontsStorage {
+    pub(crate) fn new(ctx: &mut dyn miniquad::RenderingBackend) -> FontsStorage {
         let atlas = Rc::new(RefCell::new(Atlas::new(ctx, miniquad::FilterMode::Linear)));
 
         let default_font =
@@ -414,7 +414,7 @@ impl FontsStorage {
 /// looks good in currently active camera
 pub fn camera_font_scale(world_font_size: f32) -> (u16, f32, f32) {
     let context = get_context();
-    let (scr_w, scr_h) = get_quad_context().screen_size();
+    let (scr_w, scr_h) = miniquad::window::screen_size();
     let cam_space = context
         .projection_matrix()
         .inverse()

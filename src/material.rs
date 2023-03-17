@@ -2,7 +2,7 @@
 
 use crate::prelude::Texture2D;
 use crate::quad_gl::GlPipeline;
-use crate::{get_context, get_quad_context};
+use crate::{get_context};
 use miniquad::{PipelineParams, ShaderError, UniformType};
 
 /// Material instance loaded on GPU.
@@ -56,19 +56,36 @@ impl Default for MaterialParams {
 }
 
 pub fn load_material(
-    vertex_shader: &str,
-    fragment_shader: &str,
+    shader: crate::ShaderSource,
     params: MaterialParams,
 ) -> Result<Material, ShaderError> {
     let context = &mut get_context();
 
     let pipeline = context.gl.make_pipeline(
-        get_quad_context(),
-        vertex_shader,
-        fragment_shader,
+        &mut *context.quad_context,
+        shader,
         params.pipeline_params,
         params.uniforms,
         params.textures,
+    )?;
+
+    Ok(Material { pipeline })
+}
+
+pub fn load_material2(
+    shader: crate::ShaderSource,
+    params: MaterialParams,
+    shader_meta: miniquad::ShaderMeta,
+) -> Result<Material, ShaderError> {
+    let context = &mut get_context();
+
+    let pipeline = context.gl.make_pipeline2(
+        &mut *context.quad_context,
+        shader,
+        params.pipeline_params,
+        params.uniforms,
+        params.textures,
+        shader_meta,
     )?;
 
     Ok(Material { pipeline })
