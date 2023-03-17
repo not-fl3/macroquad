@@ -35,9 +35,7 @@
 //!     }
 //! }
 //!```
-
 #![allow(warnings)]
-
 use miniquad::*;
 
 use slotmap::SlotMap;
@@ -72,6 +70,8 @@ pub mod telemetry;
 mod error;
 
 pub use error::Error;
+
+pub mod scene_graph;
 
 /// Macroquad entry point.
 ///
@@ -193,7 +193,10 @@ struct Context {
     chars_pressed_ui_queue: Vec<char>,
     mouse_position: Vec2,
     last_mouse_position: Option<Vec2>,
+    mouse_raw_delta: Vec2,
     mouse_wheel: Vec2,
+
+    scene_graph: scene_graph::SceneGraph,
 
     prevent_quit_event: bool,
     quit_requested: bool,
@@ -202,7 +205,6 @@ struct Context {
 
     input_events: Vec<Vec<MiniquadInputEvent>>,
 
-    gl: QuadGl,
     camera_matrix: Option<Mat4>,
 
     ui_context: UiContext,
@@ -218,13 +220,12 @@ struct Context {
     #[cfg(one_screenshot)]
     counter: usize,
 
-    camera_stack: Vec<camera::CameraState>,
     texture_batcher: texture::Batcher,
+    white_texture: TextureId,
     unwind: bool,
     recovery_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
 
     quad_context: Box<dyn miniquad::RenderingBackend>,
-
     textures: crate::texture::TexturesContext,
 }
 
@@ -295,7 +296,7 @@ impl MiniquadInputEvent {
 }
 
 impl Context {
-    const DEFAULT_BG_COLOR: Color = BLACK;
+    //const DEFAULT_BG_COLOR: Color = BLACK;
 
     fn new() -> Context {
         let mut ctx: Box<dyn miniquad::RenderingBackend> =
@@ -319,6 +320,7 @@ impl Context {
             touches: HashMap::new(),
             mouse_position: vec2(0., 0.),
             last_mouse_position: None,
+            mouse_raw_delta: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
 
             prevent_quit_event: false,
@@ -329,13 +331,13 @@ impl Context {
             input_events: Vec::new(),
 
             camera_matrix: None,
-            gl: QuadGl::new(&mut *ctx),
 
             ui_context: UiContext::new(&mut *ctx, screen_width, screen_height),
             fonts_storage: text::FontsStorage::new(&mut *ctx),
             texture_batcher: texture::Batcher::new(&mut *ctx),
-            camera_stack: vec![],
+            white_texture: ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]),
 
+            scene_graph: scene_graph::SceneGraph::new(&mut *ctx),
             audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
 
@@ -362,11 +364,11 @@ impl Context {
             TextureHandle::Managed(texture) => self
                 .textures
                 .texture(texture.0)
-                .unwrap_or(self.gl.white_texture),
+                .unwrap_or(self.white_texture),
             TextureHandle::ManagedWeak(texture) => self
                 .textures
                 .texture(*texture)
-                .unwrap_or(self.gl.white_texture),
+                .unwrap_or(self.white_texture),
         }
     }
 
@@ -375,20 +377,22 @@ impl Context {
 
         self.ui_context.process_input();
 
-        let color = Self::DEFAULT_BG_COLOR;
+        // let color = Self::DEFAULT_BG_COLOR;
 
-        get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
-        self.gl.reset();
+        // get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
+        // self.gl.reset();
+
+        //self.clear(Self::DEFAULT_BG_COLOR);
     }
 
     fn end_frame(&mut self) {
-        crate::experimental::scene::update();
+        //crate::experimental::scene::update();
 
-        self.perform_render_passes();
+        //self.perform_render_passes();
 
-        self.ui_context.draw(get_quad_context(), &mut self.gl);
-        let screen_mat = self.pixel_perfect_projection_matrix();
-        self.gl.draw(get_quad_context(), screen_mat);
+        // self.ui_context.draw(get_quad_context(), &mut self.gl);
+        // let screen_mat = self.pixel_perfect_projection_matrix();
+        // self.gl.draw(get_quad_context(), screen_mat);
 
         get_quad_context().commit_frame();
 
@@ -440,12 +444,6 @@ impl Context {
             self.pixel_perfect_projection_matrix()
         }
     }
-
-    pub(crate) fn perform_render_passes(&mut self) {
-        let matrix = self.projection_matrix();
-
-        self.gl.draw(get_quad_context(), matrix);
-    }
 }
 
 #[no_mangle]
@@ -469,7 +467,6 @@ fn get_context() -> &'static mut Context {
 
 fn get_quad_context() -> &'static mut dyn miniquad::RenderingBackend {
     thread_assert::same_thread();
-
     unsafe {
         assert!(!CONTEXT.is_none());
     }
@@ -499,18 +496,19 @@ impl EventHandler for Stage {
     fn raw_mouse_motion(&mut self, x: f32, y: f32) {
         let context = get_context();
 
-        if context.cursor_grabbed {
-            context.mouse_position += Vec2::new(x, y);
+        context.mouse_raw_delta = vec2(x, y);
+        // if context.cursor_grabbed {
+        //     //context.mouse_position += Vec2::new(x, y);
 
-            let event = MiniquadInputEvent::MouseMotion {
-                x: context.mouse_position.x,
-                y: context.mouse_position.y,
-            };
-            context
-                .input_events
-                .iter_mut()
-                .for_each(|arr| arr.push(event.clone()));
-        }
+        //     let event = MiniquadInputEvent::MouseMotion {
+        //         x: context.mouse_position.x,
+        //         y: context.mouse_position.y,
+        //     };
+        //     context
+        //         .input_events
+        //         .iter_mut()
+        //         .for_each(|arr| arr.push(event.clone()));
+        // }
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
@@ -738,6 +736,10 @@ impl EventHandler for Stage {
             context.quit_requested = true;
         }
     }
+}
+
+pub fn scene_graph() -> &'static mut scene_graph::SceneGraph {
+    &mut get_context().scene_graph
 }
 
 /// Not meant to be used directly, only from the macro.

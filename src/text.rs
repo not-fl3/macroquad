@@ -16,6 +16,7 @@ use glam::vec2;
 use std::sync::{Arc, Mutex};
 pub(crate) mod atlas;
 
+use crate::scene_graph::SpriteLayer;
 use atlas::{Atlas, SpriteKey};
 
 #[derive(Debug, Clone)]
@@ -277,26 +278,35 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
     Ok(font)
 }
 
-/// Draw text with given font_size
-pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
-    draw_text_ex(
-        text,
-        x,
-        y,
-        TextParams {
-            font_size: font_size as u16,
-            font_scale: 1.0,
-            color,
-            ..Default::default()
-        },
-    )
+impl SpriteLayer {
+    /// Draw text with given font_size
+    pub fn draw_text(&mut self, text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+        draw_text_ex(
+            self,
+            text,
+            x,
+            y,
+            TextParams {
+                font_size: font_size as u16,
+                font_scale: 1.0,
+                color,
+                ..Default::default()
+            },
+        )
+    }
 }
 
 /// Draw text with custom params such as font, font size and font scale.
-pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
+pub fn draw_text_ex(
+    sprite_layer: &mut SpriteLayer,
+    text: &str,
+    x: f32,
+    y: f32,
+    params: TextParams,
+) {
     let font = params
         .font
-        .unwrap_or(&get_context().fonts_storage.default_font);
+        .unwrap_or_else(|| &get_context().fonts_storage.default_font);
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
@@ -341,7 +351,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
             glyph.h as f32,
         );
 
-        crate::texture::draw_texture_ex(
+        sprite_layer.draw_texture_ex(
             &crate::texture::Texture2D {
                 texture: TextureHandle::Unmanaged(atlas.texture()),
             },

@@ -85,9 +85,8 @@ impl Atlas {
         if self.dirty {
             self.dirty = false;
             let (texture_width, texture_height) = ctx.texture_size(self.texture);
-            if texture_width != self.image.width as _ || texture_height != self.image.height as _ {
+            if texture_width != self.image.width as u32 || texture_height != self.image.height as u32 {
                 ctx.delete_texture(self.texture);
-
                 self.texture = ctx.new_texture_from_rgba8(
                     self.image.width,
                     self.image.height,

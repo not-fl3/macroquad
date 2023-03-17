@@ -13,7 +13,7 @@ pub use crate::time::*;
 pub use crate::window::*;
 
 pub use crate::color::{colors::*, Color};
-pub use crate::quad_gl::{DrawMode, GlPipeline, QuadGl, Vertex};
+pub use crate::quad_gl::{DrawMode, QuadGl, Vertex};
 pub use glam;
 pub use miniquad::{
     conf::Conf, Comparison, PipelineParams, ShaderError, ShaderSource, UniformType,
@@ -27,3 +27,6 @@ pub use crate::logging::*;
 pub use crate::color_u8;
 
 pub use image::ImageFormat;
+
+pub use crate::scene_graph::*;
+pub use crate::scene_graph;

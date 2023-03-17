@@ -280,6 +280,11 @@ pub fn profiler(params: ProfilerParams) {
                     }
                 }
                 3 => {
+                    for (name, data) in telemetry::named_strings() {
+                        ui.label(None, &name);
+                        ui.same_line(200.);
+                        ui.label(None, &data);
+                    }
                     for label in telemetry::strings() {
                         ui.label(None, &label);
                     }

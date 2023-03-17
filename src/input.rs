@@ -1,9 +1,10 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
-use crate::get_context;
-use crate::prelude::screen_height;
-use crate::prelude::screen_width;
-use crate::Vec2;
+use crate::{
+    get_context, vec2,
+    window::{screen_height, screen_width},
+    Vec2,
+};
 pub use miniquad::{KeyCode, MouseButton};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -46,10 +47,10 @@ pub fn show_mouse(shown: bool) {
 }
 
 /// Return mouse position in pixels.
-pub fn mouse_position() -> (f32, f32) {
+pub fn mouse_position() -> Vec2 {
     let context = get_context();
 
-    (
+    vec2(
         context.mouse_position.x / miniquad::window::dpi_scale(),
         context.mouse_position.y / miniquad::window::dpi_scale(),
     )
@@ -57,9 +58,9 @@ pub fn mouse_position() -> (f32, f32) {
 
 /// Return mouse position in range [-1; 1].
 pub fn mouse_position_local() -> Vec2 {
-    let (pixels_x, pixels_y) = mouse_position();
+    let m = mouse_position();
 
-    convert_to_local(Vec2::new(pixels_x, pixels_y))
+    convert_to_local(m)
 }
 
 /// Returns the difference between the current mouse position and the mouse position on the previous frame.
@@ -76,6 +77,12 @@ pub fn mouse_delta_position() -> Vec2 {
     context.last_mouse_position = Some(current_position);
 
     delta
+}
+
+pub fn mouse_raw_delta_position() -> Vec2 {
+    let context = get_context();
+
+    context.mouse_raw_delta
 }
 
 /// This is set to true by default, meaning touches will raise mouse events in addition to raising touch events.

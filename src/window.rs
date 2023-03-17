@@ -1,6 +1,6 @@
 //! Window and associated to window rendering context related functions.
 
-use crate::{get_context, get_quad_context};
+use crate::get_context;
 
 use crate::color::Color;
 
@@ -19,17 +19,16 @@ pub fn next_frame() -> crate::exec::FrameFuture {
 /// Note: even when "clear_background" was not called explicitly
 /// screen will be cleared at the beginning of the frame.
 pub fn clear_background(color: Color) {
-    let context = get_context();
-
-    context.gl.clear(get_quad_context(), color);
+    crate::scene_graph().clear(color);
 }
 
 #[doc(hidden)]
-pub fn gl_set_drawcall_buffer_capacity(max_vertices: usize, max_indices: usize) {
-    let context = get_context();
-    context
-        .gl
-        .update_drawcall_capacity(get_quad_context(), max_vertices, max_indices);
+pub fn gl_set_drawcall_buffer_capacity(_max_vertices: usize, _max_indices: usize) {
+    // let context = get_context();
+    // context
+    //     .gl
+    //     .update_drawcall_capacity(get_quad_context(), max_vertices, max_indices);
+    unimplemented!()
 }
 
 pub struct InternalGlContext<'a> {
@@ -41,17 +40,19 @@ impl<'a> InternalGlContext<'a> {
     /// Draw all the batched stuff and reset the internal state cache
     /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
     pub fn flush(&mut self) {
-        get_context().perform_render_passes();
+        //get_context().perform_render_passes();
+        unimplemented!()
     }
 }
 
 pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
-    let context = get_context();
+    // let context = get_context();
 
-    InternalGlContext {
-        quad_context: get_quad_context(),
-        quad_gl: &mut context.gl,
-    }
+    // InternalGlContext {
+    //     quad_context: get_quad_context(),
+    //     quad_gl: &mut context.gl,
+    // }
+    unimplemented!()
 }
 
 pub fn screen_width() -> f32 {

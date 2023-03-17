@@ -1192,7 +1192,6 @@ impl Ui {
 
 pub(crate) mod ui_context {
     use crate::prelude::*;
-    use crate::window::miniquad::*;
 
     use crate::ui as megaui;
 
@@ -1226,13 +1225,13 @@ pub(crate) mod ui_context {
             let mouse_position = mouse_position();
 
             let mut ui = self.ui.borrow_mut();
-            ui.mouse_move(mouse_position);
+            ui.mouse_move((mouse_position.x, mouse_position.y));
 
             if is_mouse_button_pressed(MouseButton::Left) {
-                ui.mouse_down(mouse_position);
+                ui.mouse_down((mouse_position.x, mouse_position.y));
             }
             if is_mouse_button_released(MouseButton::Left) {
-                ui.mouse_up(mouse_position);
+                ui.mouse_up((mouse_position.x, mouse_position.y));
             }
 
             let shift = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
@@ -1287,64 +1286,65 @@ pub(crate) mod ui_context {
             quad_gl: &mut QuadGl,
         ) {
             // TODO: this belongs to new and waits for cleaning up context initialization mess
-            let material = self.material.get_or_insert_with(|| {
-                load_material(
-                    ShaderSource {
-                        glsl_vertex: Some(VERTEX_SHADER),
-                        glsl_fragment: Some(FRAGMENT_SHADER),
-                        metal_shader: Some(METAL_SHADER),
-                    },
-                    MaterialParams {
-                        pipeline_params: PipelineParams {
-                            color_blend: Some(BlendState::new(
-                                Equation::Add,
-                                BlendFactor::Value(BlendValue::SourceAlpha),
-                                BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                            )),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
-                )
-                .unwrap()
-            });
+            // let material = self.material.get_or_insert_with(|| {
+            //     // load_material(
+            //     //     ShaderSource {
+            //     //         glsl_vertex: Some(VERTEX_SHADER),
+            //     //         glsl_fragment: Some(FRAGMENT_SHADER),
+            //     //         metal_shader: Some(METAL_SHADER),
+            //     //     },
+            //     //     MaterialParams {
+            //     //         pipeline_params: PipelineParams {
+            //     //             color_blend: Some(BlendState::new(
+            //     //                 Equation::Add,
+            //     //                 BlendFactor::Value(BlendValue::SourceAlpha),
+            //     //                 BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+            //     //             )),
+            //     //             ..Default::default()
+            //     //         },
+            //     //         ..Default::default()
+            //     //     },
+            //     // )
+            //     // .unwrap()
+            //     unimplemented!()
+            // });
 
-            let mut ui = self.ui.borrow_mut();
-            self.ui_draw_list.clear();
-            ui.render(&mut self.ui_draw_list);
-            let mut ui_draw_list = vec![];
+            // let mut ui = self.ui.borrow_mut();
+            // self.ui_draw_list.clear();
+            // ui.render(&mut self.ui_draw_list);
+            // let mut ui_draw_list = vec![];
 
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+            // std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
-            let mut atlas = ui.atlas.lock().unwrap();
-            let font_texture = atlas.texture();
-            quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
+            // let mut atlas = ui.atlas.lock().unwrap();
+            // let font_texture = atlas.texture();
+            // quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
 
-            gl_use_material(material);
+            // gl_use_material(&*material);
 
-            for draw_command in &ui_draw_list {
-                if let Some(ref texture) = draw_command.texture {
-                    quad_gl.texture(Some(texture));
-                } else {
-                    quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
-                }
+            // for draw_command in &ui_draw_list {
+            //     if let Some(ref texture) = draw_command.texture {
+            //         quad_gl.texture(Some(texture));
+            //     } else {
+            //         quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
+            //     }
 
-                quad_gl.scissor(
-                    draw_command
-                        .clipping_zone
-                        .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
-                );
-                quad_gl.draw_mode(DrawMode::Triangles);
-                quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
-            }
-            quad_gl.texture(None);
+            //     quad_gl.scissor(
+            //         draw_command
+            //             .clipping_zone
+            //             .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
+            //     );
+            //     quad_gl.draw_mode(DrawMode::Triangles);
+            //     quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
+            // }
+            // quad_gl.texture(None);
 
-            gl_use_default_material();
+            // gl_use_default_material();
 
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+            // std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
-            drop(atlas);
-            ui.new_frame(get_frame_time());
+            // drop(atlas);
+            // ui.new_frame(get_frame_time());
         }
     }
 
