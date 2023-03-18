@@ -4,7 +4,7 @@ use crate::prelude::screen_height;
 use crate::prelude::screen_width;
 use crate::Vec2;
 use crate::{get_context, get_quad_context};
-pub use miniquad::{KeyCode, MouseButton};
+pub use miniquad::{CursorIcon, KeyCode, MouseButton};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TouchPhase {
@@ -38,6 +38,11 @@ pub fn set_cursor_grab(grab: bool) {
     let context = get_context();
     context.cursor_grabbed = grab;
     get_quad_context().set_cursor_grab(grab);
+}
+
+/// Set the cursor icon
+pub fn set_mouse_cursor(cursor: CursorIcon) {
+    get_quad_context().set_mouse_cursor(cursor);   
 }
 
 /// Set mouse cursor visibility
