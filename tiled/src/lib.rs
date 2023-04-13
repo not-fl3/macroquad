@@ -40,12 +40,17 @@ pub struct Tile {
     pub attrs: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Layer {
     pub objects: Vec<Object>,
     pub width: u32,
     pub height: u32,
     pub data: Vec<Option<Tile>>,
+    /// imagelayer
+    pub opacity: f32,
+    pub image: Option<Texture2D>,
+    pub offsetx: Option<f32>,
+    pub offsety: Option<f32>,
 }
 
 #[derive(Debug)]
@@ -174,6 +179,35 @@ impl Map {
                 self.spr(tileset, tile.id, *rect);
             }
         }
+    }
+
+    pub fn draw_imglayer(&self, layer: &str, dest: Rect, source: Option<Rect>) {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+        let layer = &self.layers[layer];
+        assert!(layer.image.is_some(), "No texture found.");
+        let img_texture = layer.image.unwrap();
+        let dest_width_frac =
+            img_texture.width() / (self.raw_tiled_map.width * self.raw_tiled_map.tilewidth) as f32;
+        let dest_height_frac =
+            img_texture.height() / (self.raw_tiled_map.height * self.raw_tiled_map.height) as f32;
+
+        let source = source.unwrap_or(Rect::new(0., 0., img_texture.width(), img_texture.height()));
+        draw_texture_ex(
+            img_texture,
+            (layer.offsetx.unwrap() - source.x) / source.w * dest.w + dest.x,
+            (layer.offsety.unwrap() - source.y) / source.h * dest.h + dest.y,
+            Color {
+                r: 255.,
+                g: 255.,
+                b: 255.,
+                a: layer.opacity,
+            },
+            DrawTextureParams {
+                dest_size: Some(vec2(dest.w * dest_width_frac, dest.h * dest_height_frac)),
+                source: Some(source),
+                ..Default::default()
+            },
+        );
     }
 
     pub fn tiles(&self, layer: &str, rect: impl Into<Option<Rect>>) -> TilesIterator {
@@ -340,30 +374,66 @@ pub fn load_map(
 
         layers.insert(
             layer.name.clone(),
-            Layer {
-                objects,
-                width: layer.width,
-                height: layer.height,
-                data: layer
-                    .data
-                    .iter()
-                    .map(|tile| {
-                        find_tileset(*tile).map(|tileset| {
-                            let attrs = tileset
-                                .tiles
-                                .iter()
-                                .find(|t| t.id as u32 == *tile - tileset.firstgid)
-                                .and_then(|tile| tile.ty.clone())
-                                .unwrap_or("".to_owned());
+            match layer.ty.as_str() {
+                "tilelayer" | "objectlayer" => Layer {
+                    objects,
+                    width: layer.width,
+                    height: layer.height,
+                    data: layer
+                        .data
+                        .iter()
+                        .map(|tile| {
+                            find_tileset(*tile).map(|tileset| {
+                                let attrs = tileset
+                                    .tiles
+                                    .iter()
+                                    .find(|t| t.id as u32 == *tile - tileset.firstgid)
+                                    .and_then(|tile| tile.ty.clone())
+                                    .unwrap_or("".to_owned());
 
-                            Tile {
-                                id: *tile - tileset.firstgid,
-                                tileset: tileset.name.clone(),
-                                attrs,
-                            }
+                                Tile {
+                                    id: *tile - tileset.firstgid,
+                                    tileset: tileset.name.clone(),
+                                    attrs,
+                                }
+                            })
                         })
+                        .collect::<Vec<_>>(),
+                    opacity: layer.opacity,
+                    ..Default::default()
+                },
+                "imagelayer" => {
+                    let img_name = layer.image.clone().unwrap();
+                    if img_name == "" {
+                        continue;
+                    }
+                    let offsetx = match layer.offsetx {
+                        Some(x) => Some(x as f32),
+                        None => Some(0f32),
+                    };
+                    let offsety = match layer.offsety {
+                        Some(y) => Some(y as f32),
+                        None => Some(0f32),
+                    };
+                    let img_texture = textures
+                        .iter()
+                        .find(|(name, _)| *name == img_name)
+                        .ok_or(error::Error::TextureNotFound { texture: img_name })?
+                        .1;
+
+                    Layer {
+                        image: Some(img_texture),
+                        opacity: layer.opacity,
+                        offsetx,
+                        offsety,
+                        ..Default::default()
+                    }
+                }
+                layer_type => {
+                    return Err(error::Error::LayerTypeNotFound {
+                        layer_type: layer_type.to_string(),
                     })
-                    .collect::<Vec<_>>(),
+                }
             },
         );
     }
