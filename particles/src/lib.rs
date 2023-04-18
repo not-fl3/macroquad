@@ -488,6 +488,7 @@ pub struct Emitter {
 
     last_emit_time: f32,
     time_passed: f32,
+    particles_current_cycle: u32,
 
     particles_spawned: u64,
     position: Vec2,
@@ -651,6 +652,7 @@ impl Emitter {
             particles_spawned: 0,
             last_emit_time: 0.0,
             time_passed: 0.0,
+            particles_current_cycle: 0,
             mesh_dirty: false,
         }
     }
@@ -661,6 +663,7 @@ impl Emitter {
         self.last_emit_time = 0.0;
         self.time_passed = 0.0;
         self.particles_spawned = 0;
+        self.particles_current_cycle = 0;
     }
     pub fn rebuild_size_curve(&mut self) {
         self.batched_size_curve = self.config.size_curve.as_ref().map(|curve| curve.batch());
@@ -712,6 +715,7 @@ impl Emitter {
         };
 
         self.particles_spawned += 1;
+        self.particles_current_cycle += 1;
         self.gpu_particles.push(particle);
         self.cpu_counterpart.push(CpuParticle {
             velocity: random_initial_vector(
@@ -771,9 +775,10 @@ impl Emitter {
             }
         }
 
-        if self.config.one_shot && self.time_passed > self.config.lifetime {
+        if self.config.one_shot && self.particles_current_cycle >= self.config.amount {
             self.time_passed = 0.0;
             self.last_emit_time = 0.0;
+            self.particles_current_cycle = 0;
             self.config.emitting = false;
         }
 
