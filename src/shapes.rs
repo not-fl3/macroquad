@@ -156,7 +156,7 @@ pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: C
 
     let rot = rotation.to_radians();
     vertices.push(Vertex::new(x, y, 0., 0., 0., color));
-    for i in 0..sides + 1 {
+    for i in 0..=sides {
         let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).cos();
         let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).sin();
 
