@@ -202,7 +202,7 @@ impl Font {
         }
     }
 
-    /// Sets the [FilterMode] of this font's texture atlas.
+    /// Sets the [FilterMode](https://docs.rs/miniquad/latest/miniquad/graphics/enum.FilterMode.html#) of this font's texture atlas.
     ///
     /// Use Nearest if you need integer-ratio scaling for pixel art, for example.
     ///
