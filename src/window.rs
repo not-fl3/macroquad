@@ -78,6 +78,11 @@ pub fn request_new_screen_size(width: f32, height: f32) {
     // Because the OS might decide to give a different screen dimension, setting the context.screen_* here would be confusing.
 }
 
+/// Toggle whether the window is fullscreen.
+pub fn set_fullscreen(fullscreen: bool) {
+    get_quad_context().set_fullscreen(fullscreen);
+}
+
 /// With `set_panic_handler` set to a handler code, macroquad will use
 /// `std::panic::catch_unwind` on user code to catch some panics.
 ///
