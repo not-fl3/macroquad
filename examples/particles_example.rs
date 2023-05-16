@@ -77,6 +77,7 @@ async fn main() {
             30.0,
             YELLOW,
         );
+        one_shot_emitter.update(vec2(650.0, 82.0), get_frame_time());
         one_shot_emitter.draw(vec2(650.0, 82.0));
         draw_circle(650.0, 82.0, 15.0, YELLOW);
 
@@ -88,6 +89,7 @@ async fn main() {
             (get_time() * 0.3).sin() as f32 * screen_width() / 2.5 + screen_width() / 2.0,
             (get_time() * 0.5).cos() as f32 * screen_height() / 2.5 + screen_height() / 2.0,
         );
+        flying_emitter_local.update(local_emitter_pos, get_frame_time());
         flying_emitter_local.draw(local_emitter_pos);
         draw_circle(local_emitter_pos.x, local_emitter_pos.y, 15.0, RED);
 
@@ -96,6 +98,7 @@ async fn main() {
             (get_time() * 0.4 + 1.0).cos() as f32 * screen_height() / 2.5 + screen_height() / 2.0,
         );
 
+        flying_emitter_world.update(world_emitter_pos, get_frame_time());
         flying_emitter_world.draw(world_emitter_pos);
         draw_circle(world_emitter_pos.x, world_emitter_pos.y, 15.0, GREEN);
 
