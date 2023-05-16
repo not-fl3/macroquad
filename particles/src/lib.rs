@@ -739,7 +739,7 @@ impl Emitter {
         });
     }
 
-    fn update(&mut self, ctx: &mut Context, dt: f32) {
+    fn inner_update(&mut self, ctx: &mut Context, dt: f32) {
         if self.mesh_dirty {
             self.bindings = self.config.shape.build_bindings(
                 ctx,
@@ -926,9 +926,19 @@ impl Emitter {
         }
     }
 
+    pub fn update(&mut self, pos: Vec2, dt: f32) {
+        let gl = unsafe { get_internal_gl() };
+
+        let InternalGlContext {
+            quad_context: ctx, ..
+        } = gl;
+
+        self.position = pos;
+        self.inner_update(ctx, dt);
+    }
+
     pub fn draw(&mut self, pos: Vec2) {
         let mut gl = unsafe { get_internal_gl() };
-
         gl.flush();
 
         let InternalGlContext {
@@ -936,11 +946,8 @@ impl Emitter {
             quad_gl,
         } = gl;
 
-        self.position = pos;
-
-        self.update(ctx, get_frame_time());
-
         self.setup_render_pass(quad_gl, ctx);
+        self.position = pos;
         self.perform_render_pass(quad_gl, ctx);
         self.end_render_pass(quad_gl, ctx);
     }
@@ -1007,7 +1014,7 @@ impl EmittersCache {
             if let Some((emitter, pos)) = i {
                 emitter.position = *pos;
 
-                emitter.update(ctx, get_frame_time());
+                emitter.inner_update(ctx, get_frame_time());
 
                 emitter.perform_render_pass(quad_gl, ctx);
 
