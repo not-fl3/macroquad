@@ -937,7 +937,7 @@ impl Emitter {
         self.inner_update(ctx, dt);
     }
 
-    pub fn draw(&mut self, pos: Vec2) {
+    pub fn draw(&mut self) {
         let mut gl = unsafe { get_internal_gl() };
         gl.flush();
 
@@ -947,7 +947,6 @@ impl Emitter {
         } = gl;
 
         self.setup_render_pass(quad_gl, ctx);
-        self.position = pos;
         self.perform_render_pass(quad_gl, ctx);
         self.end_render_pass(quad_gl, ctx);
     }
