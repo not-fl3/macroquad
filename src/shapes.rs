@@ -9,11 +9,12 @@ use glam::{vec2, vec3, vec4, Mat4, Vec2};
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
     let context = get_context();
 
-    let mut vertices = Vec::<Vertex>::with_capacity(3);
+    let vertices = [
+        Vertex::new(v1.x, v1.y, 0., 0., 0., color),
+        Vertex::new(v2.x, v2.y, 0., 0., 0., color),
+        Vertex::new(v3.x, v3.y, 0., 0., 0., color),
+    ];
 
-    vertices.push(Vertex::new(v1.x, v1.y, 0., 0., 0., color));
-    vertices.push(Vertex::new(v2.x, v2.y, 0., 0., 0., color));
-    vertices.push(Vertex::new(v3.x, v3.y, 0., 0., 0., color));
     let indices: [u16; 3] = [0, 1, 2];
 
     context.gl.texture(None);
