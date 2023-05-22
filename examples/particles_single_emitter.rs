@@ -26,7 +26,8 @@ async fn main() {
 
         set_camera(&camera);
 
-        emitter.draw(vec2(50., 50.));
+        emitter.update(vec2(50., 50.), get_frame_time());
+        emitter.draw();
 
         next_frame().await
     }
