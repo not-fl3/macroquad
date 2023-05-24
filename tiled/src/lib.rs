@@ -74,31 +74,12 @@ impl TileSet {
         // TODO: configure tiles margin
         Rect::new(sx + 1.1, sy + 1.1, sw - 2.2, sh - 2.2)
     }
-}
 
-#[derive(Debug)]
-pub struct Map {
-    pub layers: HashMap<String, Layer>,
-    pub tilesets: HashMap<String, TileSet>,
-
-    /// Deserialized json as is
-    pub raw_tiled_map: tiled::Map,
-}
-
-impl Map {
-    pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
-        if self.tilesets.contains_key(tileset) == false {
-            panic!(
-                "No such tileset: {}, tilesets available: {:?}",
-                tileset,
-                self.tilesets.keys()
-            )
-        }
-        let tileset = &self.tilesets[tileset];
-        let spr_rect = tileset.sprite_rect(sprite);
+    pub fn spr(&self, sprite: u32, dest: Rect) {
+        let spr_rect = self.sprite_rect(sprite);
 
         draw_texture_ex(
-            tileset.texture,
+            self.texture,
             dest.x,
             dest.y,
             WHITE,
@@ -115,11 +96,9 @@ impl Map {
         );
     }
 
-    pub fn spr_ex(&self, tileset: &str, source: Rect, dest: Rect) {
-        let tileset = &self.tilesets[tileset];
-
+    pub fn spr_ex(&self, source: Rect, dest: Rect) {
         draw_texture_ex(
-            tileset.texture,
+            self.texture,
             dest.x,
             dest.y,
             WHITE,
@@ -129,6 +108,38 @@ impl Map {
                 ..Default::default()
             },
         );
+    }
+
+}
+
+#[derive(Debug)]
+pub struct Map {
+    pub layers: HashMap<String, Layer>,
+    pub tilesets: HashMap<String, TileSet>,
+
+    /// Deserialized json as is
+    pub raw_tiled_map: tiled::Map,
+}
+
+impl Map {
+    pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
+
+        let ts = self.tilesets.get(tileset)
+            .expect(
+                &format!("No such tileset: {}, tilesets available: {:?}",
+                tileset,
+                self.tilesets.keys()
+                ));
+
+        let tileset = &self.tilesets[tileset];
+
+        tileset.spr(sprite, dest);
+    }
+
+    pub fn spr_ex(&self, tileset: &str, source: Rect, dest: Rect) {
+        let tileset = &self.tilesets[tileset];
+
+        tileset.spr_ex(source, dest);
     }
 
     pub fn contains_layer(&self, layer: &str) -> bool {
@@ -280,6 +291,23 @@ impl<'a> Iterator for TilesIterator<'a> {
         self.current = (next_x, next_y);
         res
     }
+}
+
+pub fn load_tileset(
+    data: &str,
+    texture: Texture2D,
+) -> Result<TileSet, error::Error> {
+
+    let tileset: tiled::Tileset = DeJson::deserialize_json(data)?;
+
+    Ok( TileSet {
+        texture,
+        columns: tileset.columns as _,
+        margin: tileset.margin,
+        spacing: tileset.spacing,
+        tilewidth: tileset.tilewidth,
+        tileheight: tileset.tileheight,
+    })
 }
 
 /// Load Tiled tile map from given json string.
