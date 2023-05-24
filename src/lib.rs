@@ -749,10 +749,7 @@ impl Window {
 
     pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
         miniquad::start(
-            conf::Conf {
-                sample_count: 4,
-                ..config
-            },
+            config,
             |ctx| {
                 unsafe {
                     MAIN_FUTURE = Some(Box::pin(future));
