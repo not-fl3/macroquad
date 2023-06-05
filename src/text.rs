@@ -276,7 +276,7 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, FontError> {
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, FontError> {
     let context = get_context();
     let atlas = Rc::new(RefCell::new(Atlas::new(
-        get_quad_context(),
+        &mut get_quad_context(),
         miniquad::FilterMode::Linear,
     )));
 

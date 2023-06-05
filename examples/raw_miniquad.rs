@@ -4,8 +4,8 @@ use macroquad::prelude::*;
 async fn main() {
     let stage = {
         let InternalGlContext {
-            quad_context: ctx, ..
-        } = unsafe { get_internal_gl() };
+            quad_context: ref mut ctx, ..
+        } = &mut unsafe { get_internal_gl() };
 
         raw_miniquad::Stage::new(ctx)
     };

@@ -20,7 +20,7 @@ pub fn next_frame() -> crate::exec::FrameFuture {
 pub fn clear_background(color: Color) {
     let context = get_context();
 
-    context.gl.clear(get_quad_context(), color);
+    context.gl.clear(&mut get_quad_context(), color);
 }
 
 #[doc(hidden)]
@@ -28,11 +28,11 @@ pub fn gl_set_drawcall_buffer_capacity(max_vertices: usize, max_indices: usize) 
     let context = get_context();
     context
         .gl
-        .update_drawcall_capacity(get_quad_context(), max_vertices, max_indices);
+        .update_drawcall_capacity(&mut get_quad_context(), max_vertices, max_indices);
 }
 
 pub struct InternalGlContext<'a> {
-    pub quad_context: &'a mut miniquad::Context,
+    pub quad_context: crate::QuadContextGuard,
     pub quad_gl: &'a mut crate::quad_gl::QuadGl,
 }
 

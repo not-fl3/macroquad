@@ -1267,64 +1267,66 @@ pub(crate) mod ui_context {
             ui.mouse_wheel(wheel_x, -wheel_y);
         }
 
-        pub(crate) fn draw(&mut self, _ctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
+        pub(crate) fn draw(&mut self, qctx: &mut miniquad::Context, quad_gl: &mut QuadGl) {
             // TODO: this belongs to new and waits for cleaning up context initialization mess
-            let material = self.material.get_or_insert_with(|| {
-                let fragment_shader = FRAGMENT_SHADER.to_string();
-                let vertex_shader = VERTEX_SHADER.to_string();
+            crate::lend_quad_context(qctx, || {
+                let material = self.material.get_or_insert_with(|| {
+                    let fragment_shader = FRAGMENT_SHADER.to_string();
+                    let vertex_shader = VERTEX_SHADER.to_string();
 
-                load_material(
-                    &vertex_shader,
-                    &fragment_shader,
-                    MaterialParams {
-                        pipeline_params: PipelineParams {
-                            color_blend: Some(BlendState::new(
-                                Equation::Add,
-                                BlendFactor::Value(BlendValue::SourceAlpha),
-                                BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                            )),
+                    load_material(
+                        &vertex_shader,
+                        &fragment_shader,
+                        MaterialParams {
+                            pipeline_params: PipelineParams {
+                                color_blend: Some(BlendState::new(
+                                    Equation::Add,
+                                    BlendFactor::Value(BlendValue::SourceAlpha),
+                                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                                )),
+                                ..Default::default()
+                            },
                             ..Default::default()
                         },
-                        ..Default::default()
-                    },
-                )
-                .unwrap()
-            });
+                    )
+                    .unwrap()
+                });
 
-            let mut ui = self.ui.borrow_mut();
-            self.ui_draw_list.clear();
-            ui.render(&mut self.ui_draw_list);
-            let mut ui_draw_list = vec![];
+                let mut ui = self.ui.borrow_mut();
+                self.ui_draw_list.clear();
+                ui.render(&mut self.ui_draw_list);
+                let mut ui_draw_list = vec![];
 
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+                std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
-            let font_texture: Texture2D = ui.atlas.borrow_mut().texture();
-            quad_gl.texture(Some(font_texture));
+                let font_texture: Texture2D = ui.atlas.borrow_mut().texture();
+                quad_gl.texture(Some(font_texture));
 
-            gl_use_material(*material);
+                gl_use_material(*material);
 
-            for draw_command in &ui_draw_list {
-                if let Some(texture) = draw_command.texture {
-                    quad_gl.texture(Some(texture));
-                } else {
-                    quad_gl.texture(Some(font_texture));
+                for draw_command in &ui_draw_list {
+                    if let Some(texture) = draw_command.texture {
+                        quad_gl.texture(Some(texture));
+                    } else {
+                        quad_gl.texture(Some(font_texture));
+                    }
+
+                    quad_gl.scissor(
+                        draw_command
+                            .clipping_zone
+                            .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
+                    );
+                    quad_gl.draw_mode(DrawMode::Triangles);
+                    quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
                 }
+                quad_gl.texture(None);
 
-                quad_gl.scissor(
-                    draw_command
-                        .clipping_zone
-                        .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
-                );
-                quad_gl.draw_mode(DrawMode::Triangles);
-                quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
-            }
-            quad_gl.texture(None);
+                gl_use_default_material();
 
-            gl_use_default_material();
+                std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-
-            ui.new_frame(get_frame_time());
+                ui.new_frame(get_frame_time());
+            });
         }
     }
 
@@ -1333,7 +1335,7 @@ pub(crate) mod ui_context {
     impl megaui::ClipboardObject for ClipboardObject {
         fn get(&self) -> Option<String> {
             let InternalGlContext {
-                quad_context: ctx, ..
+                quad_context: mut ctx, ..
             } = unsafe { get_internal_gl() };
 
             ctx.clipboard_get()
@@ -1341,7 +1343,7 @@ pub(crate) mod ui_context {
 
         fn set(&mut self, data: &str) {
             let InternalGlContext {
-                quad_context: ctx, ..
+                quad_context: mut ctx, ..
             } = unsafe { get_internal_gl() };
 
             ctx.clipboard_set(data)
