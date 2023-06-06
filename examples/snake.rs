@@ -23,6 +23,7 @@ async fn main() {
     let mut score = 0;
     let mut speed = 0.3;
     let mut last_update = get_time();
+    let mut navigation_lock = false;
     let mut game_over = false;
 
     let up = (0, -1);
@@ -32,14 +33,18 @@ async fn main() {
 
     loop {
         if !game_over {
-            if is_key_down(KeyCode::Right) && snake.dir != left {
+            if is_key_down(KeyCode::Right) && snake.dir != left && !navigation_lock {
                 snake.dir = right;
-            } else if is_key_down(KeyCode::Left) && snake.dir != right {
+                navigation_lock = true;
+            } else if is_key_down(KeyCode::Left) && snake.dir != right && !navigation_lock {
                 snake.dir = left;
-            } else if is_key_down(KeyCode::Up) && snake.dir != down {
+                navigation_lock = true;
+            } else if is_key_down(KeyCode::Up) && snake.dir != down && !navigation_lock {
                 snake.dir = up;
-            } else if is_key_down(KeyCode::Down) && snake.dir != up {
+                navigation_lock = true;
+            } else if is_key_down(KeyCode::Down) && snake.dir != up && !navigation_lock {
                 snake.dir = down;
+                navigation_lock = true;
             }
 
             if get_time() - last_update > speed {
@@ -65,6 +70,7 @@ async fn main() {
                         game_over = true;
                     }
                 }
+                navigation_lock = false;
             }
         }
         if !game_over {
