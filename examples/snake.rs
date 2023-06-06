@@ -125,13 +125,7 @@ async fn main() {
                 GOLD,
             );
 
-            draw_text(
-                format!("SCORE: {}", score).as_str(),
-                10.,
-                10.,
-                20.,
-                DARKGRAY,
-            );
+            draw_text(format!("SCORE: {score}").as_str(), 10., 10., 20., DARKGRAY);
         } else {
             clear_background(WHITE);
             let text = "Game Over. Press [enter] to play again.";
@@ -159,6 +153,6 @@ async fn main() {
                 game_over = false;
             }
         }
-        next_frame().await
+        next_frame().await;
     }
 }
