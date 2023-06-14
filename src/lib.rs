@@ -410,6 +410,10 @@ fn set_quad_context(ctx: &mut miniquad::Context) {
     unsafe { QUAD_CONTEXT = std::mem::transmute(ctx) };
 }
 
+pub fn get_dpi_scale() -> f32 {
+    get_quad_context().dpi_scale()
+}
+
 // This is required for #[macroquad::test]
 //
 // unfortunately #[cfg(test)] do not work with integration tests
