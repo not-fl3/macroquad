@@ -1,6 +1,9 @@
 //! Window and associated to window rendering context related functions.
 
-use crate::{get_context, get_quad_context};
+use crate::{
+    get_context, get_quad_context,
+    math::{vec2, Vec2},
+};
 
 use crate::color::Color;
 
@@ -63,6 +66,10 @@ pub fn screen_height() -> f32 {
     let context = get_context();
 
     context.screen_height / get_quad_context().dpi_scale()
+}
+
+pub fn screen_center() -> Vec2 {
+    return vec2(screen_width() / 2.0, screen_height() / 2.0);
 }
 
 /// Request the window size to be the given value. This takes DPI into account.
