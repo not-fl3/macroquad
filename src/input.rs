@@ -1,5 +1,6 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
+use crate::math::vec2;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
 use crate::Vec2;
@@ -88,6 +89,12 @@ pub fn is_simulating_mouse_with_touch() -> bool {
 /// If set to false, touches won't affect mouse events.
 pub fn simulate_mouse_with_touch(option: bool) {
     get_context().simulate_mouse_with_touch = option;
+}
+
+/// This is set to true by default, meaning mouse events will raise touch events in addition to raising mouse events.
+/// If set to false, mouse events won't affect touch events.
+pub fn simulate_touch_with_mouse(option: bool) {
+    get_context().simulate_touch_with_mouse = option;
 }
 
 /// Return touches with positions in pixels.

@@ -43,6 +43,9 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
 
+use crate::input::{mouse_position, TouchPhase as MacroTouchPhase};
+use crate::rand::rand;
+
 mod exec;
 mod quad_gl;
 
@@ -156,6 +159,8 @@ struct Context {
     screen_height: f32,
 
     simulate_mouse_with_touch: bool,
+    simulate_touch_with_mouse: bool,
+    mouse_touch_id: u64,
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
@@ -276,6 +281,8 @@ impl Context {
             screen_height,
 
             simulate_mouse_with_touch: true,
+            simulate_touch_with_mouse: true,
+            mouse_touch_id: rand() as u64 + ((rand() as u64) << 32),
 
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
@@ -473,6 +480,15 @@ impl EventHandler for Stage {
     fn mouse_motion_event(&mut self, _: &mut miniquad::Context, x: f32, y: f32) {
         let context = get_context();
 
+        if context.simulate_touch_with_mouse {
+            if let Some(touch) = context.touches.get_mut(&context.mouse_touch_id) {
+                if touch.phase != MacroTouchPhase::Ended {
+                    touch.position = vec2(x,y);
+                    touch.phase = MacroTouchPhase::Moved;
+                }
+            }
+        }
+
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
 
@@ -497,7 +513,7 @@ impl EventHandler for Stage {
 
     fn mouse_button_down_event(
         &mut self,
-        _: &mut miniquad::Context,
+        ctx: &mut miniquad::Context,
         btn: MouseButton,
         x: f32,
         y: f32,
@@ -506,6 +522,26 @@ impl EventHandler for Stage {
 
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
+
+        if context.simulate_touch_with_mouse {
+            if let None = context.touches.get(&context.mouse_touch_id) {
+                let mouse_position = mouse_position();
+                let mouse_vec = vec2(mouse_position.0, mouse_position.1);
+
+                context.touches.insert(
+                    context.mouse_touch_id,
+                    input::Touch {
+                        position: mouse_vec,
+                        phase: MacroTouchPhase::Started,
+                        id: context.mouse_touch_id,
+                    },
+                );
+            }
+        }
+
+        if context.simulate_touch_with_mouse {
+            self.touch_event(ctx, TouchPhase::Started, context.mouse_touch_id, x, y)
+        }
 
         context
             .input_events
@@ -526,9 +562,18 @@ impl EventHandler for Stage {
     ) {
         let context = get_context();
 
+
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
 
+        if context.simulate_touch_with_mouse {
+            if context.mouse_down.len() == 0 {
+                let mut touch_ref = context.touches
+                    .get_mut(&context.mouse_touch_id)
+                    .expect("Simulated mouse touch was removed from context although a mouse button was still down.");
+                touch_ref.phase = MacroTouchPhase::Ended;
+            }
+        }
         context
             .input_events
             .iter_mut()
@@ -559,16 +604,18 @@ impl EventHandler for Stage {
         );
 
         if context.simulate_mouse_with_touch {
-            if phase == TouchPhase::Started {
-                self.mouse_button_down_event(ctx, MouseButton::Left, x, y);
-            }
+            if (!context.simulate_touch_with_mouse) || (id != context.mouse_touch_id) {
+                if phase == TouchPhase::Started {
+                    self.mouse_button_down_event(ctx, MouseButton::Left, x, y);
+                }
 
-            if phase == TouchPhase::Ended {
-                self.mouse_button_up_event(ctx, MouseButton::Left, x, y);
-            }
+                if phase == TouchPhase::Ended {
+                    self.mouse_button_up_event(ctx, MouseButton::Left, x, y);
+                }
 
-            if phase == TouchPhase::Moved {
-                self.mouse_motion_event(ctx, x, y);
+                if phase == TouchPhase::Moved {
+                    self.mouse_motion_event(ctx, x, y);
+                }
             }
         };
 
