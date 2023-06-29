@@ -208,6 +208,24 @@ pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
     draw_poly(x, y, 20, r, 0., color);
 }
 
+/// Draws a solid pretty circle centered at `[x, y]`
+pub fn draw_pretty_circle(x: f32, y: f32, w: f32, h: f32, color: Color) {
+    let context = get_context();
+
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(x    , y    , 0., 0.0, 0.0, color),
+        Vertex::new(x + w, y    , 0., 1.0, 0.0, color),
+        Vertex::new(x + w, y + h, 0., 1.0, 1.0, color),
+        Vertex::new(x    , y + h, 0., 0.0, 1.0, color),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Circle);
+    context.gl.geometry(&vertices, &indices);
+}
+
 /// Draws a circle outline centered at `[x, y]` with a given radius, line `thickness` and `color`.
 pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
     draw_poly_lines(x, y, 20, r, 0., thickness, color);

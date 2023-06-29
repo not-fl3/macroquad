@@ -12,6 +12,7 @@ use std::collections::BTreeMap;
 pub enum DrawMode {
     Triangles,
     Lines,
+    Circle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -375,10 +376,19 @@ impl PipelinesStorage {
     const LINES_PIPELINE: GlPipeline = GlPipeline(1);
     const TRIANGLES_DEPTH_PIPELINE: GlPipeline = GlPipeline(2);
     const LINES_DEPTH_PIPELINE: GlPipeline = GlPipeline(3);
+    const CIRCLE_PIPELINE: GlPipeline = GlPipeline(4);
 
     fn new(ctx: &mut miniquad::Context) -> PipelinesStorage {
         let shader = Shader::new(ctx, shader::VERTEX, shader::FRAGMENT, shader::meta())
             .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
+
+        let circle_shader = Shader::new(
+            ctx,
+            shader::CIRCLE_VERTEX,
+            shader::CIRCLE_FRAGMENT,
+            shader::meta(),
+        )
+        .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
         let params = PipelineParams {
             color_blend: Some(BlendState::new(
@@ -449,6 +459,19 @@ impl PipelinesStorage {
             vec![],
         );
         assert_eq!(lines_depth_pipeline, Self::LINES_DEPTH_PIPELINE);
+
+        let circle_pipeline = storage.make_pipeline(
+            ctx,
+            circle_shader,
+            PipelineParams {
+                primitive_type: PrimitiveType::Triangles,
+                ..params
+            },
+            false,
+            vec![],
+            vec![],
+        );
+        assert_eq!(circle_pipeline, Self::CIRCLE_PIPELINE);
 
         storage
     }
@@ -521,6 +544,8 @@ impl PipelinesStorage {
             (DrawMode::Triangles, true) => Self::TRIANGLES_DEPTH_PIPELINE,
             (DrawMode::Lines, false) => Self::LINES_PIPELINE,
             (DrawMode::Lines, true) => Self::LINES_DEPTH_PIPELINE,
+            (DrawMode::Circle, false) => Self::CIRCLE_PIPELINE,
+            (DrawMode::Circle, true) => Self::CIRCLE_PIPELINE,
         }
     }
 
@@ -998,6 +1023,40 @@ mod shader {
 
     void main() {
         gl_FragColor = color * texture2D(Texture, uv) ;
+    }"#;
+
+    pub const CIRCLE_VERTEX: &str = r#"#version 100
+    attribute vec3 position;
+    attribute vec2 texcoord;
+    attribute vec4 color0;
+
+    varying lowp vec2 fragCoord;
+    varying lowp vec4 color;
+
+    uniform mat4 Model;
+    uniform mat4 Projection;
+
+    void main() {
+        gl_Position = Projection * Model * vec4(position, 1);
+        color = color0 / 255.0;
+        fragCoord = texcoord;
+    }"#;
+
+    pub const CIRCLE_FRAGMENT: &str = r#"#version 100
+    precision lowp float;
+    varying lowp vec4 color;
+    varying lowp vec2 fragCoord;
+
+    uniform sampler2D Texture;
+
+    void main() {
+        vec2 uv = fragCoord * 2.0 - 1.0;
+        float distance = length(uv);
+        if (distance < 1.0) {
+            gl_FragColor = color;
+        } else {
+            gl_FragColor = vec4(0.0);
+        }
     }"#;
 
     pub fn uniforms() -> Vec<(&'static str, UniformType)> {
