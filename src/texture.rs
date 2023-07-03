@@ -415,6 +415,176 @@ pub fn draw_texture_rec(
     );
 }
 
+/// NPatch, a texture that stretches nicely
+#[derive(Copy, Clone, Debug)]
+pub struct NPatch {
+    pub top: f32,
+    pub bottom: f32,
+    pub left: f32,
+    pub right: f32,
+}
+
+pub fn draw_npatch_ex(
+    npatch: NPatch,
+    texture: Texture2D,
+    dest: Rect,
+    color: Color,
+    params: DrawTextureParams,
+) {
+    for f in [npatch.top, npatch.bottom, npatch.left, npatch.right] {
+        if f < 0.0 {
+            return;
+        }
+    }
+
+    let mut dest = dest;
+
+    if let Some(dest_size) = params.dest_size {
+        dest.x = dest_size.x;
+        dest.y = dest_size.y;
+    }
+
+    let source = params.source.unwrap_or(Rect {
+        x: 0.,
+        y: 0.,
+        w: texture.width(),
+        h: texture.height(),
+    });
+
+    let pivot = params
+        .pivot
+        .unwrap_or(vec2(dest.x + dest.w / 2., dest.y + dest.h / 2.));
+
+    #[derive(PartialEq)]
+    enum HorizontalPart {
+        Left,
+        Middle,
+        Right,
+    }
+
+    impl HorizontalPart {
+        fn flip(&mut self) {
+            *self = match &self {
+                Left => Right,
+                HMiddle => HMiddle,
+                Right => Left,
+            };
+        }
+    }
+
+    #[derive(PartialEq)]
+    enum VerticalPart {
+        Top,
+        Middle,
+        Bottom,
+    }
+
+    impl VerticalPart {
+        fn flip(&mut self) {
+            *self = match &self {
+                Top => Bottom,
+                VMiddle => VMiddle,
+                Bottom => Top,
+            };
+        }
+    }
+
+    use HorizontalPart::{Middle as HMiddle, *};
+    use VerticalPart::{Middle as VMiddle, *};
+
+    #[rustfmt::skip]
+    const NPATCH_PARTS: [(VerticalPart, HorizontalPart); 9] = [
+        (Top,     Left), (Top,     HMiddle), (Top,     Right),
+        (VMiddle, Left), (VMiddle, HMiddle), (VMiddle, Right),
+        (Bottom,  Left), (Bottom,  HMiddle), (Bottom,  Right),
+    ];
+
+    let src_outer_top_edge = source.y;
+    let src_outer_bottom_edge = source.y + source.h;
+    let src_outer_left_edge = source.x;
+    let src_outer_right_edge = source.x + source.w;
+
+    let src_inner_top_edge = source.y + npatch.top;
+    let src_inner_bottom_edge = source.h - npatch.bottom;
+    let src_inner_left_edge = source.x + npatch.left;
+    let src_inner_right_edge = source.w - npatch.right;
+
+    let dst_outer_top_edge = dest.y;
+    let dst_outer_bottom_edge = dest.y + dest.h;
+    let dst_outer_left_edge = dest.x;
+    let dst_outer_right_edge = dest.x + dest.w;
+
+    let dst_inner_top_edge = dest.y + npatch.top;
+    let dst_inner_bottom_edge = dest.y + dest.h - npatch.bottom;
+    let dst_inner_left_edge = dest.x + npatch.left;
+    let dst_inner_right_edge = dest.x + dest.w - npatch.right;
+
+    for (mut vert, mut hori) in NPATCH_PARTS {
+        // Side offsets are optional
+        if (vert == Top && npatch.top == 0.0)
+            || (vert == Bottom && npatch.bottom == 0.0)
+            || (hori == Left && npatch.left == 0.0)
+            || (hori == Right && npatch.right == 0.0)
+        {
+            continue;
+        }
+
+        let (src_top_edge, src_bottom_edge) = match vert {
+            Top => (src_outer_top_edge, src_inner_top_edge),
+            VMiddle => (src_inner_top_edge, src_inner_bottom_edge),
+            Bottom => (src_inner_bottom_edge, src_outer_bottom_edge),
+        };
+        let (src_left_edge, src_right_edge) = match hori {
+            Left => (src_outer_left_edge, src_inner_left_edge),
+            HMiddle => (src_inner_left_edge, src_inner_right_edge),
+            Right => (src_inner_right_edge, src_outer_right_edge),
+        };
+
+        if params.flip_x {
+            hori.flip();
+        }
+        if params.flip_y {
+            vert.flip();
+        }
+
+        let (dst_top_edge, dst_bottom_edge) = match vert {
+            Top => (dst_outer_top_edge, dst_inner_top_edge),
+            VMiddle => (dst_inner_top_edge, dst_inner_bottom_edge),
+            Bottom => (dst_inner_bottom_edge, dst_outer_bottom_edge),
+        };
+        let (dst_left_edge, dst_right_edge) = match hori {
+            Left => (dst_outer_left_edge, dst_inner_left_edge),
+            HMiddle => (dst_inner_left_edge, dst_inner_right_edge),
+            Right => (dst_inner_right_edge, dst_outer_right_edge),
+        };
+
+        draw_texture_ex(
+            texture,
+            dst_left_edge,
+            dst_top_edge,
+            color,
+            DrawTextureParams {
+                dest_size: Some(Vec2 {
+                    x: dst_right_edge - dst_left_edge,
+                    y: dst_bottom_edge - dst_top_edge,
+                }),
+                source: Some(Rect {
+                    x: src_left_edge,
+                    y: src_top_edge,
+                    w: src_right_edge - src_left_edge,
+                    h: src_bottom_edge - src_top_edge,
+                }),
+                pivot: Some(pivot),
+                ..params
+            },
+        );
+    }
+}
+
+pub fn draw_npatch(npatch: NPatch, texture: Texture2D, dest: Rect, color: Color) {
+    draw_npatch_ex(npatch, texture, dest, color, Default::default());
+}
+
 /// Get pixel data from screen buffer and return an Image (screenshot)
 pub fn get_screen_data() -> Image {
     unsafe {
