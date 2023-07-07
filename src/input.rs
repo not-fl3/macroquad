@@ -135,6 +135,12 @@ pub fn is_key_released(key_code: KeyCode) -> bool {
     context.keys_released.contains(&key_code)
 }
 
+/// Detect if any key is being preseed
+pub fn is_any_key_down() -> bool {
+    let context = get_context();
+    context.keys_down.len() > 0
+}
+
 /// Return the last pressed char.
 /// Each "get_char_pressed" call will consume a character from the input queue.
 pub fn get_char_pressed() -> Option<char> {
