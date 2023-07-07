@@ -354,7 +354,7 @@ pub(crate) fn track_drawcall(
     indices_count: usize,
 ) {
     let texture = miniquad::Texture::new_render_texture(
-        get_quad_context(),
+        &mut get_quad_context(),
         miniquad::TextureParams {
             width: 128,
             height: 128,
@@ -362,7 +362,7 @@ pub(crate) fn track_drawcall(
         },
     );
 
-    let pass = Some(miniquad::RenderPass::new(get_quad_context(), texture, None));
+    let pass = Some(miniquad::RenderPass::new(&mut get_quad_context(), texture, None));
     get_quad_context().begin_pass(pass, miniquad::PassAction::clear_color(0.4, 0.8, 0.4, 1.));
     get_quad_context().apply_pipeline(pipeline);
     get_quad_context().apply_bindings(bindings);

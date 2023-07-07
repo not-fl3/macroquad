@@ -337,9 +337,9 @@ impl Context {
 
         self.perform_render_passes();
 
-        self.ui_context.draw(get_quad_context(), &mut self.gl);
+        self.ui_context.draw(&mut get_quad_context(), &mut self.gl);
         let screen_mat = self.pixel_perfect_projection_matrix();
-        self.gl.draw(get_quad_context(), screen_mat);
+        self.gl.draw(&mut get_quad_context(), screen_mat);
 
         get_quad_context().commit_frame();
 
@@ -402,12 +402,55 @@ impl Context {
 #[no_mangle]
 static mut CONTEXT: Option<Context> = None;
 
-static mut QUAD_CONTEXT: *mut miniquad::Context = std::ptr::null_mut();
+thread_local! {
+    static QUAD_CONTEXT: std::cell::Cell<*mut miniquad::Context> = std::cell::Cell::new(std::ptr::null_mut());
+}
 
-// this is very very bad
-// trust me, macroquad will get rid of this!
-fn set_quad_context(ctx: &mut miniquad::Context) {
-    unsafe { QUAD_CONTEXT = std::mem::transmute(ctx) };
+fn lend_quad_context<R>(ctx: &mut miniquad::Context, f: impl FnOnce()->R)->R {
+    let new_ctx = ctx as *mut _;
+    let old_ctx = QUAD_CONTEXT.with(|ctx| ctx.replace(new_ctx));
+
+    struct PanicGuard {
+        expected: *mut miniquad::Context,
+        replacement: *mut miniquad::Context
+    }
+
+    impl Drop for PanicGuard {
+        fn drop(&mut self) {
+            assert_eq!(self.expected, QUAD_CONTEXT.with(|ctx| ctx.replace(self.replacement)));
+        }
+    }
+
+    let _guard = PanicGuard { expected: new_ctx, replacement: old_ctx };
+
+    f()
+}
+
+pub struct QuadContextGuard(*mut miniquad::Context);
+
+impl std::ops::Deref for QuadContextGuard {
+    type Target = miniquad::Context;
+    fn deref(&self)->&miniquad::Context {
+        unsafe { &* self.0 }
+    }
+}
+
+impl std::ops::DerefMut for QuadContextGuard {
+    fn deref_mut(&mut self)->&mut miniquad::Context {
+        unsafe { &mut* self.0 }
+    }
+}
+
+impl Drop for QuadContextGuard {
+    fn drop(&mut self) {
+        assert_eq!(std::ptr::null_mut(), QUAD_CONTEXT.with(|ctx| ctx.replace(self.0)));
+    }
+}
+
+fn get_quad_context() -> QuadContextGuard {
+    let ctx = QuadContextGuard(QUAD_CONTEXT.with(|ctx| ctx.replace(std::ptr::null_mut())));
+    assert!(!ctx.0.is_null());
+    ctx
 }
 
 // This is required for #[macroquad::test]
@@ -424,13 +467,6 @@ fn get_context() -> &'static mut Context {
     unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
 }
 
-fn get_quad_context() -> &'static mut QuadContext {
-    unsafe {
-        assert!(!QUAD_CONTEXT.is_null());
-    }
-
-    unsafe { &mut *QUAD_CONTEXT }
-}
 
 static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
 
@@ -446,11 +482,11 @@ impl Drop for Stage {
 
 impl EventHandler for Stage {
     fn resize_event(&mut self, ctx: &mut miniquad::Context, width: f32, height: f32) {
-        set_quad_context(ctx);
-
-        let _z = telemetry::ZoneGuard::new("Event::resize_event");
-        get_context().screen_width = width;
-        get_context().screen_height = height;
+        lend_quad_context(ctx, || {
+            let _z = telemetry::ZoneGuard::new("Event::resize_event");
+            get_context().screen_width = width;
+            get_context().screen_height = height;
+        });
     }
 
     fn raw_mouse_motion(&mut self, _: &mut miniquad::Context, x: f32, y: f32) {
@@ -633,11 +669,12 @@ impl EventHandler for Stage {
     }
 
     fn update(&mut self, ctx: &mut miniquad::Context) {
-        set_quad_context(ctx);
-        let _z = telemetry::ZoneGuard::new("Event::update");
+        lend_quad_context(ctx, || {
+            let _z = telemetry::ZoneGuard::new("Event::update");
 
-        // Unless called every frame, cursor will not remain grabbed
-        get_quad_context().set_cursor_grab(get_context().cursor_grabbed);
+            // Unless called every frame, cursor will not remain grabbed
+            get_quad_context().set_cursor_grab(get_context().cursor_grabbed);
+        });
 
         #[cfg(not(target_arch = "wasm32"))]
         {
@@ -647,8 +684,7 @@ impl EventHandler for Stage {
     }
 
     fn draw(&mut self, ctx: &mut miniquad::Context) {
-        set_quad_context(ctx);
-        {
+        lend_quad_context(ctx, || {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
             use std::panic;
@@ -706,7 +742,7 @@ impl EventHandler for Stage {
                     miniquad::gl::glFinish();
                 }
             }
-        }
+        });
 
         telemetry::reset();
     }

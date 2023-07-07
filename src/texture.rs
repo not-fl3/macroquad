@@ -226,13 +226,14 @@ impl RenderTarget {
     pub fn delete(&self) {
         self.texture.delete();
 
-        let context = get_quad_context();
-        self.render_pass.delete(context);
+        let mut context = get_quad_context();
+        self.render_pass.delete(&mut context);
     }
 }
 
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
-    let context = get_quad_context();
+    let mut context = get_quad_context();
+    let context = &mut context;
 
     let texture = miniquad::Texture::new_render_texture(
         context,
@@ -424,7 +425,7 @@ pub fn get_screen_data() -> Image {
     let context = get_context();
 
     let texture = Texture2D::from_miniquad_texture(miniquad::Texture::new_render_texture(
-        get_quad_context(),
+        &mut get_quad_context(),
         miniquad::TextureParams {
             width: context.screen_width as _,
             height: context.screen_height as _,
@@ -524,7 +525,7 @@ impl Texture2D {
     pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
         let ctx = get_context();
 
-        let texture = miniquad::Texture::from_rgba8(get_quad_context(), width, height, bytes);
+        let texture = miniquad::Texture::from_rgba8(&mut get_quad_context(), width, height, bytes);
         let texture = Texture2D { texture };
 
         ctx.texture_batcher.add_unbatched(texture);
@@ -537,9 +538,9 @@ impl Texture2D {
         assert_eq!(self.texture.width, image.width as u32);
         assert_eq!(self.texture.height, image.height as u32);
 
-        let ctx = get_quad_context();
+        let mut ctx = get_quad_context();
 
-        self.texture.update(ctx, &image.bytes);
+        self.texture.update(&mut ctx, &image.bytes);
     }
 
     /// Uploads [Image] data to part of this texture.
@@ -551,10 +552,10 @@ impl Texture2D {
         width: i32,
         height: i32,
     ) {
-        let ctx = get_quad_context();
+        let mut ctx = get_quad_context();
 
         self.texture
-            .update_texture_part(ctx, x_offset, y_offset, width, height, &image.bytes)
+            .update_texture_part(&mut ctx, x_offset, y_offset, width, height, &image.bytes)
     }
 
     /// Returns the width of this texture.
@@ -581,9 +582,9 @@ impl Texture2D {
     /// # }
     /// ```
     pub fn set_filter(&self, filter_mode: FilterMode) {
-        let ctx = get_quad_context();
+        let mut ctx = get_quad_context();
 
-        self.texture.set_filter(ctx, filter_mode);
+        self.texture.set_filter(&mut ctx, filter_mode);
     }
 
     /// Returns the handle for this texture.

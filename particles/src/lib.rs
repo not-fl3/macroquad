@@ -506,8 +506,8 @@ impl Emitter {
 
     pub fn new(config: EmitterConfig) -> Emitter {
         let InternalGlContext {
-            quad_context: ctx, ..
-        } = unsafe { get_internal_gl() };
+            quad_context: ref mut ctx, ..
+        } = &mut unsafe { get_internal_gl() };
 
         // empty, dynamic instance-data vertex buffer
         let positions_vertex_buffer = Buffer::stream(
@@ -932,9 +932,9 @@ impl Emitter {
         gl.flush();
 
         let InternalGlContext {
-            quad_context: ctx,
+            quad_context: ref mut ctx,
             quad_gl,
-        } = gl;
+        } = &mut gl;
 
         self.position = pos;
 
@@ -996,9 +996,9 @@ impl EmittersCache {
         gl.flush();
 
         let InternalGlContext {
-            quad_context: ctx,
+            quad_context: ref mut ctx,
             quad_gl,
-        } = gl;
+        } = &mut gl;
 
         if self.active_emitters.len() > 0 {
             self.emitter.setup_render_pass(quad_gl, ctx);
