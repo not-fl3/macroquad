@@ -1,5 +1,3 @@
-#[cfg(target_os = "android")]
-use crate::get_quad_context;
 use crate::{
     math::{vec2, Rect, Vec2},
     ui::{ElementState, Id, InputCharacter, Key, KeyCode, Layout, Ui},
@@ -265,12 +263,12 @@ impl<'a> Editbox<'a> {
 
         if context.input.click_down() && hovered {
             #[cfg(target_os = "android")]
-            get_quad_context().show_keyboard(true);
+            miniquad::window::show_keyboard(true);
             *context.input_focus = Some(self.id);
         }
         if context.input_focused(self.id) && context.input.click_down() && hovered == false {
             #[cfg(target_os = "android")]
-            get_quad_context().show_keyboard(false);
+            miniquad::window::show_keyboard(false);
             *context.input_focus = None;
         }
 
