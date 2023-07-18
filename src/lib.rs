@@ -169,7 +169,8 @@ pub(crate) mod thread_assert {
     pub fn same_thread() {
         unsafe {
             let thread_id = std::thread::current().id();
-            assert!(THREAD_ID.map_or(false, |t| t == thread_id));
+            assert!(THREAD_ID.is_some());
+            assert!(THREAD_ID.unwrap() == thread_id);
         }
     }
 }
@@ -756,7 +757,6 @@ impl Window {
     }
 
     pub fn from_config(mut config: conf::Conf, future: impl Future<Output = ()> + 'static) {
-        thread_assert::set_thread_id();
         let metal = std::env::args().nth(1).as_deref() == Some("metal");
         config.platform.apple_gfx_api = if metal {
             conf::AppleGfxApi::Metal
@@ -765,6 +765,7 @@ impl Window {
         };
 
         miniquad::start(conf::Conf { ..config }, move || {
+            thread_assert::set_thread_id();
             unsafe {
                 MAIN_FUTURE = Some(Box::pin(future));
             }
