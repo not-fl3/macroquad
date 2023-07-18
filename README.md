@@ -1,7 +1,7 @@
 # macroquad
 
-[![Github Actions](https://github.com/not-fl3/macroquad/workflows/Cross-compile/badge.svg)](https://github.com/not-fl3/macroquad/actions?query=workflow%3A)
-[![Docs](https://docs.rs/macroquad/badge.svg?version=0.3.0-alpha)](https://docs.rs/macroquad/0.3.0-alpha/macroquad/index.html)
+[![Github Actions](https://github.com/not-fl3/macroquad/workflows/CI/badge.svg)](https://github.com/not-fl3/macroquad/actions?query=workflow%3A)
+[![Docs](https://docs.rs/macroquad/badge.svg?version=0.4.0)](https://docs.rs/macroquad/0.4.0/macroquad/index.html)
 [![Crates.io version](https://img.shields.io/crates/v/macroquad.svg)](https://crates.io/crates/macroquad)
 [![Discord chat](https://img.shields.io/discord/710177966440579103.svg?label=discord%20chat)](https://discord.gg/WfEp6ut)
 
