@@ -85,6 +85,8 @@ use input::Input;
 pub use cursor::Layout;
 use input::{InputCharacter, Key};
 
+/// Is used to keep track of internal state of various widgets like [widgets::Window](macroquad::ui::widgets::Window)
+/// These should be unique per window and ideally not change in between frames.
 pub type Id = u64;
 
 pub enum UiContent<'a> {
@@ -790,7 +792,9 @@ impl Ui {
                 atlas,
             )
         });
-
+        if !window.movable {
+            window.set_position(position);
+        }
         window.size = size;
         window.want_close = false;
         window.active = true;
