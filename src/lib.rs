@@ -757,13 +757,6 @@ impl Window {
     }
 
     pub fn from_config(mut config: conf::Conf, future: impl Future<Output = ()> + 'static) {
-        let metal = std::env::args().nth(1).as_deref() == Some("metal");
-        config.platform.apple_gfx_api = if metal {
-            conf::AppleGfxApi::Metal
-        } else {
-            conf::AppleGfxApi::OpenGl
-        };
-
         miniquad::start(conf::Conf { ..config }, move || {
             thread_assert::set_thread_id();
             unsafe {
