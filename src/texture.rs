@@ -451,6 +451,9 @@ pub struct Texture2D {
 impl Drop for TextureSlotGuarded {
     fn drop(&mut self) {
         let ctx = get_context();
+        if let Some(texture) = ctx.textures.texture(self.0) {
+            ctx.quad_context.delete_texture(texture);
+        }
         ctx.textures.remove(self.0);
     }
 }
