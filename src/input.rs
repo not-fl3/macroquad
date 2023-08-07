@@ -156,6 +156,13 @@ pub fn get_last_key_pressed() -> Option<KeyCode> {
     context.keys_pressed.iter().next().cloned()
 }
 
+/// Clears input queue
+pub fn clear_input_queue() {
+    let context = get_context();
+    context.chars_pressed_queue.clear();
+    context.chars_pressed_ui_queue.clear();
+}
+
 /// Detect if the button is being pressed
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
     let context = get_context();
