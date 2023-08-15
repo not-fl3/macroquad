@@ -10,7 +10,7 @@ use crate::{
 };
 
 pub struct Model {
-    bindings: Bindings,
+    bindings: Vec<Bindings>,
 }
 
 impl Model {
@@ -22,56 +22,56 @@ impl Model {
 
         let mesh = gltf.meshes().next().unwrap();
 
-        assert!(mesh.primitives().len() == 1);
+        let mut bindings = Vec::new();
 
-        let primitive = mesh.primitives().next().unwrap();
+        for primitive in mesh.primitives() {
+            let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
 
-        let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
+            let indices: Vec<u16> = reader
+                .read_indices()
+                .unwrap()
+                .into_u32()
+                .map(|ix| ix as u16)
+                .collect::<Vec<_>>();
+            let vertices: Vec<[f32; 3]> = reader.read_positions().unwrap().collect::<Vec<_>>();
+            let uvs: Vec<[f32; 2]> = if let Some(reader) = reader.read_tex_coords(0) {
+                reader.into_f32().collect::<Vec<_>>()
+            } else {
+                vec![]
+            };
 
-        let indices: Vec<u16> = reader
-            .read_indices()
-            .unwrap()
-            .into_u32()
-            .map(|ix| ix as u16)
-            .collect::<Vec<_>>();
-        let vertices: Vec<[f32; 3]> = reader.read_positions().unwrap().collect::<Vec<_>>();
-        let uvs: Vec<[f32; 2]> = reader
-            .read_tex_coords(0)
-            .unwrap()
-            .into_f32()
-            .collect::<Vec<_>>();
+            let normals: Vec<[f32; 3]> = reader.read_normals().unwrap().collect::<Vec<_>>();
 
-        let normals: Vec<[f32; 3]> = reader.read_normals().unwrap().collect::<Vec<_>>();
+            //println!("{:#?}", vertices);
 
-        //println!("{:#?}", vertices);
-
-        let ctx = &mut get_context().quad_context;
-        let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
-        let vertex_buffer = ctx.new_buffer(
-            BufferType::VertexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&vertices),
-        );
-        let normals_buffer = ctx.new_buffer(
-            BufferType::VertexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&normals),
-        );
-        let uvs_buffer = ctx.new_buffer(
-            BufferType::VertexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&uvs),
-        );
-        let index_buffer = ctx.new_buffer(
-            BufferType::IndexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&indices),
-        );
-        let bindings = Bindings {
-            vertex_buffers: vec![vertex_buffer, uvs_buffer, normals_buffer],
-            index_buffer,
-            images: vec![white_texture, white_texture],
-        };
+            let ctx = &mut get_context().quad_context;
+            let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
+            let vertex_buffer = ctx.new_buffer(
+                BufferType::VertexBuffer,
+                BufferUsage::Immutable,
+                BufferSource::slice(&vertices),
+            );
+            let normals_buffer = ctx.new_buffer(
+                BufferType::VertexBuffer,
+                BufferUsage::Immutable,
+                BufferSource::slice(&normals),
+            );
+            let uvs_buffer = ctx.new_buffer(
+                BufferType::VertexBuffer,
+                BufferUsage::Immutable,
+                BufferSource::slice(&uvs),
+            );
+            let index_buffer = ctx.new_buffer(
+                BufferType::IndexBuffer,
+                BufferUsage::Immutable,
+                BufferSource::slice(&indices),
+            );
+            bindings.push(Bindings {
+                vertex_buffers: vec![vertex_buffer, uvs_buffer, normals_buffer],
+                index_buffer,
+                images: vec![white_texture, white_texture],
+            });
+        }
 
         Ok(Model { bindings })
     }
@@ -126,7 +126,9 @@ pub fn square() -> Model {
         images: vec![white_texture, white_texture],
     };
 
-    Model { bindings }
+    Model {
+        bindings: vec![bindings],
+    }
 }
 
 use crate::quad_gl::QuadGl;
@@ -276,42 +278,44 @@ impl SceneGraph {
         }
 
         let mut bindings = model.bindings.clone();
-        if let Some(ref mut material) = render_state.material {
-            bindings.images[0] = material
-                .textures_data
-                .get("Texture")
-                .copied()
-                .unwrap_or(white_texture)
+        for mut bindings in bindings {
+            if let Some(ref mut material) = render_state.material {
+                bindings.images[0] = material
+                    .textures_data
+                    .get("Texture")
+                    .copied()
+                    .unwrap_or(white_texture)
+            }
+            ctx.apply_bindings(&bindings);
+
+            let projection = render_state.matrix();
+            let time = (crate::time::get_time()) as f32;
+            let time = glam::vec4(time, time.sin(), time.cos(), 0.);
+
+            if let Some(ref mut material) = render_state.material {
+                material.set_uniform("Projection", projection);
+                material.set_uniform("Model", transform);
+                material.set_uniform("_Time", time);
+
+                ctx.apply_uniforms_from_bytes(
+                    material.uniforms_data.as_ptr(),
+                    material.uniforms_data.len(),
+                );
+            } else {
+                ctx.apply_uniforms(UniformsSource::table(&shader::Uniforms {
+                    projection,
+                    model: transform,
+                }));
+            }
+
+            let buffer_size = ctx.buffer_size(bindings.index_buffer) as i32 / 2;
+            ctx.draw(0, buffer_size, 1);
         }
-        ctx.apply_bindings(&bindings);
-
-        let projection = render_state.matrix();
-        let time = (crate::time::get_time()) as f32;
-        let time = glam::vec4(time, time.sin(), time.cos(), 0.);
-
-        if let Some(ref mut material) = render_state.material {
-            material.set_uniform("Projection", projection);
-            material.set_uniform("Model", transform);
-            material.set_uniform("_Time", time);
-
-            ctx.apply_uniforms_from_bytes(
-                material.uniforms_data.as_ptr(),
-                material.uniforms_data.len(),
-            );
-        } else {
-            ctx.apply_uniforms(UniformsSource::table(&shader::Uniforms {
-                projection,
-                model: transform,
-            }));
-        }
-
-        let buffer_size = ctx.buffer_size(model.bindings.index_buffer) as i32 / 2;
-        ctx.draw(0, buffer_size, 1);
-
         ctx.end_render_pass();
 
         // unsafe {
-        //     miniquad::gl::glPolygonMode(miniquad::gl::GL_FRONT_AND_BACK, miniquad::gl::GL_FILL);
+        //     use miniquad::gl;
+        //     gl::glPolygonMode(gl::GL_FRONT_AND_BACK, gl::GL_FILL);
         // }
     }
 

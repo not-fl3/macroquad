@@ -132,6 +132,7 @@ impl Camera {
         vec2(transform.x, transform.y)
     }
 }
+
 #[derive(Clone, Debug)]
 pub struct RenderState {
     pub depth_enabled: bool,

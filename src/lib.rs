@@ -394,6 +394,8 @@ impl Context {
         // let screen_mat = self.pixel_perfect_projection_matrix();
         // self.gl.draw(get_quad_context(), screen_mat);
 
+        //for canvas in self.scene_graph.canvases {}
+
         get_quad_context().commit_frame();
 
         #[cfg(one_screenshot)]
