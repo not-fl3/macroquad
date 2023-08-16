@@ -2,6 +2,8 @@
 
 use crate::{exec, Error};
 
+static mut PC_ASSETS_FOLDER: Option<String> = None;
+
 /// Load file from the path and block until its loaded
 /// Will use filesystem on PC and do http request on web
 pub async fn load_file(path: &str) -> Result<Vec<u8>, Error> {
@@ -30,7 +32,7 @@ pub async fn load_file(path: &str) -> Result<Vec<u8>, Error> {
     let _ = std::env::set_current_dir(std::env::current_exe().unwrap().parent().unwrap());
 
     #[cfg(not(target_os = "android"))]
-    let path = if let Some(ref pc_assets) = crate::get_context().pc_assets_folder {
+    let path = if let Some(ref pc_assets) = unsafe { &PC_ASSETS_FOLDER } {
         format!("{}/{}", pc_assets, path)
     } else {
         path.to_string()
@@ -72,5 +74,7 @@ pub async fn load_string(path: &str) -> Result<String, Error> {
 /// But right now to resolve this situation and keep pathes consistent across platforms
 /// `set_pc_assets_folder("assets");`call before first `load_file`/`load_texture` will allow using same pathes on PC and Android.
 pub fn set_pc_assets_folder(path: &str) {
-    crate::get_context().pc_assets_folder = Some(path.to_string());
+    unsafe {
+        PC_ASSETS_FOLDER = Some(path.to_string());
+    }
 }

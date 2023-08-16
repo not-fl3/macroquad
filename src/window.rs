@@ -15,13 +15,6 @@ pub fn next_frame() -> crate::exec::FrameFuture {
     crate::exec::FrameFuture::default()
 }
 
-/// Fill window background with solid color.
-/// Note: even when "clear_background" was not called explicitly
-/// screen will be cleared at the beginning of the frame.
-pub fn clear_background(color: Color) {
-    crate::scene_graph().clear(color);
-}
-
 #[doc(hidden)]
 pub fn gl_set_drawcall_buffer_capacity(_max_vertices: usize, _max_indices: usize) {
     // let context = get_context();
@@ -56,14 +49,11 @@ pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
 }
 
 pub fn screen_width() -> f32 {
-    let context = get_context();
-    context.screen_width / miniquad::window::dpi_scale()
+    miniquad::window::screen_size().0
 }
 
 pub fn screen_height() -> f32 {
-    let context = get_context();
-
-    context.screen_height / miniquad::window::dpi_scale()
+    miniquad::window::screen_size().1
 }
 
 /// Request the window size to be the given value. This takes DPI into account.

@@ -704,11 +704,11 @@ impl QuadGl {
                 telemetry::track_drawcall(&pipeline.pipeline_2d, bindings, dc.indices_count);
             }
 
-            dc.vertices_count = 0;
-            dc.indices_count = 0;
+            // dc.vertices_count = 0;
+            // dc.indices_count = 0;
         }
 
-        self.draw_calls_count = 0;
+        //self.draw_calls_count = 0;
     }
 
     pub(crate) fn capture(&mut self, capture: bool) {
@@ -739,9 +739,8 @@ impl QuadGl {
         self.state.depth_test_enable = enable;
     }
 
-    pub fn texture(&mut self, texture: Option<&Texture2D>) {
-        let ctx = crate::get_context();
-        self.state.texture = texture.map(|t| ctx.raw_miniquad_id(&t.texture));
+    pub fn texture(&mut self, texture: Option<miniquad::TextureId>) {
+        self.state.texture = texture;
     }
 
     pub fn scissor(&mut self, clip: Option<(i32, i32, i32, i32)>) {

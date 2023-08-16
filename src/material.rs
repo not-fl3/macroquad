@@ -1,6 +1,6 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::{get_context, texture::Texture2D, warn};
+use crate::{get_context, get_quad_context, texture::Texture2D, warn};
 
 use miniquad::{PipelineParams, ShaderError, UniformType, *};
 
@@ -101,7 +101,7 @@ impl Material {
         fragment_shader: &str,
         params: MaterialParams,
     ) -> Result<Material, ShaderError> {
-        let ctx = &mut *get_context().quad_context;
+        let ctx = get_quad_context();
 
         let shader = ctx
             .new_shader(

@@ -80,8 +80,7 @@ impl Atlas {
         self.image.height
     }
 
-    pub fn texture(&mut self) -> miniquad::TextureId {
-        let ctx = get_quad_context();
+    pub fn texture(&mut self, ctx: &mut dyn miniquad::RenderingBackend) -> miniquad::TextureId {
         if self.dirty {
             self.dirty = false;
             let (texture_width, texture_height) = ctx.texture_size(self.texture);

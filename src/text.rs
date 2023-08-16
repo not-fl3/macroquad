@@ -304,9 +304,10 @@ pub fn draw_text_ex(
     y: f32,
     params: TextParams,
 ) {
-    let font = params
-        .font
-        .unwrap_or_else(|| &get_context().fonts_storage.default_font);
+    let font = {
+        let fonts = sprite_layer.ctx.scene.fonts_storage.lock();
+        params.font.unwrap_or_else(|| &fonts.default_font).clone()
+    };
 
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
@@ -351,9 +352,13 @@ pub fn draw_text_ex(
             glyph.h as f32,
         );
 
+        let texture = {
+            let mut ctx = sprite_layer.ctx.scene.quad_context.lock();
+            atlas.texture(&mut **ctx)
+        };
         sprite_layer.draw_texture_ex(
             &crate::texture::Texture2D {
-                texture: TextureHandle::Unmanaged(atlas.texture()),
+                texture: TextureHandle::Unmanaged(texture),
             },
             dest.x,
             dest.y,
@@ -370,20 +375,20 @@ pub fn draw_text_ex(
 }
 
 /// Get the text center.
-pub fn get_text_center(
-    text: &str,
-    font: Option<&Font>,
-    font_size: u16,
-    font_scale: f32,
-    rotation: f32,
-) -> crate::Vec2 {
-    let measure = measure_text(text, font, font_size, font_scale);
+// pub fn get_text_center(
+//     text: &str,
+//     font: Option<&Font>,
+//     font_size: u16,
+//     font_scale: f32,
+//     rotation: f32,
+// ) -> crate::Vec2 {
+//     let measure = measure_text(text, font, font_size, font_scale);
 
-    let x_center = measure.width / 2.0 * rotation.cos() + measure.height / 2.0 * rotation.sin();
-    let y_center = measure.width / 2.0 * rotation.sin() - measure.height / 2.0 * rotation.cos();
+//     let x_center = measure.width / 2.0 * rotation.cos() + measure.height / 2.0 * rotation.sin();
+//     let y_center = measure.width / 2.0 * rotation.sin() - measure.height / 2.0 * rotation.cos();
 
-    crate::Vec2::new(x_center, y_center)
-}
+//     crate::Vec2::new(x_center, y_center)
+// }
 
 /// World space dimensions of the text, measured by "measure_text" function
 #[derive(Debug, Clone, Copy)]
@@ -398,16 +403,16 @@ pub struct TextDimensions {
     pub offset_y: f32,
 }
 
-pub fn measure_text(
-    text: &str,
-    font: Option<&Font>,
-    font_size: u16,
-    font_scale: f32,
-) -> TextDimensions {
-    let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
+// pub fn measure_text(
+//     text: &str,
+//     font: Option<&Font>,
+//     font_size: u16,
+//     font_scale: f32,
+// ) -> TextDimensions {
+//     let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
 
-    font.measure_text(text, font_size, font_scale, font_scale)
-}
+//     font.measure_text(text, font_size, font_scale, font_scale)
+// }
 
 pub(crate) struct FontsStorage {
     default_font: Font,

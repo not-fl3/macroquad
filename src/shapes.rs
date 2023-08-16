@@ -3,7 +3,7 @@
 use crate::color::Color;
 
 use crate::{
-    math::{Rect, Vec2},
+    math::{vec2, Rect, Vec2},
     quad_gl::{DrawMode, Vertex},
     scene_graph::SpriteLayer,
 };
@@ -189,89 +189,105 @@ impl SpriteLayer {
     }
 }
 
+enum Shape {
+    Circle { radius: f32 },
+    Rectangle { size: Vec2 },
+}
 pub struct ShapeBuilder {
-    vertices: Vec<Vertex>,
-    indices: Vec<u16>,
+    // vertices: Vec<Vertex>,
+    // indices: Vec<u16>,
+    shape: Shape,
+    position: Vec2,
+    pivot: Option<Vec2>,
+    color: Color,
     rotation: f32,
 }
 impl ShapeBuilder {
-    pub fn circle(pos: Vec2, radius: f32, color: Color) -> ShapeBuilder {
+    pub fn circle(position: Vec2, radius: f32, color: Color) -> ShapeBuilder {
         let sides = 50;
-        let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
-        let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
+        // let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
+        // let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
 
-        let rot = 0.0; //0.0.to_radians();
-        vertices.push(Vertex::new(pos.x, pos.y, 0., 0., 0., color));
-        for i in 0..sides + 1 {
-            let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).cos();
-            let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).sin();
+        // let rot = 0.0; //0.0.to_radians();
+        // vertices.push(Vertex::new(pos.x, pos.y, 0., 0., 0., color));
+        // for i in 0..sides + 1 {
+        //     let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).cos();
+        //     let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).sin();
 
-            let vertex = Vertex::new(pos.x + radius * rx, pos.y + radius * ry, 0., rx, ry, color);
+        //     let vertex = Vertex::new(pos.x + radius * rx, pos.y + radius * ry, 0., rx, ry, color);
 
-            vertices.push(vertex);
+        //     vertices.push(vertex);
 
-            if i != sides {
-                indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
-            }
-        }
+        //     if i != sides {
+        //         indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
+        //     }
+        // }
 
         ShapeBuilder {
-            vertices,
-            indices,
+            shape: Shape::Circle { radius },
+            position,
+            pivot: None,
+            color,
             rotation: 0.0,
         }
     }
 
-    pub fn line(start: Vec2, end: Vec2, thickness: f32, color: Color) -> ShapeBuilder {
-        let (x1, y1) = start.into();
-        let (x2, y2) = end.into();
-        let dx = x2 - x1;
-        let dy = y2 - y1;
+    // pub fn line(start: Vec2, end: Vec2, thickness: f32, color: Color) -> ShapeBuilder {
+    //     let (x1, y1) = start.into();
+    //     let (x2, y2) = end.into();
+    //     let dx = x2 - x1;
+    //     let dy = y2 - y1;
 
-        // https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
+    //     // https://stackoverflow.com/questions/1243614/how-do-i-calculate-the-normal-vector-of-a-line-segment
 
-        let nx = -dy;
-        let ny = dx;
+    //     let nx = -dy;
+    //     let ny = dx;
 
-        let tlen = (nx * nx + ny * ny).sqrt() / (thickness * 0.5);
-        if tlen < std::f32::EPSILON {
-            // TODO: check if ShapeBuilder {vertices: vec![]} is ok
-            panic!();
-        }
-        let tx = nx / tlen;
-        let ty = ny / tlen;
+    //     let tlen = (nx * nx + ny * ny).sqrt() / (thickness * 0.5);
+    //     if tlen < std::f32::EPSILON {
+    //         // TODO: check if ShapeBuilder {vertices: vec![]} is ok
+    //         panic!();
+    //     }
+    //     let tx = nx / tlen;
+    //     let ty = ny / tlen;
 
-        let vertices = vec![
-            Vertex::new(x1 + tx, y1 + ty, 0., 0., 0., color),
-            Vertex::new(x1 - tx, y1 - ty, 0., 0., 0., color),
-            Vertex::new(x2 + tx, y2 + ty, 0., 0., 0., color),
-            Vertex::new(x2 - tx, y2 - ty, 0., 0., 0., color),
-        ];
-        let indices = vec![0, 1, 2, 2, 1, 3];
+    //     let vertices = vec![
+    //         Vertex::new(x1 + tx, y1 + ty, 0., 0., 0., color),
+    //         Vertex::new(x1 - tx, y1 - ty, 0., 0., 0., color),
+    //         Vertex::new(x2 + tx, y2 + ty, 0., 0., 0., color),
+    //         Vertex::new(x2 - tx, y2 - ty, 0., 0., 0., color),
+    //     ];
+    //     let indices = vec![0, 1, 2, 2, 1, 3];
+
+    //     ShapeBuilder {
+    //         vertices,
+    //         indices,
+    //         rotation: 0.0,
+    //     }
+    // }
+
+    pub fn rectangle(size: Vec2, color: Color) -> ShapeBuilder {
+        // let Rect { x, y, w, h } = rect;
+        // #[rustfmt::skip]
+        // let vertices = vec![
+        //     Vertex::new(x    , y    , 0., 0.0, 0.0, color),
+        //     Vertex::new(x + w, y    , 0., 1.0, 0.0, color),
+        //     Vertex::new(x + w, y + h, 0., 1.0, 1.0, color),
+        //     Vertex::new(x    , y + h, 0., 0.0, 1.0, color),
+        // ];
+        // let indices = vec![0, 1, 2, 0, 2, 3];
 
         ShapeBuilder {
-            vertices,
-            indices,
+            shape: Shape::Rectangle { size },
+            position: vec2(0., 0.),
+            pivot: None,
+            color,
             rotation: 0.0,
         }
     }
 
-    pub fn rectangle(rect: Rect, color: Color) -> ShapeBuilder {
-        let Rect { x, y, w, h } = rect;
-        #[rustfmt::skip]
-        let vertices = vec![
-            Vertex::new(x    , y    , 0., 0.0, 0.0, color),
-            Vertex::new(x + w, y    , 0., 1.0, 0.0, color),
-            Vertex::new(x + w, y + h, 0., 1.0, 1.0, color),
-            Vertex::new(x    , y + h, 0., 0.0, 1.0, color),
-        ];
-        let indices = vec![0, 1, 2, 0, 2, 3];
-
-        ShapeBuilder {
-            vertices,
-            indices,
-            rotation: 0.0,
-        }
+    pub fn position(self, position: Vec2) -> ShapeBuilder {
+        Self { position, ..self }
     }
 
     pub fn rotation(self, rotation: f32) -> ShapeBuilder {
@@ -279,8 +295,54 @@ impl ShapeBuilder {
     }
 
     pub fn draw(self, canvas: &mut SpriteLayer) {
+        let (w, h) = match self.shape {
+            Shape::Rectangle { size } => (size.x, size.y),
+            _ => unimplemented!(),
+        };
+        let Vec2 { x, y } = self.position;
+        let pivot = self.pivot.unwrap_or(vec2(x, y));
+        let m = pivot;
+        let p = [
+            vec2(x - w / 2., y - h / 2.) - pivot,
+            vec2(x + w / 2., y - h / 2.) - pivot,
+            vec2(x + w / 2., y + h / 2.) - pivot,
+            vec2(x - w / 2., y + h / 2.) - pivot,
+        ];
+        let r = self.rotation;
+        let p = [
+            vec2(
+                p[0].x * r.cos() - p[0].y * r.sin(),
+                p[0].x * r.sin() + p[0].y * r.cos(),
+            ) + m,
+            vec2(
+                p[1].x * r.cos() - p[1].y * r.sin(),
+                p[1].x * r.sin() + p[1].y * r.cos(),
+            ) + m,
+            vec2(
+                p[2].x * r.cos() - p[2].y * r.sin(),
+                p[2].x * r.sin() + p[2].y * r.cos(),
+            ) + m,
+            vec2(
+                p[3].x * r.cos() - p[3].y * r.sin(),
+                p[3].x * r.sin() + p[3].y * r.cos(),
+            ) + m,
+        ];
+        let sx = 0.;
+        let sy = 0.;
+        let sw = 1.;
+        let sh = 1.;
+        let color = self.color;
+        #[rustfmt::skip]
+        let vertices = [
+            Vertex::new(p[0].x, p[0].y, 0.,  sx      /w,  sy      /h, color),
+            Vertex::new(p[1].x, p[1].y, 0., (sx + sw)/w,  sy      /h, color),
+            Vertex::new(p[2].x, p[2].y, 0., (sx + sw)/w, (sy + sh)/h, color),
+            Vertex::new(p[3].x, p[3].y, 0.,  sx      /w, (sy + sh)/h, color),
+        ];
+        let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
         canvas.gl().texture(None);
         canvas.gl().draw_mode(DrawMode::Triangles);
-        canvas.gl().geometry(&self.vertices, &self.indices);
+        canvas.gl().geometry(&vertices, &indices);
     }
 }

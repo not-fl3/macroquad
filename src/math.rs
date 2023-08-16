@@ -33,3 +33,9 @@ pub fn clamp<T: PartialOrd>(value: T, min: T, max: T) -> T {
         value
     }
 }
+
+pub fn look_rotation_quat(forward: Vec3, up: Vec3) -> Quat {
+    let right = up.cross(forward).normalize();
+    let up = forward.cross(right);
+    Quat::from_mat3(&Mat3::from_cols(right, up, forward))
+}

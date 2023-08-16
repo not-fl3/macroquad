@@ -1,4 +1,6 @@
-# Disclaimer on this branch
+# Reimagining macroquad
+
+*Disclaimer on this branch*
 
 The idea here - anything goes, the more ideas are going to be tried - the better. Implement first, think later kind of thing.
 
@@ -6,10 +8,10 @@ Code here does not work, not intended to work and will never work!
 
 This is just a playground to experiment with the ideas outlined in this file.
 
-# 0.3 -> 0.4 high-level plan
+# The goal
 
 - eleminate UB
-- API for fine-tuning batching, allow non-batched or instanced draw calls
+- API for fine-tuned batching, allowing non-batched or instanced draw calls
 - keep all 0.3 API under macroquad::compatibility or macroquad::immediate_mode
 
 # Details
@@ -18,13 +20,13 @@ This is just a playground to experiment with the ideas outlined in this file.
 
 In 0.3 macroquad all draw calls are always, automatically batched.
 
-draw_whatever(); will always do a `quad_gl` call, basically appending some vertices to some already existing gpu buffer to be rendered later. This takes into account materials, textures etc, making new buffers when needed.
+draw_whatever(); will always do a `quad_gl` call, appending some vertices to some already existing gpu buffer to be rendered later. This takes into account materials, textures etc, making new buffers when needed.
 
 So this is basically a dynamic batching for all the meshes all the time.
-Which is fine when most of the meshes are 2D sprites with the same textures, but
-it do not work for 3d or more complicated 2d scenes at all.
+Which is fine when most meshes are 2D sprites with the same textures, but
+it does not work for 3d or more complicated 2d scenes.
 
-So the main goal for 0.4 macroquad: allow dynamic, static and no batching for draw calls.
+The main goal: allow dynamic, static and no batching for draw calls.
 
 So far the idea is:
 
@@ -37,7 +39,7 @@ let sprite = Square::new()
   .pos(vec2(x, y))
   .texture(texture);
 
-// this will upload a model to GPU and will make it drawable by itself 
+// this will upload a model to GPU and will make it drawable by itself
 let model = sprite.stateful_gpu_object();
 
 // will draw right away, without any batching

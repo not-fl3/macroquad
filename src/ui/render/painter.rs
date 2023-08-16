@@ -194,7 +194,8 @@ impl Painter {
                 let text_measures = self.label_size(&*label, None, font, font_size);
                 (text_measures.width, font_size as f32)
             }
-            UiContent::Texture(texture) => (texture.width(), texture.height()),
+            //UiContent::Texture(texture) => (texture.width(), texture.height()),
+            _ => unimplemented!(),
         };
 
         vec2(size.0, size.1)

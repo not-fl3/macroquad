@@ -40,7 +40,9 @@ use std::{
 /// Root UI. Widgets drawn with the root ui will be always presented at the end of the frame with a "default" camera.
 /// UI space would be a "default" screen space (0..screen_width(), 0..screen_height())
 pub fn root_ui() -> impl DerefMut<Target = Ui> {
-    crate::get_context().ui_context.ui.borrow_mut()
+    //crate::get_context().ui_context.ui.borrow_mut()
+    let ui: Ui = unimplemented!();
+    &mut ui
 }
 
 /// Current camera world space UI.
