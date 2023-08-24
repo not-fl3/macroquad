@@ -26,7 +26,7 @@ async fn main() {
             ..Default::default()
         });
 
-        clear_background(BLACK);
+        clear_background(RED);
         draw_line(-30.0, 45.0, 30.0, 45.0, 3.0, BLUE);
         draw_circle(-45.0, -35.0, 20.0, YELLOW);
         draw_circle(45.0, -35.0, 20.0, GREEN);
