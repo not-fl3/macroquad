@@ -9,6 +9,7 @@ pub struct Cubemap {
     display_bind: Bindings,
     rx: f32,
     ry: f32,
+    pub texture: TextureId,
 }
 
 impl Cubemap {
@@ -130,6 +131,7 @@ impl Cubemap {
             display_bind,
             rx: 0.,
             ry: 0.,
+            texture: color_img,
         }
     }
 }

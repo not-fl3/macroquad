@@ -312,8 +312,6 @@ impl Context {
 
         //for canvas in self.scene_graph.canvases {}
 
-        get_quad_context().commit_frame();
-
         #[cfg(one_screenshot)]
         {
             get_context().counter += 1;
@@ -323,7 +321,7 @@ impl Context {
             }
         }
 
-        telemetry::end_gpu_query();
+        //telemetry::end_gpu_query();
 
         self.mouse_wheel = Vec2::new(0., 0.);
         self.keys_pressed.clear();
@@ -332,6 +330,8 @@ impl Context {
         self.mouse_released.clear();
 
         self.quit_requested = false;
+
+        self.last_mouse_position = Some(input::mouse_position_local());
 
         // remove all touches that were Ended or Cancelled
         self.touches.retain(|_, touch| {
@@ -619,7 +619,7 @@ impl EventHandler for Stage {
 
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
-                //get_context().end_frame();
+                get_context().end_frame();
                 let mut ctx = scene.data.quad_context.lock();
                 ctx.commit_frame()
             }
@@ -683,10 +683,6 @@ impl Context3 {
             data: &self.ctx.scene,
             ctx: self.ctx.clone(),
         }
-    }
-
-    pub fn f(&mut self) {
-        println!("waaaaaat");
     }
 }
 

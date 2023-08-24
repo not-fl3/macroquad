@@ -108,6 +108,7 @@ pub(crate) struct SceneData {
     pub(crate) layers: Mutex<Vec<QuadGl>>,
 
     pub(crate) white_texture: TextureId,
+    pub(crate) black_texture: TextureId,
     pub(crate) default_material: Material,
 }
 
@@ -120,24 +121,40 @@ impl Context3 {
     pub async fn load_gltf(&self, path: &str) -> Result<Model, Error> {
         let mut ctx = self.ctx.scene.quad_context.lock();
 
-        let bytes = load_file(path).await?;
+        let bytes = crate::file::load_string(path).await?;
 
-        let (gltf, buffers, _images) = gltf::import_slice(&bytes).unwrap();
+        let gltf: nanogltf::Gltf = nanogltf::Gltf::from_json(&bytes).unwrap();
+        println!("{:#?}", &gltf);
+        let buffers = gltf
+            .buffers
+            .iter()
+            .map(|buffer| {
+                let bytes = match nanogltf::parse_uri(&buffer.uri) {
+                    nanogltf::UriData::Bytes(bytes) => bytes,
+                    _ => unimplemented!(),
+                };
+                bytes
+            })
+            .collect::<Vec<_>>();
 
-        assert!(gltf.scenes().len() == 1);
-        let mut nodes = vec![];
-        let mut texture = None;
-        for image in gltf.images() {
-            println!("image: {:?}", image.name());
-            let view = match image.source() {
-                gltf::image::Source::View { view, .. } => view,
-                _ => unimplemented!(),
+        assert!(gltf.scenes.len() == 1);
+
+        let mut textures = vec![];
+        for image in &gltf.images {
+            let source = gltf.image_source(image);
+            let bytes: &[u8] = match source {
+                nanogltf::ImageSource::Bytes(ref bytes) => bytes,
+                nanogltf::ImageSource::Slice {
+                    buffer,
+                    offset,
+                    length,
+                } => &buffers[0][offset..offset + length],
             };
-            let buffer = &buffers[view.buffer().index()].0;
-            let data = &buffer[view.offset()..view.offset() + view.length()];
-            let png = nanoimage::png::decode(data).unwrap();
-            texture =
-                Some(ctx.new_texture_from_rgba8(png.width as u16, png.height as u16, &png.data));
+            let image = nanoimage::decode(&bytes).unwrap();
+            let texture =
+                ctx.new_texture_from_rgba8(image.width as u16, image.height as u16, &image.data);
+            ctx.texture_set_wrap(texture, TextureWrap::Repeat);
+            textures.push(texture);
         }
 
         let shader = ctx
@@ -170,81 +187,97 @@ impl Context3 {
             },
         );
 
-        let scene = gltf.scenes().next().unwrap();
-        for node in scene.nodes() {
-            let transform = node.transform().decomposed();
+        let mut nodes = vec![];
+        let scene = &gltf.scenes[0];
+        for node in &scene.nodes {
+            let node = &gltf.nodes[*node];
+            if node.children.len() != 0 {
+                continue;
+            }
+            let translation = node
+                .translation
+                .map_or(Vec3::ZERO, |t| vec3(t[0] as f32, t[1] as f32, t[2] as f32));
+            let rotation = node.rotation.map_or(Quat::IDENTITY, |t| {
+                Quat::from_xyzw(t[0] as f32, t[1] as f32, t[2] as f32, t[3] as f32)
+            });
+            let scale = node
+                .scale
+                .map_or(Vec3::ZERO, |t| vec3(t[0] as f32, t[1] as f32, t[2] as f32));
             let transform = Transform {
-                translation: transform.0.into(),
-                rotation: Quat::from_array(transform.1),
-                scale: transform.2.into(),
+                translation,
+                rotation,
+                scale,
             };
-            // println!(
-            //     "Node {:?} #{:?} has {} children",
-            //     node.name(),
-            //     node.index(),
-            //     node.children().count(),
-            // );
+            println!("Node {:?} has {} children", node.name, node.children.len(),);
 
-            let mesh = node.mesh().unwrap();
-
+            let mesh = node.mesh.unwrap();
+            let mesh = &gltf.meshes[mesh];
             let mut bindings = Vec::new();
 
-            for primitive in mesh.primitives() {
-                let color = primitive
-                    .material()
-                    .pbr_metallic_roughness()
-                    .base_color_factor();
-                let reader = primitive.reader(|buffer| Some(&buffers[buffer.index()]));
-                let indices: Vec<u16> = reader
-                    .read_indices()
-                    .unwrap()
-                    .into_u32()
-                    .map(|ix| ix as u16)
-                    .collect::<Vec<_>>();
-                let vertices: Vec<[f32; 3]> = reader.read_positions().unwrap().collect::<Vec<_>>();
-                let uvs: Vec<[f32; 2]> = if let Some(reader) = reader.read_tex_coords(0) {
-                    reader.into_f32().collect::<Vec<_>>()
-                } else {
-                    vec![]
-                };
+            for primitive in &mesh.primitives {
+                let material = &gltf.materials[primitive.material.unwrap()];
+                let color = material.pbr_metallic_roughness.base_color_factor;
 
-                let normals: Vec<[f32; 3]> = reader.read_normals().unwrap().collect::<Vec<_>>();
+                let base_color_texture = &material.pbr_metallic_roughness.base_color_texture;
+                let base_color_texture = base_color_texture
+                    .as_ref()
+                    .map_or(self.ctx.scene.white_texture, |t| textures[t.index]);
+                let emissive_texture = material
+                    .emissive_texture
+                    .as_ref()
+                    .map_or(self.ctx.scene.black_texture, |t| textures[t.index]);
+                let color = [
+                    color[0] as f32,
+                    color[1] as f32,
+                    color[2] as f32,
+                    color[3] as f32,
+                ];
+                let indices = gltf.primitive_bytes2(primitive.indices.unwrap());
+                let indices = &buffers[indices.0][indices.1..indices.1 + indices.2];
+                let vertices = gltf.primitive_bytes(primitive, "POSITION");
+                let vertices = &buffers[vertices.0][vertices.1..vertices.1 + vertices.2];
+                let uvs = gltf.primitive_bytes(primitive, "TEXCOORD_0");
+                let uvs = &buffers[uvs.0][uvs.1..uvs.1 + uvs.2];
+                let normals = gltf.primitive_bytes(primitive, "NORMAL");
+                let normals = &buffers[normals.0][normals.1..normals.1 + normals.2];
 
-                //println!("{:#?}", vertices);
-
-                let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
-                let vertex_buffer = ctx.new_buffer(
-                    BufferType::VertexBuffer,
-                    BufferUsage::Immutable,
-                    BufferSource::slice(&vertices),
-                );
-                let normals_buffer = ctx.new_buffer(
-                    BufferType::VertexBuffer,
-                    BufferUsage::Immutable,
-                    BufferSource::slice(&normals),
-                );
-                let uvs_buffer = ctx.new_buffer(
-                    BufferType::VertexBuffer,
-                    BufferUsage::Immutable,
-                    BufferSource::slice(&uvs),
-                );
-                let index_buffer = ctx.new_buffer(
-                    BufferType::IndexBuffer,
-                    BufferUsage::Immutable,
-                    BufferSource::slice(&indices),
-                );
+                let vertex_buffer =
+                    ctx.new_buffer(BufferType::VertexBuffer, BufferUsage::Immutable, unsafe {
+                        BufferSource::pointer(vertices.as_ptr(), vertices.len(), 4 * 3)
+                    });
+                let normals_buffer =
+                    ctx.new_buffer(BufferType::VertexBuffer, BufferUsage::Immutable, unsafe {
+                        BufferSource::pointer(normals.as_ptr(), normals.len(), 4 * 3)
+                    });
+                let uvs_buffer =
+                    ctx.new_buffer(BufferType::VertexBuffer, BufferUsage::Immutable, unsafe {
+                        BufferSource::pointer(uvs.as_ptr(), uvs.len(), 4 * 2)
+                    });
+                let index_buffer =
+                    ctx.new_buffer(BufferType::IndexBuffer, BufferUsage::Immutable, unsafe {
+                        BufferSource::pointer(indices.as_ptr(), indices.len(), 2)
+                    });
                 bindings.push((
                     pipeline,
                     color,
                     Bindings {
                         vertex_buffers: vec![vertex_buffer, uvs_buffer, normals_buffer],
                         index_buffer,
-                        images: vec![texture.unwrap_or(white_texture), white_texture],
+                        images: vec![
+                            base_color_texture,
+                            emissive_texture,
+                            self.ctx.scene.white_texture,
+                        ],
                     },
                 ));
             }
+
             nodes.push(Node {
-                name: node.name().unwrap().to_owned(),
+                name: node
+                    .name
+                    .clone()
+                    .unwrap_or("unnamed".to_string())
+                    .to_owned(),
                 data: bindings,
                 transform,
             });
@@ -346,6 +379,7 @@ impl SceneData {
 
         SceneData {
             white_texture: ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]),
+            black_texture: ctx.new_texture_from_rgba8(1, 1, &[0, 0, 0, 0]),
             fonts_storage: Mutex::new(fonts_storage),
 
             cameras: Mutex::new(vec![]),
@@ -461,20 +495,29 @@ impl<'a> Scene<'a> {
 
         for node in &model.nodes {
             for bindings in &node.data {
+                let cubemap = match camera.environment {
+                    crate::camera::Environment::Skybox(ref cubemap) => cubemap.texture,
+                    _ => unimplemented!(),
+                };
+                let images = [bindings.2.images[0], bindings.2.images[1], cubemap];
                 ctx.apply_pipeline(&bindings.0);
-                ctx.apply_bindings(&bindings.2);
+                ctx.apply_bindings2(&bindings.2.vertex_buffers, bindings.2.index_buffer, &images);
 
                 let (proj, view) = camera.proj_view();
                 let projection = proj * view;
                 let time = (crate::time::get_time()) as f32;
                 let time = glam::vec4(time, time.sin(), time.cos(), 0.);
 
+                let model = transform
+                    * (Mat4::from_translation(node.transform.translation)
+                        * Mat4::from_quat(node.transform.rotation));
+                let model_inverse = model.inverse();
                 ctx.apply_uniforms(UniformsSource::table(&shader::Uniforms {
                     projection,
-                    model: transform
-                        * (Mat4::from_translation(node.transform.translation)
-                            * Mat4::from_quat(node.transform.rotation)),
+                    model,
+                    model_inverse,
                     color: bindings.1,
+                    camera_pos: camera.position(),
                 }));
                 //}
 
@@ -496,44 +539,71 @@ impl<'a> Scene<'a> {
 }
 
 mod shader {
+    use crate::math::Vec3;
     use miniquad::{ShaderMeta, UniformBlockLayout, UniformDesc, UniformType};
 
     pub const VERTEX: &str = r#"#version 100
     attribute vec3 in_position;
     attribute vec2 in_uv;
-    attribute vec4 in_normal;
+    attribute vec3 in_normal;
 
     varying lowp vec2 out_uv;
     varying lowp vec4 out_color;
+    varying lowp vec3 out_pos;
+    varying lowp vec3 out_normal;
 
     uniform mat4 Model;
+    uniform mat4 ModelInverse;
     uniform mat4 Projection;
-    uniform vec4 Color;
+    uniform lowp vec4 Color;
+
+    mat3 transpose(mat3 m) {
+        return mat3(
+            vec3(m[0].x, m[1].x, m[2].x),
+            vec3(m[0].y, m[1].y, m[2].y),
+            vec3(m[0].z, m[1].z, m[2].z));
+    }
 
     void main() {
         gl_Position = Projection * Model * vec4(in_position, 1);
         out_uv = in_uv;
         out_color = Color;
+        out_normal = transpose(mat3(ModelInverse)) * in_normal;
+        out_pos = vec3(Model * vec4(in_position, 1.0));
     }"#;
 
     pub const FRAGMENT: &str = r#"#version 100
     varying lowp vec2 out_uv;
     varying lowp vec4 out_color;
+    varying lowp vec3 out_pos;
+    varying lowp vec3 out_normal;
 
     uniform sampler2D Texture;
+    uniform sampler2D Emissive;
+    uniform lowp vec3 CameraPosition;
+    uniform samplerCube Environment;
 
     void main() {
-        gl_FragColor = texture2D(Texture, out_uv) * out_color;
+        lowp vec3 I = normalize(out_pos - CameraPosition);
+        lowp vec3 R = reflect(I, normalize(out_normal));
+
+        gl_FragColor = textureCube(Environment, R) * texture2D(Texture, out_uv) * out_color + texture2D(Emissive, out_uv) * 0.5;
     }"#;
 
     pub fn meta() -> ShaderMeta {
         ShaderMeta {
-            images: vec!["Texture".to_string()],
+            images: vec![
+                "Texture".to_string(),
+                "Emissive".to_string(),
+                "Environment".to_string(),
+            ],
             uniforms: UniformBlockLayout {
                 uniforms: vec![
                     UniformDesc::new("Projection", UniformType::Mat4),
                     UniformDesc::new("Model", UniformType::Mat4),
+                    UniformDesc::new("ModelInverse", UniformType::Mat4),
                     UniformDesc::new("Color", UniformType::Float4),
+                    UniformDesc::new("CameraPosition", UniformType::Float3),
                 ],
             },
         }
@@ -543,6 +613,8 @@ mod shader {
     pub struct Uniforms {
         pub projection: crate::math::Mat4,
         pub model: crate::math::Mat4,
+        pub model_inverse: crate::math::Mat4,
         pub color: [f32; 4],
+        pub camera_pos: Vec3,
     }
 }

@@ -138,6 +138,13 @@ impl Camera {
             }
         }
     }
+
+    pub fn position(&self) -> Vec3 {
+        match self.position {
+            CameraPosition::Camera3D { position, .. } => position,
+            _ => panic!(),
+        }
+    }
 }
 
 //     pub fn fixed_height(height: f32) -> Camera {
