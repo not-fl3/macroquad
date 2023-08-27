@@ -74,7 +74,7 @@ impl Default for Camera2D {
 
 impl Camera for Camera2D {
     fn matrix(&self) -> Mat4 {
-        // gleaned from https://github.com/raysan5/raylib/blob/master/src/core.c#L1528
+        // gleaned from https://github.com/raysan5/raylib/blob/master/src/rcore.c#L2888
 
         // The camera in world-space is set by
         //   1. Move it to target
