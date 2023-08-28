@@ -48,7 +48,7 @@ impl Camera2D {
 
         Camera2D {
             target,
-            zoom: vec2(1. / rect.w * 2., -1. / rect.h * 2.),
+            zoom: vec2(1. / rect.w * 2., 1. / rect.h * 2.),
             offset: vec2(0., 0.),
             rotation: 0.,
 
@@ -93,9 +93,9 @@ impl Camera for Camera2D {
         let mat_origin = Mat4::from_translation(vec3(-self.target.x, -self.target.y, 0.0));
         let mat_rotation = Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), self.rotation.to_radians());
         let invert_y = if self.render_target.is_some() {
-            -1.0
-        } else {
             1.0
+        } else {
+            -1.0
         };
         let mat_scale = Mat4::from_scale(vec3(self.zoom.x, self.zoom.y * invert_y, 1.0));
         let mat_translation = Mat4::from_translation(vec3(self.offset.x, self.offset.y, 0.0));
