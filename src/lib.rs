@@ -72,7 +72,8 @@ mod error;
 
 pub use error::Error;
 
-pub mod scene_graph;
+pub mod scene;
+pub mod sprite_layer;
 
 /// Cross platform random generator.
 pub mod rand {
@@ -161,7 +162,7 @@ struct Context {
     unwind: bool,
     recovery_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
 
-    //quad_context: Box<dyn miniquad::RenderingBackend>,
+    //quad_ctx: Box<dyn miniquad::RenderingBackend>,
     textures: crate::texture::TexturesContext,
 }
 
@@ -306,9 +307,9 @@ impl Context {
 
         //self.perform_render_passes();
 
-        // self.ui_context.draw(get_quad_context(), &mut self.gl);
+        // self.ui_context.draw(get_quad_ctx(), &mut self.gl);
         // let screen_mat = self.pixel_perfect_projection_matrix();
-        // self.gl.draw(get_quad_context(), screen_mat);
+        // self.gl.draw(get_quad_ctx(), screen_mat);
 
         //for canvas in self.scene_graph.canvases {}
 
@@ -383,13 +384,13 @@ fn get_context() -> &'static mut Context {
     unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
 }
 
-fn get_quad_context() -> &'static mut dyn miniquad::RenderingBackend {
+fn get_quad_ctx() -> &'static mut dyn miniquad::RenderingBackend {
     unimplemented!()
 }
 
 struct Stage {
     main_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
-    ctx: Arc<Context2>,
+    ctx: Arc<Context3>,
 }
 
 impl EventHandler for Stage {
@@ -567,23 +568,22 @@ impl EventHandler for Stage {
 
             use std::panic;
 
-            let scene = scene_graph::Scene {
-                data: &self.ctx.scene,
-                ctx: self.ctx.clone(),
-            };
+            // let scene = scene::Scene {
+            //     data: &self.ctx.scene,
+            //     ctx: self.ctx.clone(),
+            // };
+            // {
+            //     let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
+
+            //     scene.clear(Color::new(0.2, 0.2, 0.5, 1.));
+            // }
+
             {
-                let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
+                let mut ctx = self.ctx.quad_ctx.lock().unwrap();
+                let clear = PassAction::clear_color(0.2, 0.2, 0.2, 1.);
 
-                scene.clear(Color::new(0.2, 0.2, 0.5, 1.));
-            }
-
-            fn maybe_unwind(unwind: bool, f: impl FnOnce() + Sized + panic::UnwindSafe) -> bool {
-                if unwind {
-                    panic::catch_unwind(|| f()).is_ok()
-                } else {
-                    f();
-                    true
-                }
+                ctx.begin_default_pass(clear);
+                ctx.end_render_pass();
             }
 
             //let result = maybe_unwind(get_context().unwind, || {
@@ -599,18 +599,18 @@ impl EventHandler for Stage {
             }
             //});
 
-            scene.draw_canvas(0);
-            for camera in &mut *scene.data.cameras.lock() {
-                let (proj, view) = camera.proj_view();
-                if let crate::camera::Environment::Skybox(ref mut cubemap) = camera.environment {
-                    cubemap.draw(&mut **scene.data.quad_context.lock(), &proj, &view);
-                }
-                for (model, t) in &mut *scene.data.models.lock() {
-                    let mat = t.matrix();
-                    scene.draw_model(model, camera, mat);
-                }
-            }
-            scene.draw_canvas(1);
+            //scene.draw_canvas(0);
+            // for camera in &mut *scene.data.cameras.lock() {
+            //     let (proj, view) = camera.proj_view();
+            //     if let crate::camera::Environment::Skybox(ref mut cubemap) = camera.environment {
+            //         cubemap.draw(&mut **scene.data.quad_ctx.lock(), &proj, &view);
+            //     }
+            //     for (model, t) in &mut *scene.data.models.lock() {
+            //         let mat = t.matrix();
+            //         scene.draw_model(model, camera, mat);
+            //     }
+            // }
+            // scene.draw_canvas(1);
             // if result == false {
             //     if let Some(recovery_future) = get_context().recovery_future.take() {
             //         self.main_future = Some(recovery_future);
@@ -620,7 +620,7 @@ impl EventHandler for Stage {
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
                 get_context().end_frame();
-                let mut ctx = scene.data.quad_context.lock();
+                let mut ctx = self.ctx.quad_ctx.lock().unwrap();
                 ctx.commit_frame()
             }
             // get_context().frame_time = date::now() - get_context().last_frame_time;
@@ -659,30 +659,32 @@ impl EventHandler for Stage {
     }
 }
 
-pub struct Context2 {
-    scene: scene_graph::SceneData,
-}
-
+#[derive(Clone)]
 pub struct Context3 {
-    ctx: Arc<Context2>,
-}
-
-impl Context2 {
-    pub(crate) fn new() -> Context2 {
-        let mut ctx: Box<dyn miniquad::RenderingBackend> =
-            miniquad::window::new_rendering_backend();
-        let scene = scene_graph::SceneData::new(ctx);
-
-        Context2 { scene }
-    }
+    quad_ctx: Arc<Mutex<Box<dyn miniquad::RenderingBackend>>>,
+    textures: Arc<Mutex<crate::texture::TexturesContext>>,
+    fonts_storage: Arc<Mutex<text::FontsStorage>>,
 }
 
 impl Context3 {
-    pub fn scene(&self) -> scene_graph::Scene {
-        scene_graph::Scene {
-            data: &self.ctx.scene,
-            ctx: self.ctx.clone(),
+    pub(crate) fn new() -> Context3 {
+        let mut ctx = miniquad::window::new_rendering_backend();
+
+        let fonts_storage = text::FontsStorage::new(&mut *ctx);
+        let textures = crate::texture::TexturesContext::new();
+        Context3 {
+            quad_ctx: Arc::new(Mutex::new(ctx)),
+            fonts_storage: Arc::new(Mutex::new(fonts_storage)),
+            textures: Arc::new(Mutex::new(textures)),
         }
+    }
+
+    pub fn new_scene(&self) -> scene::Scene {
+        scene::Scene::new(self.quad_ctx.clone(), self.fonts_storage.clone())
+    }
+
+    pub fn new_sprite_layer(&self) -> sprite_layer::SpriteLayer {
+        sprite_layer::SpriteLayer::new(self.quad_ctx.clone(), self.fonts_storage.clone())
     }
 }
 
@@ -693,14 +695,10 @@ pub fn start<F: Fn(Context3) -> Fut + 'static, Fut: Future<Output = ()> + 'stati
     miniquad::start(conf::Conf { ..config }, move || {
         thread_assert::set_thread_id();
         unsafe { CONTEXT = Some(Context::new()) };
-        let ctx = Context3 {
-            ctx: Arc::new(Context2::new()),
-        };
+        let ctx = Context3::new();
         Box::new(Stage {
-            main_future: Some(Box::pin(future(Context3 {
-                ctx: Arc::clone(&ctx.ctx),
-            }))),
-            ctx: ctx.ctx,
+            main_future: Some(Box::pin(future(ctx.clone()))),
+            ctx: Arc::new(ctx),
         })
     });
 }

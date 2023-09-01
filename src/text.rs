@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     color::Color,
-    get_context, get_quad_context,
+    get_context, get_quad_ctx,
     math::{vec3, Rect},
     texture::{Image, TextureHandle},
     Error,
@@ -16,7 +16,7 @@ use glam::vec2;
 use std::sync::{Arc, Mutex};
 pub(crate) mod atlas;
 
-use crate::scene_graph::SpriteLayer;
+use crate::sprite_layer::SpriteLayer;
 use atlas::{Atlas, SpriteKey};
 
 #[derive(Debug, Clone)]
@@ -267,7 +267,7 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, Error> {
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
     let context = get_context();
     let atlas = Arc::new(Mutex::new(Atlas::new(
-        get_quad_context(),
+        get_quad_ctx(),
         miniquad::FilterMode::Linear,
     )));
 
@@ -305,7 +305,7 @@ pub fn draw_text_ex(
     params: TextParams,
 ) {
     let font = {
-        let fonts = sprite_layer.ctx.scene.fonts_storage.lock();
+        let fonts = sprite_layer.fonts_storage.lock().unwrap();
         params.font.unwrap_or_else(|| &fonts.default_font).clone()
     };
 
@@ -353,7 +353,7 @@ pub fn draw_text_ex(
         );
 
         let texture = {
-            let mut ctx = sprite_layer.ctx.scene.quad_context.lock();
+            let mut ctx = sprite_layer.quad_ctx.lock().unwrap();
             atlas.texture(&mut **ctx)
         };
         sprite_layer.draw_texture_ex(

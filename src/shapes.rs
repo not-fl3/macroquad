@@ -5,7 +5,7 @@ use crate::color::Color;
 use crate::{
     math::{vec2, Rect, Vec2},
     quad_gl::{DrawMode, Vertex},
-    scene_graph::SpriteLayer,
+    sprite_layer::SpriteLayer,
 };
 
 impl SpriteLayer {

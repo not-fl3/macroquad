@@ -20,12 +20,12 @@ pub fn gl_set_drawcall_buffer_capacity(_max_vertices: usize, _max_indices: usize
     // let context = get_context();
     // context
     //     .gl
-    //     .update_drawcall_capacity(get_quad_context(), max_vertices, max_indices);
+    //     .update_drawcall_capacity(get_quad_ctx(), max_vertices, max_indices);
     unimplemented!()
 }
 
 pub struct InternalGlContext<'a> {
-    pub quad_context: &'a mut dyn miniquad::RenderingBackend,
+    pub quad_ctx: &'a mut dyn miniquad::RenderingBackend,
     pub quad_gl: &'a mut crate::quad_gl::QuadGl,
 }
 
@@ -42,7 +42,7 @@ pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
     // let context = get_context();
 
     // InternalGlContext {
-    //     quad_context: get_quad_context(),
+    //     quad_ctx: get_quad_ctx(),
     //     quad_gl: &mut context.gl,
     // }
     unimplemented!()

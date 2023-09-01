@@ -23,12 +23,12 @@ impl Cubemap {
         let color_img = ctx.new_texture(
             TextureAccess::Static,
             TextureSource::Array(&[
-                &texture0.data,
-                &texture1.data,
-                &texture2.data,
-                &texture3.data,
-                &texture4.data,
-                &texture5.data,
+                &[&texture0.data],
+                &[&texture1.data],
+                &[&texture2.data],
+                &[&texture3.data],
+                &[&texture4.data],
+                &[&texture5.data],
             ]),
             TextureParams {
                 width: texture0.width as _,
@@ -100,12 +100,17 @@ impl Cubemap {
             images: vec![color_img],
         };
 
+        let info = ctx.info();
         let default_shader = ctx
             .new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(display_shader::VERTEX),
-                    glsl_fragment: Some(display_shader::FRAGMENT),
-                    metal_shader: Some(display_shader::METAL),
+                match info.backend {
+                    Backend::OpenGl => ShaderSource::Glsl {
+                        vertex: display_shader::VERTEX,
+                        fragment: display_shader::FRAGMENT,
+                    },
+                    Backend::Metal => ShaderSource::Msl {
+                        program: display_shader::METAL,
+                    },
                 },
                 display_shader::meta(),
             )

@@ -4,7 +4,7 @@ use macroquad::prelude::*;
 async fn main() {
     let stage = {
         let InternalGlContext {
-            quad_context: ctx, ..
+            quad_ctx: ctx, ..
         } = unsafe { get_internal_gl() };
 
         raw_miniquad::Stage::new(ctx)
@@ -31,24 +31,24 @@ async fn main() {
 
             let t = get_time();
 
-            gl.quad_context.apply_pipeline(&stage.pipeline);
+            gl.quad_ctx.apply_pipeline(&stage.pipeline);
 
-            gl.quad_context
+            gl.quad_ctx
                 .begin_default_pass(miniquad::PassAction::Nothing);
-            gl.quad_context.apply_bindings(&stage.bindings);
+            gl.quad_ctx.apply_bindings(&stage.bindings);
 
             for i in 0..10 {
                 let t = t + i as f64 * 0.3;
 
-                gl.quad_context
+                gl.quad_ctx
                     .apply_uniforms(miniquad::UniformsSource::table(
                         &raw_miniquad::shader::Uniforms {
                             offset: (t.sin() as f32 * 0.5, (t * 3.).cos() as f32 * 0.5),
                         },
                     ));
-                gl.quad_context.draw(0, 6, 1);
+                gl.quad_ctx.draw(0, 6, 1);
             }
-            gl.quad_context.end_render_pass();
+            gl.quad_ctx.end_render_pass();
         }
 
         // Back to screen space, render some text

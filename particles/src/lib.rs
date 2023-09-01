@@ -529,9 +529,7 @@ impl Emitter {
     const MAX_PARTICLES: usize = 10000;
 
     pub fn new(config: EmitterConfig) -> Emitter {
-        let InternalGlContext {
-            quad_context: ctx, ..
-        } = unsafe { get_internal_gl() };
+        let InternalGlContext { quad_ctx: ctx, .. } = unsafe { get_internal_gl() };
 
         // empty, dynamic instance-data vertex buffer
         let positions_vertex_buffer = ctx.new_buffer(
@@ -980,7 +978,7 @@ impl Emitter {
         gl.flush();
 
         let InternalGlContext {
-            quad_context: ctx,
+            quad_ctx: ctx,
             quad_gl,
         } = gl;
 
@@ -1044,7 +1042,7 @@ impl EmittersCache {
         gl.flush();
 
         let InternalGlContext {
-            quad_context: ctx,
+            quad_ctx: ctx,
             quad_gl,
         } = gl;
 

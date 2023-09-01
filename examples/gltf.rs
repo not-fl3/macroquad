@@ -2,8 +2,10 @@ use dolly::prelude::*;
 use macroquad::prelude::*;
 
 async fn game(ctx: macroquad::Context3) {
+    let mut scene = ctx.new_scene();
+
     let helmet = ctx.load_gltf("examples/DamagedHelmet.gltf").await.unwrap();
-    let _helmet = ctx.scene().add_model(helmet);
+    let _helmet = scene.add_model(helmet);
 
     let skybox: &[&[u8]] = &[
         &include_bytes!("skybox/skybox_px.png")[..],
@@ -15,13 +17,13 @@ async fn game(ctx: macroquad::Context3) {
     ];
     let skybox = ctx.load_cubemap(skybox);
 
-    let mut camera_rig: CameraRig = CameraRig::builder()
-        .with(YawPitch::new().yaw_degrees(45.0).pitch_degrees(-30.0))
+    let mut dolly_rig: CameraRig = CameraRig::builder()
+        .with(YawPitch::new().yaw_degrees(45.0).pitch_degrees(-10.0))
         .with(Smooth::new_rotation(0.7))
         .with(Arm::new(Vec3::Z * 4.0))
         .build();
 
-    let camera = ctx.scene().add_camera(Camera {
+    let camera = scene.add_camera(Camera {
         environment: Environment::Skybox(skybox),
         depth_enabled: true,
         projection: Projection::Perspective,
@@ -37,23 +39,26 @@ async fn game(ctx: macroquad::Context3) {
         ..Default::default()
     });
 
-    let mut canvas = ctx.scene().fullscreen_canvas(0);
+    let mut canvas = ctx.new_sprite_layer();
     canvas.draw_text("WELCOME TO 3D WORLD", 10.0, 20.0, 30.0, BLACK);
-    canvas.draw_text("TEXT BELOW!!!", 400.0, 400.0, 30.0, BLUE);
-    canvas.draw_rectangle(300., 200., 100., 100., RED);
-
-    let mut canvas = ctx.scene().fullscreen_canvas(1);
-    canvas.draw_rectangle(100., 350., 100., 100., GREEN);
-    canvas.draw_text("TEXT ABOVE!!!", 400.0, 300.0, 30.0, YELLOW);
+    canvas.draw_rectangle(30., 30., 100., 100., RED);
 
     let mut angles = vec2(0., 0.);
+    let mut zoom = 4.0;
     loop {
         if is_mouse_button_down(MouseButton::Left) {
-            angles += mouse_delta();
-            camera_rig.driver_mut::<YawPitch>().rotate_yaw_pitch(mouse_delta().x * 100., mouse_delta().y * 100.);
+            dbg!(mouse_delta());
+            dolly_rig
+                .driver_mut::<YawPitch>()
+                .rotate_yaw_pitch(mouse_delta().x * 100., mouse_delta().y * 100.);
         }
-        let dolly_transform = camera_rig.update(get_frame_time());
-        camera.update(|camera| {
+        if mouse_wheel().1 != 0.0 {
+            zoom -= mouse_wheel().1 * 0.4;
+            zoom = zoom.clamp(1.8, 10.0);
+            dolly_rig.driver_mut::<Arm>().offset = Vec3::Z * zoom;
+        }
+        let dolly_transform = dolly_rig.update(get_frame_time());
+        scene.update_camera(&camera, |camera| {
             camera.position = CameraPosition::Camera3D {
                 position: dolly_transform.position,
                 up: dolly_transform.up(),
@@ -64,6 +69,8 @@ async fn game(ctx: macroquad::Context3) {
             }
         });
 
+        scene.draw();
+        canvas.draw();
         next_frame().await
     }
 }

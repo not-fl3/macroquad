@@ -21,7 +21,6 @@ pub enum Projection {
     Orthographics,
 }
 
-#[derive(Debug)]
 pub struct Camera {
     pub depth_enabled: bool,
     pub render_target: Option<RenderTarget>,

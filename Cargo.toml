@@ -28,16 +28,16 @@ all-features = true
 [dependencies]
 miniquad = { version = "=0.4.0-alpha.8", features = ["log-impl"] }
 quad-rand = "0.2.1"
-glam = {version = "0.21", features = ["scalar-math"] }
+glam = {version = "0.24", features = ["scalar-math"] }
 fontdue = "0.7"
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
 slotmap = "1.0"
-parking_lot = "*"
 nanoimage = "0.1.2"
 nanogltf = { path = "../nanogltf" }
-
+zune-jpeg = "*"
+shadermagic = { path = "../shadermagic" }
 [dev-dependencies]
 dolly = "*"
 #macroquad-particles = { path = "./particles" }
@@ -53,3 +53,5 @@ macroquad = { path = './' }
 #quad-snd = {path = '../quad-snd'}
 miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}
+nanoimage = { path = "../nanoimage" }
+zune-jpeg = { path = "../zune-image/zune-jpeg" }

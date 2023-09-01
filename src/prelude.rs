@@ -26,5 +26,5 @@ pub use crate::logging::*;
 
 pub use crate::color_u8;
 
-pub use crate::scene_graph::*;
-pub use crate::scene_graph;
+pub use crate::scene::*;
+pub use crate::scene;

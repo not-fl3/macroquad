@@ -1,4 +1,4 @@
-use crate::{get_context, get_quad_context, time::get_time};
+use crate::{get_context, get_quad_ctx, time::get_time};
 
 use std::collections::HashMap;
 
@@ -374,18 +374,18 @@ pub(crate) fn track_drawcall(
     bindings: &miniquad::Bindings,
     indices_count: usize,
 ) {
-    let texture = get_quad_context().new_render_texture(miniquad::TextureParams {
+    let texture = get_quad_ctx().new_render_texture(miniquad::TextureParams {
         width: 128,
         height: 128,
         ..Default::default()
     });
 
-    let pass = Some(get_quad_context().new_render_pass(texture, None));
-    get_quad_context().begin_pass(pass, miniquad::PassAction::clear_color(0.4, 0.8, 0.4, 1.));
-    get_quad_context().apply_pipeline(pipeline);
-    get_quad_context().apply_bindings(bindings);
-    get_quad_context().draw(0, indices_count as _, 1);
-    get_quad_context().end_render_pass();
+    let pass = Some(get_quad_ctx().new_render_pass(texture, None));
+    get_quad_ctx().begin_pass(pass, miniquad::PassAction::clear_color(0.4, 0.8, 0.4, 1.));
+    get_quad_ctx().apply_pipeline(pipeline);
+    get_quad_ctx().apply_bindings(bindings);
+    get_quad_ctx().draw(0, indices_count as _, 1);
+    get_quad_ctx().end_render_pass();
 
     get_profiler().drawcalls.push(DrawCallTelemetry {
         indices_count,

@@ -1,6 +1,6 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::{get_context, get_quad_context, texture::Texture2D, warn};
+use crate::{get_context, get_quad_ctx, texture::Texture2D, warn};
 
 use miniquad::{PipelineParams, ShaderError, UniformType, *};
 
@@ -101,14 +101,13 @@ impl Material {
         fragment_shader: &str,
         params: MaterialParams,
     ) -> Result<Material, ShaderError> {
-        let ctx = get_quad_context();
+        let ctx = get_quad_ctx();
 
         let shader = ctx
             .new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(vertex_shader),
-                    glsl_fragment: Some(fragment_shader),
-                    metal_shader: None,
+                ShaderSource::Glsl {
+                    vertex: vertex_shader,
+                    fragment: fragment_shader,
                 },
                 shader::meta(),
             )
@@ -225,7 +224,7 @@ impl Default for MaterialParams {
 //     let context = &mut get_context();
 
 //     let pipeline = context.gl.make_pipeline(
-//         &mut *context.quad_context,
+//         &mut *context.quad_ctx,
 //         shader,
 //         params.pipeline_params,
 //         params.uniforms,
