@@ -1283,16 +1283,20 @@ pub(crate) mod ui_context {
 
         pub(crate) fn draw(
             &mut self,
-            _ctx: &mut dyn miniquad::RenderingBackend,
+            ctx: &mut dyn miniquad::RenderingBackend,
             quad_gl: &mut QuadGl,
         ) {
             // TODO: this belongs to new and waits for cleaning up context initialization mess
             let material = self.material.get_or_insert_with(|| {
                 load_material(
-                    ShaderSource {
-                        glsl_vertex: Some(VERTEX_SHADER),
-                        glsl_fragment: Some(FRAGMENT_SHADER),
-                        metal_shader: Some(METAL_SHADER),
+                    match ctx.info().backend {
+                        Backend::OpenGl => ShaderSource::Glsl {
+                            vertex: VERTEX_SHADER,
+                            fragment: FRAGMENT_SHADER,
+                        },
+                        Backend::Metal => ShaderSource::Msl {
+                            program: METAL_SHADER,
+                        },
                     },
                     MaterialParams {
                         pipeline_params: PipelineParams {

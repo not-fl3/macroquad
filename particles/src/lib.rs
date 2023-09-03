@@ -565,10 +565,9 @@ impl Emitter {
             let fragment = preprocess_shader(&fragment, &config);
 
             ctx.new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(&vertex),
-                    glsl_fragment: Some(&fragment),
-                    metal_shader: None,
+                ShaderSource::Glsl {
+                    vertex: &vertex,
+                    fragment: &fragment,
                 },
                 shader::meta(),
             )
@@ -607,10 +606,9 @@ impl Emitter {
 
         let post_processing_shader = ctx
             .new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(&post_processing_shader::VERTEX),
-                    glsl_fragment: Some(&post_processing_shader::FRAGMENT),
-                    metal_shader: None,
+                ShaderSource::Glsl {
+                    vertex: &post_processing_shader::VERTEX,
+                    fragment: &post_processing_shader::FRAGMENT,
                 },
                 post_processing_shader::meta(),
             )
@@ -639,7 +637,7 @@ impl Emitter {
                 format: TextureFormat::RGBA8,
                 ..Default::default()
             });
-            ctx.texture_set_filter(color_img, FilterMode::Nearest);
+            ctx.texture_set_filter(color_img, FilterMode::Nearest, MipmapFilterMode::None);
 
             ctx.new_render_pass(color_img, None)
         };

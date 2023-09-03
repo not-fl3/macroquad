@@ -629,7 +629,11 @@ impl Texture2D {
     pub fn set_filter(&self, filter_mode: FilterMode) {
         let ctx = get_quad_context();
 
-        ctx.texture_set_filter(self.raw_miniquad_id(), filter_mode);
+        ctx.texture_set_filter(
+            self.raw_miniquad_id(),
+            filter_mode,
+            miniquad::MipmapFilterMode::None,
+        );
     }
 
     /// Returns the handle for this texture.

@@ -58,10 +58,9 @@ async fn main() {
     };
 
     let mut material = load_material(
-        ShaderSource {
-            glsl_vertex: Some(&vertex_shader),
-            glsl_fragment: Some(&fragment_shader),
-            metal_shader: None,
+        ShaderSource::Glsl {
+            vertex: &vertex_shader,
+            fragment: &fragment_shader,
         },
         MaterialParams {
             pipeline_params,
@@ -342,10 +341,9 @@ async fn main() {
                 .collect::<Vec<_>>();
 
             match load_material(
-                ShaderSource {
-                    glsl_vertex: Some(&vertex_shader),
-                    glsl_fragment: Some(&fragment_shader),
-                    metal_shader: None,
+                ShaderSource::Glsl {
+                    vertex: &vertex_shader,
+                    fragment: &fragment_shader,
                 },
                 MaterialParams {
                     pipeline_params,

@@ -29,10 +29,9 @@ void main() {
 #[macroquad::main("Shaders")]
 async fn main() {
     let mat = load_material(
-        ShaderSource {
-            glsl_vertex: Some(VERTEX),
-            glsl_fragment: Some(FRAGMENT),
-            metal_shader: None,
+        ShaderSource::Glsl {
+            vertex: VERTEX,
+            fragment: FRAGMENT,
         },
         MaterialParams {
             uniforms: vec![("test_color".to_string(), UniformType::Float4)],

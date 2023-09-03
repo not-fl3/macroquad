@@ -208,10 +208,14 @@ impl MagicSnapshotter {
     fn new(ctx: &mut dyn RenderingBackend) -> MagicSnapshotter {
         let shader = ctx
             .new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(snapshotter_shader::VERTEX),
-                    glsl_fragment: Some(snapshotter_shader::FRAGMENT),
-                    metal_shader: Some(snapshotter_shader::METAL),
+                match ctx.info().backend {
+                    Backend::OpenGl => ShaderSource::Glsl {
+                        vertex: snapshotter_shader::VERTEX,
+                        fragment: snapshotter_shader::FRAGMENT,
+                    },
+                    Backend::Metal => ShaderSource::Msl {
+                        program: snapshotter_shader::METAL,
+                    },
                 },
                 snapshotter_shader::meta(),
             )
@@ -417,10 +421,14 @@ impl PipelinesStorage {
     fn new(ctx: &mut dyn RenderingBackend) -> PipelinesStorage {
         let shader = ctx
             .new_shader(
-                ShaderSource {
-                    glsl_vertex: Some(shader::VERTEX),
-                    glsl_fragment: Some(shader::FRAGMENT),
-                    metal_shader: Some(shader::METAL),
+                match ctx.info().backend {
+                    Backend::OpenGl => ShaderSource::Glsl {
+                        vertex: shader::VERTEX,
+                        fragment: shader::FRAGMENT,
+                    },
+                    Backend::Metal => ShaderSource::Msl {
+                        program: shader::METAL,
+                    },
                 },
                 shader::meta(),
             )
@@ -656,12 +664,11 @@ impl QuadGl {
             shader_meta.images.push(texture.clone());
         }
 
-        let wants_screen_texture = shader
-            .glsl_fragment
-            .as_ref()
-            .unwrap()
-            .find("_ScreenTexture")
-            .is_some();
+        let source = match shader {
+            ShaderSource::Glsl { fragment, .. } => fragment,
+            ShaderSource::Msl { program } => program,
+        };
+        let wants_screen_texture = source.find("_ScreenTexture").is_some();
         let shader = ctx.new_shader(shader, shader_meta)?;
         Ok(self.pipelines.make_pipeline(
             ctx,

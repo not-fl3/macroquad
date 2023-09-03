@@ -118,10 +118,9 @@ mod raw_miniquad {
 
             let shader = ctx
                 .new_shader(
-                    miniquad::ShaderSource {
-                        glsl_vertex: Some(shader::VERTEX),
-                        glsl_fragment: Some(shader::FRAGMENT),
-                        metal_shader: None,
+                    miniquad::ShaderSource::Glsl {
+                        vertex: shader::VERTEX,
+                        fragment: shader::FRAGMENT,
                     },
                     shader::meta(),
                 )

@@ -5,10 +5,9 @@ async fn main() {
     let texture: Texture2D = load_texture("examples/chess.png").await.unwrap();
 
     let lens_material = load_material(
-        ShaderSource {
-            glsl_vertex: Some(LENS_VERTEX_SHADER),
-            glsl_fragment: Some(LENS_FRAGMENT_SHADER),
-            metal_shader: None,
+        ShaderSource::Glsl {
+            vertex: LENS_VERTEX_SHADER,
+            fragment: LENS_FRAGMENT_SHADER,
         },
         MaterialParams {
             uniforms: vec![("Center".to_owned(), UniformType::Float2)],

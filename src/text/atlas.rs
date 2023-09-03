@@ -41,7 +41,11 @@ impl Atlas {
     pub fn new(ctx: &mut dyn miniquad::RenderingBackend, filter: miniquad::FilterMode) -> Atlas {
         let image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
         let texture = ctx.new_texture_from_rgba8(image.width, image.height, &image.bytes);
-        ctx.texture_set_filter(texture, miniquad::FilterMode::Nearest);
+        ctx.texture_set_filter(
+            texture,
+            miniquad::FilterMode::Nearest,
+            miniquad::MipmapFilterMode::None,
+        );
 
         Atlas {
             image,
@@ -65,7 +69,7 @@ impl Atlas {
     pub fn set_filter(&mut self, filter_mode: miniquad::FilterMode) {
         let ctx = get_quad_context();
         self.filter = filter_mode;
-        ctx.texture_set_filter(self.texture, filter_mode);
+        ctx.texture_set_filter(self.texture, filter_mode, miniquad::MipmapFilterMode::None);
     }
 
     pub fn get(&self, key: SpriteKey) -> Option<Sprite> {
@@ -93,7 +97,7 @@ impl Atlas {
                     self.image.height,
                     &self.image.bytes[..],
                 );
-                ctx.texture_set_filter(self.texture, self.filter);
+                ctx.texture_set_filter(self.texture, self.filter, miniquad::MipmapFilterMode::None);
             }
 
             ctx.texture_update(self.texture, &self.image.bytes);
