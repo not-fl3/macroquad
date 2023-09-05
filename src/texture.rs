@@ -340,6 +340,8 @@ pub fn draw_texture_ex(
 ) {
     let context = get_context();
 
+    let [width, height] = texture.size().to_array();
+
     let Rect {
         x: mut sx,
         y: mut sy,
@@ -348,22 +350,23 @@ pub fn draw_texture_ex(
     } = params.source.unwrap_or(Rect {
         x: 0.,
         y: 0.,
-        w: texture.width(),
-        h: texture.height(),
+        w: width,
+        h: height,
     });
 
-    let texture = context
+    let texture_opt = context
         .texture_batcher
         .get(texture)
         .map(|(batched_texture, uv)| {
-            sx = ((sx / texture.width()) * uv.w + uv.x) * batched_texture.width();
-            sy = ((sy / texture.height()) * uv.h + uv.y) * batched_texture.height();
-            sw = (sw / texture.width()) * uv.w * batched_texture.width();
-            sh = (sh / texture.height()) * uv.h * batched_texture.height();
+            let [batched_width, batched_height] = batched_texture.size().to_array();
+            sx = ((sx / width) * uv.w + uv.x) * batched_width;
+            sy = ((sy / height) * uv.h + uv.y) * batched_height;
+            sw = (sw / width) * uv.w * batched_width;
+            sh = (sh / height) * uv.h * batched_height;
 
             batched_texture
-        })
-        .unwrap_or(texture.clone());
+        });
+    let texture = texture_opt.as_ref().unwrap_or(texture);
 
     let (mut w, mut h) = match params.dest_size {
         Some(dst) => (dst.x, dst.y),
@@ -409,10 +412,10 @@ pub fn draw_texture_ex(
     ];
     #[rustfmt::skip]
     let vertices = [
-        Vertex::new(p[0].x, p[0].y, 0.,  sx      /texture.width(),  sy      /texture.height(), color),
-        Vertex::new(p[1].x, p[1].y, 0., (sx + sw)/texture.width(),  sy      /texture.height(), color),
-        Vertex::new(p[2].x, p[2].y, 0., (sx + sw)/texture.width(), (sy + sh)/texture.height(), color),
-        Vertex::new(p[3].x, p[3].y, 0.,  sx      /texture.width(), (sy + sh)/texture.height(), color),
+        Vertex::new(p[0].x, p[0].y, 0.,  sx      /width,  sy      /height, color),
+        Vertex::new(p[1].x, p[1].y, 0., (sx + sw)/width,  sy      /height, color),
+        Vertex::new(p[2].x, p[2].y, 0., (sx + sw)/width, (sy + sh)/height, color),
+        Vertex::new(p[3].x, p[3].y, 0.,  sx      /width, (sy + sh)/height, color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
@@ -611,6 +614,13 @@ impl Texture2D {
         let (_, height) = ctx.texture_size(self.raw_miniquad_id());
 
         height as f32
+    }
+
+    pub fn size(&self) -> Vec2 {
+        let ctx = get_quad_context();
+        let (width, height) = ctx.texture_size(self.raw_miniquad_id());
+
+        vec2(width as f32, height as f32)
     }
 
     /// Sets the [FilterMode] of this texture.

@@ -168,9 +168,11 @@ pub(crate) mod thread_assert {
 
     pub fn same_thread() {
         unsafe {
-            let thread_id = std::thread::current().id();
+            thread_local! {
+                static CURRENT_THREAD_ID: std::thread::ThreadId = std::thread::current().id();
+            }
             assert!(THREAD_ID.is_some());
-            assert!(THREAD_ID.unwrap() == thread_id);
+            assert!(THREAD_ID.unwrap() == CURRENT_THREAD_ID.with(|id| *id));
         }
     }
 }
