@@ -31,12 +31,17 @@ pub(crate) enum TextureHandle {
 
 pub(crate) struct TexturesContext {
     textures: SlotMap<crate::texture::TextureSlotId, miniquad::TextureId>,
+    removed: Vec<TextureSlotId>,
 }
 impl TexturesContext {
     pub fn new() -> TexturesContext {
         TexturesContext {
             textures: SlotMap::with_key(),
+            removed: Vec::with_capacity(200),
         }
+    }
+    fn schedule_removed(&mut self, texture: TextureSlotId) {
+        self.removed.push(texture);
     }
     fn store_texture(&mut self, texture: miniquad::TextureId) -> TextureHandle {
         TextureHandle::Managed(Arc::new(TextureSlotGuarded(self.textures.insert(texture))))
@@ -49,6 +54,14 @@ impl TexturesContext {
     }
     pub fn len(&self) -> usize {
         self.textures.len()
+    }
+    pub fn garbage_collect(&mut self, ctx: &mut miniquad::Context) {
+        for texture in self.removed.drain(0..) {
+            if let Some(texture) = self.textures.get(texture).copied() {
+                ctx.delete_texture(texture);
+            }
+            self.textures.remove(texture);
+        }
     }
 }
 
@@ -454,10 +467,7 @@ pub struct Texture2D {
 impl Drop for TextureSlotGuarded {
     fn drop(&mut self) {
         let ctx = get_context();
-        if let Some(texture) = ctx.textures.texture(self.0) {
-            ctx.quad_context.delete_texture(texture);
-        }
-        ctx.textures.remove(self.0);
+        ctx.textures.schedule_removed(self.0);
     }
 }
 

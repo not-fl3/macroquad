@@ -413,6 +413,8 @@ impl Context {
 
         self.quit_requested = false;
 
+        self.textures.garbage_collect(get_quad_context());
+
         // remove all touches that were Ended or Cancelled
         self.touches.retain(|_, touch| {
             touch.phase != input::TouchPhase::Ended && touch.phase != input::TouchPhase::Cancelled
