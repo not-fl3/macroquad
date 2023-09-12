@@ -129,7 +129,7 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
     context.keys_down.contains(&key_code)
 }
 
-/// Detect if the key is being pressed
+/// Return all keys that are being held down
 pub fn get_keys_down() -> Vec<KeyCode> {
     let context = get_context();
     // can't return reference due to the possibility of mut context causing it to be unsafe
