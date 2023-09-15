@@ -60,6 +60,11 @@ pub(crate) enum DrawCommand {
         rect: Rect,
         texture: Texture2D,
     },
+    DrawRawAtlasTexture {
+        src: Rect,
+        dst: Rect,
+        texture: Texture2D,
+    },
     Clip {
         rect: Option<Rect>,
     },
@@ -79,6 +84,11 @@ impl DrawCommand {
             },
             DrawCommand::DrawRawTexture { rect, texture } => DrawCommand::DrawRawTexture {
                 rect: rect.offset(offset),
+                texture,
+            },
+            DrawCommand::DrawRawAtlasTexture { src, dst, texture } => DrawCommand::DrawRawAtlasTexture {
+                dst: dst.offset(offset),
+                src,
                 texture,
             },
             DrawCommand::DrawRect {
@@ -195,6 +205,7 @@ impl Painter {
                 (text_measures.width, font_size as f32)
             }
             UiContent::Texture(texture) => (texture.width(), texture.height()),
+            UiContent::AtlasTexture(_, rect) => (rect.w, rect.h)
         };
 
         vec2(size.0, size.1)
@@ -300,7 +311,23 @@ impl Painter {
                     - vec2(margin.left + margin.right, margin.top + margin.bottom);
 
                 self.draw_raw_texture(Rect::new(pos.x, pos.y, size.x, size.y), texture);
-            }
+            },
+            UiContent::AtlasTexture(texture, rect) => {
+                let background_margin = style.background_margin.unwrap_or_default();
+                let margin = style.margin.unwrap_or_default();
+
+                let top_coord = margin.top + background_margin.top;
+
+                let pos = element_pos + Vec2::new(margin.left + background_margin.left, top_coord);
+                let size = element_size
+                    - vec2(
+                        background_margin.left + background_margin.right,
+                        background_margin.top + background_margin.bottom,
+                    )
+                    - vec2(margin.left + margin.right, margin.top + margin.bottom);
+
+                self.draw_raw_atlas_texture(*rect, Rect::new(pos.x, pos.y, size.x, size.y), texture.clone());
+             }
         }
     }
 
@@ -413,6 +440,10 @@ impl Painter {
             rect,
             texture: texture.clone(),
         })
+    }
+
+    pub fn draw_raw_atlas_texture(&mut self, src: Rect, dst: Rect, texture: Texture2D) {
+        self.add_command(DrawCommand::DrawRawAtlasTexture { src, dst, texture })
     }
 
     pub fn draw_rect<S, T>(&mut self, rect: Rect, stroke: S, fill: T)
