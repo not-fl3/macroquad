@@ -14,6 +14,7 @@ readme="README.md"
 [features]
 audio = ["quad-snd"]
 log-rs = ["log"]
+serde = ["dep:serde", "glam/serde"]
 default = []
 
 [package.metadata.android]
@@ -37,6 +38,7 @@ backtrace = { version = "0.3.60", optional = true, default-features = false, fea
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
 slotmap = "1.0"
+serde = { version = "1.0", features = ["derive"], optional = true }
 
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
