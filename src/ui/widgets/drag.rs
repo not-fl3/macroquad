@@ -226,8 +226,9 @@ impl<'a> Drag<'a> {
     }
 }
 
-impl Num for u32 {}
-impl Num for f32 {}
+impl<T> Num for T where T: 
+    Copy + std::string::ToString + std::str::FromStr + Into<f64> + 'static + Default + std::fmt::Display
+{}
 
 impl Ui {
     pub fn drag<T: Num, T1: Into<Option<(T, T)>>>(
