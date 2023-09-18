@@ -29,7 +29,7 @@ pub(crate) struct CharacterInfo {
 /// TTF font loaded to GPU
 #[derive(Clone)]
 pub struct Font {
-    font: fontdue::Font,
+    font: Arc<fontdue::Font>,
     atlas: Arc<Mutex<Atlas>>,
     characters: Arc<Mutex<HashMap<(char, u16), CharacterInfo>>>,
 }
@@ -50,7 +50,10 @@ impl std::fmt::Debug for Font {
 impl Font {
     pub(crate) fn load_from_bytes(atlas: Arc<Mutex<Atlas>>, bytes: &[u8]) -> Result<Font, Error> {
         Ok(Font {
-            font: fontdue::Font::from_bytes(&bytes[..], fontdue::FontSettings::default())?,
+            font: Arc::new(fontdue::Font::from_bytes(
+                &bytes[..],
+                fontdue::FontSettings::default(),
+            )?),
             characters: Arc::new(Mutex::new(HashMap::new())),
             atlas,
         })
