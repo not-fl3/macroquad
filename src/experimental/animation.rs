@@ -130,6 +130,12 @@ impl AnimatedSprite {
         self.frame = frame;
     }
 
+    /// Returns whether the last frame is being displayed
+    pub fn is_last_frame(&self) -> bool {
+        let animation = &self.animations[self.current_animation];
+        self.frame == animation.frames - 1
+    }
+
     /// Update current frame
     ///
     /// Switches to the next frame every `1. / current_animation.fps` seconds
