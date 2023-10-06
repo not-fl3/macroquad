@@ -25,13 +25,12 @@ impl From<Vertex> for crate::quad_gl::VertexInterop {
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u16>,
-    pub texture: Option<Texture2D>,
 }
 
-pub fn draw_mesh(mesh: &Mesh) {
+pub fn draw_mesh(mesh: &Mesh, texture: Option<&Texture2D>) {
     let context = get_context();
 
-    context.gl.texture(mesh.texture.as_ref());
+    context.gl.texture(texture);
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
 }
