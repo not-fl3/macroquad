@@ -1,21 +1,16 @@
 use macroquad::prelude::*;
 
-async fn game(ctx: macroquad::Context3) {
-    let texture: Texture2D = ctx
-        .load_texture("/home/fl3/tmp/progress.jpg")
-        .await
-        .unwrap();
-
-    let texture2: Texture2D = ctx
-        .load_texture2("/home/fl3/tmp/progress.jpg")//Default_metalRoughness.jpg")
-        .await
-        .unwrap();
+async fn game(ctx: macroquad::Context) {
+    let texture: Texture2D = ctx.load_texture("examples/ferris.png").await.unwrap();
 
     let mut canvas = ctx.new_sprite_layer();
     loop {
-        canvas.draw_texture(texture.clone(), 0., 0., WHITE);
-        canvas.draw_texture(texture2.clone(), 500., 0., WHITE);
-        canvas.draw();
+        cavnvas.clear(WHITE);
+        ShapeBuilder::rectangle(vec2(ktexture.width(), texture.height()))
+            .texture(&texture)
+            .position(vec2(ctx.screen_width() / 2.0, ctx.screen_height() / 2.0))
+            .draw(&mut canvas);
+        ctx.draw_canvas(&mut canvas);
         next_frame().await
     }
 }

@@ -1,5 +1,4 @@
 use crate::{
-    get_quad_ctx,
     math::Rect,
     texture::{Image, Texture2D},
     Color,
@@ -67,9 +66,10 @@ impl Atlas {
     }
 
     pub fn set_filter(&mut self, filter_mode: miniquad::FilterMode) {
-        let ctx = get_quad_ctx();
-        self.filter = filter_mode;
-        ctx.texture_set_filter(self.texture, filter_mode, miniquad::MipmapFilterMode::None);
+        // let ctx = get_quad_ctx();
+        // self.filter = filter_mode;
+        // ctx.texture_set_filter(self.texture, filter_mode, miniquad::MipmapFilterMode::None);
+        unimplemented!()
     }
 
     pub fn get(&self, key: SpriteKey) -> Option<Sprite> {
@@ -107,9 +107,9 @@ impl Atlas {
     }
 
     pub fn get_uv_rect(&self, key: SpriteKey) -> Option<Rect> {
-        let ctx = get_quad_ctx();
         self.get(key).map(|sprite| {
-            let (w, h) = ctx.texture_size(self.texture);
+            let w = self.image.width;
+            let h = self.image.height;
 
             Rect::new(
                 sprite.rect.x / w as f32,

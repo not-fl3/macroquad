@@ -3,97 +3,69 @@ use crate::{
     color::Color,
     error::Error,
     file::load_file,
+    image,
     material::Material,
-    math::{vec2, vec3, Mat4, Quat, Vec3},
-    text,
+    math::{vec2, vec3, Mat4, Quat, Vec2, Vec3},
+    telemetry, text,
     window::miniquad::*,
     Context3,
 };
 
 use std::sync::{Arc, Mutex};
 
-struct NodeData {
-    pipeline: Pipeline,
-    color: [f32; 4],
-    vertex_buffers: Vec<miniquad::BufferId>,
-    index_buffer: miniquad::BufferId,
-    base_color_texture: Option<miniquad::TextureId>,
-    emissive_texture: Option<miniquad::TextureId>,
-    normal_texture: Option<miniquad::TextureId>,
-    occlusion_texture: Option<miniquad::TextureId>,
-    metallic_roughness_texture: Option<miniquad::TextureId>,
-    material: [f32; 4],
+pub mod frustum;
+
+#[derive(Clone)]
+pub struct NodeData {
+    pub vertex_buffers: Vec<miniquad::BufferId>,
+    pub index_buffer: miniquad::BufferId,
+
+    pub(crate) pipeline: Pipeline,
+    pub(crate) color: [f32; 4],
+    pub(crate) base_color_texture: Option<miniquad::TextureId>,
+    pub(crate) emissive_texture: Option<miniquad::TextureId>,
+    pub(crate) normal_texture: Option<miniquad::TextureId>,
+    pub(crate) occlusion_texture: Option<miniquad::TextureId>,
+    pub(crate) metallic_roughness_texture: Option<miniquad::TextureId>,
+    pub(crate) material: [f32; 4],
 }
-struct Node {
-    name: String,
-    data: Vec<NodeData>,
-    transform: Transform,
+
+#[derive(Clone)]
+pub struct Node {
+    pub name: String,
+    pub data: Vec<NodeData>,
+    pub transform: Transform,
 }
+
+#[derive(Clone, Copy, Debug)]
+pub struct AABB {
+    pub min: Vec3,
+    pub max: Vec3,
+}
+
+#[derive(Clone)]
 pub struct Model {
-    nodes: Vec<Node>,
+    pub nodes: Vec<Node>,
+    pub aabb: AABB,
 }
 
-impl Scene {
-    pub fn square(&mut self) -> Model {
-        let mut quad_ctx = self.quad_ctx.lock().unwrap();
-        let width = 1.0;
-        let height = 1.0;
-        let length = 1.0;
-        let indices = [0u16, 1, 2, 0, 2, 3];
+pub struct Model2 {
+    pub model: Model,
+    pub transform: Transform,
+    pub world_aabb: AABB,
+}
 
-        let vertices = [
-            vec3(-width / 2., height / 2., -length / 2.),
-            vec3(-width / 2., height / 2., length / 2.),
-            vec3(width / 2., height / 2., length / 2.),
-            vec3(width / 2., height / 2., -length / 2.),
-        ];
-        let uvs = [vec2(0., 1.), vec2(0., 0.), vec2(1., 0.), vec2(1., 1.)];
-        let normals = [
-            vec3(0., 1., 0.),
-            vec3(0., 1., 0.),
-            vec3(0., 1., 0.),
-            vec3(0., 1., 0.),
-        ];
+#[derive(Debug, Clone)]
+pub enum ShadowSplit {
+    Orthogonal,
+    PSSM2,
+    PSSM4,
+}
 
-        let vertex_buffer = quad_ctx.new_buffer(
-            BufferType::VertexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&vertices),
-        );
-        let normals_buffer = quad_ctx.new_buffer(
-            BufferType::VertexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&normals),
-        );
-        let uvs_buffer = quad_ctx.new_buffer(
-            BufferType::VertexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&uvs),
-        );
-        let index_buffer = quad_ctx.new_buffer(
-            BufferType::IndexBuffer,
-            BufferUsage::Immutable,
-            BufferSource::slice(&indices),
-        );
-        // let bindings = (
-        //     self.default_material.pipeline_3d,
-        //     [1., 1., 1., 1.],
-        //     Bindings {
-        //         vertex_buffers: vec![vertex_buffer, uvs_buffer, normals_buffer],
-        //         index_buffer,
-        //         images: vec![self.white_texture, self.white_texture],
-        //     },
-        // );
-
-        // Model {
-        //     nodes: vec![Node {
-        //         name: "root".to_string(),
-        //         data: vec![bindings],
-        //         transform: Transform::default(),
-        //     }],
-        // }
-        unimplemented!()
-    }
+#[derive(Clone)]
+pub struct ShadowCaster {
+    pub direction: Vec3,
+    pub split: ShadowSplit,
 }
 
 pub struct Scene {
@@ -101,56 +73,74 @@ pub struct Scene {
     pub(crate) fonts_storage: Arc<Mutex<text::FontsStorage>>,
 
     pub(crate) cameras: Vec<camera::Camera>,
-    pub(crate) models: Vec<(Model, Transform)>,
+    pub(crate) models: Vec<Model2>,
+    pub(crate) shadow_casters: Vec<ShadowCaster>,
 
     pub(crate) white_texture: TextureId,
     pub(crate) black_texture: TextureId,
+
+    pub(crate) shadowmap: crate::shadowmap::ShadowMap,
     //pub(crate) default_material: Material,
 }
 
 impl crate::Context3 {
     pub async fn load_gltf(&self, path: &str) -> Result<Model, Error> {
         use nanogltf::{utils, Gltf};
+        use std::borrow::Cow;
+
         let mut ctx = self.quad_ctx.lock().unwrap();
 
         let bytes = crate::file::load_string(path).await?;
 
         let gltf = Gltf::from_json(&bytes).unwrap();
         //println!("{:#?}", &gltf);
-        let buffers = gltf
-            .buffers
-            .iter()
-            .map(|buffer| {
-                let bytes = match utils::parse_uri(&buffer.uri) {
-                    utils::UriData::Bytes(bytes) => bytes,
-                    _ => unimplemented!(),
-                };
-                bytes
-            })
-            .collect::<Vec<_>>();
+        let mut buffers = vec![];
+        for buffer in &gltf.buffers {
+            let bytes = match utils::parse_uri(&buffer.uri) {
+                utils::UriData::Bytes(bytes) => bytes,
+                utils::UriData::RelativePath(uri) => {
+                    // examples/assets/a.gltf -> examples/assets
+                    use std::path::Path;
+                    let path = Path::new(&path);
+                    let parent = path.parent().map_or("", |parent| parent.to_str().unwrap());
+                    crate::file::load_file(&format!("{}/{}", parent, uri)).await?
+                }
+            };
+            buffers.push(bytes);
+        }
 
         assert!(gltf.scenes.len() == 1);
 
         let mut textures = vec![];
         for image in &gltf.images {
             let source = utils::image_source(&gltf, image);
-            let bytes: &[u8] = match source {
-                utils::ImageSource::Bytes(ref bytes) => bytes,
+            let bytes = match source {
+                utils::ImageSource::Bytes(ref bytes) => Cow::from(bytes),
+                utils::ImageSource::RelativePath(ref uri) => {
+                    use std::path::Path;
+                    let path = Path::new(&path);
+                    let parent = path.parent().map_or("", |parent| parent.to_str().unwrap());
+                    Cow::from(crate::file::load_file(&format!("{}/{}", parent, uri)).await?)
+                }
                 utils::ImageSource::Slice {
                     buffer,
                     offset,
                     length,
-                } => &buffers[0][offset..offset + length],
+                } => Cow::from(&buffers[0][offset..offset + length]),
             };
-            let image = nanoimage::decode(&bytes).unwrap();
+            let image = image::decode(&bytes).unwrap();
             let texture =
                 ctx.new_texture_from_rgba8(image.width as u16, image.height as u16, &image.data);
-            ctx.texture_set_wrap(texture, TextureWrap::Repeat);
+            ctx.texture_set_wrap(texture, TextureWrap::Repeat, TextureWrap::Repeat);
             textures.push(texture);
         }
 
         let mut nodes = vec![];
         let scene = &gltf.scenes[0];
+        let mut aabb = AABB {
+            min: vec3(std::f32::MAX, std::f32::MAX, std::f32::MAX),
+            max: vec3(-std::f32::MAX, -std::f32::MAX, -std::f32::MAX),
+        };
         for node in &scene.nodes {
             let node = &gltf.nodes[*node];
             if node.children.len() != 0 {
@@ -162,9 +152,9 @@ impl crate::Context3 {
             let rotation = node.rotation.map_or(Quat::IDENTITY, |t| {
                 Quat::from_xyzw(t[0] as f32, t[1] as f32, t[2] as f32, t[3] as f32)
             });
-            let scale = node
-                .scale
-                .map_or(Vec3::ZERO, |t| vec3(t[0] as f32, t[1] as f32, t[2] as f32));
+            let scale = node.scale.map_or(vec3(1.0, 1.0, 1.0), |t| {
+                vec3(t[0] as f32, t[1] as f32, t[2] as f32)
+            });
             let transform = Transform {
                 translation,
                 rotation,
@@ -202,13 +192,27 @@ impl crate::Context3 {
                 ];
                 let indices = utils::attribute_bytes(&gltf, primitive.indices.unwrap());
                 let indices = &buffers[indices.0][indices.1..indices.1 + indices.2];
+
+                {
+                    let accessor = &gltf.accessors[primitive.attributes["POSITION"]];
+                    let matrix = transform.matrix();
+
+                    let min = accessor.min.as_ref().unwrap();
+                    let min = vec3(min[0] as f32, min[1] as f32, min[2] as f32);
+                    let min = matrix.transform_point3(min);
+                    aabb.min = aabb.min.min(min);
+                    let max = accessor.max.as_ref().unwrap();
+                    let max = vec3(max[0] as f32, max[1] as f32, max[2] as f32);
+                    let max = matrix.transform_point3(max);
+                    aabb.max = aabb.max.max(max);
+                }
+
                 let vertices = utils::attribute_bytes(&gltf, primitive.attributes["POSITION"]);
-                let vertices = &buffers[vertices.0][vertices.1..vertices.1 + vertices.2];
+                let vertices: &[u8] = &buffers[vertices.0][vertices.1..vertices.1 + vertices.2];
                 let uvs = utils::attribute_bytes(&gltf, primitive.attributes["TEXCOORD_0"]);
                 let uvs = &buffers[uvs.0][uvs.1..uvs.1 + uvs.2];
                 let normals = utils::attribute_bytes(&gltf, primitive.attributes["NORMAL"]);
                 let normals = &buffers[normals.0][normals.1..normals.1 + normals.2];
-
                 let vertex_buffer =
                     ctx.new_buffer(BufferType::VertexBuffer, BufferUsage::Immutable, unsafe {
                         BufferSource::pointer(vertices.as_ptr(), vertices.len(), 4 * 3)
@@ -267,6 +271,12 @@ impl crate::Context3 {
                     PipelineParams {
                         depth_test: Comparison::LessOrEqual,
                         depth_write: true,
+                        color_blend: Some(BlendState::new(
+                            Equation::Add,
+                            BlendFactor::Value(BlendValue::SourceAlpha),
+                            BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                        )),
+
                         ..Default::default()
                     },
                 );
@@ -300,15 +310,39 @@ impl crate::Context3 {
                 transform,
             });
         }
-
-        Ok(Model { nodes })
+        Ok(Model { nodes, aabb })
     }
 
-    pub fn load_cubemap(&self, cubemap: &[&[u8]]) -> crate::cubemap::Cubemap {
-        crate::cubemap::Cubemap::new(&mut **self.quad_ctx.lock().unwrap(), cubemap)
+    pub async fn load_cubemap(
+        &self,
+        texture_px: &str,
+        texture_nx: &str,
+        texture_py: &str,
+        texture_ny: &str,
+        texture_pz: &str,
+        texture_nz: &str,
+    ) -> Result<crate::cubemap::Cubemap, crate::Error> {
+        let cubemap = [
+            &crate::file::load_file(texture_px).await?[..],
+            &crate::file::load_file(texture_nx).await?[..],
+            &crate::file::load_file(texture_py).await?[..],
+            &crate::file::load_file(texture_ny).await?[..],
+            &crate::file::load_file(texture_pz).await?[..],
+            &crate::file::load_file(texture_nz).await?[..],
+        ];
+        let mut quad_ctx = self.quad_ctx.lock().unwrap();
+        let cubemap = crate::cubemap::Cubemap::new(quad_ctx.as_mut(), &cubemap[..]);
+        quad_ctx.texture_set_min_filter(
+            cubemap.texture,
+            FilterMode::Linear,
+            MipmapFilterMode::Linear,
+        );
+        quad_ctx.texture_generate_mipmaps(cubemap.texture);
+        Ok(cubemap)
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Transform {
     pub translation: Vec3,
     pub scale: Vec3,
@@ -329,24 +363,44 @@ impl Transform {
     }
 }
 
-pub struct ModelHandle(usize);
-impl Scene {
-    pub fn borrow_model(&mut self, h: &ModelHandle) -> &mut Transform {
-        &mut self.models[h.0].1
+impl Model2 {
+    fn update_aabb(&mut self) {
+        let aabb = self.model.aabb;
+        let min = self.transform.matrix().transform_point3(aabb.min);
+        let max = self.transform.matrix().transform_point3(aabb.max);
+        self.world_aabb = AABB { min, max };
     }
+}
+#[derive(Clone)]
+pub struct ModelHandle(usize);
+
+impl Scene {
+    pub fn aabb(&self, h: &ModelHandle) -> AABB {
+        self.models[h.0].world_aabb
+    }
+    pub fn set_translation(&mut self, h: &ModelHandle, pos: Vec3) {
+        self.models[h.0].transform.translation = pos;
+        self.models[h.0].update_aabb();
+    }
+    pub fn set_rotation(&mut self, h: &ModelHandle, rotation: Quat) {
+        self.models[h.0].transform.rotation = rotation;
+        self.models[h.0].update_aabb();
+    }
+    pub fn set_scale(&mut self, h: &ModelHandle, scale: Vec3) {
+        self.models[h.0].transform.scale = scale;
+        self.models[h.0].update_aabb();
+    }
+
     pub fn translation(&mut self, h: &ModelHandle) -> Vec3 {
-        self.models[h.0].1.translation
+        self.models[h.0].transform.translation
     }
     pub fn rotation(&mut self, h: &ModelHandle) -> Quat {
-        self.models[h.0].1.rotation
-    }
-    pub fn update(&mut self, h: &ModelHandle, f: impl Fn(&mut Transform)) {
-        f(&mut self.models[h.0].1)
+        self.models[h.0].transform.rotation
     }
 
     pub fn update_child(&mut self, h: &ModelHandle, name: &str, f: impl Fn(&mut Transform)) {
         let model = &mut self.models[h.0];
-        for child in &mut model.0.nodes {
+        for child in &mut model.model.nodes {
             if child.name == name {
                 f(&mut child.transform)
             }
@@ -354,14 +408,17 @@ impl Scene {
     }
 }
 
-#[derive(Clone)]
-pub struct CameraHandle(usize);
+// #[derive(Clone)]
+// pub struct CameraHandle(usize);
 
-impl Scene {
-    pub fn update_camera(&mut self, h: &CameraHandle, f: impl Fn(&mut Camera)) {
-        f(&mut self.cameras[h.0]);
-    }
-}
+// impl Scene {
+//     pub fn camera(&self, h: &CameraHandle) -> &Camera {
+//         &self.cameras[h.0]
+//     }
+//     pub fn camera_mut(&mut self, h: &CameraHandle) -> &mut Camera {
+//         &mut self.cameras[h.0]
+//     }
+// }
 impl Scene {
     pub(crate) fn new(
         ctx: Arc<Mutex<Box<dyn miniquad::RenderingBackend>>>,
@@ -399,6 +456,9 @@ impl Scene {
 
             cameras: vec![],
             models: vec![],
+            shadow_casters: vec![],
+
+            shadowmap: crate::shadowmap::ShadowMap::new(ctx.as_mut()),
             //default_material,
             quad_ctx,
         }
@@ -406,20 +466,24 @@ impl Scene {
 }
 
 impl Scene {
-    pub fn add_camera(&mut self, camera: camera::Camera) -> CameraHandle {
-        self.cameras.push(camera);
-        CameraHandle(self.cameras.len() - 1)
-    }
+    // pub fn add_camera(&mut self, camera: camera::Camera) -> CameraHandle {
+    //     self.cameras.push(camera);
+    //     CameraHandle(self.cameras.len() - 1)
+    // }
 
-    pub fn add_model(&mut self, model: Model) -> ModelHandle {
-        self.models.push((
-            model,
-            Transform {
+    pub fn add_shadow_caster(&mut self, shadow_caster: ShadowCaster) {
+        self.shadow_casters.push(shadow_caster);
+    }
+    pub fn add_model(&mut self, model: &Model) -> ModelHandle {
+        self.models.push(Model2 {
+            model: model.clone(),
+            transform: Transform {
                 translation: vec3(0.0, 0.0, 0.0),
                 scale: vec3(1., 1., 1.),
                 rotation: Quat::IDENTITY,
             },
-        ));
+            world_aabb: model.aabb,
+        });
         ModelHandle(self.models.len() - 1)
     }
 
@@ -492,25 +556,29 @@ impl Scene {
         ctx: &mut miniquad::Context,
         white_texture: TextureId,
         black_texture: TextureId,
-        model: &Model,
+        model: &Model2,
         camera: &camera::Camera,
-        transform: Mat4,
+        shadow_proj: [Mat4; 4],
+        shadow_cascades: [f32; 4],
+        shadowmap: [TextureId; 4],
+        shadow_casters: [i32; 4],
+        clipping_planes: [frustum::Plane; 6],
     ) {
         // unsafe {
         //     miniquad::gl::glPolygonMode(miniquad::gl::GL_FRONT_AND_BACK, miniquad::gl::GL_LINE);
         // }
 
-        if let Some(pass) = camera.render_target.as_ref().map(|rt| rt.render_pass) {
-            ctx.begin_pass(Some(pass), PassAction::Nothing);
-        } else {
-            ctx.begin_default_pass(PassAction::Nothing);
+        let transform = model.transform.matrix();
+        let aabb = model.world_aabb;
+        let model = &model.model;
+        if clipping_planes.iter().any(|p| !p.clip(aabb)) {
+            return;
         }
-
         for node in &model.nodes {
             for bindings in &node.data {
                 let cubemap = match camera.environment {
-                    crate::camera::Environment::Skybox(ref cubemap) => cubemap.texture,
-                    _ => unimplemented!(),
+                    crate::camera::Environment::Skybox(ref cubemap) => Some(cubemap.texture),
+                    _ => None,
                 };
                 let images = [
                     bindings.base_color_texture.unwrap_or(white_texture),
@@ -518,7 +586,11 @@ impl Scene {
                     bindings.occlusion_texture.unwrap_or(white_texture),
                     bindings.normal_texture.unwrap_or(white_texture),
                     bindings.metallic_roughness_texture.unwrap_or(white_texture),
-                    cubemap,
+                    cubemap.unwrap_or(white_texture),
+                    shadowmap[0],
+                    shadowmap[1],
+                    shadowmap[2],
+                    shadowmap[3],
                 ];
                 ctx.apply_pipeline(&bindings.pipeline);
                 ctx.apply_bindings_from_slice(
@@ -528,28 +600,30 @@ impl Scene {
                 );
 
                 let (proj, view) = camera.proj_view();
+                //depth_view_proj = proj * view;
+
                 let projection = proj * view;
                 let time = (crate::time::get_time()) as f32;
                 let time = glam::vec4(time, time.sin(), time.cos(), 0.);
 
-                let model = transform
-                    * (Mat4::from_translation(node.transform.translation)
-                        * Mat4::from_quat(node.transform.rotation));
+                let model = transform * node.transform.matrix();
                 let model_inverse = model.inverse();
                 ctx.apply_uniforms(UniformsSource::table(&shader::Uniforms {
                     projection,
+                    shadow_projection: shadow_proj,
                     model,
                     model_inverse,
                     color: bindings.color,
+                    shadow_cascades,
+                    shadow_casters,
                     material: bindings.material,
-                    camera_pos: camera.position(),
+                    camera_pos: camera.position,
                 }));
 
                 let buffer_size = ctx.buffer_size(bindings.index_buffer) as i32 / 2;
                 ctx.draw(0, buffer_size, 1);
             }
         }
-        ctx.end_render_pass();
 
         // unsafe {
         //     use miniquad::gl;
@@ -561,28 +635,100 @@ impl Scene {
     //     self.models[model].1 = transform;
     // }
 
-    pub fn draw(&mut self) {
-        for camera in &mut self.cameras {
-            let (proj, view) = camera.proj_view();
-            if let crate::camera::Environment::Skybox(ref mut cubemap) = camera.environment {
+    pub fn draw(&mut self, camera: &Camera) {
+        let _z = telemetry::ZoneGuard::new("Scene::draw");
+
+        let clipping_planes = frustum::projection_planes(camera);
+        let (proj, view) = camera.proj_view();
+        let mut clear_action = PassAction::Nothing;
+        {
+            let _z = telemetry::ZoneGuard::new("environment");
+
+            if let crate::camera::Environment::Skybox(ref cubemap) = camera.environment {
                 cubemap.draw(&mut **self.quad_ctx.lock().unwrap(), &proj, &view);
             }
-            for (model, t) in &self.models {
-                let mat = t.matrix();
+
+            if let crate::camera::Environment::Solid(color) = camera.environment {
+                clear_action = PassAction::clear_color(color.r, color.g, color.b, color.a);
+            }
+
+            unsafe {
+                miniquad::gl::glFlush();
+                miniquad::gl::glFinish();
+            }
+        }
+        let mut ctx = self.quad_ctx.lock().unwrap();
+
+        let mut shadow_proj = Default::default();
+        let mut cascade_clips = Default::default();
+        let casters_count = self.shadow_casters.len();
+        let mut split_count = 0;
+        if let Some(shadow_caster) = self.shadow_casters.get(0) {
+            split_count = match shadow_caster.split {
+                ShadowSplit::Orthogonal => 1,
+                ShadowSplit::PSSM2 => 2,
+                ShadowSplit::PSSM4 => 4,
+            };
+            let _z = telemetry::ZoneGuard::new("shadows");
+            (shadow_proj, cascade_clips) = self.shadowmap.draw_shadow_pass(
+                ctx.as_mut(),
+                &self.models[..],
+                &camera,
+                shadow_caster,
+                clipping_planes,
+            );
+
+            unsafe {
+                miniquad::gl::glFlush();
+                miniquad::gl::glFinish();
+            }
+        }
+
+        if let Some(pass) = camera.render_target.as_ref().map(|rt| rt.render_pass) {
+            ctx.begin_pass(Some(pass), clear_action);
+        } else {
+            ctx.begin_default_pass(clear_action);
+        }
+
+        {
+            let _z = telemetry::ZoneGuard::new("models");
+            for model in &self.models {
                 Scene::draw_model(
-                    &mut **self.quad_ctx.lock().unwrap(),
+                    ctx.as_mut(),
                     self.white_texture,
                     self.black_texture,
                     model,
                     camera,
-                    mat,
+                    shadow_proj,
+                    cascade_clips,
+                    [
+                        self.shadowmap.depth_img[0],
+                        self.shadowmap.depth_img[1],
+                        self.shadowmap.depth_img[2],
+                        self.shadowmap.depth_img[3],
+                    ],
+                    [casters_count as _, split_count as _, 0, 0],
+                    clipping_planes,
                 );
             }
+            unsafe {
+                miniquad::gl::glFlush();
+                miniquad::gl::glFinish();
+            }
         }
+        ctx.end_render_pass();
+    }
+
+    pub fn draw_shadow_debug(&mut self) {
+        let mut ctx = self.quad_ctx.lock().unwrap();
+
+        self.shadowmap
+            .dbg
+            .draw(ctx.as_mut(), &self.shadowmap.depth_img[..]);
     }
 }
 
-mod shader {
+pub mod shader {
     use crate::math::Vec3;
     use miniquad::{ShaderMeta, UniformBlockLayout, UniformDesc, UniformType};
 
@@ -597,13 +743,20 @@ mod shader {
                 "Normal".to_string(),
                 "MetallicRoughness".to_string(),
                 "Environment".to_string(),
+                "ShadowMap0".to_string(),
+                "ShadowMap1".to_string(),
+                "ShadowMap2".to_string(),
+                "ShadowMap3".to_string(),
             ],
             uniforms: UniformBlockLayout {
                 uniforms: vec![
                     UniformDesc::new("Projection", UniformType::Mat4),
+                    UniformDesc::array(UniformDesc::new("ShadowProjection", UniformType::Mat4), 4),
                     UniformDesc::new("Model", UniformType::Mat4),
                     UniformDesc::new("ModelInverse", UniformType::Mat4),
                     UniformDesc::new("Color", UniformType::Float4),
+                    UniformDesc::new("ShadowCascades", UniformType::Float4),
+                    UniformDesc::new("ShadowCasters", UniformType::Int4),
                     UniformDesc::new("Material", UniformType::Float4),
                     UniformDesc::new("CameraPosition", UniformType::Float3),
                 ],
@@ -614,10 +767,13 @@ mod shader {
     #[repr(C)]
     pub struct Uniforms {
         pub projection: glam::Mat4,
+        pub shadow_projection: [glam::Mat4; 4],
         pub model: glam::Mat4,
         pub model_inverse: glam::Mat4,
         pub color: [f32; 4],
-        pub material: [f32; 4], // metallic, roughness, 0, 0,
+        pub shadow_cascades: [f32; 4],
+        pub shadow_casters: [i32; 4], // count, split, 0, 0
+        pub material: [f32; 4],       // metallic, roughness, 0, 0,
         pub camera_pos: glam::Vec3,
     }
 }

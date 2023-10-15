@@ -69,11 +69,14 @@ pub mod telemetry;
 
 mod cubemap;
 mod error;
+pub mod shadowmap;
 
 pub use error::Error;
 
 pub mod scene;
 pub mod sprite_layer;
+
+pub(crate) mod image;
 
 /// Cross platform random generator.
 pub mod rand {
@@ -94,29 +97,11 @@ use crate::{
     color::{colors::*, Color},
     quad_gl::QuadGl,
     texture::TextureHandle,
-    ui::ui_context::UiContext,
 };
 
 use glam::{vec2, Mat4, Vec2};
 use std::sync::{Arc, Mutex, Weak};
 
-pub(crate) mod thread_assert {
-    static mut THREAD_ID: Option<std::thread::ThreadId> = None;
-
-    pub fn set_thread_id() {
-        unsafe {
-            THREAD_ID = Some(std::thread::current().id());
-        }
-    }
-
-    pub fn same_thread() {
-        unsafe {
-            let thread_id = std::thread::current().id();
-            assert!(THREAD_ID.is_some());
-            assert!(THREAD_ID.unwrap() == thread_id);
-        }
-    }
-}
 struct Context {
     audio_context: audio::AudioContext,
 
@@ -162,7 +147,6 @@ struct Context {
     unwind: bool,
     recovery_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
 
-    //quad_ctx: Box<dyn miniquad::RenderingBackend>,
     textures: crate::texture::TexturesContext,
 }
 
@@ -238,6 +222,9 @@ impl Context {
     fn new() -> Context {
         let (screen_width, screen_height) = miniquad::window::screen_size();
 
+        unsafe {
+            miniquad::gl::glEnable(miniquad::gl::GL_TEXTURE_CUBE_MAP_SEAMLESS);
+        }
         Context {
             screen_width,
             screen_height,
@@ -275,7 +262,7 @@ impl Context {
 
             start_time: miniquad::date::now(),
             last_frame_time: miniquad::date::now(),
-            frame_time: 1. / 60.,
+            frame_time: 1.0 / 60.0,
 
             #[cfg(one_screenshot)]
             counter: 0,
@@ -379,13 +366,7 @@ pub mod test {
 }
 
 fn get_context() -> &'static mut Context {
-    thread_assert::same_thread();
-
     unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
-}
-
-fn get_quad_ctx() -> &'static mut dyn miniquad::RenderingBackend {
-    unimplemented!()
 }
 
 struct Stage {
@@ -579,6 +560,8 @@ impl EventHandler for Stage {
             // }
 
             {
+                let _z = telemetry::ZoneGuard::new("clear");
+
                 let mut ctx = self.ctx.quad_ctx.lock().unwrap();
                 let clear = PassAction::clear_color(0.2, 0.2, 0.2, 1.);
 
@@ -588,7 +571,7 @@ impl EventHandler for Stage {
 
             //let result = maybe_unwind(get_context().unwind, || {
             if let Some(future) = self.main_future.as_mut() {
-                let _z = telemetry::ZoneGuard::new("Event::draw user code");
+                let _z = telemetry::ZoneGuard::new("user code");
 
                 if exec::resume(future).is_some() {
                     self.main_future = None;
@@ -599,32 +582,14 @@ impl EventHandler for Stage {
             }
             //});
 
-            //scene.draw_canvas(0);
-            // for camera in &mut *scene.data.cameras.lock() {
-            //     let (proj, view) = camera.proj_view();
-            //     if let crate::camera::Environment::Skybox(ref mut cubemap) = camera.environment {
-            //         cubemap.draw(&mut **scene.data.quad_ctx.lock(), &proj, &view);
-            //     }
-            //     for (model, t) in &mut *scene.data.models.lock() {
-            //         let mat = t.matrix();
-            //         scene.draw_model(model, camera, mat);
-            //     }
-            // }
-            // scene.draw_canvas(1);
-            // if result == false {
-            //     if let Some(recovery_future) = get_context().recovery_future.take() {
-            //         self.main_future = Some(recovery_future);
-            //     }
-            // }
-
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
                 get_context().end_frame();
                 let mut ctx = self.ctx.quad_ctx.lock().unwrap();
                 ctx.commit_frame()
             }
-            // get_context().frame_time = date::now() - get_context().last_frame_time;
-            // get_context().last_frame_time = date::now();
+            get_context().frame_time = date::now() - get_context().last_frame_time;
+            get_context().last_frame_time = date::now();
 
             #[cfg(any(target_arch = "wasm32", target_os = "linux"))]
             {
@@ -637,7 +602,7 @@ impl EventHandler for Stage {
             }
         }
 
-        //telemetry::reset();
+        telemetry::reset();
     }
 
     fn window_restored_event(&mut self) {
@@ -661,7 +626,7 @@ impl EventHandler for Stage {
 
 #[derive(Clone)]
 pub struct Context3 {
-    quad_ctx: Arc<Mutex<Box<dyn miniquad::RenderingBackend>>>,
+    pub quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
     textures: Arc<Mutex<crate::texture::TexturesContext>>,
     fonts_storage: Arc<Mutex<text::FontsStorage>>,
 }
@@ -683,7 +648,7 @@ impl Context3 {
         scene::Scene::new(self.quad_ctx.clone(), self.fonts_storage.clone())
     }
 
-    pub fn new_sprite_layer(&self) -> sprite_layer::SpriteLayer {
+    pub fn new_canvas(&self) -> sprite_layer::SpriteLayer {
         sprite_layer::SpriteLayer::new(self.quad_ctx.clone(), self.fonts_storage.clone())
     }
 }
@@ -693,7 +658,6 @@ pub fn start<F: Fn(Context3) -> Fut + 'static, Fut: Future<Output = ()> + 'stati
     future: F,
 ) {
     miniquad::start(conf::Conf { ..config }, move || {
-        thread_assert::set_thread_id();
         unsafe { CONTEXT = Some(Context::new()) };
         let ctx = Context3::new();
         Box::new(Stage {

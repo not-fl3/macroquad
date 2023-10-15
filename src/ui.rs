@@ -1,10 +1,10 @@
 //! Immediate mode UI.
 //!
-//! Spiritual successor of megaui library, but fully skinnable and configurable.
+//! Spiritual successor of ui library, but fully skinnable and configurable.
 //!
 //! The UI entrypoint is `root_ui()` call.
 //! ```ignore
-//! root_ui().label(None, "hello megaui");
+//! root_ui().label(None, "hello ui");
 //! if root_ui().button(None, "Push me") {
 //!    println!("pushed");
 //! }
@@ -29,6 +29,8 @@ pub use style::{Skin, Style, StyleBuilder};
 
 pub use crate::hash;
 
+use crate::sprite_layer::SpriteLayer;
+
 pub(crate) use render::ElementState;
 
 use std::{
@@ -36,34 +38,6 @@ use std::{
     ops::DerefMut,
     sync::{Arc, Mutex},
 };
-
-/// Root UI. Widgets drawn with the root ui will be always presented at the end of the frame with a "default" camera.
-/// UI space would be a "default" screen space (0..screen_width(), 0..screen_height())
-pub fn root_ui() -> impl DerefMut<Target = Ui> {
-    //crate::get_context().ui_context.ui.borrow_mut()
-    let ui: Ui = unimplemented!();
-    &mut ui
-}
-
-/// Current camera world space UI.
-/// Widgets will be drawn either at the end of the frame or just before next "set_camera" clal
-/// UI space would be equal to the camera space, widgets will be drawn at the plane with Y up X right and Z = 0.
-/// Note that windows focus queue, input focus etc is shared across all cameras.
-/// So this:
-///
-/// ```skip
-/// camera_ui().draw_window();
-/// set_camera(..);
-/// camera_ui().draw_window();
-/// root_ui().draw_window();
-/// ```
-/// Will result 3 windows on the screen, all in different cameras and probably looking differently,
-/// but only one of them would be focused.
-#[doc(hidden)]
-#[allow(unreachable_code)]
-pub fn camera_ui() -> impl DerefMut<Target = Ui> {
-    unimplemented!() as &'static mut Ui
-}
 
 use crate::{
     math::{Rect, RectOffset, Vec2},
@@ -377,6 +351,9 @@ pub struct Ui {
 
     tab_selector: TabSelector,
     input_focus: Option<Id>,
+
+    quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
+    ui_draw_list: Option<Vec<DrawList>>,
 }
 
 #[derive(Default)]
@@ -649,13 +626,26 @@ impl InputHandler for Ui {
     }
 }
 
+impl crate::Context3 {
+    pub fn new_ui(&self) -> Ui {
+        Ui::new(
+            self.quad_ctx.clone(),
+            crate::window::screen_width(),
+            crate::window::screen_height(),
+        )
+    }
+}
+
 impl Ui {
     pub fn new(
-        ctx: &mut dyn miniquad::RenderingBackend,
+        quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
         screen_width: f32,
         screen_height: f32,
     ) -> Ui {
-        let atlas = Arc::new(Mutex::new(Atlas::new(ctx, miniquad::FilterMode::Nearest)));
+        let atlas = Arc::new(Mutex::new(Atlas::new(
+            quad_ctx.lock().unwrap().as_mut(),
+            miniquad::FilterMode::Nearest,
+        )));
         let mut font =
             crate::text::Font::load_from_bytes(atlas.clone(), include_bytes!("ProggyClean.ttf"))
                 .unwrap();
@@ -707,13 +697,16 @@ impl Ui {
             storage_any: AnyStorage::default(),
             atlas,
             clipboard_selection: String::new(),
-            clipboard: Box::new(ui_context::ClipboardObject),
+            clipboard: Box::new(ClipboardObject2),
             time: 0.0,
             key_repeat: key_repeat::KeyRepeat::new(),
             last_item_clicked: false,
             last_item_hovered: false,
             tab_selector: TabSelector::new(),
             input_focus: None,
+
+            quad_ctx: quad_ctx.clone(),
+            ui_draw_list: Some(vec![]),
         }
     }
 
@@ -1190,243 +1183,118 @@ impl Ui {
     pub fn pop_skin(&mut self) {
         self.skin_stack.custom_skin_stack.pop();
     }
-}
 
-pub(crate) mod ui_context {
-    use crate::prelude::*;
+    pub fn grab_input(&mut self) {
+        use crate::prelude::*;
+        use crate::ui::{self, InputHandler};
 
-    use crate::ui as megaui;
+        let mouse_position = mouse_position();
 
-    use std::cell::RefCell;
-    use std::rc::Rc;
+        self.mouse_move((mouse_position.x, mouse_position.y));
 
-    pub(crate) struct UiContext {
-        pub ui: Rc<RefCell<megaui::Ui>>,
-        ui_draw_list: Vec<megaui::DrawList>,
-        material: Option<Material>,
-    }
+        if is_mouse_button_pressed(MouseButton::Left) {
+            self.mouse_down((mouse_position.x, mouse_position.y));
+        }
+        if is_mouse_button_released(MouseButton::Left) {
+            self.mouse_up((mouse_position.x, mouse_position.y));
+        }
 
-    impl UiContext {
-        pub(crate) fn new(
-            ctx: &mut dyn miniquad::RenderingBackend,
-            screen_width: f32,
-            screen_height: f32,
-        ) -> UiContext {
-            let ui = megaui::Ui::new(ctx, screen_width, screen_height);
+        let shift = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+        let ctrl = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
 
-            UiContext {
-                ui: Rc::new(RefCell::new(ui)),
-                ui_draw_list: vec![],
-                material: None,
+        while let Some(c) = get_char_pressed_ui() {
+            if ctrl == false {
+                self.char_event(c, false, false);
             }
         }
 
-        pub(crate) fn process_input(&mut self) {
-            use megaui::InputHandler;
-
-            let mouse_position = mouse_position();
-
-            let mut ui = self.ui.borrow_mut();
-            ui.mouse_move((mouse_position.x, mouse_position.y));
-
-            if is_mouse_button_pressed(MouseButton::Left) {
-                ui.mouse_down((mouse_position.x, mouse_position.y));
-            }
-            if is_mouse_button_released(MouseButton::Left) {
-                ui.mouse_up((mouse_position.x, mouse_position.y));
-            }
-
-            let shift = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
-            let ctrl = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
-
-            while let Some(c) = get_char_pressed_ui() {
-                if ctrl == false {
-                    ui.char_event(c, false, false);
+        macro_rules! process {
+            ($code:tt) => {
+                if is_key_pressed(KeyCode::$code) || is_key_down(KeyCode::$code) {
+                    self.key_down(ui::KeyCode::$code, shift, ctrl);
                 }
-            }
-
-            macro_rules! process {
-                ($code:tt) => {
-                    if is_key_pressed(KeyCode::$code) || is_key_down(KeyCode::$code) {
-                        ui.key_down(megaui::KeyCode::$code, shift, ctrl);
-                    }
-                };
-            }
-
-            process!(Up);
-            process!(Down);
-            process!(Right);
-            process!(Left);
-            process!(Home);
-            process!(End);
-            process!(Delete);
-            process!(Backspace);
-            process!(Tab);
-            process!(Z);
-            process!(Y);
-            process!(C);
-            process!(X);
-            process!(V);
-            process!(A);
-            process!(Escape);
-            process!(Enter);
-
-            if is_key_down(KeyCode::LeftControl)
-                || is_key_down(KeyCode::RightControl)
-                || is_key_pressed(KeyCode::LeftControl)
-                || is_key_pressed(KeyCode::RightControl)
-            {
-                ui.key_down(megaui::KeyCode::Control, shift, ctrl);
-            }
-            let (wheel_x, wheel_y) = mouse_wheel();
-            ui.mouse_wheel(wheel_x, -wheel_y);
+            };
         }
 
-        pub(crate) fn draw(
-            &mut self,
-            _ctx: &mut dyn miniquad::RenderingBackend,
-            quad_gl: &mut QuadGl,
-        ) {
-            // TODO: this belongs to new and waits for cleaning up context initialization mess
-            // let material = self.material.get_or_insert_with(|| {
-            //     // load_material(
-            //     //     ShaderSource {
-            //     //         glsl_vertex: Some(VERTEX_SHADER),
-            //     //         glsl_fragment: Some(FRAGMENT_SHADER),
-            //     //         metal_shader: Some(METAL_SHADER),
-            //     //     },
-            //     //     MaterialParams {
-            //     //         pipeline_params: PipelineParams {
-            //     //             color_blend: Some(BlendState::new(
-            //     //                 Equation::Add,
-            //     //                 BlendFactor::Value(BlendValue::SourceAlpha),
-            //     //                 BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-            //     //             )),
-            //     //             ..Default::default()
-            //     //         },
-            //     //         ..Default::default()
-            //     //     },
-            //     // )
-            //     // .unwrap()
-            //     unimplemented!()
-            // });
+        process!(Up);
+        process!(Down);
+        process!(Right);
+        process!(Left);
+        process!(Home);
+        process!(End);
+        process!(Delete);
+        process!(Backspace);
+        process!(Tab);
+        process!(Z);
+        process!(Y);
+        process!(C);
+        process!(X);
+        process!(V);
+        process!(A);
+        process!(Escape);
+        process!(Enter);
 
-            // let mut ui = self.ui.borrow_mut();
-            // self.ui_draw_list.clear();
-            // ui.render(&mut self.ui_draw_list);
-            // let mut ui_draw_list = vec![];
-
-            // std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-
-            // let mut atlas = ui.atlas.lock().unwrap();
-            // let font_texture = atlas.texture();
-            // quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
-
-            // gl_use_material(&*material);
-
-            // for draw_command in &ui_draw_list {
-            //     if let Some(ref texture) = draw_command.texture {
-            //         quad_gl.texture(Some(texture));
-            //     } else {
-            //         quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
-            //     }
-
-            //     quad_gl.scissor(
-            //         draw_command
-            //             .clipping_zone
-            //             .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
-            //     );
-            //     quad_gl.draw_mode(DrawMode::Triangles);
-            //     quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
-            // }
-            // quad_gl.texture(None);
-
-            // gl_use_default_material();
-
-            // std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-
-            // drop(atlas);
-            // ui.new_frame(get_frame_time());
+        if is_key_down(KeyCode::LeftControl)
+            || is_key_down(KeyCode::RightControl)
+            || is_key_pressed(KeyCode::LeftControl)
+            || is_key_pressed(KeyCode::RightControl)
+        {
+            self.key_down(ui::KeyCode::Control, shift, ctrl);
         }
+        let (wheel_x, wheel_y) = mouse_wheel();
+        self.mouse_wheel(wheel_x, -wheel_y);
     }
 
-    pub struct ClipboardObject;
+    pub fn draw(&mut self, canvas: &mut crate::sprite_layer::SpriteLayer) {
+        let quad_gl = &mut canvas.quad_gl;
 
-    impl megaui::ClipboardObject for ClipboardObject {
-        fn get(&self) -> Option<String> {
-            miniquad::window::clipboard_get()
-        }
+        let mut draw_list = self.ui_draw_list.take().unwrap();
 
-        fn set(&mut self, data: &str) {
-            miniquad::window::clipboard_set(data)
+        draw_list.clear();
+        self.render(&mut draw_list);
+        let mut ui_draw_list = vec![];
+
+        std::mem::swap(&mut ui_draw_list, &mut draw_list);
+
+        let mut atlas = self.atlas.lock().unwrap();
+        let font_texture = atlas.texture(self.quad_ctx.lock().unwrap().as_mut());
+        quad_gl.texture(Some(font_texture));
+
+        for draw_command in &ui_draw_list {
+            if let Some(ref texture) = draw_command.texture {
+                //quad_gl.texture(Some(texture));
+                unimplemented!();
+            } else {
+                quad_gl.texture(Some(font_texture));
+            }
+
+            quad_gl.scissor(
+                draw_command
+                    .clipping_zone
+                    .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
+            );
+            quad_gl.draw_mode(crate::quad_gl::DrawMode::Triangles);
+            quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
         }
+        quad_gl.texture(None);
+
+        std::mem::swap(&mut ui_draw_list, &mut draw_list);
+
+        drop(atlas);
+        self.new_frame(crate::time::get_frame_time());
+
+        self.ui_draw_list = Some(draw_list);
     }
-
-    const VERTEX_SHADER: &'static str = "#version 100
-attribute vec3 position;
-attribute vec4 color0;
-attribute vec2 texcoord;
-
-varying lowp vec2 uv;
-varying lowp vec2 pos;
-varying lowp vec4 color;
-
-uniform mat4 Model;
-uniform mat4 Projection;
-
-void main() {
-    gl_Position = Projection * Model * vec4(position, 1);
-    uv = texcoord;
-    color = color0 / 255.0;
 }
-";
-    const FRAGMENT_SHADER: &'static str = "#version 100
-varying lowp vec2 uv;
-varying lowp vec4 color;
 
-uniform sampler2D Texture;
+pub struct ClipboardObject2;
 
-void main() {
-    gl_FragColor = texture2D(Texture, uv) * color;
-}
-";
-    pub const METAL_SHADER: &str = r#"
-#include <metal_stdlib>
-    using namespace metal;
-
-    struct Uniforms
-    {
-        float4x4 Model;
-        float4x4 Projection;
-    };
-
-    struct Vertex
-    {
-        float3 position    [[attribute(0)]];
-        float2 texcoord    [[attribute(1)]];
-        float4 color0      [[attribute(2)]];
-    };
-
-    struct RasterizerData
-    {
-        float4 position [[position]];
-        float4 color [[user(locn0)]];
-        float2 uv [[user(locn1)]];
-    };
-
-    vertex RasterizerData vertexShader(Vertex v [[stage_in]], constant Uniforms& uniforms [[buffer(0)]])
-    {
-        RasterizerData out;
-
-        out.position = uniforms.Model * uniforms.Projection * float4(v.position, 1);
-        out.color = v.color0 / 255.0;
-        out.uv = v.texcoord;
-
-        return out;
+impl ClipboardObject for ClipboardObject2 {
+    fn get(&self) -> Option<String> {
+        miniquad::window::clipboard_get()
     }
 
-    fragment float4 fragmentShader(RasterizerData in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler texSmplr [[sampler(0)]])
-    {
-        return in.color * tex.sample(texSmplr, in.uv);
-    }"#;
+    fn set(&mut self, data: &str) {
+        miniquad::window::clipboard_set(data)
+    }
 }

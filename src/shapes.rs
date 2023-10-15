@@ -3,9 +3,9 @@
 use crate::color::Color;
 
 use crate::{
-    math::{vec2, Rect, Vec2},
+    math::{vec2, Rect, Vec2, Vec3},
     quad_gl::{DrawMode, Vertex},
-    sprite_layer::SpriteLayer,
+    sprite_layer::{SpriteLayer, Axis},
 };
 
 impl SpriteLayer {
@@ -159,6 +159,20 @@ impl SpriteLayer {
     //     draw_poly_lines(x, y, 20, r, 0., thickness, color);
     // }
 
+    pub fn draw_line_3d(&mut self, start: Vec3, end: Vec3, _: f32, color: Color) {
+        let uv = [0., 0.];
+        let color: [f32; 4] = color.into();
+        let indices = [0, 1];
+
+        let line = [
+            ([start.x, start.y, start.z], uv, color),
+            ([end.x, end.y, end.z], uv, color),
+        ];
+        self.gl().texture(None);
+        self.gl().draw_mode(DrawMode::Lines);
+        self.gl().geometry(&line[..], &indices);
+    }
+
     pub fn draw_line(&mut self, x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
         let dx = x2 - x1;
         let dy = y2 - y1;
@@ -175,14 +189,15 @@ impl SpriteLayer {
         let tx = nx / tlen;
         let ty = ny / tlen;
 
+        let axis = self.axis;
         self.gl().texture(None);
         self.gl().draw_mode(DrawMode::Triangles);
         self.gl().geometry(
             &[
-                Vertex::new(x1 + tx, y1 + ty, 0., 0., 0., color),
-                Vertex::new(x1 - tx, y1 - ty, 0., 0., 0., color),
-                Vertex::new(x2 + tx, y2 + ty, 0., 0., 0., color),
-                Vertex::new(x2 - tx, y2 - ty, 0., 0., 0., color),
+                vertex(x1 + tx, y1 + ty, 0., 0., color, axis),
+                vertex(x1 - tx, y1 - ty, 0., 0., color, axis),
+                vertex(x2 + tx, y2 + ty, 0., 0., color, axis),
+                vertex(x2 - tx, y2 - ty, 0., 0., color, axis),
             ],
             &[0, 1, 2, 2, 1, 3],
         );
@@ -193,6 +208,14 @@ enum Shape {
     Circle { radius: f32 },
     Rectangle { size: Vec2 },
 }
+
+fn vertex(x: f32, y: f32, uv_x: f32, uv_y: f32, color: Color, axis: Axis) -> Vertex {
+    match axis {
+        Axis::X => Vertex::new(0., x, y, uv_x, uv_y, color),
+        Axis::Y => Vertex::new(x, 0., y, uv_x, uv_y, color),
+        Axis::Z => Vertex::new(x, y, 0., uv_x, uv_y, color),
+    }
+}
 pub struct ShapeBuilder {
     // vertices: Vec<Vertex>,
     // indices: Vec<u16>,
@@ -201,6 +224,7 @@ pub struct ShapeBuilder {
     pivot: Option<Vec2>,
     color: Color,
     rotation: f32,
+    axis: Axis,
 }
 impl ShapeBuilder {
     pub fn circle(position: Vec2, radius: f32, color: Color) -> ShapeBuilder {
@@ -214,7 +238,7 @@ impl ShapeBuilder {
         //     let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).cos();
         //     let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot).sin();
 
-        //     let vertex = Vertex::new(pos.x + radius * rx, pos.y + radius * ry, 0., rx, ry, color);
+        //     let Vertex::new = Vertex::new(pos.x + radius * rx, pos.y + radius * ry, 0., rx, ry, color);
 
         //     vertices.push(vertex);
 
@@ -229,6 +253,7 @@ impl ShapeBuilder {
             pivot: None,
             color,
             rotation: 0.0,
+            axis: Axis::Z,
         }
     }
 
@@ -283,6 +308,7 @@ impl ShapeBuilder {
             pivot: None,
             color,
             rotation: 0.0,
+            axis: Axis::Z,
         }
     }
 
@@ -292,6 +318,10 @@ impl ShapeBuilder {
 
     pub fn rotation(self, rotation: f32) -> ShapeBuilder {
         Self { rotation, ..self }
+    }
+
+    pub fn axis(self, axis: Axis) -> ShapeBuilder {
+        Self { axis, ..self }
     }
 
     pub fn draw(self, canvas: &mut SpriteLayer) {
@@ -334,10 +364,10 @@ impl ShapeBuilder {
         let color = self.color;
         #[rustfmt::skip]
         let vertices = [
-            Vertex::new(p[0].x, p[0].y, 0.,  sx      /w,  sy      /h, color),
-            Vertex::new(p[1].x, p[1].y, 0., (sx + sw)/w,  sy      /h, color),
-            Vertex::new(p[2].x, p[2].y, 0., (sx + sw)/w, (sy + sh)/h, color),
-            Vertex::new(p[3].x, p[3].y, 0.,  sx      /w, (sy + sh)/h, color),
+            vertex(p[0].x, p[0].y,  sx      /w,  sy      /h, color, self.axis),
+            vertex(p[1].x, p[1].y, (sx + sw)/w,  sy      /h, color, self.axis),
+            vertex(p[2].x, p[2].y, (sx + sw)/w, (sy + sh)/h, color, self.axis),
+            vertex(p[3].x, p[3].y,  sx      /w, (sy + sh)/h, color, self.axis),
         ];
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 

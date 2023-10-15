@@ -15,6 +15,13 @@ pub fn polar_to_cartesian(rho: f32, theta: f32) -> Vec2 {
     vec2(rho * theta.cos(), rho * theta.sin())
 }
 
+pub fn polar_to_cartesian_3d(r: f32, polar: f32, alpha: f32) -> Vec3 {
+    let x = r * polar.sin() * alpha.cos();
+    let y = r * polar.sin() * alpha.sin();
+    let z = r * polar.cos();
+    vec3(x, y, z)
+}
+
 /// Converts 2d cartesian coordinates to 2d polar coordinates.
 pub fn cartesian_to_polar(cartesian: Vec2) -> Vec2 {
     vec2(
@@ -39,3 +46,5 @@ pub fn look_rotation_quat(forward: Vec3, up: Vec3) -> Quat {
     let up = forward.cross(right);
     Quat::from_mat3(&Mat3::from_cols(right, up, forward))
 }
+
+

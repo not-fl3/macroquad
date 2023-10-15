@@ -33,7 +33,6 @@ struct DrawCall {
     draw_mode: DrawMode,
     pipeline: GlPipeline,
     uniforms: Option<Vec<u8>>,
-    render_pass: Option<RenderPass>,
     capture: bool,
 }
 
@@ -98,7 +97,6 @@ impl DrawCall {
         draw_mode: DrawMode,
         pipeline: GlPipeline,
         uniforms: Option<Vec<u8>>,
-        render_pass: Option<RenderPass>,
         max_vertices: usize,
         max_indices: usize,
     ) -> DrawCall {
@@ -117,7 +115,6 @@ impl DrawCall {
             draw_mode,
             pipeline,
             uniforms,
-            render_pass,
             capture: false,
         }
     }
@@ -608,7 +605,12 @@ impl QuadGl {
         self.draw_calls_count = 0;
     }
 
-    pub fn draw(&mut self, ctx: &mut dyn miniquad::RenderingBackend, projection: glam::Mat4) {
+    pub fn draw(
+        &mut self,
+        ctx: &mut dyn miniquad::RenderingBackend,
+        projection: glam::Mat4,
+        render_pass: Option<RenderPass>,
+    ) {
         let white_texture = self.white_texture;
 
         for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
@@ -642,7 +644,7 @@ impl QuadGl {
         {
             let pipeline = self.pipelines.get_quad_pipeline_mut(dc.pipeline);
 
-            let (width, height) = if let Some(render_pass) = dc.render_pass {
+            let (width, height) = if let Some(render_pass) = render_pass {
                 let render_texture = ctx.render_pass_texture(render_pass);
                 let (width, height) = ctx.texture_size(render_texture);
                 (width, height)
@@ -651,10 +653,10 @@ impl QuadGl {
             };
 
             if pipeline.wants_screen_texture {
-                self.state.snapshotter.snapshot(ctx, dc.render_pass);
+                self.state.snapshotter.snapshot(ctx, render_pass);
             }
 
-            if let Some(render_pass) = dc.render_pass {
+            if let Some(render_pass) = render_pass {
                 ctx.begin_pass(Some(render_pass), PassAction::Nothing);
             } else {
                 ctx.begin_default_pass(PassAction::Nothing);
@@ -711,7 +713,7 @@ impl QuadGl {
             ctx.end_render_pass();
 
             if dc.capture {
-                telemetry::track_drawcall(&pipeline.pipeline_2d, bindings, dc.indices_count);
+                //telemetry::track_drawcall(&pipeline.pipeline_2d, bindings, dc.indices_count);
             }
 
             // dc.vertices_count = 0;
@@ -733,16 +735,8 @@ impl QuadGl {
         crate::get_context().projection_matrix()
     }
 
-    pub fn get_active_render_pass(&self) -> Option<RenderPass> {
-        self.state.render_pass
-    }
-
     pub fn is_depth_test_enabled(&self) -> bool {
         self.state.depth_test_enable
-    }
-
-    pub fn render_pass(&mut self, render_pass: Option<RenderPass>) {
-        self.state.render_pass = render_pass;
     }
 
     pub fn depth_test(&mut self, enable: bool) {
@@ -815,7 +809,6 @@ impl QuadGl {
                 || draw_call.viewport != self.state.viewport
                 || draw_call.model != self.state.model()
                 || draw_call.pipeline != pip
-                || draw_call.render_pass != self.state.render_pass
                 || draw_call.draw_mode != self.state.draw_mode
                 || draw_call.vertices_count >= self.max_vertices - vertices.len()
                 || draw_call.indices_count >= self.max_indices - indices.len()
@@ -838,7 +831,6 @@ impl QuadGl {
                     self.state.draw_mode,
                     pip,
                     uniforms.clone(),
-                    self.state.render_pass,
                     self.max_vertices,
                     self.max_indices,
                 ));
@@ -851,7 +843,6 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].viewport = self.state.viewport;
             self.draw_calls[self.draw_calls_count].model = self.state.model();
             self.draw_calls[self.draw_calls_count].pipeline = pip;
-            self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
             self.draw_calls[self.draw_calls_count].capture = self.state.capture;
 
             self.draw_calls_count += 1;

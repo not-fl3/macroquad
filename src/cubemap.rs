@@ -1,9 +1,10 @@
 use miniquad::*;
 
 use glam::{vec3, Mat3, Mat4};
-use nanoimage::png;
 
-#[derive(Debug)]
+use crate::image;
+
+#[derive(Clone, Debug)]
 pub struct Cubemap {
     display_pipeline: Pipeline,
     display_bind: Bindings,
@@ -14,12 +15,12 @@ pub struct Cubemap {
 
 impl Cubemap {
     pub fn new(ctx: &mut dyn RenderingBackend, bytes: &[&[u8]]) -> Cubemap {
-        let texture0 = png::decode(&bytes[0]).unwrap();
-        let texture1 = png::decode(&bytes[1]).unwrap();
-        let texture2 = png::decode(&bytes[2]).unwrap();
-        let texture3 = png::decode(&bytes[3]).unwrap();
-        let texture4 = png::decode(&bytes[4]).unwrap();
-        let texture5 = png::decode(&bytes[5]).unwrap();
+        let texture0 = image::decode(&bytes[0]).unwrap();
+        let texture1 = image::decode(&bytes[1]).unwrap();
+        let texture2 = image::decode(&bytes[2]).unwrap();
+        let texture3 = image::decode(&bytes[3]).unwrap();
+        let texture4 = image::decode(&bytes[4]).unwrap();
+        let texture5 = image::decode(&bytes[5]).unwrap();
         let color_img = ctx.new_texture(
             TextureAccess::Static,
             TextureSource::Array(&[
@@ -31,6 +32,7 @@ impl Cubemap {
                 &[&texture5.data],
             ]),
             TextureParams {
+                kind: TextureKind::CubeMap,
                 width: texture0.width as _,
                 height: texture0.height as _,
                 format: TextureFormat::RGBA8,
@@ -142,13 +144,11 @@ impl Cubemap {
 }
 
 impl Cubemap {
-    pub fn draw(&mut self, ctx: &mut dyn RenderingBackend, proj: &Mat4, view: &Mat4) {
+    pub fn draw(&self, ctx: &mut dyn RenderingBackend, proj: &Mat4, view: &Mat4) {
         let (width, height) = window::screen_size();
 
         let view_proj = *proj * Mat4::from_mat3(Mat3::from_mat4(*view));
 
-        self.rx += 0.01;
-        self.ry += 0.03;
         // let model = Mat4::from_rotation_ypr(self.rx, self.ry, 0.);
 
         let vs_params = display_shader::Uniforms { mvp: view_proj };
@@ -165,7 +165,7 @@ impl Cubemap {
 mod display_shader {
     use miniquad::*;
 
-    pub const VERTEX: &str = r#"#version 100
+    pub const VERTEX: &str = r#"#version 130
     attribute vec4 in_pos;
     attribute vec4 in_color;
     attribute vec2 in_uv;
@@ -183,13 +183,14 @@ mod display_shader {
     }
     "#;
 
-    pub const FRAGMENT: &str = r#"#version 100
+    pub const FRAGMENT: &str = r#"#version 130
     varying lowp vec4 color;
     varying lowp vec3 uv;
 
     uniform samplerCube tex;
 
     void main() {
+        //gl_FragColor = textureCubeLod(tex, uv, 10.0);
         gl_FragColor = textureCube(tex, uv);
     }
     "#;

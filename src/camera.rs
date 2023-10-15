@@ -9,7 +9,7 @@ use crate::{
 };
 use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Environment {
     Solid(Color),
     Skybox(Cubemap),
@@ -18,16 +18,27 @@ pub enum Environment {
 #[derive(Debug, Clone, Copy)]
 pub enum Projection {
     Perspective,
-    Orthographics,
+    Orthographic,
 }
 
+#[derive(Clone)]
 pub struct Camera {
     pub depth_enabled: bool,
     pub render_target: Option<RenderTarget>,
 
+    /// Camera position
+    pub position: Vec3,
+    /// Camera target it looks-at
+    pub target: Vec3,
+    /// Camera up vector (rotation over its axis)
+    pub up: Vec3,
+    /// Camera field-of-view aperture in Y (degrees)
+    /// in perspective, used as near plane width in orthographic
+    pub fovy: f32,
+    /// Camera projection type, perspective or orthographics
     pub projection: Projection,
-    /// Camera's point of view in world space
-    pub position: CameraPosition,
+
+    pub aspect: Option<f32>,
 
     /// Rectangle on the screen where this camera's output is drawn
     /// Numbers are pixels in window-spae, x, y, width, height
@@ -38,110 +49,50 @@ pub struct Camera {
     pub z_far: f32,
 }
 
-#[derive(Debug, Clone)]
-pub enum CameraPosition {
-    Camera2D {
-        /// Rotation in degrees
-        rotation: f32,
-        /// Scaling, (1.0, 1.0) by default
-        zoom: Vec2,
-        /// Rotation and zoom origin
-        target: Vec2,
-        /// Displacement from target
-        offset: Vec2,
-    },
-    Camera3D {
-        /// Camera position
-        position: Vec3,
-        /// Camera target it looks-at
-        target: Vec3,
-        /// Camera up vector (rotation over its axis)
-        up: Vec3,
-        /// Camera field-of-view aperture in Y (degrees)
-        /// in perspective, used as near plane width in orthographic
-        fovy: f32,
-        /// Camera projection type, perspective or orthographics
-        projection: Projection,
-
-        aspect: Option<f32>,
-    },
-}
-
 impl Camera {
     pub fn proj_view(&self) -> (Mat4, Mat4) {
-        match &self.position {
-            CameraPosition::Camera2D {
-                target,
-                rotation,
-                zoom,
-                offset,
-            } => {
-                // gleaned from https://github.com/raysan5/raylib/blob/master/src/core.c#L1528
+        //     // gleaned from https://github.com/raysan5/raylib/blob/master/src/core.c#L1528
 
-                // The camera in world-space is set by
-                //   1. Move it to target
-                //   2. Rotate by -rotation and scale by (1/zoom)
-                //      When setting higher scale, it's more intuitive for the world to become bigger (= camera become smaller),
-                //      not for the camera getting bigger, hence the invert. Same deal with rotation.
-                //   3. Move it by (-offset);
-                //      Offset defines target transform relative to screen, but since we're effectively "moving" screen (camera)
-                //      we need to do it into opposite direction (inverse transform)
+        //     // The camera in world-space is set by
+        //     //   1. Move it to target
+        //     //   2. Rotate by -rotation and scale by (1/zoom)
+        //     //      When setting higher scale, it's more intuitive for the world to become bigger (= camera become smaller),
+        //     //      not for the camera getting bigger, hence the invert. Same deal with rotation.
+        //     //   3. Move it by (-offset);
+        //     //      Offset defines target transform relative to screen, but since we're effectively "moving" screen (camera)
+        //     //      we need to do it into opposite direction (inverse transform)
 
-                // Having camera transform in world-space, inverse of it gives the modelview transform.
-                // Since (A*B*C)' = C'*B'*A', the modelview is
-                //   1. Move to offset
-                //   2. Rotate and Scale
-                //   3. Move by -target
-                let mat_origin = Mat4::from_translation(vec3(-target.x, -target.y, 0.0));
-                let mat_rotation =
-                    Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), rotation.to_radians());
-                let mat_scale = Mat4::from_scale(vec3(zoom.x, zoom.y, 1.0));
-                let mat_translation = Mat4::from_translation(vec3(offset.x, offset.y, 0.0));
+        //     // Having camera transform in world-space, inverse of it gives the modelview transform.
+        //     // Since (A*B*C)' = C'*B'*A', the modelview is
+        //     //   1. Move to offset
+        //     //   2. Rotate and Scale
+        //     //   3. Move by -target
+        //     let mat_origin = Mat4::from_translation(vec3(-target.x, -target.y, 0.0));
+        //     let mat_rotation =
+        //         Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), rotation.to_radians());
+        //     let mat_scale = Mat4::from_scale(vec3(zoom.x, zoom.y, 1.0));
+        //     let mat_translation = Mat4::from_translation(vec3(offset.x, offset.y, 0.0));
+
+        //     (
+        //         Mat4::IDENTITY,
+        //         mat_translation * ((mat_scale * mat_rotation) * mat_origin),
+        //     )
+        // }
+        let aspect = self.aspect.unwrap_or(screen_width() / screen_height());
+        match self.projection {
+            Projection::Perspective => (
+                Mat4::perspective_rh_gl(self.fovy, aspect, self.z_near, self.z_far),
+                Mat4::look_at_rh(self.position, self.target, self.up),
+            ),
+            Projection::Orthographic => {
+                let top = self.fovy / 2.0;
+                let right = top * aspect;
 
                 (
-                    Mat4::IDENTITY,
-                    mat_translation * ((mat_scale * mat_rotation) * mat_origin),
+                    Mat4::orthographic_rh_gl(-right, right, -top, top, self.z_near, self.z_far),
+                    Mat4::look_at_rh(self.position, self.target, self.up),
                 )
             }
-            CameraPosition::Camera3D {
-                fovy,
-                position,
-                target,
-                up,
-                projection,
-                aspect,
-            } => {
-                let aspect = aspect.unwrap_or(screen_width() / screen_height());
-                match projection {
-                    Projection::Perspective => (
-                        Mat4::perspective_rh_gl(*fovy, aspect, self.z_near, self.z_far),
-                        Mat4::look_at_rh(*position, *target, *up),
-                    ),
-                    Projection::Orthographics => {
-                        let top = fovy / 2.0;
-                        let right = top * aspect;
-
-                        (
-                            Mat4::orthographic_rh_gl(
-                                -right,
-                                right,
-                                -top,
-                                top,
-                                self.z_near,
-                                self.z_far,
-                            ),
-                            Mat4::look_at_rh(*position, *target, *up),
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    pub fn position(&self) -> Vec3 {
-        match self.position {
-            CameraPosition::Camera3D { position, .. } => position,
-            _ => panic!(),
         }
     }
 }
@@ -189,17 +140,22 @@ impl Default for Camera {
             depth_enabled: false,
             render_target: None,
 
-            projection: Projection::Orthographics,
-            position: CameraPosition::Camera2D {
-                target: vec2(0., 0.),
-                zoom: vec2(1., 1.),
-                offset: vec2(0., 0.),
-                rotation: 0.,
-            },
+            projection: Projection::Orthographic,
+            // position: CameraPosition::Camera2D {
+            //     target: vec2(0., 0.),
+            //     zoom: vec2(1., 1.),
+            //     offset: vec2(0., 0.),
+            //     rotation: 0.,
+            // },
+            position: Vec3::X * -2.0,
+            up: Vec3::Y,
+            target: Vec3::ZERO,
             environment: Environment::Solid(Color::new(0.2, 0.2, 0.5, 1.0)),
             viewport: None,
-            z_far: 1000.,
+            z_far: 100.,
             z_near: 3.0,
+            aspect: None,
+            fovy: 45.,
         }
     }
 }

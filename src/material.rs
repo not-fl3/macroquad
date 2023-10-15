@@ -1,6 +1,6 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::{get_context, get_quad_ctx, texture::Texture2D, warn};
+use crate::{get_context, texture::Texture2D, warn};
 
 use miniquad::{PipelineParams, ShaderError, UniformType, *};
 
@@ -16,18 +16,18 @@ pub struct Uniform {
 /// Material instance loaded on GPU.
 #[derive(Clone, Debug)]
 pub struct Material {
-    pub(crate) pipeline_2d: miniquad::Pipeline,
-    pub(crate) pipeline_3d: miniquad::Pipeline,
-    pub(crate) wants_screen_texture: bool,
-    pub(crate) uniforms: Vec<Uniform>,
-    pub(crate) uniforms_data: Vec<u8>,
-    pub(crate) textures: Vec<String>,
-    pub(crate) textures_data: BTreeMap<String, TextureId>,
+    pub pipeline_2d: miniquad::Pipeline,
+    pub pipeline_3d: miniquad::Pipeline,
+    pub wants_screen_texture: bool,
+    pub uniforms: Vec<Uniform>,
+    pub uniforms_data: Vec<u8>,
+    pub textures: Vec<String>,
+    pub textures_data: BTreeMap<String, TextureId>,
 }
 
 impl Material {
     // TODO
-    pub(crate) fn new2(
+    pub fn new2(
         ctx: &mut dyn miniquad::RenderingBackend,
         shader: ShaderId,
         params: PipelineParams,
@@ -101,25 +101,26 @@ impl Material {
         fragment_shader: &str,
         params: MaterialParams,
     ) -> Result<Material, ShaderError> {
-        let ctx = get_quad_ctx();
+        // let ctx = get_quad_ctx();
 
-        let shader = ctx
-            .new_shader(
-                ShaderSource::Glsl {
-                    vertex: vertex_shader,
-                    fragment: fragment_shader,
-                },
-                shader::meta(),
-            )
-            .unwrap();
+        // let shader = ctx
+        //     .new_shader(
+        //         ShaderSource::Glsl {
+        //             vertex: vertex_shader,
+        //             fragment: fragment_shader,
+        //         },
+        //         shader::meta(),
+        //     )
+        //     .unwrap();
 
-        Self::new2(
-            ctx,
-            shader,
-            params.pipeline_params,
-            params.uniforms,
-            params.textures,
-        )
+        // Self::new2(
+        //     ctx,
+        //     shader,
+        //     params.pipeline_params,
+        //     params.uniforms,
+        //     params.textures,
+        // )
+        unimplemented!()
     }
 
     /// Set GPU uniform value for this material.

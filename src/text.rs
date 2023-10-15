@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::{
     color::Color,
-    get_context, get_quad_ctx,
+    get_context,
     math::{vec3, Rect},
     texture::{Image, TextureHandle},
     Error,
@@ -252,31 +252,31 @@ impl<'a> Default for TextParams<'a> {
 }
 
 /// Load font from file with "path"
-pub async fn load_ttf_font(path: &str) -> Result<Font, Error> {
-    let bytes = crate::file::load_file(path)
-        .await
-        .map_err(|_| Error::FontError("The Font file couldn't be loaded"))?;
+// pub async fn load_ttf_font(path: &str) -> Result<Font, Error> {
+//     let bytes = crate::file::load_file(path)
+//         .await
+//         .map_err(|_| Error::FontError("The Font file couldn't be loaded"))?;
 
-    load_ttf_font_from_bytes(&bytes[..])
-}
+//     load_ttf_font_from_bytes(&bytes[..])
+// }
 
 /// Load font from bytes array, may be use in combination with include_bytes!
 /// ```ignore
 /// let font = load_ttf_font_from_bytes(include_bytes!("font.ttf"));
 /// ```
-pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
-    let context = get_context();
-    let atlas = Arc::new(Mutex::new(Atlas::new(
-        get_quad_ctx(),
-        miniquad::FilterMode::Linear,
-    )));
+// pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
+//     let context = get_context();
+//     let atlas = Arc::new(Mutex::new(Atlas::new(
+//         get_quad_ctx(),
+//         miniquad::FilterMode::Linear,
+//     )));
 
-    let mut font = Font::load_from_bytes(atlas.clone(), bytes)?;
+//     let mut font = Font::load_from_bytes(atlas.clone(), bytes)?;
 
-    font.populate_font_cache(&Font::ascii_character_list(), 15);
+//     font.populate_font_cache(&Font::ascii_character_list(), 15);
 
-    Ok(font)
-}
+//     Ok(font)
+// }
 
 impl SpriteLayer {
     /// Draw text with given font_size

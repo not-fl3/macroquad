@@ -11,7 +11,6 @@ pub use miniquad::conf::Conf;
 
 /// Block execution until the next frame.
 pub fn next_frame() -> crate::exec::FrameFuture {
-    crate::thread_assert::same_thread();
     crate::exec::FrameFuture::default()
 }
 

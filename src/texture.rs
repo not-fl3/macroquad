@@ -1,6 +1,6 @@
 //! Loading and rendering textures. Also render textures, per-pixel image manipulations.
 
-use crate::{color::Color, file::load_file, math::Rect, text::atlas::SpriteKey, Error};
+use crate::{image, color::Color, file::load_file, math::Rect, text::atlas::SpriteKey, Error};
 
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
@@ -105,7 +105,7 @@ impl Image {
     ///     );
     /// ```
     pub fn from_file_with_format(bytes: &[u8]) -> Result<Image, Error> {
-        let img = nanoimage::png::decode(bytes).unwrap();
+        let img = crate::image::decode(bytes).unwrap();
 
         Ok(Image {
             width: img.width as u16,
@@ -255,24 +255,6 @@ impl RenderTarget {
         // let context = get_quad_ctx();
         // context.delete_render_pass(self.render_pass);
     }
-}
-
-pub fn render_target(width: u32, height: u32) -> RenderTarget {
-    // let context = get_quad_ctx();
-
-    // let texture = context.new_render_texture(miniquad::TextureParams {
-    //     width,
-    //     height,
-    //     ..Default::default()
-    // });
-    // let render_pass = context.new_render_pass(texture, None);
-    // let texture = unimplemented!(); //Texture2D::from_miniquad_texture(texture);
-
-    // RenderTarget {
-    //     texture,
-    //     render_pass,
-    // }
-    unimplemented!()
 }
 
 #[derive(Debug, Clone)]
@@ -554,12 +536,6 @@ impl crate::Context3 {
         Ok(self.from_file_with_format(&bytes[..]))
     }
 
-    pub async fn load_texture2(&self, path: &str) -> Result<Texture2D, Error> {
-        let bytes = load_file(path).await?;
-
-        Ok(self.from_file_with_format2(&bytes[..]))
-    }
-
     /// Creates a Texture2D from a slice of bytes that contains an encoded image.
     ///
     /// If `format` is None, it will make an educated guess on the
@@ -577,41 +553,38 @@ impl crate::Context3 {
     /// # }
     /// ```
     pub fn from_file_with_format(&self, bytes: &[u8]) -> Texture2D {
-        let img = nanoimage::decode(bytes).unwrap_or_else(|e| panic!("{}", e));
+        let img = image::decode(bytes).unwrap_or_else(|_| panic!());
 
-        //self.from_rgba8(2048, 2048, &wtf)
         self.from_rgba8(img.width as _, img.height as _, &img.data)
     }
 
-    pub fn from_file_with_format2(&self, bytes: &[u8]) -> Texture2D {
-        use zune_jpeg::JpegDecoder;
-        let mut decoder = JpegDecoder::new(bytes);
-        decoder.decode_headers().unwrap();
-        let info = decoder.info().unwrap();
-        // decode the file
-        let pixels = decoder.decode().unwrap();
+    pub fn render_target(&self, width: u32, height: u32) -> RenderTarget {
+        let mut quad_ctx = self.quad_ctx.lock().unwrap();
 
-        let mut wtf = vec![];
-        for rgb in pixels.chunks(3) {
-            wtf.push(rgb[0]);
-            wtf.push(rgb[1]);
-            wtf.push(rgb[2]);
-            wtf.push(255);
+        let texture = quad_ctx.new_render_texture(miniquad::TextureParams {
+            width,
+            height,
+            ..Default::default()
+        });
+        let depth_img = quad_ctx.new_render_texture(miniquad::TextureParams {
+            width,
+            height,
+            format: miniquad::TextureFormat::Depth,
+            ..Default::default()
+        });
+
+        let render_pass = quad_ctx.new_render_pass(texture, Some(depth_img));
+        let texture = Texture2D::from_miniquad_texture(texture);
+
+        RenderTarget {
+            texture,
+            render_pass,
         }
-        self.from_rgba8(info.width, info.height, &wtf)
     }
 
     /// Creates a Texture2D from an [Image].
     pub fn from_image(&self, image: &Image) -> Texture2D {
         self.from_rgba8(image.width, image.height, &image.bytes)
-    }
-
-    /// Creates a Texture2D from a miniquad
-    /// [Texture](https://docs.rs/miniquad/0.3.0-alpha/miniquad/graphics/struct.Texture.html)
-    pub fn from_miniquad_texture(&self, texture: miniquad::TextureId) -> Texture2D {
-        Texture2D {
-            texture: TextureHandle::Unmanaged(texture),
-        }
     }
 
     /// Creates a Texture2D from a slice of bytes in an R,G,B,A sequence,
@@ -710,6 +683,14 @@ impl crate::Context3 {
 //     }
 
 impl Texture2D {
+    /// Creates a Texture2D from a miniquad
+    /// [Texture](https://docs.rs/miniquad/0.3.0-alpha/miniquad/graphics/struct.Texture.html)
+    pub fn from_miniquad_texture(texture: miniquad::TextureId) -> Texture2D {
+        Texture2D {
+            texture: TextureHandle::Unmanaged(texture),
+        }
+    }
+
     /// Returns the handle for this texture.
     pub fn raw_miniquad_id(&self) -> miniquad::TextureId {
         // let ctx = get_context();
