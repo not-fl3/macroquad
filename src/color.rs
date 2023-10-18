@@ -105,6 +105,10 @@ impl Color {
     pub fn from_vec(vec: glam::Vec4) -> Self {
         Self::new(vec.x, vec.y, vec.z, vec.w)
     }
+
+    pub fn alpha(&self, a: f32) -> Self {
+        Self::new(self.r, self.g, self.b, a)
+    }
 }
 
 pub mod colors {
