@@ -1,5 +1,4 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
-
 use crate::get_context;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
@@ -183,6 +182,11 @@ pub fn is_mouse_button_released(btn: MouseButton) -> bool {
 
     context.mouse_released.contains(&btn)
 }
+
+/// Get a copy of all the down keys.
+pub fn get_down_keys() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_down.clone()
 
 /// Convert a position in pixels to a position in the range [-1; 1].
 fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
