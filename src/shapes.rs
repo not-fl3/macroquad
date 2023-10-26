@@ -75,6 +75,59 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     context.gl.geometry(&vertices, &indices);
 }
 
+
+pub fn draw_rectangle_lines_ex(x: f32, y: f32, w: f32, h: f32, thickness: f32, params: DrawRectangleParams ) {
+    let context = get_context();
+    let tx = thickness / w;
+    let ty = thickness / h;
+
+    let transform_matrix = Mat4::from_translation(vec3(x, y, 0.0))
+        * Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), params.rotation)
+        * Mat4::from_scale(vec3(w, h, 1.0));
+
+    #[rustfmt::skip]
+    let v = [
+        transform_matrix * vec4( 0.0 - params.offset.x,  0.0 - params.offset.y, 0.0, 1.0),
+        transform_matrix * vec4( 0.0 - params.offset.x,  1.0 - params.offset.y, 0.0, 1.0),
+        transform_matrix * vec4( 1.0 - params.offset.x,  1.0 - params.offset.y, 0.0, 1.0),
+        transform_matrix * vec4( 1.0 - params.offset.x,  0.0 - params.offset.y, 0.0, 1.0),
+
+        transform_matrix * vec4( 0.0 - params.offset.x + tx,  0.0 - params.offset.y + ty, 0.0, 1.0),
+        transform_matrix * vec4( 0.0 - params.offset.x + tx,  1.0 - params.offset.y - ty, 0.0, 1.0),
+        transform_matrix * vec4( 1.0 - params.offset.x - tx,  1.0 - params.offset.y - ty, 0.0, 1.0),
+        transform_matrix * vec4( 1.0 - params.offset.x - tx,  0.0 - params.offset.y + ty, 0.0, 1.0),
+    ];
+
+    // TODO: fix UVs
+    #[rustfmt::skip]
+    let vertices = [
+        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 1.0, params.color),
+        Vertex::new(v[1].x, v[1].y, v[1].z, 1.0, 0.0, params.color),
+        Vertex::new(v[2].x, v[2].y, v[2].z, 1.0, 1.0, params.color),
+        Vertex::new(v[3].x, v[3].y, v[3].z, 1.0, 0.0, params.color),
+
+        Vertex::new(v[4].x, v[4].y, v[4].z, 0.0, 0.0, params.color),
+        Vertex::new(v[5].x, v[5].y, v[5].z, 0.0, 0.0, params.color),
+        Vertex::new(v[6].x, v[6].y, v[6].z, 0.0, 0.0, params.color),
+        Vertex::new(v[7].x, v[7].y, v[7].z, 0.0, 0.0, params.color),
+    ];
+    #[rustfmt::skip]
+    let indices: [u16; 24] = [
+        0, 4, 3,
+        4, 3, 7,
+        4, 0, 1,
+        4, 5, 1,
+        1, 5, 6,
+        1, 6, 2,
+        2, 3, 6,
+        3, 6, 7,
+    ];
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
+}
+
 #[derive(Debug, Clone)]
 pub struct DrawRectangleParams {
     /// Adds an offset to the position
