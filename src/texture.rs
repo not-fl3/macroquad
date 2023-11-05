@@ -445,13 +445,15 @@ pub fn get_screen_data() -> Image {
 
     let context = get_context();
 
-    let texture = Texture2D::from_miniquad_texture(get_quad_context().new_render_texture(
-        miniquad::TextureParams {
-            width: context.screen_width as _,
-            height: context.screen_height as _,
-            ..Default::default()
-        },
-    ));
+    let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width: context.screen_width as _,
+        height: context.screen_height as _,
+        ..Default::default()
+    });
+
+    let texture = Texture2D {
+        texture: context.textures.store_texture(texture_id),
+    };
 
     texture.grab_screen();
 
