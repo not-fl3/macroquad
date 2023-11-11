@@ -213,6 +213,80 @@ pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
     draw_poly_lines(x, y, 20, r, 0., thickness, color);
 }
 
+/// Draws a solid ellipse centered at `[x, y]` with a given size `[w, h]`,
+/// clockwise `rotation` (in degrees) and `color`.
+pub fn draw_ellipse(x: f32, y: f32, w: f32, h: f32, rotation: f32, color: Color) {
+    let sides = 20;
+    let context = get_context();
+
+    let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
+    let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
+
+    let rot = rotation.to_radians();
+    let sr = rot.sin();
+    let cr = rot.cos();
+    vertices.push(Vertex::new(x, y, 0., 0., 0., color));
+    for i in 0..=sides {
+        let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2.).cos();
+        let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2.).sin();
+
+        let px = w * rx;
+        let py = h * ry;
+        let rotated_x = px * cr - py * sr;
+        let rotated_y = py * cr + px * sr;
+        let vertex = Vertex::new(x + rotated_x, y + rotated_y, 0., rx, ry, color);
+
+        vertices.push(vertex);
+
+        if i != sides {
+            indices.extend_from_slice(&[0, i as u16 + 1, i as u16 + 2]);
+        }
+    }
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
+}
+
+/// Draws an ellipse outline centered at `[x, y]` with a given size `[w, h]`,
+/// clockwise `rotation` (in degrees), line `thickness` and `color`.
+pub fn draw_ellipse_lines(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    rotation: f32,
+    thickness: f32,
+    color: Color,
+) {
+    let sides = 20;
+
+    let rot = rotation.to_radians();
+    let sr = rot.sin();
+    let cr = rot.cos();
+    for i in 0..sides {
+        let rx = (i as f32 / sides as f32 * std::f32::consts::PI * 2.).cos();
+        let ry = (i as f32 / sides as f32 * std::f32::consts::PI * 2.).sin();
+        let px = w * rx;
+        let py = h * ry;
+        let rotated_x = px * cr - py * sr;
+        let rotated_y = py * cr + px * sr;
+
+        let p0 = vec2(x + rotated_x, y + rotated_y);
+
+        let rx = ((i + 1) as f32 / sides as f32 * std::f32::consts::PI * 2.).cos();
+        let ry = ((i + 1) as f32 / sides as f32 * std::f32::consts::PI * 2.).sin();
+        let px = w * rx;
+        let py = h * ry;
+        let rotated_x = px * cr - py * sr;
+        let rotated_y = py * cr + px * sr;
+
+        let p1 = vec2(x + rotated_x, y + rotated_y);
+
+        draw_line(p0.x, p0.y, p1.x, p1.y, thickness, color);
+    }
+}
+
 /// Draws a line between points `[x1, y1]` and `[x2, y2]` with a given `thickness` and `color`.
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
     let context = get_context();
