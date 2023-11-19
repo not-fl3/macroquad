@@ -184,7 +184,7 @@ struct Context {
 
     simulate_mouse_with_touch: bool,
 
-    keys_down: HashSet<KeyCode>,
+    keys_down: Vec<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
     keys_released: HashSet<KeyCode>,
     mouse_down: HashSet<MouseButton>,
@@ -310,7 +310,7 @@ impl Context {
 
             simulate_mouse_with_touch: true,
 
-            keys_down: HashSet::new(),
+            keys_down: Vec::new(),
             keys_pressed: HashSet::new(),
             keys_released: HashSet::new(),
             chars_pressed_queue: Vec::new(),
@@ -623,7 +623,11 @@ impl EventHandler for Stage {
 
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
         let context = get_context();
-        context.keys_down.insert(keycode);
+
+        if !context.keys_down.contains(&keycode) {
+            context.keys_down.push(keycode);
+        }
+
         if repeat == false {
             context.keys_pressed.insert(keycode);
         }
@@ -639,7 +643,11 @@ impl EventHandler for Stage {
 
     fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
         let context = get_context();
-        context.keys_down.remove(&keycode);
+
+        if let Some(pos) = context.keys_down.iter().position(|&key| key == keycode) {
+            context.keys_down.remove(pos);
+        }
+
         context.keys_released.insert(keycode);
 
         context

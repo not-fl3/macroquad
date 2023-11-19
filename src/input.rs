@@ -1,5 +1,6 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
+use std::collections::HashSet;
 use crate::get_context;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
@@ -126,6 +127,20 @@ pub fn is_key_down(key_code: KeyCode) -> bool {
     let context = get_context();
 
     context.keys_down.contains(&key_code)
+}
+
+/// Return all keys that are being held down
+pub fn get_keys_down() -> Vec<KeyCode> {
+    let context = get_context();
+    // can't return reference due to the possibility of mut context causing it to be unsafe
+    context.keys_down.clone()
+}
+
+/// Detect if any key is being pressed
+pub fn is_any_key_down() -> bool {
+    let context = get_context();
+
+    !context.keys_down.is_empty()
 }
 
 /// Detect if the key has been released this frame
