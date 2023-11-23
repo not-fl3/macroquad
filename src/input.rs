@@ -1,5 +1,7 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
+use std::collections::HashSet;
+
 use crate::get_context;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
@@ -154,6 +156,21 @@ pub fn get_last_key_pressed() -> Option<KeyCode> {
     let context = get_context();
     // TODO: this will return a random key from keys_pressed HashMap instead of the last one, fix me later
     context.keys_pressed.iter().next().cloned()
+}
+
+pub fn get_keys_pressed() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_pressed.clone()
+}
+
+pub fn get_keys_down() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_down.clone()
+}
+
+pub fn get_keys_released() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_released.clone()
 }
 
 /// Clears input queue
