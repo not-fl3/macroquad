@@ -14,6 +14,7 @@ readme="README.md"
 [features]
 audio = ["quad-snd"]
 log-rs = ["log"]
+glam-serde = ["glam/serde"]
 default = []
 
 [package.metadata.android]
