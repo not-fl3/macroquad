@@ -83,18 +83,45 @@ pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
 
 /// Draw a grid centered at (0, 0, 0)
 pub fn draw_grid(slices: u32, spacing: f32, axes_color: Color, other_color: Color) {
+    draw_grid_ex(slices, spacing, axes_color, other_color, vec3(0., 0., 0.));
+}
+
+/// Draw a grid centered at an offset
+pub fn draw_grid_ex(
+    slices: u32,
+    spacing: f32,
+    axes_color: Color,
+    other_color: Color,
+    offset: Vec3,
+) {
     let half_slices = (slices as i32) / 2;
     for i in -half_slices..half_slices + 1 {
         let color = if i == 0 { axes_color } else { other_color };
 
         draw_line_3d(
-            vec3(i as f32 * spacing, 0., -half_slices as f32 * spacing),
-            vec3(i as f32 * spacing, 0., half_slices as f32 * spacing),
+            vec3(
+                i as f32 * spacing + offset.x,
+                0. + offset.y,
+                -half_slices as f32 * spacing + offset.z,
+            ),
+            vec3(
+                i as f32 * spacing + offset.x,
+                0. + offset.y,
+                half_slices as f32 * spacing + offset.z,
+            ),
             color,
         );
         draw_line_3d(
-            vec3(-half_slices as f32 * spacing, 0., i as f32 * spacing),
-            vec3(half_slices as f32 * spacing, 0., i as f32 * spacing),
+            vec3(
+                -half_slices as f32 * spacing + offset.x,
+                0. + offset.y,
+                i as f32 * spacing + offset.z,
+            ),
+            vec3(
+                half_slices as f32 * spacing + offset.x,
+                0. + offset.y,
+                i as f32 * spacing + offset.z,
+            ),
             color,
         );
     }
