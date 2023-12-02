@@ -3,7 +3,7 @@
 use crate::{color::Color, get_context};
 
 use crate::{quad_gl::DrawMode, texture::Texture2D};
-use glam::{vec2, vec3, Vec2, Vec3};
+use glam::{vec2, vec3, Quat, Vec2, Vec3};
 
 #[derive(Clone, Debug, Copy)]
 pub struct Vertex {
@@ -83,45 +83,44 @@ pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
 
 /// Draw a grid centered at (0, 0, 0)
 pub fn draw_grid(slices: u32, spacing: f32, axes_color: Color, other_color: Color) {
-    draw_grid_ex(slices, spacing, axes_color, other_color, vec3(0., 0., 0.));
+    draw_grid_ex(
+        slices,
+        spacing,
+        axes_color,
+        other_color,
+        vec3(0., 0., 0.),
+        Quat::IDENTITY,
+    );
 }
 
-/// Draw a grid centered at an offset
+/// Draw a rotated grid centered at a specified point
 pub fn draw_grid_ex(
     slices: u32,
     spacing: f32,
     axes_color: Color,
     other_color: Color,
-    offset: Vec3,
+    center: Vec3,
+    rotation: Quat,
 ) {
     let half_slices = (slices as i32) / 2;
     for i in -half_slices..half_slices + 1 {
         let color = if i == 0 { axes_color } else { other_color };
 
+        let start = vec3(i as f32 * spacing, 0., -half_slices as f32 * spacing);
+        let end = vec3(i as f32 * spacing, 0., half_slices as f32 * spacing);
+
         draw_line_3d(
-            vec3(
-                i as f32 * spacing + offset.x,
-                0. + offset.y,
-                -half_slices as f32 * spacing + offset.z,
-            ),
-            vec3(
-                i as f32 * spacing + offset.x,
-                0. + offset.y,
-                half_slices as f32 * spacing + offset.z,
-            ),
+            rotation.mul_vec3(start) + center,
+            rotation.mul_vec3(end) + center,
             color,
         );
+
+        let start = vec3(-half_slices as f32 * spacing, 0., i as f32 * spacing);
+        let end = vec3(half_slices as f32 * spacing, 0., i as f32 * spacing);
+
         draw_line_3d(
-            vec3(
-                -half_slices as f32 * spacing + offset.x,
-                0. + offset.y,
-                i as f32 * spacing + offset.z,
-            ),
-            vec3(
-                half_slices as f32 * spacing + offset.x,
-                0. + offset.y,
-                i as f32 * spacing + offset.z,
-            ),
+            rotation.mul_vec3(start) + center,
+            rotation.mul_vec3(end) + center,
             color,
         );
     }
