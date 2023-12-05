@@ -206,12 +206,16 @@ async fn main() {
                     ui.separator();
                 });
                 ui.tree_node(hash!(), "buttons", |ui| {
-                    widgets::Button::new(texture).size(vec2(120., 70.)).ui(ui);
+                    widgets::Button::new(texture.clone())
+                        .size(vec2(120., 70.))
+                        .ui(ui);
                     ui.same_line(0.);
                     widgets::Button::new("Button").size(vec2(120., 70.)).ui(ui);
                     widgets::Button::new("Button").size(vec2(120., 70.)).ui(ui);
                     ui.same_line(0.);
-                    widgets::Button::new(texture).size(vec2(120., 70.)).ui(ui);
+                    widgets::Button::new(texture.clone())
+                        .size(vec2(120., 70.))
+                        .ui(ui);
                 });
                 ui.tree_node(hash!(), "sliders", |ui| {
                     ui.slider(hash!(), "[-10 .. 10]", -10f32..10f32, &mut number0);

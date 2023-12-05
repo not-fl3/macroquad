@@ -42,12 +42,18 @@ async fn main() {
             ball_x += dx * delta;
             ball_y += dy * delta;
         } else {
-            draw_text(
+            let (font_size, font_scale, font_aspect) = camera_font_scale(1.);
+            let text_params = TextParams {
+                font_size,
+                font_scale,
+                font_scale_aspect: font_aspect,
+                ..Default::default()
+            };
+            draw_text_ex(
                 "Press space to start",
                 SCR_W / 2. - 5.,
                 SCR_H / 2.,
-                1.,
-                BLACK,
+                text_params,
             );
 
             ball_x = platform_x;

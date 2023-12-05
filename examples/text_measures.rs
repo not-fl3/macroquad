@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-fn draw_text_annotated(text: &str, font: Option<Font>, x: f32, baseline: f32) {
+fn draw_text_annotated(text: &str, font: Option<&Font>, x: f32, baseline: f32) {
     let size = measure_text(text, font, 100, 1.0);
 
     // Full background rect
@@ -69,7 +69,7 @@ fn draw_text_annotated(text: &str, font: Option<Font>, x: f32, baseline: f32) {
         baseline,
         TextParams {
             font_size: 100,
-            font: font.unwrap_or(Default::default()),
+            font,
             ..Default::default()
         },
     );
@@ -87,7 +87,7 @@ async fn main() {
         let text = "abcdIj";
 
         draw_text_annotated(text, None, 40.0, 200.0);
-        draw_text_annotated(text, Some(font), 400.0, 400.0);
+        draw_text_annotated(text, Some(&font), 400.0, 400.0);
 
         next_frame().await
     }

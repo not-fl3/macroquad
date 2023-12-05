@@ -1,9 +1,8 @@
 [package]
 name = "macroquad"
-version = "0.3.23"
+version = "0.4.4"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2021"
-license = "MIT/Apache-2.0"
 homepage = "https://github.com/not-fl3/macroquad"
 repository = "https://github.com/not-fl3/macroquad"
 description = """
@@ -14,7 +13,7 @@ readme="README.md"
 [features]
 audio = ["quad-snd"]
 log-rs = ["log"]
-default = ["audio"]
+default = []
 
 [package.metadata.android]
 assets = "examples/"
@@ -26,16 +25,17 @@ opt-level = 3
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.3.11", features = ["log-impl"] }
+miniquad = { version = "=0.4.0-alpha.10", features = ["log-impl"] }
 quad-rand = "0.2.1"
-glam = {version = "0.14", features = ["scalar-math"] }
-image = { version = "0.23.12", default-features = false, features = ["png", "tga"] }
+glam = {version = "0.21", features = ["scalar-math"] }
+image = { version = "0.24", default-features = false, features = ["png", "tga"] }
 macroquad_macro = { version = "0.1.7", path = "macroquad_macro" }
-fontdue = "0.5.0"
+fontdue = "0.7"
 bumpalo = "3.4"
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
+slotmap = "1.0"
 
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
@@ -47,7 +47,7 @@ macroquad-platformer = { path = "./physics-platformer" }
 # this allows to use macroquad-particles in examples without two versions of macroquad
 [patch.crates-io]
 macroquad = { path = './' }
-#quad-snd = {path = '../quad-snd'}
 
+#quad-snd = {path = '../quad-snd'}
 #miniquad = { path = '../miniquad' }
 #quad-gl = {path = './quad-gl'}

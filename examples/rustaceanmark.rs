@@ -48,7 +48,7 @@ async fn main() {
             }
 
             draw_texture(
-                rustacean_tex,
+                &rustacean_tex,
                 rustaceane.pos.x,
                 rustaceane.pos.y,
                 rustaceane.color,

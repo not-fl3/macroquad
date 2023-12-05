@@ -1,3 +1,5 @@
+#[cfg(target_os = "android")]
+use crate::get_quad_context;
 use crate::{
     math::{vec2, Rect, Vec2},
     ui::{ElementState, Id, InputCharacter, Key, KeyCode, Layout, Ui},
@@ -87,9 +89,9 @@ impl<'a> Editbox<'a> {
                     modifier_ctrl: false,
                     ..
                 } => {
-                    if character != 13 as char
-                        && character != 10 as char
-                        && character.is_ascii()
+                    // Don't insert spaces for control characters
+                    if character.is_ascii()
+                        && !character.is_ascii_control()
                         && self.filter.as_ref().map_or(true, |f| f(character))
                     {
                         if state.selection.is_some() {
@@ -262,9 +264,13 @@ impl<'a> Editbox<'a> {
         let hovered = rect.contains(context.input.mouse_position);
 
         if context.input.click_down() && hovered {
+            #[cfg(target_os = "android")]
+            miniquad::window::show_keyboard(true);
             *context.input_focus = Some(self.id);
         }
         if context.input_focused(self.id) && context.input.click_down() && hovered == false {
+            #[cfg(target_os = "android")]
+            miniquad::window::show_keyboard(false);
             *context.input_focus = None;
         }
 
@@ -386,12 +392,8 @@ impl<'a> Editbox<'a> {
                     None,
                 );
             }
-            // hack to draw a caret after text but do not bother with the extra symbol
-            if n == text.len() {
-                break;
-            }
 
-            let mut font = context.style.editbox_style.font.borrow_mut();
+            let mut font = context.style.editbox_style.font.lock().unwrap();
             let font_size = context.style.editbox_style.font_size;
 
             let mut advance = 1.5; // 1.5 - hack to make cursor on newlines visible

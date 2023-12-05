@@ -1,4 +1,5 @@
 use crate::{
+    get_quad_context,
     math::Rect,
     texture::{Image, Texture2D},
     Color,
@@ -11,10 +12,15 @@ pub struct Sprite {
     pub rect: Rect,
 }
 
+#[derive(Debug, Eq, PartialEq, Hash, Clone, Copy)]
+pub enum SpriteKey {
+    Texture(miniquad::TextureId),
+    Id(u64),
+}
 pub struct Atlas {
-    texture: Texture2D,
+    texture: miniquad::TextureId,
     image: Image,
-    pub sprites: HashMap<u64, Sprite>,
+    pub sprites: HashMap<SpriteKey, Sprite>,
     cursor_x: u16,
     cursor_y: u16,
     max_line_height: u16,
@@ -32,14 +38,14 @@ impl Atlas {
     // well..
     const UNIQUENESS_OFFSET: u64 = 100000;
 
-    pub fn new(ctx: &mut miniquad::Context, filter: miniquad::FilterMode) -> Atlas {
+    pub fn new(ctx: &mut dyn miniquad::RenderingBackend, filter: miniquad::FilterMode) -> Atlas {
         let image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
-        let texture = Texture2D {
-            texture: miniquad::Texture::from_rgba8(ctx, image.width, image.height, &image.bytes),
-        };
-        texture
-            .raw_miniquad_texture_handle()
-            .set_filter(ctx, filter);
+        let texture = ctx.new_texture_from_rgba8(image.width, image.height, &image.bytes);
+        ctx.texture_set_filter(
+            texture,
+            miniquad::FilterMode::Nearest,
+            miniquad::MipmapFilterMode::None,
+        );
 
         Atlas {
             image,
@@ -54,13 +60,19 @@ impl Atlas {
         }
     }
 
-    pub fn new_unique_id(&mut self) -> u64 {
+    pub fn new_unique_id(&mut self) -> SpriteKey {
         self.unique_id += 1;
 
-        self.unique_id
+        SpriteKey::Id(self.unique_id)
     }
 
-    pub fn get(&self, key: u64) -> Option<Sprite> {
+    pub fn set_filter(&mut self, filter_mode: miniquad::FilterMode) {
+        let ctx = get_quad_context();
+        self.filter = filter_mode;
+        ctx.texture_set_filter(self.texture, filter_mode, miniquad::MipmapFilterMode::None);
+    }
+
+    pub fn get(&self, key: SpriteKey) -> Option<Sprite> {
         self.sprites.get(&key).cloned()
     }
 
@@ -72,43 +84,43 @@ impl Atlas {
         self.image.height
     }
 
-    pub fn texture(&mut self) -> Texture2D {
+    pub fn texture(&mut self) -> miniquad::TextureId {
+        let ctx = get_quad_context();
         if self.dirty {
             self.dirty = false;
-            if self.texture.width() != self.image.width as _
-                || self.texture.height() != self.image.height as _
-            {
-                self.texture.delete();
+            let (texture_width, texture_height) = ctx.texture_size(self.texture);
+            if texture_width != self.image.width as _ || texture_height != self.image.height as _ {
+                ctx.delete_texture(self.texture);
 
-                self.texture = Texture2D::from_rgba8(
+                self.texture = ctx.new_texture_from_rgba8(
                     self.image.width,
                     self.image.height,
                     &self.image.bytes[..],
                 );
-                self.texture.set_filter(self.filter);
+                ctx.texture_set_filter(self.texture, self.filter, miniquad::MipmapFilterMode::None);
             }
 
-            self.texture.update(&self.image);
+            ctx.texture_update(self.texture, &self.image.bytes);
         }
 
         self.texture
     }
 
-    pub fn get_uv_rect(&self, key: u64) -> Option<Rect> {
+    pub fn get_uv_rect(&self, key: SpriteKey) -> Option<Rect> {
+        let ctx = get_quad_context();
         self.get(key).map(|sprite| {
-            let w = self.texture.width();
-            let h = self.texture.height();
+            let (w, h) = ctx.texture_size(self.texture);
 
             Rect::new(
-                sprite.rect.x / w,
-                sprite.rect.y / h,
-                sprite.rect.w / w,
-                sprite.rect.h / h,
+                sprite.rect.x / w as f32,
+                sprite.rect.y / h as f32,
+                sprite.rect.w / w as f32,
+                sprite.rect.h / h as f32,
             )
         })
     }
 
-    pub fn cache_sprite(&mut self, key: u64, sprite: Image) {
+    pub fn cache_sprite(&mut self, key: SpriteKey, sprite: Image) {
         let (width, height) = (sprite.width as usize, sprite.height as usize);
 
         let x = if self.cursor_x + (width as u16) < self.image.width {

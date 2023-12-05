@@ -11,6 +11,9 @@ pub enum Error {
     TextureNotFound {
         texture: String,
     },
+    LayerTypeNotFound {
+        layer_type: String,
+    },
 }
 
 impl From<nanoserde::DeJsonErr> for Error {
@@ -31,6 +34,11 @@ impl std::fmt::Display for Error {
                 f,
                 "Layer name should be unique to load tiled level in macroquad, non-unique layer name: {}", layer
             ),
+            Error::LayerTypeNotFound{layer_type} => write!(
+                f,
+                "{} type layer not found.", layer_type
+            ),
+
         }
     }
 }

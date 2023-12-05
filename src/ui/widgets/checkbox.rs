@@ -7,6 +7,8 @@ pub struct Checkbox<'a> {
     id: Id,
     label: &'a str,
     ratio: f32,
+    pos: Option<Vec2>,
+    size: Option<Vec2>,
 }
 
 impl<'a> Checkbox<'a> {
@@ -15,6 +17,8 @@ impl<'a> Checkbox<'a> {
             id,
             label: "",
             ratio: 0.5,
+            pos: None,
+            size: None,
         }
     }
 
@@ -27,6 +31,22 @@ impl<'a> Checkbox<'a> {
             id: self.id,
             label,
             ratio: self.ratio,
+            pos: self.pos,
+            size: self.size,
+        }
+    }
+
+    pub fn pos(self, pos: Vec2) -> Self {
+        Self {
+            pos: Some(pos),
+            ..self
+        }
+    }
+
+    pub fn size(self, size: Vec2) -> Self {
+        Self {
+            size: Some(size),
+            ..self
         }
     }
 
@@ -37,12 +57,14 @@ impl<'a> Checkbox<'a> {
             &context.style.label_style,
             &UiContent::Label(self.label.into()),
         );
-        let size = vec2(
+        let size = self.size.unwrap_or(vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
             label_size.y.max(22.),
-        );
+        ));
 
-        let pos = context.window.cursor.fit(size, Layout::Vertical);
+        let pos = self
+            .pos
+            .unwrap_or_else(|| context.window.cursor.fit(size, Layout::Vertical));
 
         let whole_area = Vec2::new(
             if self.label.is_empty() {

@@ -3,6 +3,8 @@ use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 
+use crate::Error;
+
 // Returns Pending as long as its inner bool is false.
 #[derive(Default)]
 pub struct FrameFuture {
@@ -25,14 +27,12 @@ impl Future for FrameFuture {
     }
 }
 
-type FileResult<T> = Result<T, crate::file::FileError>;
-
 pub struct FileLoadingFuture {
-    pub contents: Arc<Mutex<Option<FileResult<Vec<u8>>>>>,
+    pub contents: Arc<Mutex<Option<Result<Vec<u8>, Error>>>>,
 }
 
 impl Future for FileLoadingFuture {
-    type Output = FileResult<Vec<u8>>;
+    type Output = Result<Vec<u8>, Error>;
 
     fn poll(self: Pin<&mut Self>, _context: &mut Context) -> Poll<Self::Output> {
         let mut contents = self.contents.lock().unwrap();

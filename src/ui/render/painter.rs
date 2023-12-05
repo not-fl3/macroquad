@@ -4,12 +4,15 @@
 use crate::{
     color::Color,
     math::{vec2, Rect, RectOffset, Vec2},
-    text::{atlas::Atlas, FontInternal, TextDimensions},
+    text::{
+        atlas::{Atlas, SpriteKey},
+        Font, TextDimensions,
+    },
     texture::Texture2D,
     ui::{style::Style, UiContent},
 };
 
-use std::{cell::RefCell, rc::Rc};
+use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy, Debug, PartialEq, Default)]
 pub struct ElementState {
@@ -147,11 +150,11 @@ impl DrawCommand {
 pub(crate) struct Painter {
     pub commands: Vec<DrawCommand>,
     pub clipping_zone: Option<Rect>,
-    font_atlas: Rc<RefCell<Atlas>>,
+    font_atlas: Arc<Mutex<Atlas>>,
 }
 
 impl Painter {
-    pub fn new(font_atlas: Rc<RefCell<Atlas>>) -> Painter {
+    pub fn new(font_atlas: Arc<Mutex<Atlas>>) -> Painter {
         Painter {
             commands: vec![],
             clipping_zone: None,
@@ -171,7 +174,7 @@ impl Painter {
     /// calculate character horizontal size,
     /// usually used as an advance between current cursor position
     /// and next potential character
-    pub fn character_advance(&self, character: char, font: &FontInternal, font_size: u16) -> f32 {
+    pub fn character_advance(&self, character: char, font: &Font, font_size: u16) -> f32 {
         if let Some(font_data) = font.get(character, font_size) {
             return font_data.advance;
         }
@@ -180,7 +183,7 @@ impl Painter {
     }
 
     pub fn content_with_margins_size(&self, style: &Style, content: &UiContent) -> Vec2 {
-        let font = &mut *style.font.borrow_mut();
+        let font = &mut *style.font.lock().unwrap();
         let font_size = style.font_size;
 
         let background_margin = style.background_margin.unwrap_or_default();
@@ -232,7 +235,7 @@ impl Painter {
         label: &str,
         element_state: ElementState,
     ) {
-        let font = &mut *style.font.borrow_mut();
+        let font = &mut *style.font.lock().unwrap();
         let font_size = style.font_size;
 
         let text_measures = self.label_size(label, None, font, font_size);
@@ -265,7 +268,7 @@ impl Painter {
     ) {
         match content {
             UiContent::Label(data) => {
-                let font = &mut *style.font.borrow_mut();
+                let font = &mut *style.font.lock().unwrap();
                 let font_size = style.font_size;
                 let text_color = style.text_color(element_state);
                 let text_measures = self.label_size(data, None, font, font_size);
@@ -296,7 +299,7 @@ impl Painter {
                     )
                     - vec2(margin.left + margin.right, margin.top + margin.bottom);
 
-                self.draw_raw_texture(Rect::new(pos.x, pos.y, size.x, size.y), *texture);
+                self.draw_raw_texture(Rect::new(pos.x, pos.y, size.x, size.y), texture);
             }
         }
     }
@@ -305,7 +308,7 @@ impl Painter {
         &self,
         label: &str,
         _multiline: Option<f32>,
-        font: &mut FontInternal,
+        font: &mut Font,
         font_size: u16,
     ) -> TextDimensions {
         font.measure_text(label, font_size, 1.0, 1.0)
@@ -317,7 +320,7 @@ impl Painter {
         character: char,
         position: Vec2,
         color: Color,
-        font: &mut FontInternal,
+        font: &mut Font,
         font_size: u16,
     ) -> Option<f32> {
         if font.get(character, font_size).is_none() {
@@ -325,7 +328,12 @@ impl Painter {
         }
 
         if let Some(font_data) = font.get(character, font_size) {
-            let glyph = self.font_atlas.borrow().get(font_data.sprite).unwrap();
+            let glyph = self
+                .font_atlas
+                .lock()
+                .unwrap()
+                .get(font_data.sprite)
+                .unwrap();
             let left_coord = font_data.offset_x as f32;
             let top_coord = -glyph.rect.h - font_data.offset_y as f32;
             let dest = Rect::new(
@@ -342,7 +350,11 @@ impl Painter {
                 return Some(advance);
             }
 
-            let source = self.font_atlas.borrow().get_uv_rect(font_data.sprite);
+            let source = self
+                .font_atlas
+                .lock()
+                .unwrap()
+                .get_uv_rect(font_data.sprite);
 
             if let Some(source) = source {
                 let cmd = DrawCommand::DrawCharacter {
@@ -363,7 +375,7 @@ impl Painter {
         label: &str,
         position: Vec2,
         params: T,
-        font: &mut FontInternal,
+        font: &mut Font,
         font_size: u16,
     ) {
         if self.clipping_zone.map_or(false, |clip| {
@@ -389,7 +401,7 @@ impl Painter {
         }
     }
 
-    pub fn draw_raw_texture(&mut self, rect: Rect, texture: Texture2D) {
+    pub fn draw_raw_texture(&mut self, rect: Rect, texture: &Texture2D) {
         if self
             .clipping_zone
             .map_or(false, |clip| !clip.overlaps(&rect))
@@ -397,7 +409,10 @@ impl Painter {
             return;
         }
 
-        self.add_command(DrawCommand::DrawRawTexture { rect, texture })
+        self.add_command(DrawCommand::DrawRawTexture {
+            rect,
+            texture: texture.clone(),
+        })
     }
 
     pub fn draw_rect<S, T>(&mut self, rect: Rect, stroke: S, fill: T)
@@ -412,7 +427,12 @@ impl Painter {
             return;
         }
 
-        let source = self.font_atlas.borrow().get_uv_rect(0).unwrap();
+        let source = self
+            .font_atlas
+            .lock()
+            .unwrap()
+            .get_uv_rect(SpriteKey::Id(0))
+            .unwrap();
         self.add_command(DrawCommand::DrawRect {
             rect,
             source,
@@ -424,7 +444,7 @@ impl Painter {
     pub fn draw_sprite(
         &mut self,
         rect: Rect,
-        sprite: u64,
+        sprite: SpriteKey,
         color: Color,
         margin: Option<RectOffset>,
     ) {
@@ -435,7 +455,7 @@ impl Painter {
             return;
         }
 
-        let atlas = self.font_atlas.borrow();
+        let atlas = self.font_atlas.lock().unwrap();
         let source_uv = atlas.get_uv_rect(sprite).unwrap();
         let (w, h) = (atlas.width(), atlas.height());
         drop(atlas);
@@ -464,7 +484,12 @@ impl Painter {
             return;
         }
 
-        let source = self.font_atlas.borrow().get_uv_rect(0).unwrap();
+        let source = self
+            .font_atlas
+            .lock()
+            .unwrap()
+            .get_uv_rect(SpriteKey::Id(0))
+            .unwrap();
 
         self.add_command(DrawCommand::DrawTriangle {
             p0,
@@ -483,7 +508,12 @@ impl Painter {
             return;
         }
 
-        let source = self.font_atlas.borrow().get_uv_rect(0).unwrap();
+        let source = self
+            .font_atlas
+            .lock()
+            .unwrap()
+            .get_uv_rect(SpriteKey::Id(0))
+            .unwrap();
         self.add_command(DrawCommand::DrawLine {
             start,
             end,
@@ -502,8 +532,11 @@ impl Painter {
             None
         };
 
-
-        self.add_command(DrawCommand::Clip { rect: self.clipping_zone });
+        let scaled_clipping_zone = self.clipping_zone.map(|rect| {
+            let dpi = miniquad::window::dpi_scale();
+            Rect::new(rect.x * dpi, rect.y * dpi, rect.w * dpi, rect.h * dpi)
+        });
+        self.add_command(DrawCommand::Clip { rect: scaled_clipping_zone });
     }
 }
 

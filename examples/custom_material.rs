@@ -29,8 +29,10 @@ void main() {
 #[macroquad::main("Shaders")]
 async fn main() {
     let mat = load_material(
-        VERTEX,
-        FRAGMENT,
+        ShaderSource::Glsl {
+            vertex: VERTEX,
+            fragment: FRAGMENT,
+        },
         MaterialParams {
             uniforms: vec![("test_color".to_string(), UniformType::Float4)],
             pipeline_params: PipelineParams {
@@ -49,7 +51,7 @@ async fn main() {
     loop {
         clear_background(GRAY);
 
-        gl_use_material(mat);
+        gl_use_material(&mat);
 
         mat.set_uniform("test_color", vec4(1., 0., 0., 1.));
 

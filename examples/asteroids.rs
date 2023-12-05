@@ -55,21 +55,7 @@ async fn main() {
     let mut asteroids = Vec::new();
     let mut gameover = false;
 
-    let mut screen_center = Vec2::new(screen_width() / 2., screen_height() / 2.);
-    for _ in 0..10 {
-        asteroids.push(Asteroid {
-            pos: screen_center
-                + Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)).normalize()
-                    * screen_width().min(screen_height())
-                    / 2.,
-            vel: Vec2::new(rand::gen_range(-1., 1.), rand::gen_range(-1., 1.)),
-            rot: 0.,
-            rot_speed: rand::gen_range(-2., 2.),
-            size: screen_width().min(screen_height()) / 10.,
-            sides: 6,
-            collided: false,
-        })
-    }
+    let mut screen_center;
 
     loop {
         if gameover {
@@ -109,7 +95,7 @@ async fn main() {
                         rot: 0.,
                         rot_speed: rand::gen_range(-2., 2.),
                         size: screen_width().min(screen_height()) / 10.,
-                        sides: 6,
+                        sides: rand::gen_range(3, 8),
                         collided: false,
                     })
                 }
@@ -120,12 +106,15 @@ async fn main() {
         let frame_t = get_time();
         let rotation = ship.rot.to_radians();
 
-        let mut acc = -ship.vel / 10.;
+        let mut acc = -ship.vel / 100.; // Friction
+
+        // Forward
         if is_key_down(KeyCode::Up) {
             acc = Vec2::new(rotation.sin(), -rotation.cos()) / 3.;
         }
 
-        if is_key_down(KeyCode::Space) && frame_t - last_shot > 0.1 {
+        // Shot
+        if is_key_down(KeyCode::Space) && frame_t - last_shot > 0.5 {
             let rot_vec = Vec2::new(rotation.sin(), -rotation.cos());
             bullets.push(Bullet {
                 pos: ship.pos + rot_vec * SHIP_HEIGHT / 2.,
@@ -135,40 +124,53 @@ async fn main() {
             });
             last_shot = frame_t;
         }
+
+        // Steer
         if is_key_down(KeyCode::Right) {
             ship.rot += 5.;
         } else if is_key_down(KeyCode::Left) {
             ship.rot -= 5.;
         }
 
+        // Euler integration
         ship.vel += acc;
         if ship.vel.length() > 5. {
             ship.vel = ship.vel.normalize() * 5.;
         }
         ship.pos += ship.vel;
         ship.pos = wrap_around(&ship.pos);
+
+        // Move each bullet
         for bullet in bullets.iter_mut() {
             bullet.pos += bullet.vel;
         }
+
+        // Move each asteroid
         for asteroid in asteroids.iter_mut() {
             asteroid.pos += asteroid.vel;
             asteroid.pos = wrap_around(&asteroid.pos);
             asteroid.rot += asteroid.rot_speed;
         }
 
+        // Bullet lifetime
         bullets.retain(|bullet| bullet.shot_at + 1.5 > frame_t);
 
         let mut new_asteroids = Vec::new();
         for asteroid in asteroids.iter_mut() {
+            // Asteroid/ship collision
             if (asteroid.pos - ship.pos).length() < asteroid.size + SHIP_HEIGHT / 3. {
                 gameover = true;
                 break;
             }
+
+            // Asteroid/bullet collision
             for bullet in bullets.iter_mut() {
                 if (asteroid.pos - bullet.pos).length() < asteroid.size {
                     asteroid.collided = true;
                     bullet.collided = true;
-                    if asteroid.sides > 4 {
+
+                    // Break the asteroid
+                    if asteroid.sides > 3 {
                         new_asteroids.push(Asteroid {
                             pos: asteroid.pos,
                             vel: Vec2::new(bullet.vel.y, -bullet.vel.x).normalize()
@@ -195,10 +197,12 @@ async fn main() {
             }
         }
 
+        // Remove the collided objects
         bullets.retain(|bullet| bullet.shot_at + 1.5 > frame_t && !bullet.collided);
         asteroids.retain(|asteroid| !asteroid.collided);
         asteroids.append(&mut new_asteroids);
 
+        // You win?
         if asteroids.len() == 0 {
             gameover = true;
         }
@@ -208,6 +212,7 @@ async fn main() {
         }
 
         clear_background(LIGHTGRAY);
+
         for bullet in bullets.iter() {
             draw_circle(bullet.pos.x, bullet.pos.y, 2., BLACK);
         }
@@ -237,6 +242,7 @@ async fn main() {
             ship.pos.y + rotation.sin() * SHIP_BASE / 2. + rotation.cos() * SHIP_HEIGHT / 2.,
         );
         draw_triangle_lines(v1, v2, v3, 2., BLACK);
+
         next_frame().await
     }
 }

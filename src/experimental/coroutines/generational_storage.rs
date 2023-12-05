@@ -25,7 +25,7 @@ impl<T> GenerationalStorage<T> {
     pub fn push(&mut self, data: T) -> GenerationalId {
         let generation;
 
-        if let Some((free_id, old_generation)) = self.free_indices.pop() {
+        let id = if let Some((free_id, old_generation)) = self.free_indices.pop() {
             assert!(self.vec[free_id].is_none());
 
             generation = old_generation + 1;
@@ -33,18 +33,17 @@ impl<T> GenerationalStorage<T> {
                 state: data,
                 generation,
             });
+            free_id
         } else {
             generation = 0;
             self.vec.push(Some(GenerationalCell {
                 state: data,
                 generation,
             }));
-        }
+            self.vec.len() - 1
+        };
 
-        GenerationalId {
-            id: self.vec.len() - 1,
-            generation,
-        }
+        GenerationalId { id, generation }
     }
 
     pub fn get(&self, id: GenerationalId) -> Option<&T> {

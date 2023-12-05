@@ -34,6 +34,15 @@ impl Window {
         }
     }
 
+    /// If moveable is set to true then it means that the user
+    /// can drag the window (default).
+    ///
+    /// After the first frame the window got drawn it will stop looking at the position given
+    /// to it and instead will have its position be fully in control by the user.
+    ///
+    ///
+    /// If on the other hand it is false then the position of this window will
+    /// always be equal to the value given.
     pub fn movable(self, movable: bool) -> Window {
         Window { movable, ..self }
     }

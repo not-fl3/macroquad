@@ -6,6 +6,8 @@ async fn main() {
         .await
         .unwrap();
 
+    let mut angle = 0.0;
+
     loop {
         clear_background(BLACK);
 
@@ -42,7 +44,7 @@ async fn main() {
             70.0,
             TextParams {
                 font_size: 50,
-                font,
+                font: Some(&font),
                 ..Default::default()
             },
         );
@@ -53,10 +55,36 @@ async fn main() {
             160.0,
             TextParams {
                 font_size: 100,
-                font,
+                font: Some(&font),
                 ..Default::default()
             },
         );
+
+        draw_text_ex(
+            "abcd",
+            screen_width() / 4.0 * 2.0,
+            screen_height() / 3.0 * 2.0,
+            TextParams {
+                font_size: 70,
+                font: Some(&font),
+                rotation: angle,
+                ..Default::default()
+            },
+        );
+
+        let center = get_text_center("abcd", Option::None, 70, 1.0, angle * 2.0);
+        draw_text_ex(
+            "abcd",
+            screen_width() / 4.0 * 3.0 - center.x,
+            screen_height() / 3.0 * 2.0 - center.y,
+            TextParams {
+                font_size: 70,
+                rotation: angle * 2.0,
+                ..Default::default()
+            },
+        );
+
+        angle -= 0.030;
 
         next_frame().await
     }

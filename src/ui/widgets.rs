@@ -19,8 +19,7 @@ pub use checkbox::Checkbox;
 pub use combobox::ComboBox;
 pub use editbox::Editbox;
 pub use group::{Group, GroupToken};
-#[allow(deprecated)]
-pub use input::{InputField, InputText};
+pub use input::InputText;
 pub use label::Label;
 pub use popup::Popup;
 pub use slider::Slider;

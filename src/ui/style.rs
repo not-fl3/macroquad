@@ -1,19 +1,24 @@
 use crate::{
     color::Color,
     math::RectOffset,
-    text::{atlas::Atlas, FontError, FontInternal},
+    text::{
+        atlas::{Atlas, SpriteKey},
+        Font,
+    },
     texture::Image,
     ui::ElementState,
+    Error,
 };
 
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 pub struct StyleBuilder {
-    atlas: Rc<RefCell<Atlas>>,
-    font: Rc<RefCell<FontInternal>>,
+    atlas: Arc<Mutex<Atlas>>,
+    font: Arc<Mutex<Font>>,
     font_size: u16,
     text_color: Color,
+    text_color_hovered: Color,
+    text_color_clicked: Color,
     background_margin: Option<RectOffset>,
     margin: Option<RectOffset>,
     background: Option<Image>,
@@ -29,15 +34,14 @@ pub struct StyleBuilder {
 }
 
 impl StyleBuilder {
-    pub(crate) fn new(
-        default_font: Rc<RefCell<FontInternal>>,
-        atlas: Rc<RefCell<Atlas>>,
-    ) -> StyleBuilder {
+    pub(crate) fn new(default_font: Arc<Mutex<Font>>, atlas: Arc<Mutex<Atlas>>) -> StyleBuilder {
         StyleBuilder {
             atlas,
             font: default_font,
             font_size: 16,
             text_color: Color::from_rgba(0, 0, 0, 255),
+            text_color_hovered: Color::from_rgba(0, 0, 0, 255),
+            text_color_clicked: Color::from_rgba(0, 0, 0, 255),
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
             color_clicked: Color::from_rgba(255, 255, 255, 255),
@@ -53,11 +57,11 @@ impl StyleBuilder {
         }
     }
 
-    pub fn font(self, ttf_bytes: &[u8]) -> Result<StyleBuilder, FontError> {
-        let font = FontInternal::load_from_bytes(self.atlas.clone(), ttf_bytes)?;
+    pub fn font(self, ttf_bytes: &[u8]) -> Result<StyleBuilder, Error> {
+        let font = Font::load_from_bytes(self.atlas.clone(), ttf_bytes)?;
 
         Ok(StyleBuilder {
-            font: Rc::new(RefCell::new(font)),
+            font: Arc::new(Mutex::new(font)),
             ..self
         })
     }
@@ -103,6 +107,21 @@ impl StyleBuilder {
             ..self
         }
     }
+
+    pub fn text_color_hovered(self, color_hovered: Color) -> StyleBuilder {
+        StyleBuilder {
+            text_color_hovered: color_hovered,
+            ..self
+        }
+    }
+
+    pub fn text_color_clicked(self, color_clicked: Color) -> StyleBuilder {
+        StyleBuilder {
+            text_color_clicked: color_clicked,
+            ..self
+        }
+    }
+
     pub fn font_size(self, font_size: u16) -> StyleBuilder {
         StyleBuilder { font_size, ..self }
     }
@@ -154,7 +173,7 @@ impl StyleBuilder {
     }
 
     pub fn build(self) -> Style {
-        let mut atlas = self.atlas.borrow_mut();
+        let mut atlas = self.atlas.lock().unwrap();
 
         let background = self.background.map(|image| {
             let id = atlas.new_unique_id();
@@ -188,6 +207,8 @@ impl StyleBuilder {
             color_selected_hovered: self.color_selected_hovered,
             font: self.font,
             text_color: self.text_color,
+            text_color_hovered: self.text_color_hovered,
+            text_color_clicked: self.text_color_clicked,
             font_size: self.font_size,
             reverse_background_z: self.reverse_background_z,
         }
@@ -196,9 +217,9 @@ impl StyleBuilder {
 
 #[derive(Debug, Clone)]
 pub struct Style {
-    pub(crate) background: Option<u64>,
-    pub(crate) background_hovered: Option<u64>,
-    pub(crate) background_clicked: Option<u64>,
+    pub(crate) background: Option<SpriteKey>,
+    pub(crate) background_hovered: Option<SpriteKey>,
+    pub(crate) background_clicked: Option<SpriteKey>,
     pub(crate) color: Color,
     pub(crate) color_inactive: Option<Color>,
     pub(crate) color_hovered: Color,
@@ -215,14 +236,16 @@ pub struct Style {
     /// Maybe be negative to compensate background_margin when content should overlap the
     /// borders
     pub(crate) margin: Option<RectOffset>,
-    pub(crate) font: Rc<RefCell<FontInternal>>,
+    pub(crate) font: Arc<Mutex<Font>>,
     pub(crate) text_color: Color,
+    pub(crate) text_color_hovered: Color,
+    pub(crate) text_color_clicked: Color,
     pub(crate) font_size: u16,
     pub(crate) reverse_background_z: bool,
 }
 
 impl Style {
-    fn default(font: Rc<RefCell<FontInternal>>) -> Style {
+    fn default(font: Arc<Mutex<Font>>) -> Style {
         Style {
             background: None,
             background_margin: None,
@@ -231,6 +254,8 @@ impl Style {
             background_clicked: None,
             font,
             text_color: Color::from_rgba(0, 0, 0, 255),
+            text_color_hovered: Color::from_rgba(0, 0, 0, 255),
+            text_color_clicked: Color::from_rgba(0, 0, 0, 255),
             font_size: 16,
             color: Color::from_rgba(255, 255, 255, 255),
             color_hovered: Color::from_rgba(255, 255, 255, 255),
@@ -255,9 +280,18 @@ impl Style {
     }
 
     pub(crate) fn text_color(&self, element_state: ElementState) -> Color {
-        let ElementState { focused, .. } = element_state;
+        let ElementState {
+            focused,
+            hovered,
+            clicked,
+            ..
+        } = element_state;
 
-        if focused {
+        if clicked {
+            self.text_color_clicked
+        } else if hovered {
+            self.text_color_hovered
+        } else if focused {
             self.text_color
         } else {
             Color::new(
@@ -302,7 +336,7 @@ impl Style {
         self.color
     }
 
-    pub(crate) fn background_sprite(&self, element_state: ElementState) -> Option<u64> {
+    pub(crate) fn background_sprite(&self, element_state: ElementState) -> Option<SpriteKey> {
         let ElementState {
             clicked, hovered, ..
         } = element_state;
@@ -341,7 +375,7 @@ pub struct Skin {
 }
 
 impl Skin {
-    pub(crate) fn new(atlas: Rc<RefCell<Atlas>>, default_font: Rc<RefCell<FontInternal>>) -> Self {
+    pub(crate) fn new(atlas: Arc<Mutex<Atlas>>, default_font: Arc<Mutex<Font>>) -> Self {
         Skin {
             label_style: Style {
                 margin: Some(RectOffset::new(2., 2., 2., 2.)),

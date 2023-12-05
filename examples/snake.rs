@@ -23,6 +23,7 @@ async fn main() {
     let mut score = 0;
     let mut speed = 0.3;
     let mut last_update = get_time();
+    let mut navigation_lock = false;
     let mut game_over = false;
 
     let up = (0, -1);
@@ -32,14 +33,18 @@ async fn main() {
 
     loop {
         if !game_over {
-            if is_key_down(KeyCode::Right) && snake.dir != left {
+            if is_key_down(KeyCode::Right) && snake.dir != left && !navigation_lock {
                 snake.dir = right;
-            } else if is_key_down(KeyCode::Left) && snake.dir != right {
+                navigation_lock = true;
+            } else if is_key_down(KeyCode::Left) && snake.dir != right && !navigation_lock {
                 snake.dir = left;
-            } else if is_key_down(KeyCode::Up) && snake.dir != down {
+                navigation_lock = true;
+            } else if is_key_down(KeyCode::Up) && snake.dir != down && !navigation_lock {
                 snake.dir = up;
-            } else if is_key_down(KeyCode::Down) && snake.dir != up {
+                navigation_lock = true;
+            } else if is_key_down(KeyCode::Down) && snake.dir != up && !navigation_lock {
                 snake.dir = down;
+                navigation_lock = true;
             }
 
             if get_time() - last_update > speed {
@@ -65,6 +70,7 @@ async fn main() {
                         game_over = true;
                     }
                 }
+                navigation_lock = false;
             }
         }
         if !game_over {
@@ -125,13 +131,7 @@ async fn main() {
                 GOLD,
             );
 
-            draw_text(
-                format!("SCORE: {}", score).as_str(),
-                10.,
-                10.,
-                20.,
-                DARKGRAY,
-            );
+            draw_text(format!("SCORE: {score}").as_str(), 10., 20., 20., DARKGRAY);
         } else {
             clear_background(WHITE);
             let text = "Game Over. Press [enter] to play again.";
@@ -141,7 +141,7 @@ async fn main() {
             draw_text(
                 text,
                 screen_width() / 2. - text_size.width / 2.,
-                screen_height() / 2. - text_size.height / 2.,
+                screen_height() / 2. + text_size.height / 2.,
                 font_size,
                 DARKGRAY,
             );
@@ -159,6 +159,6 @@ async fn main() {
                 game_over = false;
             }
         }
-        next_frame().await
+        next_frame().await;
     }
 }

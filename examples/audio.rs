@@ -12,11 +12,11 @@ async fn main() {
 
         if ui::root_ui().button(None, "Play sound 1") {
             warn!("play 1!");
-            audio::play_sound_once(sound1);
+            audio::play_sound_once(&sound1);
         }
         if ui::root_ui().button(None, "Play sound 2") {
             warn!("play 2!");
-            audio::play_sound_once(sound2);
+            audio::play_sound_once(&sound2);
         }
         next_frame().await
     }

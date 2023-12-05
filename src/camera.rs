@@ -15,33 +15,34 @@ pub trait Camera {
     fn viewport(&self) -> Option<(i32, i32, i32, i32)>;
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug)]
 pub struct Camera2D {
-    /// Rotation in degrees
+    /// Rotation in degrees.
     pub rotation: f32,
-    /// Scaling, should be (1.0, 1.0) by default
+    /// Scaling, should be (1.0, 1.0) by default.
     pub zoom: Vec2,
-    /// Rotation and zoom origin
+    /// Rotation and zoom origin.
     pub target: Vec2,
-    /// Displacement from target
+    /// Displacement from target.
     pub offset: Vec2,
 
-    /// If "render_target" is set - camera will render to texture
-    /// otherwise to the screen
+    /// If "render_target" is set - camera will render to texture.
+    ///
+    /// Otherwise to the screen.
     pub render_target: Option<RenderTarget>,
 
-    /// Part of the screen to render to
+    /// Part of the screen to render to.
     ///
-    /// None means the whole screen
+    /// None means the whole screen.
     ///
-    /// Viewport do not affect camera space, just the render position on the screen
+    /// Viewport do not affect camera space, just the render position on the screen.
     ///
-    /// Usefull for things like splitscreen
+    /// Useful for things like splitscreen.
     pub viewport: Option<(i32, i32, i32, i32)>,
 }
 
 impl Camera2D {
-    /// Will make camera space equals given rect
+    /// Will make camera space equals given rect.
     pub fn from_display_rect(rect: Rect) -> Camera2D {
         let target = vec2(rect.x + rect.w / 2., rect.y + rect.h / 2.);
 
@@ -91,7 +92,12 @@ impl Camera for Camera2D {
         //   3. Move by -target
         let mat_origin = Mat4::from_translation(vec3(-self.target.x, -self.target.y, 0.0));
         let mat_rotation = Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), self.rotation.to_radians());
-        let mat_scale = Mat4::from_scale(vec3(self.zoom.x, self.zoom.y, 1.0));
+        let invert_y = if self.render_target.is_some() {
+            1.0
+        } else {
+            -1.0
+        };
+        let mat_scale = Mat4::from_scale(vec3(self.zoom.x, self.zoom.y * invert_y, 1.0));
         let mat_translation = Mat4::from_translation(vec3(self.offset.x, self.offset.y, 0.0));
 
         mat_translation * ((mat_scale * mat_rotation) * mat_origin)
@@ -102,7 +108,7 @@ impl Camera for Camera2D {
     }
 
     fn render_pass(&self) -> Option<miniquad::RenderPass> {
-        self.render_target.map(|rt| rt.render_pass)
+        self.render_target.as_ref().map(|rt| rt.render_pass)
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
@@ -111,8 +117,9 @@ impl Camera for Camera2D {
 }
 
 impl Camera2D {
-    /// Returns the screen space position for a 2d camera world space position
-    /// Screen position in window space - from (0, 0) to (screen_width, screen_height())
+    /// Returns the screen space position for a 2d camera world space position.
+    ///
+    /// Screen position in window space - from (0, 0) to (screen_width, screen_height()).
     pub fn world_to_screen(&self, point: Vec2) -> Vec2 {
         let mat = self.matrix();
         let transform = mat.transform_point3(vec3(point.x, point.y, 0.));
@@ -123,8 +130,9 @@ impl Camera2D {
         )
     }
 
-    // Returns the world space position for a 2d camera screen space position
-    // Point is a screen space position, often mouse x and y
+    /// Returns the world space position for a 2d camera screen space position.
+    ///
+    /// Point is a screen space position, often mouse x and y.
     pub fn screen_to_world(&self, point: Vec2) -> Vec2 {
         let point = vec2(
             point.x / screen_width() * 2. - 1.,
@@ -143,31 +151,36 @@ pub enum Projection {
     Orthographics,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct Camera3D {
-    /// Camera position
+    /// Camera position.
     pub position: Vec3,
-    /// Camera target it looks-at
+    /// Camera target it looks-at.
     pub target: Vec3,
-    /// Camera up vector (rotation over its axis)
+    /// Camera up vector (rotation over its axis).
     pub up: Vec3,
     /// Camera field-of-view aperture in Y (degrees)
-    /// in perspective, used as near plane width in orthographic
+    /// in perspective, used as near plane width in orthographic.
     pub fovy: f32,
-    /// Screen aspect ratio
-    /// By default aspect is calculated with screen_width() / screen_height() on each frame
+    /// Screen aspect ratio.
+    ///
+    /// By default aspect is calculated with screen_width() / screen_height() on each frame.
     pub aspect: Option<f32>,
-    /// Camera projection type, perspective or orthographics
+    /// Camera projection type, perspective or orthographics.
     pub projection: Projection,
 
-    /// If "render_target" is set - camera will render to texture
-    /// otherwise to the screen
+    /// If "render_target" is set - camera will render to texture.
+    ///
+    /// Otherwise to the screen.
     pub render_target: Option<RenderTarget>,
 
-    /// Part of the screen to render to
-    /// None means the whole screen
-    /// Viewport do not affect camera space, just the render position on the screen
-    /// Usefull for things like splitscreen
+    /// Part of the screen to render to.
+    ///
+    /// None means the whole screen.
+    ///
+    /// Viewport do not affect camera space, just the render position on the screen.
+    ///
+    /// Useful for things like splitscreen.
     pub viewport: Option<(i32, i32, i32, i32)>,
 }
 
@@ -215,7 +228,7 @@ impl Camera for Camera3D {
     }
 
     fn render_pass(&self) -> Option<miniquad::RenderPass> {
-        self.render_target.map(|rt| rt.render_pass)
+        self.render_target.as_ref().map(|rt| rt.render_pass)
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
@@ -223,7 +236,7 @@ impl Camera for Camera3D {
     }
 }
 
-/// Set active 2D or 3D camera
+/// Set active 2D or 3D camera.
 pub fn set_camera(camera: &dyn Camera) {
     let context = get_context();
 
@@ -236,7 +249,7 @@ pub fn set_camera(camera: &dyn Camera) {
     context.camera_matrix = Some(camera.matrix());
 }
 
-/// Reset default 2D camera mode
+/// Reset default 2D camera mode.
 pub fn set_default_camera() {
     let context = get_context();
 

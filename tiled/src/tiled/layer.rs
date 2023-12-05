@@ -47,6 +47,9 @@ pub struct Layer {
     pub x: Option<f32>,
     /// Vertical layer offset in tiles. Always 0.
     pub y: Option<f32>,
+
+    /// for type = "imagelayer"
+    pub image: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, DeJson)]

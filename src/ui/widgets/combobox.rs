@@ -49,7 +49,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
         let active_area_w = size.x * self.ratio;
 
         let text_measures = {
-            let font = &mut *context.style.label_style.font.borrow_mut();
+            let font = &mut *context.style.label_style.font.lock().unwrap();
             let font_size = context.style.label_style.font_size;
 
             context
@@ -157,7 +157,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
                     color,
                 );
 
-                let font = &mut *context.style.label_style.font.borrow_mut();
+                let font = &mut *context.style.label_style.font.lock().unwrap();
                 let font_size = context.style.label_style.font_size;
 
                 context.window.painter.draw_label(

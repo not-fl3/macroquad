@@ -11,6 +11,7 @@ pub use miniquad::conf::Conf;
 
 /// Block execution until the next frame.
 pub fn next_frame() -> crate::exec::FrameFuture {
+    crate::thread_assert::same_thread();
     crate::exec::FrameFuture::default()
 }
 
@@ -32,7 +33,7 @@ pub fn gl_set_drawcall_buffer_capacity(max_vertices: usize, max_indices: usize) 
 }
 
 pub struct InternalGlContext<'a> {
-    pub quad_context: &'a mut miniquad::Context,
+    pub quad_context: &'a mut dyn miniquad::RenderingBackend,
     pub quad_gl: &'a mut crate::quad_gl::QuadGl,
 }
 
@@ -55,27 +56,31 @@ pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
 
 pub fn screen_width() -> f32 {
     let context = get_context();
-
-    context.screen_width / get_quad_context().dpi_scale()
+    context.screen_width / miniquad::window::dpi_scale()
 }
 
 pub fn screen_height() -> f32 {
     let context = get_context();
 
-    context.screen_height / get_quad_context().dpi_scale()
+    context.screen_height / miniquad::window::dpi_scale()
 }
 
 /// Request the window size to be the given value. This takes DPI into account.
 ///
 /// Note that the OS might decide to give a different size. Additionally, the size in macroquad won't be updated until the next `next_frame().await`.
 pub fn request_new_screen_size(width: f32, height: f32) {
-    get_quad_context().set_window_size(
-        (width * get_quad_context().dpi_scale()) as u32,
-        (height * get_quad_context().dpi_scale()) as u32,
+    miniquad::window::set_window_size(
+        (width * miniquad::window::dpi_scale()) as u32,
+        (height * miniquad::window::dpi_scale()) as u32,
     );
     // We do not set the context.screen_width and context.screen_height here.
     // After `set_window_size` is called, EventHandlerFree::resize will be invoked, setting the size correctly.
     // Because the OS might decide to give a different screen dimension, setting the context.screen_* here would be confusing.
+}
+
+/// Toggle whether the window is fullscreen.
+pub fn set_fullscreen(fullscreen: bool) {
+    miniquad::window::set_fullscreen(fullscreen);
 }
 
 /// With `set_panic_handler` set to a handler code, macroquad will use

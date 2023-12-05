@@ -40,12 +40,17 @@ pub struct Tile {
     pub attrs: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Layer {
     pub objects: Vec<Object>,
     pub width: u32,
     pub height: u32,
     pub data: Vec<Option<Tile>>,
+    /// imagelayer
+    pub opacity: f32,
+    pub image: Option<Texture2D>,
+    pub offsetx: Option<f32>,
+    pub offsety: Option<f32>,
 }
 
 #[derive(Debug)]
@@ -93,7 +98,7 @@ impl Map {
         let spr_rect = tileset.sprite_rect(sprite);
 
         draw_texture_ex(
-            tileset.texture,
+            &tileset.texture,
             dest.x,
             dest.y,
             WHITE,
@@ -114,7 +119,7 @@ impl Map {
         let tileset = &self.tilesets[tileset];
 
         draw_texture_ex(
-            tileset.texture,
+            &tileset.texture,
             dest.x,
             dest.y,
             WHITE,
@@ -144,22 +149,65 @@ impl Map {
         let spr_width = dest.w / source.w;
         let spr_height = dest.h / source.h;
 
+        let mut separated_by_ts: HashMap<&str, Vec<(&Tile, Rect)>> = HashMap::new();
+
         for y in source.y as u32..source.y as u32 + source.h as u32 {
             for x in source.x as u32..source.x as u32 + source.w as u32 {
-                let pos = vec2(
-                    (x - source.x as u32) as f32 / source.w * dest.w + dest.x,
-                    (y - source.y as u32) as f32 / source.h * dest.h + dest.y,
-                );
+                if let Some(tile) = &layer
+                    .data
+                    .get((y * layer.width + x) as usize)
+                    .unwrap_or(&None)
+                {
+                    if !separated_by_ts.contains_key(tile.tileset.as_str()) {
+                        separated_by_ts.insert(&tile.tileset, vec![]);
+                    }
 
-                if let Some(tile) = &layer.data[(y * layer.width + x) as usize] {
-                    self.spr(
-                        &tile.tileset,
-                        tile.id,
-                        Rect::new(pos.x, pos.y, spr_width, spr_height),
+                    let pos = vec2(
+                        (x - source.x as u32) as f32 / source.w * dest.w + dest.x,
+                        (y - source.y as u32) as f32 / source.h * dest.h + dest.y,
                     );
+                    separated_by_ts
+                        .get_mut(tile.tileset.as_str())
+                        .unwrap()
+                        .push((&tile, Rect::new(pos.x, pos.y, spr_width, spr_height)));
                 }
             }
         }
+
+        for (tileset, tileset_layer) in &separated_by_ts {
+            for (tile, rect) in tileset_layer {
+                self.spr(tileset, tile.id, *rect);
+            }
+        }
+    }
+
+    pub fn draw_imglayer(&self, layer: &str, dest: Rect, source: Option<Rect>) {
+        assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
+        let layer = &self.layers[layer];
+        assert!(layer.image.is_some(), "No texture found.");
+        let img_texture = layer.image.clone().unwrap();
+        let dest_width_frac =
+            img_texture.width() / (self.raw_tiled_map.width * self.raw_tiled_map.tilewidth) as f32;
+        let dest_height_frac =
+            img_texture.height() / (self.raw_tiled_map.height * self.raw_tiled_map.height) as f32;
+
+        let source = source.unwrap_or(Rect::new(0., 0., img_texture.width(), img_texture.height()));
+        draw_texture_ex(
+            &img_texture,
+            (layer.offsetx.unwrap() - source.x) / source.w * dest.w + dest.x,
+            (layer.offsety.unwrap() - source.y) / source.h * dest.h + dest.y,
+            Color {
+                r: 255.,
+                g: 255.,
+                b: 255.,
+                a: layer.opacity,
+            },
+            DrawTextureParams {
+                dest_size: Some(vec2(dest.w * dest_width_frac, dest.h * dest_height_frac)),
+                source: Some(source),
+                ..Default::default()
+            },
+        );
     }
 
     pub fn tiles(&self, layer: &str, rect: impl Into<Option<Rect>>) -> TilesIterator {
@@ -263,7 +311,7 @@ pub fn load_map(
             map_tileset
         };
 
-        let texture = textures
+        let texture = &textures
             .iter()
             .find(|(name, _)| *name == tileset.image)
             .ok_or(error::Error::TextureNotFound {
@@ -274,7 +322,7 @@ pub fn load_map(
         tilesets.insert(
             tileset.name.clone(),
             TileSet {
-                texture,
+                texture: texture.clone(),
                 columns: tileset.columns as _,
                 margin: tileset.margin,
                 spacing: tileset.spacing,
@@ -326,30 +374,66 @@ pub fn load_map(
 
         layers.insert(
             layer.name.clone(),
-            Layer {
-                objects,
-                width: layer.width,
-                height: layer.height,
-                data: layer
-                    .data
-                    .iter()
-                    .map(|tile| {
-                        find_tileset(*tile).map(|tileset| {
-                            let attrs = tileset
-                                .tiles
-                                .iter()
-                                .find(|t| t.id as u32 == *tile - tileset.firstgid)
-                                .and_then(|tile| tile.ty.clone())
-                                .unwrap_or("".to_owned());
+            match layer.ty.as_str() {
+                "tilelayer" | "objectlayer" => Layer {
+                    objects,
+                    width: layer.width,
+                    height: layer.height,
+                    data: layer
+                        .data
+                        .iter()
+                        .map(|tile| {
+                            find_tileset(*tile).map(|tileset| {
+                                let attrs = tileset
+                                    .tiles
+                                    .iter()
+                                    .find(|t| t.id as u32 == *tile - tileset.firstgid)
+                                    .and_then(|tile| tile.ty.clone())
+                                    .unwrap_or("".to_owned());
 
-                            Tile {
-                                id: *tile - tileset.firstgid,
-                                tileset: tileset.name.clone(),
-                                attrs,
-                            }
+                                Tile {
+                                    id: *tile - tileset.firstgid,
+                                    tileset: tileset.name.clone(),
+                                    attrs,
+                                }
+                            })
                         })
+                        .collect::<Vec<_>>(),
+                    opacity: layer.opacity,
+                    ..Default::default()
+                },
+                "imagelayer" => {
+                    let img_name = layer.image.clone().unwrap();
+                    if img_name == "" {
+                        continue;
+                    }
+                    let offsetx = match layer.offsetx {
+                        Some(x) => Some(x as f32),
+                        None => Some(0f32),
+                    };
+                    let offsety = match layer.offsety {
+                        Some(y) => Some(y as f32),
+                        None => Some(0f32),
+                    };
+                    let img_texture = &textures
+                        .iter()
+                        .find(|(name, _)| *name == img_name)
+                        .ok_or(error::Error::TextureNotFound { texture: img_name })?
+                        .1;
+
+                    Layer {
+                        image: Some(img_texture.clone()),
+                        opacity: layer.opacity,
+                        offsetx,
+                        offsety,
+                        ..Default::default()
+                    }
+                }
+                layer_type => {
+                    return Err(error::Error::LayerTypeNotFound {
+                        layer_type: layer_type.to_string(),
                     })
-                    .collect::<Vec<_>>(),
+                }
             },
         );
     }

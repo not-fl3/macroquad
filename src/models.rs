@@ -3,7 +3,7 @@
 use crate::{color::Color, get_context};
 
 use crate::{quad_gl::DrawMode, texture::Texture2D};
-use glam::{vec2, vec3, Vec2, Vec3};
+use glam::{vec2, vec3, Quat, Vec2, Vec3};
 
 #[derive(Clone, Debug, Copy)]
 pub struct Vertex {
@@ -31,7 +31,7 @@ pub struct Mesh {
 pub fn draw_mesh(mesh: &Mesh) {
     let context = get_context();
 
-    context.gl.texture(mesh.texture);
+    context.gl.texture(mesh.texture.as_ref());
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
 }
@@ -83,24 +83,50 @@ pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
 
 /// Draw a grid centered at (0, 0, 0)
 pub fn draw_grid(slices: u32, spacing: f32, axes_color: Color, other_color: Color) {
+    draw_grid_ex(
+        slices,
+        spacing,
+        axes_color,
+        other_color,
+        vec3(0., 0., 0.),
+        Quat::IDENTITY,
+    );
+}
+
+/// Draw a rotated grid centered at a specified point
+pub fn draw_grid_ex(
+    slices: u32,
+    spacing: f32,
+    axes_color: Color,
+    other_color: Color,
+    center: Vec3,
+    rotation: Quat,
+) {
     let half_slices = (slices as i32) / 2;
     for i in -half_slices..half_slices + 1 {
         let color = if i == 0 { axes_color } else { other_color };
 
+        let start = vec3(i as f32 * spacing, 0., -half_slices as f32 * spacing);
+        let end = vec3(i as f32 * spacing, 0., half_slices as f32 * spacing);
+
         draw_line_3d(
-            vec3(i as f32 * spacing, 0., -half_slices as f32 * spacing),
-            vec3(i as f32 * spacing, 0., half_slices as f32 * spacing),
+            rotation.mul_vec3(start) + center,
+            rotation.mul_vec3(end) + center,
             color,
         );
+
+        let start = vec3(-half_slices as f32 * spacing, 0., i as f32 * spacing);
+        let end = vec3(half_slices as f32 * spacing, 0., i as f32 * spacing);
+
         draw_line_3d(
-            vec3(-half_slices as f32 * spacing, 0., i as f32 * spacing),
-            vec3(half_slices as f32 * spacing, 0., i as f32 * spacing),
+            rotation.mul_vec3(start) + center,
+            rotation.mul_vec3(end) + center,
             color,
         );
     }
 }
 
-pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>>, color: Color) {
+pub fn draw_plane(center: Vec3, size: Vec2, texture: Option<&Texture2D>, color: Color) {
     let v1 = (
         (center + vec3(-size.x, 0., -size.y)).into(),
         vec2(0., 0.),
@@ -124,12 +150,94 @@ pub fn draw_plane(center: Vec3, size: Vec2, texture: impl Into<Option<Texture2D>
 
     {
         let context = get_context();
-        context.gl.texture(texture.into());
+        context.gl.texture(texture);
     }
     draw_quad([v1, v2, v3, v4]);
 }
 
-pub fn draw_cube(position: Vec3, size: Vec3, texture: impl Into<Option<Texture2D>>, color: Color) {
+/// Draw an affine (2D) parallelogram at given position, as two triangles.
+///
+/// The drawn parallelogram will have the vertices: `offset`, `offset + e1`, `offset + e2` and `offset + e1 + e2`
+///
+/// # Arguments
+///
+/// * `offset` - Offset of the first point from the origin
+/// * `e1`, `e2` - Base vectors for the parallelogram
+/// * `texture` - Optional [Texture2D] to apply, which will be streched on the entire shape (todo!
+/// support custom uv values per vertex)
+/// * `color` - The [Color] to draw the parallelogram
+///
+/// # Examples
+///
+/// Draw an axis aligned rectangle
+/// ```no_run
+/// # use macroquad::prelude::*;
+/// draw_affine_parallelogram(Vec3::ZERO, 3. * Vec3::X, 5. * Vec3::Z, None, RED);
+/// ```
+pub fn draw_affine_parallelogram(
+    offset: Vec3,
+    e1: Vec3,
+    e2: Vec3,
+    texture: Option<&Texture2D>,
+    color: Color,
+) {
+    let v1 = (offset.into(), vec2(0., 0.), color);
+    let v2 = ((offset + e1).into(), vec2(0., 1.), color);
+    let v3 = ((offset + e1 + e2).into(), vec2(1., 1.), color);
+    let v4 = ((offset + e2).into(), vec2(1., 0.), color);
+
+    {
+        let context = get_context();
+        context.gl.texture(texture);
+    }
+    draw_quad([v1, v2, v3, v4]);
+}
+
+/// Draw an affine (3D) parallelepiped at given position, using six parallelograms.
+///
+/// The drawn parallelepiped will be built from the followwing parallelograms:
+///
+/// * `offset, offset + e1, offset + e2`
+/// * `offset, offset + e2, offset + e3`
+/// * `offset, offset + e1, offset + e3`
+/// * `offset, offset + e1 + e2, offset + e1 + e3`
+/// * `offset, offset + e2 + e1, offset + e2 + e3`
+/// * `offset, offset + e3 + e1, offset + e3 + e2`
+///
+/// # Arguments
+///
+/// * `offset` - Offset of the first point from the origin
+/// * `e1`, `e2`, `e3` - Base vectors for the parallelepiped
+/// * `texture` - Optional [Texture2D] to apply, which will repeat on each face (todo!
+/// support custom uv values per vertex, multiple textures?)
+/// * `color` - The [Color] to draw the parallelepiped (todo! support color per face?)
+///
+/// # Examples
+///
+/// Draw an axis aligned cube
+/// ```no_run
+/// # use macroquad::prelude::*;
+/// draw_affine_parallelepiped(Vec3::ZERO, 3. * Vec3::X, 2. * Vec3::Y, 5. * Vec3::Z, None, RED);
+/// ```
+pub fn draw_affine_parallelepiped(
+    offset: Vec3,
+    e1: Vec3,
+    e2: Vec3,
+    e3: Vec3,
+    texture: Option<&Texture2D>,
+    color: Color,
+) {
+    let texture_base = texture.into();
+    draw_affine_parallelogram(offset, e1, e2, texture_base, color);
+    draw_affine_parallelogram(offset, e1, e3, texture_base, color);
+    draw_affine_parallelogram(offset, e2, e3, texture_base, color);
+
+    draw_affine_parallelogram(offset + e1, e2, e3, texture_base, color);
+    draw_affine_parallelogram(offset + e2, e1, e3, texture_base, color);
+    draw_affine_parallelogram(offset + e3, e1, e2, texture_base, color);
+}
+
+pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color: Color) {
     let context = get_context();
     context.gl.texture(texture.into());
 
@@ -362,16 +470,11 @@ impl Default for DrawSphereParams {
     }
 }
 
-pub fn draw_sphere(center: Vec3, radius: f32, texture: impl Into<Option<Texture2D>>, color: Color) {
+pub fn draw_sphere(center: Vec3, radius: f32, texture: Option<&Texture2D>, color: Color) {
     draw_sphere_ex(center, radius, texture, color, Default::default());
 }
 
-pub fn draw_sphere_wires(
-    center: Vec3,
-    radius: f32,
-    texture: impl Into<Option<Texture2D>>,
-    color: Color,
-) {
+pub fn draw_sphere_wires(center: Vec3, radius: f32, texture: Option<&Texture2D>, color: Color) {
     let params = DrawSphereParams {
         draw_mode: DrawMode::Lines,
         ..Default::default()
@@ -382,7 +485,7 @@ pub fn draw_sphere_wires(
 pub fn draw_sphere_ex(
     center: Vec3,
     radius: f32,
-    texture: impl Into<Option<Texture2D>>,
+    texture: Option<&Texture2D>,
     color: Color,
     params: DrawSphereParams,
 ) {

@@ -1,9 +1,11 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
+use std::collections::HashSet;
+
+use crate::get_context;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
 use crate::Vec2;
-use crate::{get_context, get_quad_context};
 pub use miniquad::{KeyCode, MouseButton};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,12 +39,12 @@ pub struct Touch {
 pub fn set_cursor_grab(grab: bool) {
     let context = get_context();
     context.cursor_grabbed = grab;
-    get_quad_context().set_cursor_grab(grab);
+    miniquad::window::set_cursor_grab(grab);
 }
 
 /// Set mouse cursor visibility
 pub fn show_mouse(shown: bool) {
-    get_quad_context().show_mouse(shown);
+    miniquad::window::show_mouse(shown);
 }
 
 /// Return mouse position in pixels.
@@ -50,8 +52,8 @@ pub fn mouse_position() -> (f32, f32) {
     let context = get_context();
 
     (
-        context.mouse_position.x / get_quad_context().dpi_scale(),
-        context.mouse_position.y / get_quad_context().dpi_scale(),
+        context.mouse_position.x / miniquad::window::dpi_scale(),
+        context.mouse_position.y / miniquad::window::dpi_scale(),
     )
 }
 
@@ -60,6 +62,22 @@ pub fn mouse_position_local() -> Vec2 {
     let (pixels_x, pixels_y) = mouse_position();
 
     convert_to_local(Vec2::new(pixels_x, pixels_y))
+}
+
+/// Returns the difference between the current mouse position and the mouse position on the previous frame.
+pub fn mouse_delta_position() -> Vec2 {
+    let context = get_context();
+
+    let current_position = mouse_position_local();
+    let last_position = context.last_mouse_position.unwrap_or(current_position);
+
+    // Calculate the delta
+    let delta = last_position - current_position;
+
+    // Store the current mouse position for the next frame
+    context.last_mouse_position = Some(current_position);
+
+    delta
 }
 
 /// This is set to true by default, meaning touches will raise mouse events in addition to raising touch events.
@@ -140,6 +158,28 @@ pub fn get_last_key_pressed() -> Option<KeyCode> {
     context.keys_pressed.iter().next().cloned()
 }
 
+pub fn get_keys_pressed() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_pressed.clone()
+}
+
+pub fn get_keys_down() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_down.clone()
+}
+
+pub fn get_keys_released() -> HashSet<KeyCode> {
+    let context = get_context();
+    context.keys_released.clone()
+}
+
+/// Clears input queue
+pub fn clear_input_queue() {
+    let context = get_context();
+    context.chars_pressed_queue.clear();
+    context.chars_pressed_ui_queue.clear();
+}
+
 /// Detect if the button is being pressed
 pub fn is_mouse_button_down(btn: MouseButton) -> bool {
     let context = get_context();
@@ -181,7 +221,7 @@ pub fn is_quit_requested() -> bool {
 ///
 /// Functions in this module should be used by external tools that uses miniquad system, like different UI libraries. User shouldn't use this function.
 pub mod utils {
-    use crate::{get_context, get_quad_context};
+    use crate::get_context;
 
     /// Register input subscriber. Returns subscriber identifier that must be used in `repeat_all_miniquad_input`.
     pub fn register_input_subscriber() -> usize {
@@ -195,10 +235,9 @@ pub mod utils {
     /// Repeats all events that came since last call of this function with current value of `subscriber`. This function must be called at each frame.
     pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T, subscriber: usize) {
         let context = get_context();
-        let mut ctx = get_quad_context();
 
         for event in &context.input_events[subscriber] {
-            event.repeat(&mut ctx, t);
+            event.repeat(t);
         }
         context.input_events[subscriber].clear();
     }

@@ -48,18 +48,18 @@ async fn main() {
     let texture = load_texture("examples/smoke_fire.png").await.unwrap();
 
     let mut one_shot_emitter = particles::Emitter::new(EmitterConfig {
-        texture: Some(texture),
+        texture: Some(texture.clone()),
         ..explosion()
     });
 
     let mut flying_emitter_local = Emitter::new(EmitterConfig {
         local_coords: true,
-        texture: Some(texture),
+        texture: Some(texture.clone()),
         ..smoke()
     });
     let mut flying_emitter_world = Emitter::new(EmitterConfig {
         local_coords: false,
-        texture: Some(texture),
+        texture: Some(texture.clone()),
         ..fire()
     });
 

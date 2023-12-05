@@ -15,30 +15,42 @@ async fn main() {
 
         let window_style = root_ui()
             .style_builder()
-            .background(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/window_background.png"),
-                None,
-            ))
+            .background(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/window_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .background_margin(RectOffset::new(20.0, 20.0, 10.0, 10.0))
             .margin(RectOffset::new(-20.0, -30.0, 0.0, 0.0))
             .build();
 
         let button_style = root_ui()
             .style_builder()
-            .background(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/button_background.png"),
-                None,
-            ))
+            .background(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/button_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .background_margin(RectOffset::new(37.0, 37.0, 5.0, 5.0))
             .margin(RectOffset::new(10.0, 10.0, 0.0, 0.0))
-            .background_hovered(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/button_hovered_background.png"),
-                None,
-            ))
-            .background_clicked(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/button_clicked_background.png"),
-                None,
-            ))
+            .background_hovered(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/button_hovered_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
+            .background_clicked(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/button_clicked_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
@@ -75,29 +87,41 @@ async fn main() {
 
         let window_style = root_ui()
             .style_builder()
-            .background(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/window_background_2.png"),
-                None,
-            ))
+            .background(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/window_background_2.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .background_margin(RectOffset::new(52.0, 52.0, 52.0, 52.0))
             .margin(RectOffset::new(-30.0, 0.0, -30.0, 0.0))
             .build();
 
         let button_style = root_ui()
             .style_builder()
-            .background(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/button_background_2.png"),
-                None,
-            ))
+            .background(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/button_background_2.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .background_margin(RectOffset::new(8.0, 8.0, 8.0, 8.0))
-            .background_hovered(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/button_hovered_background_2.png"),
-                None,
-            ))
-            .background_clicked(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/button_clicked_background_2.png"),
-                None,
-            ))
+            .background_hovered(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/button_hovered_background_2.png"),
+                    None,
+                )
+                .unwrap(),
+            )
+            .background_clicked(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/button_clicked_background_2.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
@@ -106,26 +130,38 @@ async fn main() {
 
         let checkbox_style = root_ui()
             .style_builder()
-            .background(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/checkbox_background.png"),
-                None,
-            ))
-            .background_hovered(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/checkbox_hovered_background.png"),
-                None,
-            ))
-            .background_clicked(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/checkbox_clicked_background.png"),
-                None,
-            ))
+            .background(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/checkbox_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
+            .background_hovered(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/checkbox_hovered_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
+            .background_clicked(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/checkbox_clicked_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .build();
 
         let editbox_style = root_ui()
             .style_builder()
-            .background(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/editbox_background.png"),
-                None,
-            ))
+            .background(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/editbox_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .background_margin(RectOffset::new(2., 2., 2., 2.))
             .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
             .unwrap()
@@ -135,10 +171,13 @@ async fn main() {
 
         let combobox_style = root_ui()
             .style_builder()
-            .background(Image::from_file_with_format(
-                include_bytes!("../examples/ui_assets/combobox_background.png"),
-                None,
-            ))
+            .background(
+                Image::from_file_with_format(
+                    include_bytes!("../examples/ui_assets/combobox_background.png"),
+                    None,
+                )
+                .unwrap(),
+            )
             .background_margin(RectOffset::new(4., 25., 6., 6.))
             .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
             .unwrap()
