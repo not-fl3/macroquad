@@ -18,6 +18,7 @@ pub enum KeyCode {
     C, // copy
     V, // paste
     X, // cut
+    Q,
 }
 
 pub trait InputHandler {
@@ -25,6 +26,6 @@ pub trait InputHandler {
     fn mouse_up(&mut self, _: (f32, f32));
     fn mouse_wheel(&mut self, x: f32, y: f32);
     fn mouse_move(&mut self, position: (f32, f32));
-    fn char_event(&mut self, character: char, shift: bool, ctrl: bool);
-    fn key_down(&mut self, key_down: KeyCode, shift: bool, ctrl: bool);
+    fn char_event(&mut self, character: char, shift: bool, ctrl: bool, cmd: bool);
+    fn key_down(&mut self, key_down: KeyCode, shift: bool, ctrl: bool, cmd: bool);
 }

@@ -70,7 +70,7 @@ use crate::{
         Font,
     },
     texture::Image,
-    ui::{canvas::DrawCanvas, render::Painter},
+    ui::{canvas::DrawCanvas, render::Painter}, get_context,
 };
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
@@ -614,17 +614,19 @@ impl InputHandler for Ui {
         }
     }
 
-    fn char_event(&mut self, character: char, shift: bool, ctrl: bool) {
+    fn char_event(&mut self, character: char, shift: bool, ctrl: bool, cmd: bool) {
         self.input.modifier_ctrl = ctrl;
         self.input.input_buffer.push(input::InputCharacter {
             key: input::Key::Char(character),
             modifier_shift: shift,
             modifier_ctrl: ctrl,
+            modifier_cmd: cmd,
         });
     }
 
-    fn key_down(&mut self, key: KeyCode, shift: bool, ctrl: bool) {
+    fn key_down(&mut self, key: KeyCode, shift: bool, ctrl: bool, cmd: bool) {
         self.input.modifier_ctrl = ctrl;
+        self.input.modifier_cmd = cmd;
 
         if key == KeyCode::Escape {
             self.input.escape = true;
@@ -632,8 +634,11 @@ impl InputHandler for Ui {
         if key == KeyCode::Enter {
             self.input.enter = true;
         }
+        if key == KeyCode::Q {
+            self.input.quit = true;
+        }
 
-        if ctrl && (key == KeyCode::C || key == KeyCode::X) {
+        if (ctrl || cmd) && (key == KeyCode::C || key == KeyCode::X) {
             self.clipboard.set(&self.clipboard_selection);
         }
 
@@ -642,6 +647,7 @@ impl InputHandler for Ui {
                 key: input::Key::KeyCode(key),
                 modifier_shift: shift,
                 modifier_ctrl: ctrl,
+                modifier_cmd: cmd,
             });
         }
     }
@@ -1191,7 +1197,7 @@ impl Ui {
 }
 
 pub(crate) mod ui_context {
-    use crate::prelude::*;
+    use crate::{prelude::*, get_context};
     use crate::window::miniquad::*;
 
     use crate::ui as megaui;
@@ -1237,17 +1243,18 @@ pub(crate) mod ui_context {
 
             let shift = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
             let ctrl = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
+            let cmd = is_key_down(KeyCode::LeftSuper) || is_key_down(KeyCode::RightSuper);
 
             while let Some(c) = get_char_pressed_ui() {
-                if ctrl == false {
-                    ui.char_event(c, false, false);
+                if (ctrl == false) || (cmd == false) {
+                    ui.char_event(c, false, false, false);
                 }
             }
 
             macro_rules! process {
                 ($code:tt) => {
                     if is_key_pressed(KeyCode::$code) || is_key_down(KeyCode::$code) {
-                        ui.key_down(megaui::KeyCode::$code, shift, ctrl);
+                        ui.key_down(megaui::KeyCode::$code, shift, ctrl, cmd);
                     }
                 };
             }
@@ -1267,6 +1274,7 @@ pub(crate) mod ui_context {
             process!(X);
             process!(V);
             process!(A);
+            process!(Q);
             process!(Escape);
             process!(Enter);
 
@@ -1274,8 +1282,13 @@ pub(crate) mod ui_context {
                 || is_key_down(KeyCode::RightControl)
                 || is_key_pressed(KeyCode::LeftControl)
                 || is_key_pressed(KeyCode::RightControl)
+                || is_key_pressed(KeyCode::LeftSuper)
+                || is_key_pressed(KeyCode::RightSuper)
             {
-                ui.key_down(megaui::KeyCode::Control, shift, ctrl);
+                ui.key_down(megaui::KeyCode::Control, shift, ctrl, cmd);
+            }
+            if ui.input.quit {
+                get_context().quit_requested = true;
             }
             let (wheel_x, wheel_y) = mouse_wheel();
             ui.mouse_wheel(wheel_x, -wheel_y);
