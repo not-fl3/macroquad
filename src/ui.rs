@@ -634,7 +634,7 @@ impl InputHandler for Ui {
         if key == KeyCode::Enter {
             self.input.enter = true;
         }
-        if key == KeyCode::Q {
+        if cmd && key == KeyCode::Q {
             self.input.quit = true;
         }
 
