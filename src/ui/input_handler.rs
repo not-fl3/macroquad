@@ -18,7 +18,7 @@ pub enum KeyCode {
     C, // copy
     V, // paste
     X, // cut
-    Q,
+    Q, // quit
 }
 
 pub trait InputHandler {

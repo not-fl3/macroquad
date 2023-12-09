@@ -634,11 +634,11 @@ impl InputHandler for Ui {
         if key == KeyCode::Enter {
             self.input.enter = true;
         }
+
         if cmd && key == KeyCode::Q {
             self.input.quit = true;
         }
-
-        if (ctrl || cmd) && (key == KeyCode::C || key == KeyCode::X) {
+        if ctrl && (key == KeyCode::C || key == KeyCode::X) {
             self.clipboard.set(&self.clipboard_selection);
         }
 
@@ -1282,8 +1282,6 @@ pub(crate) mod ui_context {
                 || is_key_down(KeyCode::RightControl)
                 || is_key_pressed(KeyCode::LeftControl)
                 || is_key_pressed(KeyCode::RightControl)
-                || is_key_pressed(KeyCode::LeftSuper)
-                || is_key_pressed(KeyCode::RightSuper)
             {
                 ui.key_down(megaui::KeyCode::Control, shift, ctrl, cmd);
             }
