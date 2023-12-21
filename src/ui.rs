@@ -212,8 +212,8 @@ impl Window {
 
     pub fn set_position(&mut self, position: Vec2) {
         self.position = position;
-        self.cursor.area.x = position.x;
-        self.cursor.area.y = position.y + self.title_height;
+        self.cursor.area.x = position.x + self.window_margin.left;
+        self.cursor.area.y = position.y + self.title_height + self.window_margin.top;
     }
 
     pub fn title_rect(&self) -> Rect {
