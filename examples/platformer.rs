@@ -44,7 +44,7 @@ async fn main() {
         speed: 50.,
     };
 
-    let camera = Camera2D::from_display_rect(Rect::new(0.0, 0.0, 320.0, 152.0));
+    let camera = Camera2D::from_display_rect(Rect::new(0.0, 152.0, 320.0, -152.0));
 
     loop {
         clear_background(BLACK);
