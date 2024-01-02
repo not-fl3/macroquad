@@ -232,6 +232,7 @@ impl Image {
     }
 
     /// Saves this image as a PNG file.
+    /// This method is not supported on web and will panic.
     pub fn export_png(&self, path: &str) {
         let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
 
