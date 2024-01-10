@@ -36,6 +36,7 @@ backtrace = { version = "0.3.60", optional = true, default-features = false, fea
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
 slotmap = "1.0"
+tobj = "4.0.0"
 
 [dev-dependencies]
 macroquad-particles = { path = "./particles" }
