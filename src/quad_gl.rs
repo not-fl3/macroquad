@@ -881,6 +881,10 @@ impl QuadGl {
     }
 
     pub fn pipeline(&mut self, pipeline: Option<GlPipeline>) {
+        if self.state.pipeline == pipeline {
+            return;
+        }
+
         self.state.break_batching = true;
         self.state.pipeline = pipeline;
     }
