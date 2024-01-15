@@ -354,7 +354,7 @@ pub fn draw_texture_ex(
 ) {
     let context = get_context();
 
-    let [width, height] = texture.size().to_array();
+    let [mut width, mut height] = texture.size().to_array();
 
     let Rect {
         x: mut sx,
@@ -377,6 +377,9 @@ pub fn draw_texture_ex(
             sy = ((sy / height) * uv.h + uv.y) * batched_height;
             sw = (sw / width) * uv.w * batched_width;
             sh = (sh / height) * uv.h * batched_height;
+
+            width = batched_width;
+            height = batched_height;
 
             batched_texture
         });
