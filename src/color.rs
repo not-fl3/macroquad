@@ -85,11 +85,11 @@ impl Color {
     /// # Example
     ///
     /// ```
-    /// use macroquad::Color;
+    /// use macroquad::prelude::*;
     ///
     /// let pink = Color::new(1.00, 0.43, 0.76, 1.00);
     /// assert_eq!(pink.r, 1.00);
-    /// assert_eq!(pink.g, 1.43);
+    /// assert_eq!(pink.g, 0.43);
     /// assert_eq!(pink.b, 0.76);
     /// assert_eq!(pink.a, 1.00);
     /// ```
@@ -117,12 +117,12 @@ impl Color {
     /// # Example
     /// 
     /// ```
-    /// use macroquad::Color;
+    /// use macroquad::prelude::*;
     /// 
     /// let light_blue = Color::from_hex(0x3CA7D5);
-    /// assert_eq!(light_blue.r, 0.23);
-    /// assert_eq!(light_blue.g, 0.65);
-    /// assert_eq!(light_blue.b, 0.84);
+    /// assert_eq!(light_blue.r, 0.23529412);
+    /// assert_eq!(light_blue.g, 0.654902);
+    /// assert_eq!(light_blue.b, 0.8352941);
     /// assert_eq!(light_blue.a, 1.00);
     /// ```
     pub fn from_hex(hex: u32) -> Color {
