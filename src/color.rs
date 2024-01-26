@@ -2,12 +2,17 @@
 
 pub use colors::*;
 
+/// A color represented by 4 floats: red, green, blue and alpha.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Color {
+    /// Red channel value from 0.0 to 1.0
     pub r: f32,
+    /// Blue channel value from 0.0 to 1.0
     pub g: f32,
+    /// Green channel value from 0.0 to 1.0
     pub b: f32,
+    /// Alpha channel value from 0.0 to 1.0
     pub a: f32,
 }
 
@@ -74,11 +79,28 @@ impl From<[f32; 4]> for Color {
 }
 
 impl Color {
+    /// Creates a new `Color` with the given red, green, blue, and alpha components.
+    /// Values are expected to be between 0.0 and 1.0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use macroquad::Color;
+    ///
+    /// let pink = Color::new(1.00, 0.43, 0.76, 1.00);
+    /// assert_eq!(pink.r, 1.00);
+    /// assert_eq!(pink.g, 1.43);
+    /// assert_eq!(pink.b, 0.76);
+    /// assert_eq!(pink.a, 1.00);
+    /// ```
+    /// 
+    /// Note that values outside of this range are effectively clamped,
+    /// and do not generate an error or warning.
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Color {
         Color { r, g, b, a }
     }
 
-    /// Build a color from 4 0..255 components.
+    /// Build a color from 4 components between 0 and 255.
     /// Unfortunately it can't be const fn due to [this issue](https://github.com/rust-lang/rust/issues/57241).
     /// When const version is needed "color_u8" macro may be a workaround.
     pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
@@ -91,17 +113,30 @@ impl Color {
     }
 
     /// Build a color from a hexadecimal u32
-    /// Example: 0x3CA7D5 - a light blue
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use macroquad::Color;
+    /// 
+    /// let light_blue = Color::from_hex(0x3CA7D5);
+    /// assert_eq!(light_blue.r, 0.23);
+    /// assert_eq!(light_blue.g, 0.65);
+    /// assert_eq!(light_blue.b, 0.84);
+    /// assert_eq!(light_blue.a, 1.00);
+    /// ```
     pub fn from_hex(hex: u32) -> Color {
         let bytes: [u8; 4] = hex.to_be_bytes();
 
         Self::from_rgba(bytes[1], bytes[2], bytes[3], 255)
     }
 
+    /// Create a vec4 of red, green, blue, and alpha components.
     pub fn to_vec(&self) -> glam::Vec4 {
         glam::Vec4::new(self.r, self.g, self.b, self.a)
     }
 
+    /// Create a color from a vec4 of red, green, blue, and alpha components.
     pub fn from_vec(vec: glam::Vec4) -> Self {
         Self::new(vec.x, vec.y, vec.z, vec.w)
     }
