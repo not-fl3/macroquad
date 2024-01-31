@@ -93,7 +93,7 @@ impl Color {
     /// assert_eq!(pink.b, 0.76);
     /// assert_eq!(pink.a, 1.00);
     /// ```
-    /// 
+    ///
     /// Note that values outside of this range are effectively clamped,
     /// and do not generate an error or warning.
     pub const fn new(r: f32, g: f32, b: f32, a: f32) -> Color {
@@ -113,12 +113,12 @@ impl Color {
     }
 
     /// Build a color from a hexadecimal u32
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use macroquad::prelude::*;
-    /// 
+    ///
     /// let light_blue = Color::from_hex(0x3CA7D5);
     /// assert_eq!(light_blue.r, 0.23529412);
     /// assert_eq!(light_blue.g, 0.654902);
