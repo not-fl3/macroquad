@@ -250,7 +250,7 @@ fn get_active_draw_list<'a, 'b>(
             if !last
                 .texture
                 .as_ref()
-                .map_or(true, |t| t.texture == texture.texture)
+                .map_or(false, |t| t.texture == texture.texture)
             {
                 let clipping_zone = last.clipping_zone;
 
