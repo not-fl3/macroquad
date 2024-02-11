@@ -116,10 +116,10 @@ pub fn draw_rectangle_ex(x: f32, y: f32, w: f32, h: f32, params: DrawRectanglePa
 
     #[rustfmt::skip]
     let vertices = [
-        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 1.0, params.color),
+        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 0.0, params.color),
         Vertex::new(v[1].x, v[1].y, v[1].z, 1.0, 0.0, params.color),
         Vertex::new(v[2].x, v[2].y, v[2].z, 1.0, 1.0, params.color),
-        Vertex::new(v[3].x, v[3].y, v[3].z, 1.0, 0.0, params.color),
+        Vertex::new(v[3].x, v[3].y, v[3].z, 0.0, 1.0, params.color),
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
