@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.4.4"
+version = "0.4.5"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2021"
 homepage = "https://github.com/not-fl3/macroquad"
