@@ -133,6 +133,7 @@ mod raw_miniquad {
                     VertexAttribute::new("uv", VertexFormat::Float2),
                 ],
                 shader,
+                Default::default(),
             );
 
             Stage { pipeline, bindings }

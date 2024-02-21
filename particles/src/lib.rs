@@ -575,7 +575,7 @@ impl Emitter {
         };
 
         let blend_mode = config.blend_mode.blend_state();
-        let pipeline = ctx.new_pipeline_with_params(
+        let pipeline = ctx.new_pipeline(
             &[
                 BufferLayout::default(),
                 BufferLayout {
@@ -614,7 +614,7 @@ impl Emitter {
             )
             .unwrap();
 
-        let post_processing_pipeline = ctx.new_pipeline_with_params(
+        let post_processing_pipeline = ctx.new_pipeline(
             &[BufferLayout::default(), BufferLayout::default()],
             &[
                 VertexAttribute::with_buffer("pos", VertexFormat::Float2, 0),

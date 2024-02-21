@@ -1,6 +1,6 @@
 [package]
 name = "macroquad-particles"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["Fedor Logachev <not.fl3@gmail.com>"]
 edition = "2018"
 license = "MIT/Apache-2.0"
