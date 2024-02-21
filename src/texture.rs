@@ -682,7 +682,9 @@ impl Texture2D {
         let internal_format = match params.format {
             TextureFormat::RGB8 => miniquad::gl::GL_RGB,
             TextureFormat::RGBA8 => miniquad::gl::GL_RGBA,
+            TextureFormat::RGBA16F => miniquad::gl::GL_RGBA,
             TextureFormat::Depth => miniquad::gl::GL_DEPTH_COMPONENT,
+            TextureFormat::Depth32 => miniquad::gl::GL_DEPTH_COMPONENT,
             #[cfg(target_arch = "wasm32")]
             TextureFormat::Alpha => miniquad::gl::GL_ALPHA,
             #[cfg(not(target_arch = "wasm32"))]
