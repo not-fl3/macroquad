@@ -9,6 +9,7 @@ description = """
 Simple and easy to use graphics library
 """
 readme="README.md"
+license = "MIT OR Apache-2.0"
 
 [features]
 audio = ["quad-snd"]
