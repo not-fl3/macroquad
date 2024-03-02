@@ -49,7 +49,7 @@ async fn main() {
         for y in 0..MAP_SIZE.y {
             for x in 0..MAP_SIZE.x {
                 let world_pos = map_to_world(ivec2(x, y));
-                draw_texture(texture, world_pos.x, world_pos.y, WHITE);
+                draw_texture(&texture, world_pos.x, world_pos.y, WHITE);
             }
         }
         set_default_camera();
