@@ -375,7 +375,7 @@ pub fn load_map(
         layers.insert(
             layer.name.clone(),
             match layer.ty.as_str() {
-                "tilelayer" | "objectlayer" => Layer {
+                "tilelayer" | "objectgroup" => Layer {
                     objects,
                     width: layer.width,
                     height: layer.height,
