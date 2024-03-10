@@ -28,6 +28,46 @@ pub struct Mesh {
     pub texture: Option<Texture2D>,
 }
 
+pub fn load_mesh<P>(path: P,texture: &Texture2D) -> Mesh
+where
+    P: AsRef<std::path::Path> + std::fmt::Debug,
+{
+    use crate::color;
+    let meshes = tobj::load_obj(path,&tobj::GPU_LOAD_OPTIONS).expect("can't load file").0;
+    let mesh = &meshes[0].mesh;
+    let vertex_positions: Vec<Vec3> = mesh
+	.positions
+	.chunks(3)
+	.map(|x| Vec3::new(x[0],x[1],x[2]))
+	.collect();
+    let texcoords: Vec<Vec2> = mesh
+	.texcoords
+	.chunks(2)
+	.map(|x| Vec2::new(x[0],x[1]))
+	.collect();
+    // let vertex_colors: Vec<color::Color> = mesh
+    // 	.positions
+    // 	.chunks(3)
+    // 	.map(|x| Color::new(x[0],x[1],x[2],1.0))
+    // 	.collect();
+    let mut vertices = Vec::new();
+
+    assert_eq!(vertex_positions.len(),texcoords.len());
+    for i in 0..vertex_positions.len() {
+	vertices.push(Vertex {
+	    position: vertex_positions[i],
+	    uv: texcoords[i],
+	    color: color::colors::WHITE,
+	});
+    }
+
+    Mesh {
+	vertices,
+	indices: mesh.indices.iter().map(|x| *x as u16).collect::<Vec<u16>>(),
+	texture: Some(texture.clone()),
+    }
+}
+
 pub fn draw_mesh(mesh: &Mesh) {
     let context = get_context();
 
