@@ -696,6 +696,10 @@ impl EventHandler for Stage {
                 }
             });
 
+            if get_context().quit_requested {
+                miniquad::window::quit();
+            }
+
             if result == false {
                 if let Some(recovery_future) = get_context().recovery_future.take() {
                     unsafe {
