@@ -381,9 +381,9 @@ impl Context {
         if miniquad::window::get_clear_background() {
             let color = Self::DEFAULT_BG_COLOR;
             get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
+            self.gl.reset();
         }
 
-        self.gl.reset();
     }
 
     fn end_frame(&mut self) {
