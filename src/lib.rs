@@ -377,9 +377,12 @@ impl Context {
 
         self.ui_context.process_input();
 
-        let color = Self::DEFAULT_BG_COLOR;
+        // Check if the window conf "clear_background" is set to false
+        if miniquad::window::get_clear_background() {
+            let color = Self::DEFAULT_BG_COLOR;
+            get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
+        }
 
-        get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
         self.gl.reset();
     }
 
@@ -753,7 +756,6 @@ impl Window {
         Window::from_config(
             conf::Conf {
                 window_title: label.to_string(),
-                //high_dpi: true,
                 ..Default::default()
             },
             future,
