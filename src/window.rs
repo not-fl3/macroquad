@@ -65,6 +65,10 @@ pub fn screen_height() -> f32 {
     context.screen_height / miniquad::window::dpi_scale()
 }
 
+pub fn screen_dpi_scale() -> f32 {
+    miniquad::window::dpi_scale()
+}
+
 /// Request the window size to be the given value. This takes DPI into account.
 ///
 /// Note that the OS might decide to give a different size. Additionally, the size in macroquad won't be updated until the next `next_frame().await`.
