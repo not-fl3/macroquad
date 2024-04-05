@@ -230,6 +230,70 @@ impl Image {
             bytes,
         }
     }
+    
+    /// Blends this image with another image (of identical dimensions)
+    /// Inspired by  OpenCV saturated blending
+    pub fn blend(&mut self, other: &Image) {
+        assert!(self.width as usize * self.height as usize == other.width as usize * other.height as usize);
+
+        for i in 0..self.bytes.len() / 4 {
+            let c1: Color = Color {
+                r: self.bytes[i * 4] as f32 / 255.,
+                g: self.bytes[i * 4 + 1] as f32 / 255.,
+                b: self.bytes[i * 4 + 2] as f32 / 255.,
+                a: self.bytes[i * 4 + 3] as f32 / 255.
+            };
+            let c2: Color = Color {
+                r: other.bytes[i * 4] as f32 / 255.,
+                g: other.bytes[i * 4 + 1] as f32 / 255.,
+                b: other.bytes[i * 4 + 2] as f32 / 255.,
+                a: other.bytes[i * 4 + 3] as f32 / 255.
+            };
+            let new_color: Color = Color {
+                r: f32::min(c1.r * c1.a + c2.r * c2.a, 1.),
+                g: f32::min(c1.g * c1.a + c2.g * c2.a, 1.),
+                b: f32::min(c1.b * c1.a + c2.b * c2.a, 1.),
+                a: f32::max(c1.a, c2.a) + (1. - f32::max(c1.a, c2.a)) * f32::min(c1.a, c2.a),
+            };
+            self.bytes[i * 4] = (new_color.r * 255.) as u8;
+            self.bytes[i * 4 + 1] = (new_color.g * 255.) as u8;
+            self.bytes[i * 4 + 2] = (new_color.b * 255.) as u8;
+            self.bytes[i * 4 + 3] = (new_color.a * 255.) as u8;
+        }
+    }
+
+    /// Overlays an image on top of this one.
+    /// Slightly different from blending two images,
+    /// overlaying a completely transparent image has no effect
+    /// on the original image, though blending them would.
+    pub fn overlay(&mut self, other: &Image) {
+        assert!(self.width as usize * self.height as usize == other.width as usize * other.height as usize);
+
+        for i in 0..self.bytes.len() / 4 {
+            let c1: Color = Color {
+                r: self.bytes[i * 4] as f32 / 255.,
+                g: self.bytes[i * 4 + 1] as f32 / 255.,
+                b: self.bytes[i * 4 + 2] as f32 / 255.,
+                a: self.bytes[i * 4 + 3] as f32 / 255.
+            };
+            let c2: Color = Color {
+                r: other.bytes[i * 4] as f32 / 255.,
+                g: other.bytes[i * 4 + 1] as f32 / 255.,
+                b: other.bytes[i * 4 + 2] as f32 / 255.,
+                a: other.bytes[i * 4 + 3] as f32 / 255.
+            };
+            let new_color: Color = Color {
+                r: f32::min(c1.r + c2.r * c2.a, 1.),
+                g: f32::min(c1.g + c2.g * c2.a, 1.),
+                b: f32::min(c1.b + c2.b * c2.a, 1.),
+                a: f32::min(c1.a + c2.a, 1.)
+            };
+            self.bytes[i * 4] = (new_color.r * 255.) as u8;
+            self.bytes[i * 4 + 1] = (new_color.g * 255.) as u8;
+            self.bytes[i * 4 + 2] = (new_color.b * 255.) as u8;
+            self.bytes[i * 4 + 3] = (new_color.a * 255.) as u8;
+        }
+    }
 
     /// Saves this image as a PNG file.
     /// This method is not supported on web and will panic.
