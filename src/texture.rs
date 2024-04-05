@@ -283,11 +283,12 @@ impl Image {
                 a: other.bytes[i * 4 + 3] as f32 / 255.
             };
             let new_color: Color = Color {
-                r: f32::min(c1.r + c2.r * c2.a, 1.),
-                g: f32::min(c1.g + c2.g * c2.a, 1.),
-                b: f32::min(c1.b + c2.b * c2.a, 1.),
+                r: f32::min(c1.r * (1. - c2.a) + c2.r * c2.a, 1.),
+                g: f32::min(c1.g * (1. - c2.a) + c2.g * c2.a, 1.),
+                b: f32::min(c1.b * (1. - c2.a) + c2.b * c2.a, 1.),
                 a: f32::min(c1.a + c2.a, 1.)
             };
+ 
             self.bytes[i * 4] = (new_color.r * 255.) as u8;
             self.bytes[i * 4 + 1] = (new_color.g * 255.) as u8;
             self.bytes[i * 4 + 2] = (new_color.b * 255.) as u8;
