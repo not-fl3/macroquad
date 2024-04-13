@@ -3,6 +3,7 @@ use crate::{
     ui::{widgets::Editbox, ElementState, Id, Layout, Ui, UiContent},
 };
 
+#[derive(Clone, Copy, Debug)]
 pub struct InputText<'a> {
     id: Id,
     label: &'a str,

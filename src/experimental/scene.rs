@@ -80,6 +80,7 @@ impl<T> Handle<T> {
     pub fn as_trait<T1: ?Sized>(&self) {}
 }
 
+#[derive(Clone, Copy, Debug)]
 pub(crate) struct Lens<T> {
     handle: HandleUntyped,
     offset: isize,
@@ -181,6 +182,7 @@ impl<T: 'static> Drop for RefMut<T> {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct RefMutAny<'a> {
     data: *mut (),
     used: *mut bool,
@@ -568,6 +570,7 @@ impl Scene {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct MagicVecIterator {
     n: usize,
     len: usize,

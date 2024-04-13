@@ -540,7 +540,7 @@ impl Painter {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 #[allow(dead_code)]
 pub enum Alignment {
     Left,
@@ -553,7 +553,7 @@ impl Default for Alignment {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct LabelParams {
     pub color: Color,
     pub alignment: Alignment,

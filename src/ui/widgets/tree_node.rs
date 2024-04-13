@@ -5,6 +5,7 @@ use crate::{
 
 use std::borrow::Cow;
 
+#[derive(Clone, Debug)]
 pub struct TreeNode<'a> {
     id: Id,
     label: Cow<'a, str>,
@@ -88,6 +89,7 @@ impl<'a> TreeNode<'a> {
 }
 
 #[must_use = "Must call `.end()` to finish TreeNode"]
+#[derive(Clone, Copy, Debug)]
 pub struct TreeNodeToken {
     clicked: bool,
 }

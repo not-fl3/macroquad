@@ -3,6 +3,7 @@ use crate::{
     ui::{ElementState, Layout, Ui, UiContent},
 };
 
+#[derive(Clone, Debug)]
 pub struct Button<'a> {
     position: Option<Vec2>,
     size: Option<Vec2>,

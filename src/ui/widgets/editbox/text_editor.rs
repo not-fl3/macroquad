@@ -134,7 +134,7 @@ impl Command for DeleteRange {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum ClickState {
     None,
     SelectingChars { selection_begin: u32 },

@@ -30,7 +30,7 @@ pub struct Object {
     pub properties: HashMap<String, String>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Tile {
     /// id in the tileset
     pub id: u32,
@@ -40,7 +40,7 @@ pub struct Tile {
     pub attrs: String,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Debug, Default)]
 pub struct Layer {
     pub objects: Vec<Object>,
     pub width: u32,
@@ -53,7 +53,7 @@ pub struct Layer {
     pub offsety: Option<f32>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct TileSet {
     pub texture: Texture2D,
 
@@ -76,7 +76,7 @@ impl TileSet {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Map {
     pub layers: HashMap<String, Layer>,
     pub tilesets: HashMap<String, TileSet>,
@@ -235,6 +235,7 @@ impl Map {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct TilesIterator<'a> {
     rect: Rect,
     current: (u32, u32),

@@ -17,6 +17,7 @@ pub enum SpriteKey {
     Texture(miniquad::TextureId),
     Id(u64),
 }
+#[derive(Clone, Debug)]
 pub struct Atlas {
     texture: miniquad::TextureId,
     image: Image,

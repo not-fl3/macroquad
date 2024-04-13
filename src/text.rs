@@ -222,7 +222,7 @@ impl Font {
 }
 
 /// Arguments for "draw_text_ex" function such as font, font_size etc
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct TextParams<'a> {
     pub font: Option<&'a Font>,
     /// Base size for character height. The size in pixel used during font rasterizing.

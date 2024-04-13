@@ -2,20 +2,20 @@ use crate::math::Vec2;
 
 pub use crate::ui::input_handler::KeyCode;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Key {
     Char(char),
     KeyCode(KeyCode),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct InputCharacter {
     pub key: Key,
     pub modifier_shift: bool,
     pub modifier_ctrl: bool,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, Debug)]
 pub struct Input {
     pub(crate) mouse_position: Vec2,
     pub(crate) is_mouse_down: bool,

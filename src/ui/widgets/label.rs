@@ -5,6 +5,7 @@ use crate::{
 
 use std::borrow::Cow;
 
+#[derive(Clone, Debug)]
 pub struct Label<'a> {
     position: Option<Vec2>,
     _multiline: Option<f32>,

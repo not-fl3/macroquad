@@ -5,6 +5,7 @@ use crate::{
 
 use std::ops::Range;
 
+#[derive(Clone, Debug)]
 pub struct Slider<'a> {
     id: Id,
     label: &'a str,

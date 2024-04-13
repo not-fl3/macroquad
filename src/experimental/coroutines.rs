@@ -233,6 +233,7 @@ pub fn stop_coroutine(coroutine: Coroutine) {
     context.coroutines.free(coroutine.id);
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct TimerDelayFuture {
     pub(crate) remaining_time: f32,
 }
@@ -272,6 +273,7 @@ pub mod tweens {
         task::{Context, Poll},
     };
 
+    #[derive(Clone, Copy, Debug)]
     pub struct LinearTweenFuture<T>
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,

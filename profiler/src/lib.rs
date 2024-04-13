@@ -4,6 +4,7 @@ use macroquad::prelude::*;
 
 use macroquad::ui::{hash, root_ui, widgets::Window, Ui};
 
+#[derive(Clone, Debug)]
 pub struct ProfilerState {
     fps_buffer: Vec<f32>,
     frames_buffer: Vec<telemetry::Frame>,
@@ -12,6 +13,7 @@ pub struct ProfilerState {
     paused: bool,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct ProfilerParams {
     pub fps_counter_pos: Vec2,
 }

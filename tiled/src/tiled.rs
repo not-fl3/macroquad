@@ -3,7 +3,7 @@ use nanoserde::DeJson;
 pub mod layer;
 
 /// https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-grid
-#[derive(Clone, Debug, Default, DeJson)]
+#[derive(Clone, Copy, Debug, Default, DeJson)]
 pub struct Grid {
     pub width: i32,
     pub height: i32,
@@ -18,11 +18,11 @@ pub struct Property {
 }
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-layer
-#[derive(Clone, Debug, Default, DeJson)]
+#[derive(Clone, Copy, Debug, Default, DeJson)]
 pub struct Layer {}
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-frame
-#[derive(Clone, Debug, Default, DeJson)]
+#[derive(Clone, Copy, Debug, Default, DeJson)]
 pub struct Frame {
     pub duration: i32,
     pub tileid: i32,
@@ -54,7 +54,7 @@ pub struct Tile {
 }
 
 /// https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-tileoffset
-#[derive(Clone, Debug, Default, DeJson)]
+#[derive(Clone, Copy, Debug, Default, DeJson)]
 pub struct Tileoffset {
     pub x: i32,
     pub y: i32,

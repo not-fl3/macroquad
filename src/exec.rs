@@ -6,7 +6,7 @@ use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use crate::Error;
 
 // Returns Pending as long as its inner bool is false.
-#[derive(Default)]
+#[derive(Default, Clone, Copy, Debug)]
 pub struct FrameFuture {
     done: bool,
 }
@@ -27,6 +27,7 @@ impl Future for FrameFuture {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct FileLoadingFuture {
     pub contents: Arc<Mutex<Option<Result<Vec<u8>, Error>>>>,
 }
