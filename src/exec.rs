@@ -6,7 +6,7 @@ use std::task::{Context, Poll, RawWaker, RawWakerVTable, Waker};
 use crate::Error;
 
 // Returns Pending as long as its inner bool is false.
-#[derive(Default, Clone, Copy, Debug)]
+#[derive(Default)]
 pub struct FrameFuture {
     done: bool,
 }

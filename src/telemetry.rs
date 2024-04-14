@@ -47,7 +47,6 @@ impl Zone {
     }
 }
 
-#[derive(Clone, Debug)]
 pub struct ZoneGuard {
     _marker: (),
 }
