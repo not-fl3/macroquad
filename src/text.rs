@@ -148,8 +148,8 @@ impl Font {
         }
 
         let mut width = 0.;
-        let mut min_y = std::f32::MAX;
-        let mut max_y = -std::f32::MAX;
+        let mut min_y = f32::MAX;
+        let mut max_y = -f32::MAX;
 
         let atlas = self.atlas.lock().unwrap();
 

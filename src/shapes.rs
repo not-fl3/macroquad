@@ -299,7 +299,7 @@ pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Colo
     let ny = dx;
 
     let tlen = (nx * nx + ny * ny).sqrt() / (thickness * 0.5);
-    if tlen < std::f32::EPSILON {
+    if tlen < f32::EPSILON {
         return;
     }
     let tx = nx / tlen;
