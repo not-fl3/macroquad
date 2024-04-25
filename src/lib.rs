@@ -410,6 +410,7 @@ impl Context {
         self.keys_released.clear();
         self.mouse_pressed.clear();
         self.mouse_released.clear();
+        self.last_mouse_position = Some(crate::prelude::mouse_position_local());
 
         self.quit_requested = false;
 
