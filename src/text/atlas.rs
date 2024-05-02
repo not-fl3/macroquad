@@ -1,5 +1,5 @@
 use crate::{
-    get_quad_context,
+    get_context, get_quad_context,
     math::Rect,
     texture::{Image, Texture2D},
     Color,
@@ -30,6 +30,12 @@ pub struct Atlas {
     filter: miniquad::FilterMode,
 
     unique_id: u64,
+}
+
+impl Drop for Atlas {
+    fn drop(&mut self) {
+        self.delete();
+    }
 }
 
 impl Atlas {
@@ -183,5 +189,9 @@ impl Atlas {
                 },
             );
         }
+    }
+    fn delete(&mut self) {
+        let ctx = &mut get_context().quad_context;
+        ctx.delete_texture(self.texture);
     }
 }
