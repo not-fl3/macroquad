@@ -3,6 +3,7 @@
 use crate::{
     get_context,
     math::Rect,
+    prelude::RenderPass,
     texture::RenderTarget,
     window::{screen_height, screen_width},
 };
@@ -11,7 +12,7 @@ use glam::{vec2, vec3, Mat4, Vec2, Vec3};
 pub trait Camera {
     fn matrix(&self) -> Mat4;
     fn depth_enabled(&self) -> bool;
-    fn render_pass(&self) -> Option<miniquad::RenderPass>;
+    fn render_pass(&self) -> Option<RenderPass>;
     fn viewport(&self) -> Option<(i32, i32, i32, i32)>;
 }
 
@@ -107,8 +108,8 @@ impl Camera for Camera2D {
         false
     }
 
-    fn render_pass(&self) -> Option<miniquad::RenderPass> {
-        self.render_target.as_ref().map(|rt| rt.render_pass)
+    fn render_pass(&self) -> Option<RenderPass> {
+        self.render_target.as_ref().map(|rt| rt.render_pass.clone())
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
@@ -227,8 +228,8 @@ impl Camera for Camera3D {
         true
     }
 
-    fn render_pass(&self) -> Option<miniquad::RenderPass> {
-        self.render_target.as_ref().map(|rt| rt.render_pass)
+    fn render_pass(&self) -> Option<RenderPass> {
+        self.render_target.as_ref().map(|rt| rt.render_pass.clone())
     }
 
     fn viewport(&self) -> Option<(i32, i32, i32, i32)> {
@@ -243,7 +244,10 @@ pub fn set_camera(camera: &dyn Camera) {
     // flush previous camera draw calls
     context.perform_render_passes();
 
-    context.gl.render_pass(camera.render_pass());
+    if let Some(render_pass) = camera.render_pass() {
+        context.gl.render_pass(Some(render_pass.raw_miniquad_id()));
+    }
+
     context.gl.viewport(camera.viewport());
     context.gl.depth_test(camera.depth_enabled());
     context.camera_matrix = Some(camera.matrix());
