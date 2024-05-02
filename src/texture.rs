@@ -230,24 +230,27 @@ impl Image {
             bytes,
         }
     }
-    
+
     /// Blends this image with another image (of identical dimensions)
     /// Inspired by  OpenCV saturated blending
     pub fn blend(&mut self, other: &Image) {
-        assert!(self.width as usize * self.height as usize == other.width as usize * other.height as usize);
+        assert!(
+            self.width as usize * self.height as usize
+                == other.width as usize * other.height as usize
+        );
 
         for i in 0..self.bytes.len() / 4 {
             let c1: Color = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
-                a: self.bytes[i * 4 + 3] as f32 / 255.
+                a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
             let c2: Color = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
-                a: other.bytes[i * 4 + 3] as f32 / 255.
+                a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
             let new_color: Color = Color {
                 r: f32::min(c1.r * c1.a + c2.r * c2.a, 1.),
@@ -267,28 +270,31 @@ impl Image {
     /// overlaying a completely transparent image has no effect
     /// on the original image, though blending them would.
     pub fn overlay(&mut self, other: &Image) {
-        assert!(self.width as usize * self.height as usize == other.width as usize * other.height as usize);
+        assert!(
+            self.width as usize * self.height as usize
+                == other.width as usize * other.height as usize
+        );
 
         for i in 0..self.bytes.len() / 4 {
             let c1: Color = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
-                a: self.bytes[i * 4 + 3] as f32 / 255.
+                a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
             let c2: Color = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
-                a: other.bytes[i * 4 + 3] as f32 / 255.
+                a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
             let new_color: Color = Color {
                 r: f32::min(c1.r * (1. - c2.a) + c2.r * c2.a, 1.),
                 g: f32::min(c1.g * (1. - c2.a) + c2.g * c2.a, 1.),
                 b: f32::min(c1.b * (1. - c2.a) + c2.b * c2.a, 1.),
-                a: f32::min(c1.a + c2.a, 1.)
+                a: f32::min(c1.a + c2.a, 1.),
             };
- 
+
             self.bytes[i * 4] = (new_color.r * 255.) as u8;
             self.bytes[i * 4 + 1] = (new_color.g * 255.) as u8;
             self.bytes[i * 4 + 2] = (new_color.b * 255.) as u8;
@@ -334,32 +340,64 @@ pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     Ok(Texture2D::from_file_with_format(&bytes[..], None))
 }
 
-#[derive(Clone, Debug)]
-pub struct RenderTarget {
-    pub texture: Texture2D,
-    pub render_pass: miniquad::RenderPass,
+#[derive(Debug, Clone)]
+pub struct RenderPass {
+    pub color_texture: Texture2D,
+    pub depth_texture: Option<Texture2D>,
+    pub(crate) render_pass: Arc<miniquad::RenderPass>,
 }
 
-impl RenderTarget {
-    pub fn delete(&self) {
-        let context = get_quad_context();
-        context.delete_texture(self.texture.raw_miniquad_id());
-        context.delete_render_pass(self.render_pass);
+impl RenderPass {
+    fn new(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> RenderPass {
+        let render_pass = get_quad_context().new_render_pass(
+            color_texture.raw_miniquad_id(),
+            depth_texture.as_ref().map(|t| t.raw_miniquad_id()),
+        );
+        RenderPass {
+            color_texture,
+            depth_texture: depth_texture.map(|t| t.clone()),
+            render_pass: Arc::new(render_pass),
+        }
+    }
+    /// Returns the miniquad handle for this render pass.
+    pub fn raw_miniquad_id(&self) -> miniquad::RenderPass {
+        *self.render_pass
     }
 }
 
-pub fn render_target(width: u32, height: u32) -> RenderTarget {
-    let context = get_quad_context();
+impl Drop for RenderPass {
+    fn drop(&mut self) {
+        if Arc::strong_count(&self.render_pass) < 2 {
+            let context = get_quad_context();
+            context.delete_render_pass(*self.render_pass);
+        }
+    }
+}
 
-    let texture = context.new_render_texture(miniquad::TextureParams {
+#[derive(Clone, Debug)]
+pub struct RenderTarget {
+    pub texture: Texture2D,
+    pub render_pass: RenderPass,
+}
+
+fn render_pass(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> RenderPass {
+    RenderPass::new(color_texture, depth_texture)
+}
+
+pub fn render_target(width: u32, height: u32) -> RenderTarget {
+    let context = get_context();
+
+    let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
         width,
         height,
         ..Default::default()
     });
 
-    let render_pass = context.new_render_pass(texture, None);
+    let texture = Texture2D {
+        texture: context.textures.store_texture(texture_id),
+    };
 
-    let texture = Texture2D::from_miniquad_texture(texture);
+    let render_pass = render_pass(texture.clone(), None);
 
     RenderTarget {
         texture,
@@ -670,7 +708,6 @@ impl Texture2D {
 
         ctx.texture_update(self.raw_miniquad_id(), bytes);
     }
-
 
     /// Uploads [Image] data to part of this texture.
     pub fn update_part(
