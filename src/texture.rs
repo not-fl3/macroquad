@@ -230,24 +230,27 @@ impl Image {
             bytes,
         }
     }
-    
+
     /// Blends this image with another image (of identical dimensions)
     /// Inspired by  OpenCV saturated blending
     pub fn blend(&mut self, other: &Image) {
-        assert!(self.width as usize * self.height as usize == other.width as usize * other.height as usize);
+        assert!(
+            self.width as usize * self.height as usize
+                == other.width as usize * other.height as usize
+        );
 
         for i in 0..self.bytes.len() / 4 {
             let c1: Color = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
-                a: self.bytes[i * 4 + 3] as f32 / 255.
+                a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
             let c2: Color = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
-                a: other.bytes[i * 4 + 3] as f32 / 255.
+                a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
             let new_color: Color = Color {
                 r: f32::min(c1.r * c1.a + c2.r * c2.a, 1.),
@@ -267,28 +270,31 @@ impl Image {
     /// overlaying a completely transparent image has no effect
     /// on the original image, though blending them would.
     pub fn overlay(&mut self, other: &Image) {
-        assert!(self.width as usize * self.height as usize == other.width as usize * other.height as usize);
+        assert!(
+            self.width as usize * self.height as usize
+                == other.width as usize * other.height as usize
+        );
 
         for i in 0..self.bytes.len() / 4 {
             let c1: Color = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
-                a: self.bytes[i * 4 + 3] as f32 / 255.
+                a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
             let c2: Color = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
-                a: other.bytes[i * 4 + 3] as f32 / 255.
+                a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
             let new_color: Color = Color {
                 r: f32::min(c1.r * (1. - c2.a) + c2.r * c2.a, 1.),
                 g: f32::min(c1.g * (1. - c2.a) + c2.g * c2.a, 1.),
                 b: f32::min(c1.b * (1. - c2.a) + c2.b * c2.a, 1.),
-                a: f32::min(c1.a + c2.a, 1.)
+                a: f32::min(c1.a + c2.a, 1.),
             };
- 
+
             self.bytes[i * 4] = (new_color.r * 255.) as u8;
             self.bytes[i * 4 + 1] = (new_color.g * 255.) as u8;
             self.bytes[i * 4 + 2] = (new_color.b * 255.) as u8;
@@ -670,7 +676,6 @@ impl Texture2D {
 
         ctx.texture_update(self.raw_miniquad_id(), bytes);
     }
-
 
     /// Uploads [Image] data to part of this texture.
     pub fn update_part(
