@@ -34,7 +34,8 @@ pub struct Atlas {
 
 impl Drop for Atlas {
     fn drop(&mut self) {
-        self.delete();
+        let ctx = &mut get_context().quad_context;
+        ctx.delete_texture(self.texture);
     }
 }
 
@@ -189,9 +190,5 @@ impl Atlas {
                 },
             );
         }
-    }
-    fn delete(&mut self) {
-        let ctx = &mut get_context().quad_context;
-        ctx.delete_texture(self.texture);
     }
 }
