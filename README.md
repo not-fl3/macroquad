@@ -233,8 +233,4 @@ async/await support in macroquad comes without any external dependencies - no ru
 
 Macroquad is supported by:
 
-<p>
-  <a href="https://embark-studios.com">
-    <img src="https://www.embark.dev/img/logo_black.png" width="201px">
-  </a>
-</p>
+[SourceGear](https://www.sourcegear.com/)
