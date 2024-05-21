@@ -43,7 +43,7 @@ mod dummy_audio {
         pub fn set_volume(&self, _ctx: &mut AudioContext, _volume: f32) {}
 
         pub fn is_loaded(&self) -> bool {
-            false
+            true
         }
 
         pub fn delete(&self, _ctx: &AudioContext) {}
@@ -102,6 +102,7 @@ impl std::fmt::Debug for Sound {
 /// Load audio file.
 ///
 /// Attempts to automatically detect the format of the source of data.
+
 pub async fn load_sound(path: &str) -> Result<Sound, Error> {
     let data = load_file(path).await?;
 
