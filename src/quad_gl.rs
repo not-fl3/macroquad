@@ -2,11 +2,11 @@
 
 use miniquad::*;
 
-pub use miniquad::{FilterMode, ShaderError, TextureId as MiniquadTexture};
+pub use miniquad::{FilterMode, TextureId as MiniquadTexture};
 
 use crate::{color::Color, logging::warn, telemetry, texture::Texture2D, Error};
 
-use std::{collections::BTreeMap, sync::Arc};
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DrawMode {
@@ -596,7 +596,6 @@ pub struct QuadGl {
     start_time: f64,
 
     pub(crate) white_texture: miniquad::TextureId,
-    pub(crate) red_texture: miniquad::TextureId,
     max_vertices: usize,
     max_indices: usize,
 }
@@ -604,7 +603,6 @@ pub struct QuadGl {
 impl QuadGl {
     pub fn new(ctx: &mut dyn miniquad::RenderingBackend) -> QuadGl {
         let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
-        let red_texture = ctx.new_texture_from_rgba8(1, 1, &[230, 50, 50, 255]);
 
         QuadGl {
             pipelines: PipelinesStorage::new(ctx),
@@ -627,7 +625,6 @@ impl QuadGl {
             start_time: miniquad::date::now(),
 
             white_texture: white_texture,
-            red_texture: red_texture,
             max_vertices: 10000,
             max_indices: 5000,
         }

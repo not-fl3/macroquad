@@ -34,6 +34,7 @@ pub struct Font {
     characters: Arc<Mutex<HashMap<(char, u16), CharacterInfo>>>,
 }
 
+#[allow(dead_code)]
 fn require_fn_to_be_send() {
     fn require_send<T: Send>() {}
     require_send::<Font>();
@@ -267,13 +268,12 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, Error> {
 /// let font = load_ttf_font_from_bytes(include_bytes!("font.ttf"));
 /// ```
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
-    let context = get_context();
     let atlas = Arc::new(Mutex::new(Atlas::new(
         get_quad_context(),
         miniquad::FilterMode::Linear,
     )));
 
-    let mut font = Font::load_from_bytes(atlas.clone(), bytes)?;
+    let font = Font::load_from_bytes(atlas.clone(), bytes)?;
 
     font.populate_font_cache(&Font::ascii_character_list(), 15);
 

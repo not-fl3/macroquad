@@ -230,7 +230,7 @@ impl Profiler {
             .active_query
             .take()
             .expect("End query without begin query");
-        let mut query = self.queries.get_mut(&name).unwrap();
+        let query = self.queries.get_mut(&name).unwrap();
         if query.in_progress {
             query.force_resume = false;
             query.in_progress = false;

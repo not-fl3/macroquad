@@ -73,8 +73,7 @@ use crate::{
     ui::{canvas::DrawCanvas, render::Painter},
 };
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
-
+use std::collections::HashMap;
 mod cursor;
 mod input;
 mod key_repeat;
@@ -459,7 +458,7 @@ impl<'a> WindowContext<'a> {
     }
 
     fn draw_vertical_scroll_bar(&mut self, area: Rect, rect: Rect) {
-        let mut scroll = &mut self.window.cursor.scroll;
+        let scroll = &mut self.window.cursor.scroll;
         let inner_rect = scroll.inner_rect_previous_frame;
         let size = scroll.rect.h / inner_rect.h * rect.h;
         let pos = (scroll.rect.y - inner_rect.y) / inner_rect.h * rect.h;
@@ -654,7 +653,7 @@ impl Ui {
         screen_height: f32,
     ) -> Ui {
         let atlas = Arc::new(Mutex::new(Atlas::new(ctx, miniquad::FilterMode::Nearest)));
-        let mut font =
+        let font =
             crate::text::Font::load_from_bytes(atlas.clone(), include_bytes!("ProggyClean.ttf"))
                 .unwrap();
 

@@ -36,11 +36,8 @@
 //! }
 //!```
 
-#![allow(warnings)]
-
 use miniquad::*;
 
-use slotmap::SlotMap;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
@@ -155,7 +152,6 @@ use crate::{
 };
 
 use glam::{vec2, Mat4, Vec2};
-use std::sync::{Arc, Weak};
 
 pub(crate) mod thread_assert {
     static mut THREAD_ID: Option<std::thread::ThreadId> = None;
@@ -761,13 +757,14 @@ impl Window {
         );
     }
 
-    pub fn from_config(mut config: conf::Conf, future: impl Future<Output = ()> + 'static) {
+    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
         miniquad::start(conf::Conf { ..config }, move || {
             thread_assert::set_thread_id();
             unsafe {
                 MAIN_FUTURE = Some(Box::pin(future));
             }
             unsafe { CONTEXT = Some(Context::new()) };
+
             Box::new(Stage {})
         });
     }

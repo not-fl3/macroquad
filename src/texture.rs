@@ -49,9 +49,9 @@ impl TexturesContext {
     pub fn texture(&self, texture: TextureSlotId) -> Option<miniquad::TextureId> {
         self.textures.get(texture).copied()
     }
-    fn remove(&mut self, texture: TextureSlotId) {
-        self.textures.remove(texture);
-    }
+    // fn remove(&mut self, texture: TextureSlotId) {
+    //     self.textures.remove(texture);
+    // }
     pub fn len(&self) -> usize {
         self.textures.len()
     }
@@ -791,7 +791,6 @@ impl Texture2D {
         let params = ctx.texture_params(texture);
         let raw_id = match unsafe { ctx.texture_raw_id(texture) } {
             miniquad::RawId::OpenGl(id) => id,
-            _ => unimplemented!(),
         };
         let internal_format = match params.format {
             TextureFormat::RGB8 => miniquad::gl::GL_RGB,

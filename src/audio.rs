@@ -1,7 +1,7 @@
 //! Loading and playing sounds.
 
 use crate::{file::load_file, get_context, Error};
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 #[cfg(all(feature = "audio"))]
 use quad_snd::{AudioContext as QuadSndContext, Sound as QuadSndSound};
@@ -42,6 +42,7 @@ mod dummy_audio {
 
         pub fn set_volume(&self, _ctx: &mut AudioContext, _volume: f32) {}
 
+        #[allow(dead_code)]
         pub fn is_loaded(&self) -> bool {
             true
         }
@@ -123,8 +124,6 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, Error> {
     while sound.is_loaded() == false {
         crate::window::next_frame().await;
     }
-
-    let ctx = &mut get_context().audio_context;
 
     Ok(Sound(Arc::new(sound)))
 }
