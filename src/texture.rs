@@ -787,6 +787,7 @@ impl Texture2D {
     }
 
     /// Updates this texture from the screen.
+    #[allow(unreachable_patterns)]
     pub fn grab_screen(&self) {
         use miniquad::*;
         let texture = self.raw_miniquad_id();
@@ -794,6 +795,7 @@ impl Texture2D {
         let params = ctx.texture_params(texture);
         let raw_id = match unsafe { ctx.texture_raw_id(texture) } {
             miniquad::RawId::OpenGl(id) => id,
+            _ => unimplemented!(),
         };
         let internal_format = match params.format {
             TextureFormat::RGB8 => miniquad::gl::GL_RGB,
