@@ -196,6 +196,9 @@ impl Image {
 
     /// Modifies a pixel [Color] in this image.
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
+        assert!(x < self.width as u32);
+        assert!(y < self.height as u32);
+
         let width = self.width;
 
         self.get_image_data_mut()[(y * width as u32 + x) as usize] = color.into();

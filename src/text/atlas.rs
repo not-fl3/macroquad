@@ -141,7 +141,7 @@ impl Atlas {
         let y = self.cursor_y;
 
         // texture bounds exceeded
-        if self.cursor_y + height as u16 > self.image.height {
+        if self.cursor_y > self.image.height || self.cursor_x > self.image.width {
             // reset glyph cache state
             let sprites = self.sprites.drain().collect::<Vec<_>>();
             self.cursor_x = 0;
@@ -151,11 +151,15 @@ impl Atlas {
             let old_image = self.image.clone();
 
             // increase font texture size
-            self.image = Image::gen_image_color(
-                self.image.width * 2,
-                self.image.height * 2,
-                Color::new(0.0, 0.0, 0.0, 0.0),
-            );
+            // note: if we tried to fit gigantic texture into a small atlas,
+            // new_width will still be not enough. But its fine, it will
+            // be regenerated on the recursion call.
+            let new_width = self.image.width * 2;
+            let new_height = self.image.height * 2;
+
+            println!("{new_width} {new_height}");
+            self.image =
+                Image::gen_image_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
 
             // recache all previously cached symbols
             for (key, sprite) in sprites {
