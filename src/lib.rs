@@ -553,6 +553,10 @@ impl EventHandler for Stage {
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
         }
+
+        if miniquad::window::blocking_event_loop() {
+           miniquad::window::schedule_update();
+        }
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
@@ -568,6 +572,9 @@ impl EventHandler for Stage {
 
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
+        }
+        if miniquad::window::blocking_event_loop() {
+            miniquad::window::schedule_update();
         }
     }
 
@@ -632,6 +639,9 @@ impl EventHandler for Stage {
                 repeat,
             })
         });
+        if miniquad::window::blocking_event_loop() {
+            miniquad::window::schedule_update();
+        }
     }
 
     fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
@@ -643,6 +653,10 @@ impl EventHandler for Stage {
             .input_events
             .iter_mut()
             .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
+
+        if miniquad::window::blocking_event_loop() {
+            miniquad::window::schedule_update();
+        }
     }
 
     fn update(&mut self) {
@@ -758,7 +772,7 @@ impl Window {
     }
 
     pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
-        miniquad::start(conf::Conf { ..config }, move || {
+        miniquad::start(config, move || {
             thread_assert::set_thread_id();
             unsafe {
                 MAIN_FUTURE = Some(Box::pin(future));
