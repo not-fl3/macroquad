@@ -157,7 +157,6 @@ impl Atlas {
             let new_width = self.image.width * 2;
             let new_height = self.image.height * 2;
 
-            println!("{new_width} {new_height}");
             self.image =
                 Image::gen_image_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
 
