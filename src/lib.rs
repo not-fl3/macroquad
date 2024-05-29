@@ -555,7 +555,7 @@ impl EventHandler for Stage {
         }
 
         if miniquad::window::blocking_event_loop() {
-           miniquad::window::schedule_update();
+            miniquad::window::schedule_update();
         }
     }
 
