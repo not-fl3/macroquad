@@ -5,7 +5,7 @@
 
 use crate::math::{Rect, Vec2};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Scroll {
     pub scroll: Vec2,
     pub dragging_x: bool,
@@ -31,14 +31,14 @@ impl Scroll {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Layout {
     Vertical,
     Horizontal,
     Free(Vec2),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Cursor {
     pub x: f32,
     pub y: f32,

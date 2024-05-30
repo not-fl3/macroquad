@@ -21,6 +21,7 @@ impl Tile {
         }
     }
 }
+#[derive(Clone, Debug)]
 pub struct StaticTiledLayer {
     static_colliders: Vec<Tile>,
     tile_width: f32,
@@ -29,6 +30,7 @@ pub struct StaticTiledLayer {
     tag: u8,
 }
 
+#[derive(Clone, Debug)]
 pub struct World {
     static_tiled_layers: Vec<StaticTiledLayer>,
     solids: Vec<(Solid, Collider)>,

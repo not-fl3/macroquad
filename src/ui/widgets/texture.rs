@@ -4,6 +4,7 @@ use crate::{
     ui::{Layout, Ui},
 };
 
+#[derive(Clone, Debug)]
 pub struct Texture {
     position: Option<Vec2>,
     w: f32,

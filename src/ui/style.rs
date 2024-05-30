@@ -12,6 +12,7 @@ use crate::{
 
 use std::sync::{Arc, Mutex};
 
+#[derive(Clone, Debug)]
 pub struct StyleBuilder {
     atlas: Arc<Mutex<Atlas>>,
     font: Arc<Mutex<Font>>,

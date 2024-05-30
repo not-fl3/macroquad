@@ -22,6 +22,7 @@ impl From<Vertex> for crate::quad_gl::VertexInterop {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct Mesh {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u16>,
@@ -453,7 +454,7 @@ pub fn draw_cube_wires(position: Vec3, size: Vec3, color: Color) {
     );
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DrawSphereParams {
     pub rings: usize,
     pub slices: usize,

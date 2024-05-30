@@ -13,6 +13,7 @@ pub use quad_snd::PlaySoundParams;
 mod dummy_audio {
     use crate::audio::PlaySoundParams;
 
+    #[derive(Clone, Copy, Debug)]
     pub struct AudioContext {}
 
     impl AudioContext {
@@ -27,6 +28,7 @@ mod dummy_audio {
         pub fn resume(&mut self) {}
     }
 
+    #[derive(Clone, Copy, Debug)]
     pub struct Sound {}
 
     impl Sound {
@@ -55,11 +57,13 @@ mod dummy_audio {
 use dummy_audio::{AudioContext as QuadSndContext, Sound as QuadSndSound};
 
 #[cfg(not(feature = "audio"))]
+#[derive(Clone, Copy, Debug)]
 pub struct PlaySoundParams {
     pub looped: bool,
     pub volume: f32,
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct AudioContext {
     native_ctx: QuadSndContext,
 }

@@ -3,6 +3,7 @@ use crate::{
     ui::{ElementState, Id, Layout, Ui, UiContent},
 };
 
+#[derive(Debug)]
 pub struct Tabbar<'a, 'b> {
     id: Id,
     size: Vec2,

@@ -169,6 +169,7 @@ impl Window {
 }
 
 #[must_use = "Must call `.end()` to finish Window"]
+#[derive(Clone, Copy, Debug)]
 pub struct WindowToken;
 
 impl WindowToken {

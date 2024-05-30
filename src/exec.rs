@@ -27,6 +27,7 @@ impl Future for FrameFuture {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct FileLoadingFuture {
     pub contents: Arc<Mutex<Option<Result<Vec<u8>, Error>>>>,
 }

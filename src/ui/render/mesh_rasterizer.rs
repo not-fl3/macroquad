@@ -40,7 +40,7 @@ impl Vertex {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DrawList {
     pub vertices: Vec<Vertex>,
     pub indices: Vec<u16>,

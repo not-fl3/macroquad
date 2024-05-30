@@ -71,6 +71,7 @@ pub struct Animation {
 }
 
 /// Specific animation frame
+#[derive(Clone, Copy, Debug)]
 pub struct AnimationFrame {
     /// Area of current frame in source image
     pub source_rect: Rect,
@@ -79,7 +80,7 @@ pub struct AnimationFrame {
 }
 
 /// Main definition of all animations for specific image
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AnimatedSprite {
     tile_width: f32,
     tile_height: f32,

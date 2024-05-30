@@ -41,6 +41,7 @@ impl Material {
 /// Params used for material loading.
 /// It is not possible to change material params at runtime, so this
 /// struct is used only once - at "load_material".
+#[derive(Clone, Debug)]
 pub struct MaterialParams {
     /// miniquad pipeline configuration for this material.
     /// Things like blending, culling, depth dest

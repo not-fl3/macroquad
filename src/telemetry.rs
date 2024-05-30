@@ -272,6 +272,7 @@ impl Profiler {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct GpuQuery {
     pub query: miniquad::graphics::ElapsedQuery,
     pub in_progress: bool,
@@ -293,6 +294,7 @@ pub fn scene_allocated_memory() -> usize {
 /// ```
 /// Will add "Time query: Atlas build time, 0.5s" string to
 /// `telemetry::strings()`
+#[derive(Clone, Debug)]
 pub struct LogTimeGuard<'a> {
     name: &'a str,
     start_time: f64,
@@ -342,7 +344,7 @@ pub fn capture_frame() {
     get_profiler().capture_request = true;
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct DrawCallTelemetry {
     pub indices_count: usize,
     pub texture: miniquad::TextureId,

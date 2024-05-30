@@ -75,7 +75,7 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     context.gl.geometry(&vertices, &indices);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DrawRectangleParams {
     /// Adds an offset to the position
     /// E.g. offset (0,0) positions the rectangle at the top left corner of the screen, while offset

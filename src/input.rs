@@ -28,7 +28,7 @@ impl From<miniquad::TouchPhase> for TouchPhase {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Touch {
     pub id: u64,
     pub phase: TouchPhase,

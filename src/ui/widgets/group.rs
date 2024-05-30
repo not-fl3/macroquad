@@ -3,7 +3,7 @@ use crate::{
     ui::{Drag, DragState, ElementState, Id, Layout, Ui},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Group {
     id: Id,
     position: Option<Vec2>,
@@ -143,6 +143,7 @@ impl Group {
 }
 
 #[must_use = "Must call `.end()` to finish Group"]
+#[derive(Clone, Copy, Debug)]
 pub struct GroupToken {
     draggable: bool,
     drag: Drag,

@@ -3,6 +3,7 @@ use crate::{
     ui::{ElementState, Id, Layout, Ui, UiContent},
 };
 
+#[derive(Clone, Copy, Debug)]
 pub struct Checkbox<'a> {
     id: Id,
     label: &'a str,

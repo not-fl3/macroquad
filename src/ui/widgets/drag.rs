@@ -36,6 +36,7 @@ impl Default for State {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
 pub struct Drag<'a> {
     id: Id,
     label: &'a str,

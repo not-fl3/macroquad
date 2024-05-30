@@ -4,6 +4,7 @@ use crate::{
 };
 
 /// Borderless subwindow drawn on top of everything
+#[derive(Clone, Copy, Debug)]
 pub struct Popup {
     id: Id,
     size: Vec2,

@@ -408,7 +408,7 @@ pub fn render_target(width: u32, height: u32) -> RenderTarget {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct DrawTextureParams {
     pub dest_size: Option<Vec2>,
 

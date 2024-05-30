@@ -17,6 +17,7 @@ pub enum DrawMode {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct GlPipeline(usize);
 
+#[derive(Clone, Debug)]
 struct DrawCall {
     vertices: Vec<Vertex>,
     indices: Vec<u16>,
@@ -131,6 +132,7 @@ impl DrawCall {
     }
 }
 
+#[derive(Clone, Debug)]
 struct MagicSnapshotter {
     pipeline: Pipeline,
     bindings: Bindings,
@@ -200,7 +202,7 @@ mod snapshotter_shader {
     }
 
     #[repr(C)]
-    #[derive(Debug)]
+    #[derive(Clone, Copy, Debug)]
     pub struct Uniforms {}
 }
 
@@ -323,6 +325,7 @@ impl MagicSnapshotter {
     }
 }
 
+#[derive(Clone, Debug)]
 struct GlState {
     texture: Option<miniquad::TextureId>,
     draw_mode: DrawMode,
@@ -352,7 +355,7 @@ struct Uniform {
     byte_offset: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct PipelineExt {
     pipeline: miniquad::Pipeline,
     wants_screen_texture: bool,
@@ -406,6 +409,7 @@ impl PipelineExt {
     }
 }
 
+#[derive(Clone, Debug)]
 struct PipelinesStorage {
     pipelines: [Option<PipelineExt>; Self::MAX_PIPELINES],
     pipelines_amount: usize,
@@ -586,6 +590,7 @@ impl PipelinesStorage {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct QuadGl {
     pipelines: PipelinesStorage,
 

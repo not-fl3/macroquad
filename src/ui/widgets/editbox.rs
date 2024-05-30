@@ -5,6 +5,7 @@ use crate::{
     ui::{ElementState, Id, InputCharacter, Key, KeyCode, Layout, Ui},
 };
 
+#[derive(Clone, Copy)]
 pub struct Editbox<'a> {
     id: Id,
     size: Vec2,

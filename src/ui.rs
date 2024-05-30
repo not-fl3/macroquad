@@ -88,6 +88,7 @@ use input::{InputCharacter, Key};
 /// These should be unique per window and ideally not change in between frames.
 pub type Id = u64;
 
+#[derive(Clone, Debug)]
 pub enum UiContent<'a> {
     Label(Cow<'a, str>),
     Texture(crate::texture::Texture2D),

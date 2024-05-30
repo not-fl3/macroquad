@@ -116,6 +116,7 @@ impl From<&ColorSerializable> for Color {
 }
 
 #[cfg_attr(feature = "nanoserde", derive(DeJson, SerJson))]
+#[derive(Clone, Copy, Debug)]
 pub struct Vec2Serializable {
     x: f32,
     y: f32,
@@ -416,7 +417,7 @@ impl BlendMode {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "nanoserde", derive(DeJson, SerJson))]
 pub struct AtlasConfig {
     n: u16,
@@ -485,6 +486,7 @@ impl Default for EmitterConfig {
 }
 
 #[repr(C)]
+#[derive(Clone, Debug)]
 struct GpuParticle {
     pos: Vec4,
     uv: Vec4,
@@ -492,6 +494,7 @@ struct GpuParticle {
     color: Vec4,
 }
 
+#[derive(Clone, Debug)]
 struct CpuParticle {
     velocity: Vec2,
     angular_velocity: f32,
@@ -501,6 +504,7 @@ struct CpuParticle {
     initial_size: f32,
 }
 
+#[derive(Clone, Debug)]
 pub struct Emitter {
     pipeline: Pipeline,
     bindings: Bindings,
@@ -996,6 +1000,7 @@ impl Emitter {
 /// Multiple emitters drawn simultaneously.
 /// Will reuse as much GPU resources as possible, so should be more efficient than
 /// just Vec<Emitter>
+#[derive(Clone, Debug)]
 pub struct EmittersCache {
     emitter: Emitter,
     emitters_cache: Vec<Emitter>,
@@ -1113,6 +1118,7 @@ mod shader {
     }
 
     #[repr(C)]
+    #[derive(Clone, Copy, Debug)]
     pub struct Uniforms {
         pub mvp: Mat4,
         pub local_coords: f32,
