@@ -141,7 +141,7 @@ impl Atlas {
         let y = self.cursor_y;
 
         // texture bounds exceeded
-        if self.cursor_y > self.image.height || self.cursor_x > self.image.width {
+        if y + sprite.height > self.image.height || x + sprite.width > self.image.width {
             // reset glyph cache state
             let sprites = self.sprites.drain().collect::<Vec<_>>();
             self.cursor_x = 0;
