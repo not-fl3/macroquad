@@ -583,7 +583,6 @@ impl Default for DrawCylinderParams {
             draw_mode: DrawMode::Triangles,
         }
     }
-    
 }
 
 pub fn draw_cylinder(
@@ -594,7 +593,15 @@ pub fn draw_cylinder(
     texture: Option<&Texture2D>,
     color: Color,
 ) {
-    draw_cylinder_ex(position, radius_top, radius_bottom, height, texture, color, Default::default());
+    draw_cylinder_ex(
+        position,
+        radius_top,
+        radius_bottom,
+        height,
+        texture,
+        color,
+        Default::default(),
+    );
 }
 
 pub fn draw_cylinder_wires(
@@ -609,7 +616,15 @@ pub fn draw_cylinder_wires(
         draw_mode: DrawMode::Lines,
         ..Default::default()
     };
-    draw_cylinder_ex(position, radius_top, radius_bottom, height, texture, color, params);
+    draw_cylinder_ex(
+        position,
+        radius_top,
+        radius_bottom,
+        height,
+        texture,
+        color,
+        params,
+    );
 }
 
 //Note: can also be used to draw a cone by setting radius_top or radius_bottom to 0
@@ -631,126 +646,115 @@ pub fn draw_cylinder_ex(
     context.gl.texture(texture.into());
     context.gl.draw_mode(params.draw_mode);
 
-    
     use std::f32::consts::PI;
     let angle_step = PI * 2.0 / sides as f32;
-   //draw body
-   for i in 0..sides + 1 {
-       let i = i as f32;
-       //bottom left
-       let v1 = vec3(
-           (i * angle_step).sin() * radius_bottom,
-           0.0,
-           (i * angle_step).cos() * radius_bottom,
-       );
-       //bottom right
-       let v2 = vec3(
-           ((i + 1.0) * angle_step).sin() * radius_bottom,
-           0.0,
-           ((i + 1.0) * angle_step).cos() * radius_bottom,
-       );
-       //top right
-       let v3 = vec3(
-           ((i + 1.0) * angle_step).sin() * radius_top,
-           height,
-           ((i + 1.0) * angle_step).cos() * radius_top,
-       );
+    //draw body
+    for i in 0..sides + 1 {
+        let i = i as f32;
+        //bottom left
+        let v1 = vec3(
+            (i * angle_step).sin() * radius_bottom,
+            0.0,
+            (i * angle_step).cos() * radius_bottom,
+        );
+        //bottom right
+        let v2 = vec3(
+            ((i + 1.0) * angle_step).sin() * radius_bottom,
+            0.0,
+            ((i + 1.0) * angle_step).cos() * radius_bottom,
+        );
+        //top right
+        let v3 = vec3(
+            ((i + 1.0) * angle_step).sin() * radius_top,
+            height,
+            ((i + 1.0) * angle_step).cos() * radius_top,
+        );
 
-       context.gl.geometry(
-           &[
-               ((v1 + position).into(), [0.0, 0.0], color),
-               ((v2 + position).into(), [1.0, 0.0], color),
-               ((v3 + position).into(), [1.0, 1.0], color),
-           ],
-           &[0, 1, 2],
-       );
+        context.gl.geometry(
+            &[
+                ((v1 + position).into(), [0.0, 0.0], color),
+                ((v2 + position).into(), [1.0, 0.0], color),
+                ((v3 + position).into(), [1.0, 1.0], color),
+            ],
+            &[0, 1, 2],
+        );
 
-       //top left
-       let v1 = vec3(
-           (i * angle_step).sin() * radius_top, 
-           height, 
-           (i * angle_step).cos() * radius_top,
-           );
-       //bottom left
-       let v2 = vec3(
-           (i * angle_step).sin() * radius_bottom, 
-           0.0, 
-           (i * angle_step).cos() * radius_bottom,
-           );
-       //top right
-       let v3 = vec3(
-           ((i + 1.0) * angle_step).sin() * radius_top, 
-           height, 
-           ((i + 1.0) * angle_step).cos() * radius_top,
-           );
+        //top left
+        let v1 = vec3(
+            (i * angle_step).sin() * radius_top,
+            height,
+            (i * angle_step).cos() * radius_top,
+        );
+        //bottom left
+        let v2 = vec3(
+            (i * angle_step).sin() * radius_bottom,
+            0.0,
+            (i * angle_step).cos() * radius_bottom,
+        );
+        //top right
+        let v3 = vec3(
+            ((i + 1.0) * angle_step).sin() * radius_top,
+            height,
+            ((i + 1.0) * angle_step).cos() * radius_top,
+        );
 
-       context.gl.geometry(
-           &[
-               ((v1 + position).into(), [0.0, 0.0], color),
-               ((v2 + position).into(), [1.0, 0.0], color),
-               ((v3 + position).into(), [1.0, 1.0], color),
-           ],
-           &[0, 1, 2],
-       );
-   }
+        context.gl.geometry(
+            &[
+                ((v1 + position).into(), [0.0, 0.0], color),
+                ((v2 + position).into(), [1.0, 0.0], color),
+                ((v3 + position).into(), [1.0, 1.0], color),
+            ],
+            &[0, 1, 2],
+        );
+    }
 
-   //draw cap
-   for i in 0..sides+1 {
-       let i = i as f32;
-       let v1 = vec3(
-           0.0,
-           height,
-           0.0,
-       );
-       let v2 = vec3(
-           (i * angle_step).sin() * radius_top,
-           height,
-           (i * angle_step).cos() * radius_top,
-       );
-       let v3 = vec3(
-           ((i + 1.0) * angle_step).sin() * radius_top,
-           height,
-           ((i + 1.0) * angle_step).cos() * radius_top,
-       );
+    //draw cap
+    for i in 0..sides + 1 {
+        let i = i as f32;
+        let v1 = vec3(0.0, height, 0.0);
+        let v2 = vec3(
+            (i * angle_step).sin() * radius_top,
+            height,
+            (i * angle_step).cos() * radius_top,
+        );
+        let v3 = vec3(
+            ((i + 1.0) * angle_step).sin() * radius_top,
+            height,
+            ((i + 1.0) * angle_step).cos() * radius_top,
+        );
 
-       context.gl.geometry(
-           &[
-               ((v1 + position).into(), [0.0, 0.0], color),
-               ((v2 + position).into(), [1.0, 0.0], color),
-               ((v3 + position).into(), [1.0, 1.0], color),
-           ],
-           &[0, 1, 2],
-       );
+        context.gl.geometry(
+            &[
+                ((v1 + position).into(), [0.0, 0.0], color),
+                ((v2 + position).into(), [1.0, 0.0], color),
+                ((v3 + position).into(), [1.0, 1.0], color),
+            ],
+            &[0, 1, 2],
+        );
+    }
 
-   }
+    //draw base
+    for i in 0..sides + 1 {
+        let i = i as f32;
+        let v1 = vec3(0.0, 0.0, 0.0);
+        let v2 = vec3(
+            (i * angle_step).sin() * radius_bottom,
+            0.0,
+            (i * angle_step).cos() * radius_bottom,
+        );
+        let v3 = vec3(
+            ((i + 1.0) * angle_step).sin() * radius_bottom,
+            0.0,
+            ((i + 1.0) * angle_step).cos() * radius_bottom,
+        );
 
-   //draw base
-   for i in 0..sides+1 {
-       let i = i as f32;
-       let v1 = vec3(
-           0.0,
-           0.0,
-           0.0,
-       );
-       let v2 = vec3(
-           (i * angle_step).sin() * radius_bottom,
-           0.0,
-           (i * angle_step).cos() * radius_bottom,
-       );
-       let v3 = vec3(
-           ((i+1.0) * angle_step).sin() * radius_bottom,
-           0.0,
-           ((i+1.0) * angle_step).cos() * radius_bottom,
-       );
-
-       context.gl.geometry(
-           &[
-               ((v1 + position).into(), [0.0, 0.0], color),
-               ((v2 + position).into(), [1.0, 0.0], color),
-               ((v3 + position).into(), [1.0, 1.0], color),
-           ],
-           &[0, 1, 2],
-       );
-   }
-
+        context.gl.geometry(
+            &[
+                ((v1 + position).into(), [0.0, 0.0], color),
+                ((v2 + position).into(), [1.0, 0.0], color),
+                ((v3 + position).into(), [1.0, 1.0], color),
+            ],
+            &[0, 1, 2],
+        );
+    }
 }
