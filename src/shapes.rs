@@ -257,14 +257,15 @@ pub fn draw_poly_lines(
 }
 
 /// Draws a solid circle centered at `[x, y]` with a given radius `r` and `color`.
-pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
-    draw_poly(x, y, 20, r, 0., color);
+pub fn draw_circle(x: f32, y: f32, r: f32, color: Color, sides: Option<u8>) {
+    draw_poly(x, y, sides.unwrap_or(20), r, 0., color);
 }
 
 /// Draws a circle outline centered at `[x, y]` with a given radius, line `thickness` and `color`.
-pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
-    draw_poly_lines(x, y, 20, r, 0., thickness, color);
+pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color, sides: Option<u8>) {
+    draw_poly_lines(x, y, sides.unwrap_or(20), r, 0., thickness, color);
 }
+
 
 /// Draws a solid ellipse centered at `[x, y]` with a given size `[w, h]`,
 /// clockwise `rotation` (in degrees) and `color`.
