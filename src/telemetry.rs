@@ -1,12 +1,14 @@
-use crate::{get_context, time::get_time};
-
 use std::collections::HashMap;
 
 static mut PROFILER: Option<Profiler> = None;
 
 mod ui;
 
-pub use ui::profiler as ui;
+//pub use ui::profiler as ui;
+
+fn get_time() -> f64 {
+    miniquad::date::now()
+}
 
 fn get_profiler() -> &'static mut Profiler {
     unsafe {
@@ -115,33 +117,33 @@ pub fn resume_gl_capture() {
 }
 
 pub(crate) fn reset() {
-    let profiler = get_profiler();
+    // let profiler = get_profiler();
 
-    assert!(
-        get_profiler().frame.active_zone.is_null(),
-        "New frame started with unpaired begin/end zones."
-    );
+    // assert!(
+    //     get_profiler().frame.active_zone.is_null(),
+    //     "New frame started with unpaired begin/end zones."
+    // );
 
-    profiler.frame.full_frame_time = crate::time::get_frame_time();
+    // profiler.frame.full_frame_time = crate::time::get_frame_time();
 
-    std::mem::swap(&mut profiler.prev_frame, &mut profiler.frame);
-    profiler.frame = Frame::new();
+    // std::mem::swap(&mut profiler.prev_frame, &mut profiler.frame);
+    // profiler.frame = Frame::new();
 
-    if let Some(enable) = profiler.enable_request.take() {
-        profiler.enabled = enable;
-    }
+    // if let Some(enable) = profiler.enable_request.take() {
+    //     profiler.enabled = enable;
+    // }
 
-    if profiler.capture {
-        profiler.capture = false;
-        //crate::get_context().gl.capture(false);
-    }
+    // if profiler.capture {
+    //     profiler.capture = false;
+    //     //crate::get_context().gl.capture(false);
+    // }
 
-    if profiler.capture_request {
-        profiler.drawcalls.clear();
-        profiler.capture = true;
-        //crate::get_context().gl.capture(true);
-        profiler.capture_request = false;
-    }
+    // if profiler.capture_request {
+    //     profiler.drawcalls.clear();
+    //     profiler.capture = true;
+    //     //crate::get_context().gl.capture(true);
+    //     profiler.capture_request = false;
+    // }
 }
 
 #[derive(Debug, Clone)]
@@ -352,11 +354,13 @@ pub fn strings() -> Vec<String> {
 
 /// Note that coroutines pre-allocate 56Kb, so 56000 as a result doesnt mean a leak
 pub fn coroutines_allocated_memory() -> usize {
-    get_context().coroutines_context.allocated_memory()
+    //get_context().coroutines_context.allocated_memory()
+    unimplemented!()
 }
 
 pub fn active_coroutines_count() -> usize {
-    get_context().coroutines_context.active_coroutines_count()
+    //get_context().coroutines_context.active_coroutines_count()
+    unimplemented!()
 }
 
 pub fn named_strings() -> HashMap<String, String> {
@@ -398,5 +402,6 @@ pub struct DrawCallTelemetry {
 // }
 
 pub fn textures_count() -> usize {
-    get_context().textures.len()
+    //get_context().textures.len()
+    unimplemented!()
 }

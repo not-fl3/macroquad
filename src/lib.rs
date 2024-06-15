@@ -46,7 +46,6 @@ use std::pin::Pin;
 mod exec;
 mod quad_gl;
 
-pub mod audio;
 pub mod camera;
 pub mod color;
 pub mod file;
@@ -102,27 +101,9 @@ use crate::{
 use glam::{vec2, Mat4, Vec2};
 use std::sync::{Arc, Mutex, Weak};
 
-struct Context {
-    audio_context: audio::AudioContext,
-
+struct ContextOld {
     screen_width: f32,
     screen_height: f32,
-
-    simulate_mouse_with_touch: bool,
-
-    keys_down: HashSet<KeyCode>,
-    keys_pressed: HashSet<KeyCode>,
-    keys_released: HashSet<KeyCode>,
-    mouse_down: HashSet<MouseButton>,
-    mouse_pressed: HashSet<MouseButton>,
-    mouse_released: HashSet<MouseButton>,
-    touches: HashMap<u64, input::Touch>,
-    chars_pressed_queue: Vec<char>,
-    chars_pressed_ui_queue: Vec<char>,
-    mouse_position: Vec2,
-    last_mouse_position: Option<Vec2>,
-    mouse_raw_delta: Vec2,
-    mouse_wheel: Vec2,
 
     prevent_quit_event: bool,
     quit_requested: bool,
@@ -216,34 +197,18 @@ impl MiniquadInputEvent {
     }
 }
 
-impl Context {
+impl ContextOld {
     //const DEFAULT_BG_COLOR: Color = BLACK;
 
-    fn new() -> Context {
+    fn new() -> ContextOld {
         let (screen_width, screen_height) = miniquad::window::screen_size();
 
         unsafe {
             miniquad::gl::glEnable(miniquad::gl::GL_TEXTURE_CUBE_MAP_SEAMLESS);
         }
-        Context {
+        ContextOld {
             screen_width,
             screen_height,
-
-            simulate_mouse_with_touch: true,
-
-            keys_down: HashSet::new(),
-            keys_pressed: HashSet::new(),
-            keys_released: HashSet::new(),
-            chars_pressed_queue: Vec::new(),
-            chars_pressed_ui_queue: Vec::new(),
-            mouse_down: HashSet::new(),
-            mouse_pressed: HashSet::new(),
-            mouse_released: HashSet::new(),
-            touches: HashMap::new(),
-            mouse_position: vec2(0., 0.),
-            last_mouse_position: None,
-            mouse_raw_delta: vec2(0., 0.),
-            mouse_wheel: vec2(0., 0.),
 
             prevent_quit_event: false,
             quit_requested: false,
@@ -257,7 +222,6 @@ impl Context {
             // ui_context: UiContext::new(&mut *ctx, screen_width, screen_height),
             // fonts_storage: text::FontsStorage::new(&mut *ctx),
             // texture_batcher: texture::Batcher::new(&mut *ctx),
-            audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
 
             start_time: miniquad::date::now(),
@@ -309,30 +273,9 @@ impl Context {
             }
         }
 
-        //telemetry::end_gpu_query();
-
-        self.mouse_wheel = Vec2::new(0., 0.);
-        self.keys_pressed.clear();
-        self.keys_released.clear();
-        self.mouse_pressed.clear();
-        self.mouse_released.clear();
-
         self.quit_requested = false;
 
-        self.last_mouse_position = Some(input::mouse_position_local());
-
-        // remove all touches that were Ended or Cancelled
-        self.touches.retain(|_, touch| {
-            touch.phase != input::TouchPhase::Ended && touch.phase != input::TouchPhase::Cancelled
-        });
-
-        // change all Started or Moved touches to Stationary
-        for touch in self.touches.values_mut() {
-            if touch.phase == input::TouchPhase::Started || touch.phase == input::TouchPhase::Moved
-            {
-                touch.phase = input::TouchPhase::Stationary;
-            }
-        }
+        //telemetry::end_gpu_query();
     }
 
     pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
@@ -353,7 +296,7 @@ impl Context {
 }
 
 #[no_mangle]
-static mut CONTEXT: Option<Context> = None;
+static mut CONTEXT: Option<ContextOld> = None;
 
 // This is required for #[macroquad::test]
 //
@@ -365,7 +308,7 @@ pub mod test {
     pub static ONCE: std::sync::Once = std::sync::Once::new();
 }
 
-fn get_context() -> &'static mut Context {
+fn get_context() -> &'static mut ContextOld {
     unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
 }
 
@@ -381,154 +324,157 @@ impl EventHandler for Stage {
         // get_context().screen_height = height;
     }
 
-    fn raw_mouse_motion(&mut self, x: f32, y: f32) {
-        let context = get_context();
+    // fn raw_mouse_motion(&mut self, x: f32, y: f32) {
+    //     let context = get_context();
 
-        context.mouse_raw_delta = vec2(x, y);
-        // if context.cursor_grabbed {
-        //     //context.mouse_position += Vec2::new(x, y);
+    //     context.mouse_raw_delta = vec2(x, y);
+    //     // if context.cursor_grabbed {
+    //     //     //context.mouse_position += Vec2::new(x, y);
 
-        //     let event = MiniquadInputEvent::MouseMotion {
-        //         x: context.mouse_position.x,
-        //         y: context.mouse_position.y,
-        //     };
-        //     context
-        //         .input_events
-        //         .iter_mut()
-        //         .for_each(|arr| arr.push(event.clone()));
-        // }
-    }
-
-    fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        let context = get_context();
-
-        if !context.cursor_grabbed {
-            context.mouse_position = Vec2::new(x, y);
-
-            context
-                .input_events
-                .iter_mut()
-                .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
-        }
-    }
-
-    fn mouse_wheel_event(&mut self, x: f32, y: f32) {
-        let context = get_context();
-
-        context.mouse_wheel.x = x;
-        context.mouse_wheel.y = y;
-
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::MouseWheel { x, y }));
-    }
+    //     //     let event = MiniquadInputEvent::MouseMotion {
+    //     //         x: context.mouse_position.x,
+    //     //         y: context.mouse_position.y,
+    //     //     };
+    //     //     context
+    //     //         .input_events
+    //     //         .iter_mut()
+    //     //         .for_each(|arr| arr.push(event.clone()));
+    //     // }
+    // }
 
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
+        println!("down");
+        let mut context = self.ctx.input.lock().unwrap();
 
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
 
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
+        // context
+        //     .input_events
+        //     .iter_mut()
+        //     .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
 
-        if !context.cursor_grabbed {
-            context.mouse_position = Vec2::new(x, y);
-        }
+        // if !context.cursor_grabbed {
+        //     context.mouse_position = Vec2::new(x, y);
+        // }
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
+        println!("up");
+
+        let mut context = self.ctx.input.lock().unwrap();
 
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
 
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
+        // context
+        //     .input_events
+        //     .iter_mut()
+        //     .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
 
-        if !context.cursor_grabbed {
-            context.mouse_position = Vec2::new(x, y);
-        }
+        // if !context.cursor_grabbed {
+        //     context.mouse_position = Vec2::new(x, y);
+        // }
     }
 
-    fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
-        let context = get_context();
+    fn mouse_motion_event(&mut self, x: f32, y: f32) {
+        let mut context = self.ctx.input.lock().unwrap();
 
-        context.touches.insert(
-            id,
-            input::Touch {
-                id,
-                phase: phase.into(),
-                position: Vec2::new(x, y),
-            },
-        );
-
-        if context.simulate_mouse_with_touch {
-            if phase == TouchPhase::Started {
-                self.mouse_button_down_event(MouseButton::Left, x, y);
-            }
-
-            if phase == TouchPhase::Ended {
-                self.mouse_button_up_event(MouseButton::Left, x, y);
-            }
-
-            if phase == TouchPhase::Moved {
-                self.mouse_motion_event(x, y);
-            }
-        };
-
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::Touch { phase, id, x, y }));
+        //if !context.cursor_grabbed {
+        context.mouse_position = Vec2::new(x, y);
+        //}
+        //     context
+        //         .input_events
+        //         .iter_mut()
+        //         .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
+        // }
     }
 
-    fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
-        let context = get_context();
+    // fn mouse_wheel_event(&mut self, x: f32, y: f32) {
+    //     let context = get_context();
 
-        context.chars_pressed_queue.push(character);
-        context.chars_pressed_ui_queue.push(character);
+    //     context.mouse_wheel.x = x;
+    //     context.mouse_wheel.y = y;
 
-        context.input_events.iter_mut().for_each(|arr| {
-            arr.push(MiniquadInputEvent::Char {
-                character,
-                modifiers,
-                repeat,
-            })
-        });
-    }
+    //     context
+    //         .input_events
+    //         .iter_mut()
+    //         .for_each(|arr| arr.push(MiniquadInputEvent::MouseWheel { x, y }));
+    // }
 
-    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
-        let context = get_context();
-        context.keys_down.insert(keycode);
-        if repeat == false {
-            context.keys_pressed.insert(keycode);
-        }
+    // fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
+    //     let context = get_context();
 
-        context.input_events.iter_mut().for_each(|arr| {
-            arr.push(MiniquadInputEvent::KeyDown {
-                keycode,
-                modifiers,
-                repeat,
-            })
-        });
-    }
+    //     context.touches.insert(
+    //         id,
+    //         input::Touch {
+    //             id,
+    //             phase: phase.into(),
+    //             position: Vec2::new(x, y),
+    //         },
+    //     );
 
-    fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
-        let context = get_context();
-        context.keys_down.remove(&keycode);
-        context.keys_released.insert(keycode);
+    //     if context.simulate_mouse_with_touch {
+    //         if phase == TouchPhase::Started {
+    //             self.mouse_button_down_event(MouseButton::Left, x, y);
+    //         }
 
-        context
-            .input_events
-            .iter_mut()
-            .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
-    }
+    //         if phase == TouchPhase::Ended {
+    //             self.mouse_button_up_event(MouseButton::Left, x, y);
+    //         }
+
+    //         if phase == TouchPhase::Moved {
+    //             self.mouse_motion_event(x, y);
+    //         }
+    //     };
+
+    //     context
+    //         .input_events
+    //         .iter_mut()
+    //         .for_each(|arr| arr.push(MiniquadInputEvent::Touch { phase, id, x, y }));
+    // }
+
+    // fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
+    //     let context = get_context();
+
+    //     context.chars_pressed_queue.push(character);
+    //     context.chars_pressed_ui_queue.push(character);
+
+    //     context.input_events.iter_mut().for_each(|arr| {
+    //         arr.push(MiniquadInputEvent::Char {
+    //             character,
+    //             modifiers,
+    //             repeat,
+    //         })
+    //     });
+    // }
+
+    // fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
+    //     let context = get_context();
+    //     context.keys_down.insert(keycode);
+    //     if repeat == false {
+    //         context.keys_pressed.insert(keycode);
+    //     }
+
+    //     context.input_events.iter_mut().for_each(|arr| {
+    //         arr.push(MiniquadInputEvent::KeyDown {
+    //             keycode,
+    //             modifiers,
+    //             repeat,
+    //         })
+    //     });
+    // }
+
+    // fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
+    //     let context = get_context();
+    //     context.keys_down.remove(&keycode);
+    //     context.keys_released.insert(keycode);
+
+    //     context
+    //         .input_events
+    //         .iter_mut()
+    //         .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
+    // }
 
     fn update(&mut self) {
         let _z = telemetry::ZoneGuard::new("Event::update");
@@ -544,7 +490,7 @@ impl EventHandler for Stage {
     }
 
     fn draw(&mut self) {
-        {
+	        {
             let _z = telemetry::ZoneGuard::new("Event::draw");
 
             use std::panic;
@@ -585,6 +531,7 @@ impl EventHandler for Stage {
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
                 get_context().end_frame();
+                self.ctx.input.lock().unwrap().end_frame();
                 let mut ctx = self.ctx.quad_ctx.lock().unwrap();
                 ctx.commit_frame()
             }
@@ -627,6 +574,7 @@ impl EventHandler for Stage {
 #[derive(Clone)]
 pub struct Context3 {
     pub quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
+    pub(crate) input: Arc<Mutex<input::InputContext>>,
     textures: Arc<Mutex<crate::texture::TexturesContext>>,
     fonts_storage: Arc<Mutex<text::FontsStorage>>,
 }
@@ -641,6 +589,7 @@ impl Context3 {
             quad_ctx: Arc::new(Mutex::new(ctx)),
             fonts_storage: Arc::new(Mutex::new(fonts_storage)),
             textures: Arc::new(Mutex::new(textures)),
+            input: Arc::new(Mutex::new(input::InputContext::new())),
         }
     }
 
@@ -658,7 +607,7 @@ pub fn start<F: Fn(Context3) -> Fut + 'static, Fut: Future<Output = ()> + 'stati
     future: F,
 ) {
     miniquad::start(conf::Conf { ..config }, move || {
-        unsafe { CONTEXT = Some(Context::new()) };
+        unsafe { CONTEXT = Some(ContextOld::new()) };
         let ctx = Context3::new();
         Box::new(Stage {
             main_future: Some(Box::pin(future(ctx.clone()))),

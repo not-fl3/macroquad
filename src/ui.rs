@@ -1185,64 +1185,64 @@ impl Ui {
     }
 
     pub fn grab_input(&mut self) {
-        use crate::prelude::*;
-        use crate::ui::{self, InputHandler};
+        // use crate::prelude::*;
+        // use crate::ui::{self, InputHandler};
 
-        let mouse_position = mouse_position();
+        // let mouse_position = mouse_position();
 
-        self.mouse_move((mouse_position.x, mouse_position.y));
+        // self.mouse_move((mouse_position.x, mouse_position.y));
 
-        if is_mouse_button_pressed(MouseButton::Left) {
-            self.mouse_down((mouse_position.x, mouse_position.y));
-        }
-        if is_mouse_button_released(MouseButton::Left) {
-            self.mouse_up((mouse_position.x, mouse_position.y));
-        }
+        // if is_mouse_button_pressed(MouseButton::Left) {
+        //     self.mouse_down((mouse_position.x, mouse_position.y));
+        // }
+        // if is_mouse_button_released(MouseButton::Left) {
+        //     self.mouse_up((mouse_position.x, mouse_position.y));
+        // }
 
-        let shift = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
-        let ctrl = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
+        // let shift = is_key_down(KeyCode::LeftShift) || is_key_down(KeyCode::RightShift);
+        // let ctrl = is_key_down(KeyCode::LeftControl) || is_key_down(KeyCode::RightControl);
 
-        while let Some(c) = get_char_pressed_ui() {
-            if ctrl == false {
-                self.char_event(c, false, false);
-            }
-        }
+        // while let Some(c) = get_char_pressed_ui() {
+        //     if ctrl == false {
+        //         self.char_event(c, false, false);
+        //     }
+        // }
 
-        macro_rules! process {
-            ($code:tt) => {
-                if is_key_pressed(KeyCode::$code) || is_key_down(KeyCode::$code) {
-                    self.key_down(ui::KeyCode::$code, shift, ctrl);
-                }
-            };
-        }
+        // macro_rules! process {
+        //     ($code:tt) => {
+        //         if is_key_pressed(KeyCode::$code) || is_key_down(KeyCode::$code) {
+        //             self.key_down(ui::KeyCode::$code, shift, ctrl);
+        //         }
+        //     };
+        // }
 
-        process!(Up);
-        process!(Down);
-        process!(Right);
-        process!(Left);
-        process!(Home);
-        process!(End);
-        process!(Delete);
-        process!(Backspace);
-        process!(Tab);
-        process!(Z);
-        process!(Y);
-        process!(C);
-        process!(X);
-        process!(V);
-        process!(A);
-        process!(Escape);
-        process!(Enter);
+        // process!(Up);
+        // process!(Down);
+        // process!(Right);
+        // process!(Left);
+        // process!(Home);
+        // process!(End);
+        // process!(Delete);
+        // process!(Backspace);
+        // process!(Tab);
+        // process!(Z);
+        // process!(Y);
+        // process!(C);
+        // process!(X);
+        // process!(V);
+        // process!(A);
+        // process!(Escape);
+        // process!(Enter);
 
-        if is_key_down(KeyCode::LeftControl)
-            || is_key_down(KeyCode::RightControl)
-            || is_key_pressed(KeyCode::LeftControl)
-            || is_key_pressed(KeyCode::RightControl)
-        {
-            self.key_down(ui::KeyCode::Control, shift, ctrl);
-        }
-        let (wheel_x, wheel_y) = mouse_wheel();
-        self.mouse_wheel(wheel_x, -wheel_y);
+        // if is_key_down(KeyCode::LeftControl)
+        //     || is_key_down(KeyCode::RightControl)
+        //     || is_key_pressed(KeyCode::LeftControl)
+        //     || is_key_pressed(KeyCode::RightControl)
+        // {
+        //     self.key_down(ui::KeyCode::Control, shift, ctrl);
+        // }
+        // let (wheel_x, wheel_y) = mouse_wheel();
+        // self.mouse_wheel(wheel_x, -wheel_y);
     }
 
     pub fn draw(&mut self, canvas: &mut crate::sprite_layer::SpriteLayer) {
@@ -1281,7 +1281,8 @@ impl Ui {
         std::mem::swap(&mut ui_draw_list, &mut draw_list);
 
         drop(atlas);
-        self.new_frame(crate::time::get_frame_time());
+        //self.new_frame(crate::time::get_frame_time());
+        unimplemented!();
 
         self.ui_draw_list = Some(draw_list);
     }

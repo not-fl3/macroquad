@@ -219,7 +219,7 @@ impl MagicSnapshotter {
             )
             .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
-        let pipeline = ctx.new_pipeline_with_params(
+        let pipeline = ctx.new_pipeline(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("position", VertexFormat::Float2),

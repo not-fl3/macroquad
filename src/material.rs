@@ -37,7 +37,7 @@ impl Material {
         // TODO!
         let wants_screen_texture = false;
 
-        let pipeline_2d = ctx.new_pipeline_with_params(
+        let pipeline_2d = ctx.new_pipeline(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("position", VertexFormat::Float3),
@@ -48,7 +48,7 @@ impl Material {
             params,
         );
 
-        let pipeline_3d = ctx.new_pipeline_with_params(
+        let pipeline_3d = ctx.new_pipeline(
             &[
                 BufferLayout::default(),
                 BufferLayout::default(),

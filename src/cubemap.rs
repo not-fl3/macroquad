@@ -118,7 +118,7 @@ impl Cubemap {
             )
             .unwrap();
 
-        let display_pipeline = ctx.new_pipeline_with_params(
+        let display_pipeline = ctx.new_pipeline(
             &[BufferLayout::default()],
             &[
                 VertexAttribute::new("in_pos", VertexFormat::Float3),

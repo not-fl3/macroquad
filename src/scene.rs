@@ -256,7 +256,7 @@ impl crate::Context3 {
                     .new_shader(shader, shader::meta())
                     .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
-                let pipeline = ctx.new_pipeline_with_params(
+                let pipeline = ctx.new_pipeline(
                     &[
                         BufferLayout::default(),
                         BufferLayout::default(),
@@ -603,7 +603,7 @@ impl Scene {
                 //depth_view_proj = proj * view;
 
                 let projection = proj * view;
-                let time = (crate::time::get_time()) as f32;
+                let time = (miniquad::date::now()) as f32;
                 let time = glam::vec4(time, time.sin(), time.cos(), 0.);
 
                 let model = transform * node.transform.matrix();

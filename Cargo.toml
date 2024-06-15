@@ -26,10 +26,10 @@ opt-level = 3
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.4.0-alpha.10", features = ["log-impl"] }
+miniquad = { version = "=0.4.0", features = ["log-impl"] }
 quad-rand = "0.2.1"
-glam = {version = "0.24", features = ["scalar-math"] }
-fontdue = "0.7"
+glam = {version = "0.24", features = ["scalar-math","mint"] }
+fontdue = { version = "0.8", default-features=false, features = ["std"] }
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
@@ -54,7 +54,9 @@ macroquad = { path = './' }
 
 #quad-snd = {path = '../quad-snd'}
 miniquad = { path = '../miniquad' }
+#fontdue = { git = 'https://github.com/not-fl3/fontdue.git' }
+fontdue = { path = '../fontdue' }
 #quad-gl = {path = './quad-gl'}
-zune-jpeg = { path = "../zune-image/zune-jpeg" }
-zune-png = { path = "../zune-image/zune-png" }
-zune-core = { path = "../zune-image/zune-core" }
+#zune-jpeg = { path = "../zune-image/zune-jpeg" }
+#zune-png = { path = "../zune-image/zune-png" }
+#zune-core = { path = "../zune-image/zune-core" }

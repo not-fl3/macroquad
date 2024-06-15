@@ -78,6 +78,7 @@ mod debugquad {
                     VertexAttribute::new("in_uv", VertexFormat::Float2),
                 ],
                 shader,
+                Default::default(),
             );
 
             DebugQuad { pipeline, bindings }
@@ -222,7 +223,7 @@ impl ShadowMap {
         };
         let offscreen_shader = ctx.new_shader(source, offscreen_shader::meta()).unwrap();
 
-        let shadow_pipeline = ctx.new_pipeline_with_params(
+        let shadow_pipeline = ctx.new_pipeline(
             &[
                 BufferLayout::default(),
                 BufferLayout::default(),
@@ -363,7 +364,7 @@ pub fn light_view_porijection_matrices(
     let mut res = vec![Default::default(); 4];
 
     let light_view = Mat4::look_at_rh(
-        light_dir, // + middle,
+        light_dir,           // + middle,
         vec3(0.0, 0.0, 0.0), // + middle,
         vec3(0.0, 1.0, 0.0),
     );

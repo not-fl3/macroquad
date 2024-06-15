@@ -173,7 +173,7 @@ impl Scene {
             .new_shader(shader, scene::shader::meta())
             .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
-        let pipeline = quad_ctx.new_pipeline_with_params(
+        let pipeline = quad_ctx.new_pipeline(
             &[
                 BufferLayout::default(),
                 BufferLayout::default(),

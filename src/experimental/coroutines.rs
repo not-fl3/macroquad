@@ -241,18 +241,19 @@ impl Future for TimerDelayFuture {
     type Output = Option<()>;
 
     fn poll(mut self: Pin<&mut Self>, _: &mut Context) -> Poll<Self::Output> {
-        let delta = get_context()
-            .coroutines_context
-            .active_coroutine_delta
-            .unwrap_or(crate::time::get_frame_time() as _);
+        // let delta = get_context()
+        //     .coroutines_context
+        //     .active_coroutine_delta
+        //     .unwrap_or(crate::time::get_frame_time() as _);
 
-        self.remaining_time -= delta as f32;
+        // self.remaining_time -= delta as f32;
 
-        if self.remaining_time <= 0.0 {
-            Poll::Ready(Some(()))
-        } else {
-            Poll::Pending
-        }
+        // if self.remaining_time <= 0.0 {
+        //     Poll::Ready(Some(()))
+        // } else {
+        //     Poll::Pending
+        // }
+        unimplemented!()
     }
 }
 
