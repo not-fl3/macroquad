@@ -67,7 +67,7 @@ fn draw_text_annotated(text: &str, font: Option<&Font>, x: f32, baseline: f32) {
         text,
         x,
         baseline,
-        TextParams {
+        &TextParams {
             font_size: 100,
             font,
             ..Default::default()

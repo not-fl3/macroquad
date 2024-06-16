@@ -286,7 +286,7 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
         text,
         x,
         y,
-        TextParams {
+        &TextParams {
             font_size: font_size as u16,
             font_scale: 1.0,
             color,
@@ -296,7 +296,7 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
 }
 
 /// Draw text with custom params such as font, font size and font scale.
-pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
+pub fn draw_text_ex(text: &str, x: f32, y: f32, params: &TextParams) {
     let font = params
         .font
         .unwrap_or(&get_context().fonts_storage.default_font);

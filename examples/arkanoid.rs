@@ -53,7 +53,7 @@ async fn main() {
                 "Press space to start",
                 SCR_W / 2. - 5.,
                 SCR_H / 2.,
-                text_params,
+                &text_params,
             );
 
             ball_x = platform_x;
