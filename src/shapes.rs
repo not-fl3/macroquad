@@ -370,3 +370,40 @@ pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Colo
         &[0, 1, 2, 2, 1, 3],
     );
 }
+
+/// Draw arc from `rotation`(in degrees) to `arc + rotation` (`arc` in degrees), 
+/// centered at `[x, y]` with a given number of `sides`, `radius`, line `thickness`, and `color`.
+fn draw_arc(
+    x: f32,
+    y: f32,
+    sides: u8,
+    radius: f32,
+    rotation: f32,
+    thickness: f32,
+    arc: f32,
+    color: Color,
+) {
+    fn midpoint(x1: f32, y1: f32, x2: f32, y2: f32) -> (f32, f32) {
+        return ((x1 + x2) / 2., (y1 + y2) / 2.);
+    }
+
+    let rot = rotation.to_radians();
+    let part = arc.to_radians();
+
+    for i in 0..sides {
+        let angle = i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot;
+        let p0 = vec2(x + radius * angle.cos(), y + radius * angle.sin());
+
+        let angle = (i + 1) as f32 / sides as f32 * std::f32::consts::PI * 2. + rot;
+        if angle > part + rot {
+            continue;
+        }
+        let p1 = vec2(x + radius * angle.cos(), y + radius * angle.sin());
+
+        let (mx, my) = midpoint(p0.x, p0.y, p1.x, p1.y);
+        let v = (vec2(x, y) - vec2(mx, my)).normalize() * (thickness / 2.);
+        let p0 = p0 + v;
+        let p1 = p1 + v;
+        draw_line(p0.x, p0.y, p1.x, p1.y, thickness, color);
+    }
+}
