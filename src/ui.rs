@@ -91,6 +91,7 @@ pub type Id = u64;
 pub enum UiContent<'a> {
     Label(Cow<'a, str>),
     Texture(crate::texture::Texture2D),
+    AtlasTexture(crate::texture::Texture2D, crate::math::Rect),
 }
 
 impl<'a> From<&'a str> for UiContent<'a> {

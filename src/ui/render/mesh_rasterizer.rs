@@ -261,6 +261,18 @@ fn get_active_draw_list<'a, 'b>(
                 });
             }
         }
+        DrawCommand::DrawRawAtlasTexture { texture, .. } => {
+            let texture = Some(texture.clone());
+            if last.texture != texture {
+                let clipping_zone = last.clipping_zone;
+
+                draw_lists.push(DrawList {
+                    texture,
+                    clipping_zone,
+                    ..DrawList::new()
+                });
+            }
+        }
         DrawCommand::DrawCharacter { .. }
         | DrawCommand::DrawLine { .. }
         | DrawCommand::DrawRect { .. }
@@ -338,6 +350,13 @@ pub(crate) fn render_command(draw_lists: &mut Vec<DrawList>, command: DrawComman
             active_draw_list.draw_rectangle(
                 rect,
                 Rect::new(0., 0., 1., 1.),
+                Color::new(1., 1., 1., 1.),
+            );
+        }
+        DrawCommand::DrawRawAtlasTexture { src, dst, .. } => {
+            active_draw_list.draw_rectangle(
+                dst,
+                src,
                 Color::new(1., 1., 1., 1.),
             );
         }

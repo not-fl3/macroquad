@@ -1,10 +1,13 @@
 //! Color types and helpers.
 
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
 pub use colors::*;
 
 /// A color represented by 4 floats: red, green, blue and alpha.
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Color {
     /// Red channel value from 0.0 to 1.0
     pub r: f32,
