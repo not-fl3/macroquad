@@ -497,6 +497,10 @@ impl EventHandler for Stage {
         let _z = telemetry::ZoneGuard::new("Event::resize_event");
         get_context().screen_width = width;
         get_context().screen_height = height;
+
+        if miniquad::window::blocking_event_loop() {
+            miniquad::window::schedule_update();
+        }
     }
 
     fn raw_mouse_motion(&mut self, x: f32, y: f32) {
@@ -604,6 +608,8 @@ impl EventHandler for Stage {
             if phase == TouchPhase::Moved {
                 self.mouse_motion_event(x, y);
             }
+        } else if miniquad::window::blocking_event_loop() {
+            miniquad::window::schedule_update();
         };
 
         context
@@ -746,6 +752,10 @@ impl EventHandler for Stage {
     fn window_restored_event(&mut self) {
         #[cfg(target_os = "android")]
         get_context().audio_context.resume();
+        #[cfg(target_os = "android")]
+        if miniquad::window::blocking_event_loop() {
+            miniquad::window::schedule_update();
+        }
     }
 
     fn window_minimized_event(&mut self) {
