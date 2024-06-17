@@ -224,6 +224,7 @@ struct Context {
     quad_context: Box<dyn miniquad::RenderingBackend>,
 
     textures: crate::texture::TexturesContext,
+    update_on: conf::UpdateTrigger,
 }
 
 #[derive(Clone)]
@@ -350,6 +351,7 @@ impl Context {
 
             quad_context: ctx,
             textures: crate::texture::TexturesContext::new(),
+            update_on: Default::default(),
         }
     }
 
@@ -554,7 +556,7 @@ impl EventHandler for Stage {
             context.mouse_position = Vec2::new(x, y);
         }
 
-        if miniquad::window::blocking_event_loop() {
+        if context.update_on.mouse_down {
             miniquad::window::schedule_update();
         }
     }
@@ -573,7 +575,7 @@ impl EventHandler for Stage {
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
         }
-        if miniquad::window::blocking_event_loop() {
+        if context.update_on.mouse_up {
             miniquad::window::schedule_update();
         }
     }
@@ -639,7 +641,12 @@ impl EventHandler for Stage {
                 repeat,
             })
         });
-        if miniquad::window::blocking_event_loop() {
+        if context
+            .update_on
+            .specific_key
+            .as_ref()
+            .map_or(context.update_on.key_down, |keys| keys.contains(&keycode))
+        {
             miniquad::window::schedule_update();
         }
     }
@@ -655,7 +662,7 @@ impl EventHandler for Stage {
             .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
 
         if miniquad::window::blocking_event_loop() {
-            miniquad::window::schedule_update();
+            //miniquad::window::schedule_update();
         }
     }
 
@@ -755,6 +762,36 @@ impl EventHandler for Stage {
     }
 }
 
+pub mod conf {
+    #[derive(Default, Debug)]
+    pub struct UpdateTrigger {
+        pub resize: bool,
+        pub key_down: bool,
+        pub mouse_down: bool,
+        pub mouse_up: bool,
+        pub specific_key: Option<Vec<crate::KeyCode>>,
+    }
+
+    #[derive(Default, Debug)]
+    pub struct Conf {
+        pub miniquad_conf: miniquad::conf::Conf,
+        /// With miniquad_conf.platform.blocking_event_loop = true,
+        /// next_frame().await will never finish and will wait forever with
+        /// zero CPU usage.
+        /// update_on will tell macroquad when to proceed with the event loop.
+        pub update_on: Option<UpdateTrigger>,
+    }
+}
+
+impl From<miniquad::conf::Conf> for conf::Conf {
+    fn from(conf: miniquad::conf::Conf) -> conf::Conf {
+        conf::Conf {
+            miniquad_conf: conf,
+            update_on: None,
+        }
+    }
+}
+
 /// Not meant to be used directly, only from the macro.
 #[doc(hidden)]
 pub struct Window {}
@@ -763,21 +800,30 @@ impl Window {
     pub fn new(label: &str, future: impl Future<Output = ()> + 'static) {
         Window::from_config(
             conf::Conf {
-                window_title: label.to_string(),
-                //high_dpi: true,
+                miniquad_conf: miniquad::conf::Conf {
+                    window_title: label.to_string(),
+                    //high_dpi: true,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             future,
         );
     }
 
-    pub fn from_config(config: conf::Conf, future: impl Future<Output = ()> + 'static) {
-        miniquad::start(config, move || {
+    pub fn from_config(config: impl Into<conf::Conf>, future: impl Future<Output = ()> + 'static) {
+        let conf::Conf {
+            miniquad_conf,
+            update_on,
+        } = config.into();
+        miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
             unsafe {
                 MAIN_FUTURE = Some(Box::pin(future));
             }
-            unsafe { CONTEXT = Some(Context::new()) };
+            let mut context = Context::new();
+            context.update_on = update_on.unwrap_or_default();
+            unsafe { CONTEXT = Some(context) };
 
             Box::new(Stage {})
         });
