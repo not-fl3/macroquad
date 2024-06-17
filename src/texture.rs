@@ -891,5 +891,4 @@ pub unsafe fn reset_textures_atlas() {
     let context = get_context();
     context.fonts_storage = crate::text::FontsStorage::new(&mut *context.quad_context);
     context.texture_batcher = Batcher::new(&mut *context.quad_context);
-
 }

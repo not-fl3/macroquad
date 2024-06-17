@@ -75,8 +75,14 @@ pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, colo
     context.gl.geometry(&vertices, &indices);
 }
 
-
-pub fn draw_rectangle_lines_ex(x: f32, y: f32, w: f32, h: f32, thickness: f32, params: DrawRectangleParams ) {
+pub fn draw_rectangle_lines_ex(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    thickness: f32,
+    params: DrawRectangleParams,
+) {
     let context = get_context();
     let tx = thickness / w;
     let ty = thickness / h;
@@ -371,7 +377,7 @@ pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Colo
     );
 }
 
-/// Draw arc from `rotation`(in degrees) to `arc + rotation` (`arc` in degrees), 
+/// Draw arc from `rotation`(in degrees) to `arc + rotation` (`arc` in degrees),
 /// centered at `[x, y]` with a given number of `sides`, `radius`, line `thickness`, and `color`.
 fn draw_arc(
     x: f32,
