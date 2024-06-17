@@ -608,7 +608,7 @@ impl EventHandler for Stage {
             if phase == TouchPhase::Moved {
                 self.mouse_motion_event(x, y);
             }
-        } else if miniquad::window::blocking_event_loop() {
+        } else if context.update_on.touch {
             miniquad::window::schedule_update();
         };
 
@@ -775,11 +775,11 @@ impl EventHandler for Stage {
 pub mod conf {
     #[derive(Default, Debug)]
     pub struct UpdateTrigger {
-        pub resize: bool,
         pub key_down: bool,
         pub mouse_down: bool,
         pub mouse_up: bool,
         pub specific_key: Option<Vec<crate::KeyCode>>,
+        pub touch: bool,
     }
 
     #[derive(Default, Debug)]
