@@ -882,3 +882,14 @@ pub fn build_textures_atlas() {
     let (w, h) = get_quad_context().texture_size(texture);
     crate::telemetry::log_string(&format!("Atlas: {} {}", w, h));
 }
+
+#[doc(hidden)]
+/// Macroquad do not have track of all loaded fonts.
+/// Fonts store their characters as ID's in the atlas.
+/// There fore resetting the atlas will render all fonts unusable.
+pub unsafe fn reset_textures_atlas() {
+    let context = get_context();
+    context.fonts_storage = crate::text::FontsStorage::new(&mut *context.quad_context);
+    context.texture_batcher = Batcher::new(&mut *context.quad_context);
+
+}
