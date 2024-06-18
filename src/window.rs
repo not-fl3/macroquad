@@ -1,8 +1,6 @@
 //! Window and associated to window rendering context related functions.
 
-use crate::get_context;
-
-use crate::color::Color;
+use quad_gl::color::Color;
 
 // miniquad is re-exported for the use in combination with `get_internal_gl`
 pub use miniquad;
@@ -23,29 +21,29 @@ pub fn gl_set_drawcall_buffer_capacity(_max_vertices: usize, _max_indices: usize
     unimplemented!()
 }
 
-pub struct InternalGlContext<'a> {
-    pub quad_ctx: &'a mut dyn miniquad::RenderingBackend,
-    pub quad_gl: &'a mut crate::quad_gl::QuadGl,
-}
+// pub struct InternalGlContext<'a> {
+//     pub quad_ctx: &'a mut dyn miniquad::RenderingBackend,
+//     pub quad_gl: &'a mut crate::quad_gl::QuadGl,
+// }
 
-impl<'a> InternalGlContext<'a> {
-    /// Draw all the batched stuff and reset the internal state cache
-    /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
-    pub fn flush(&mut self) {
-        //get_context().perform_render_passes();
-        unimplemented!()
-    }
-}
+// impl<'a> InternalGlContext<'a> {
+//     /// Draw all the batched stuff and reset the internal state cache
+//     /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
+//     pub fn flush(&mut self) {
+//         //get_context().perform_render_passes();
+//         unimplemented!()
+//     }
+// }
 
-pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
-    // let context = get_context();
+// pub unsafe fn get_internal_gl<'a>() -> InternalGlContext<'a> {
+//     // let context = get_context();
 
-    // InternalGlContext {
-    //     quad_ctx: get_quad_ctx(),
-    //     quad_gl: &mut context.gl,
-    // }
-    unimplemented!()
-}
+//     // InternalGlContext {
+//     //     quad_ctx: get_quad_ctx(),
+//     //     quad_gl: &mut context.gl,
+//     // }
+//     unimplemented!()
+// }
 
 pub fn screen_width() -> f32 {
     miniquad::window::screen_size().0
@@ -118,8 +116,8 @@ where
         crate::logging::error!("{}", message);
         crate::logging::error!("{}", backtrace_string);
 
-        crate::get_context().recovery_future = Some(Box::pin(future(message, backtrace_string)));
+        //crate::get_context().recovery_future = Some(Box::pin(future(message, backtrace_string)));
     }));
 
-    crate::get_context().unwind = true;
+    //crate::get_context().unwind = true;
 }

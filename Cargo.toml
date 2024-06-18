@@ -26,7 +26,7 @@ opt-level = 3
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.4.0", features = ["log-impl"] }
+miniquad = { version = "0.4", features = ["log-impl"] }
 quad-rand = "0.2.1"
 glam = {version = "0.24", features = ["scalar-math","mint"] }
 fontdue = { version = "0.8", default-features=false, features = ["std"] }
@@ -34,11 +34,12 @@ backtrace = { version = "0.3.60", optional = true, default-features = false, fea
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
 slotmap = "1.0"
-nanogltf = { path = "../nanogltf" }
-shadermagic = { path = "../shadermagic" }
+nanogltf = "0.1"
+shadermagic = "0.1"
 zune-jpeg = "*"
 zune-png = "*"
 zune-core = "*"
+quad-gl = { git = "https://github.com/not-fl3/quad-gl", branch = "v0.4" }
 
 [dev-dependencies]
 dolly = "*"
@@ -48,7 +49,11 @@ dolly = "*"
 #macroquad-platformer = { path = "./physics-platformer" }
 
 # workaround to fix the examples
-# this allows to use macroquad-particles in examples without two versions of macroquad
+# this allows to use macroquad-particles in examples without two versions of 
+
+[patch."https://github.com/not-fl3/quad-gl"]
+quad-gl = { path = '../quad-gl' }
+
 [patch.crates-io]
 macroquad = { path = './' }
 

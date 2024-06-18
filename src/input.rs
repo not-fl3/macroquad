@@ -1,10 +1,6 @@
 //! Cross-platform mouse, keyboard (and gamepads soon) module.
 
-use crate::{
-    vec2,
-    window::{screen_height, screen_width},
-    Context3, Vec2,
-};
+use crate::{vec2, Context, Vec2};
 pub use miniquad::{KeyCode, MouseButton};
 
 use std::collections::{HashMap, HashSet};
@@ -54,7 +50,7 @@ impl InputContext {
         self.mouse_pressed.clear();
         self.mouse_released.clear();
 
-        self.last_mouse_position = Some(self.mouse_position_local());
+        //self.last_mouse_position = Some(self.mouse_position_local());
 
         // remove all touches that were Ended or Cancelled
         self.touches.retain(|_, touch| {
@@ -186,7 +182,7 @@ pub struct Touch {
 //     context.keys_pressed.iter().next().cloned()
 // }
 
-impl Context3 {
+impl Context {
     /// Detect if the button is being pressed
     pub fn is_mouse_button_down(&self, btn: MouseButton) -> bool {
         let context = self.input.lock().unwrap();
@@ -194,17 +190,17 @@ impl Context3 {
         context.mouse_down.contains(&btn)
     }
 
-    /// Returns the difference between the current mouse position and the mouse position on the previous frame.
-    pub fn mouse_delta(&self) -> Vec2 {
-        let current_position = self.mouse_position_local();
-        let context = self.input.lock().unwrap();
-        let last_position = context.last_mouse_position.unwrap_or(current_position);
+    // /// Returns the difference between the current mouse position and the mouse position on the previous frame.
+    // pub fn mouse_delta(&self) -> Vec2 {
+    //     let current_position = self.mouse_position_local();
+    //     let context = self.input.lock().unwrap();
+    //     let last_position = context.last_mouse_position.unwrap_or(current_position);
 
-        // Calculate the delta
-        let delta = last_position - current_position;
+    //     // Calculate the delta
+    //     let delta = last_position - current_position;
 
-        delta
-    }
+    //     delta
+    // }
 
     pub fn mouse_wheel(&self) -> (f32, f32) {
         let context = self.input.lock().unwrap();
@@ -222,20 +218,20 @@ impl Context3 {
         )
     }
 
-    /// Return mouse position in range [-1; 1].
-    pub fn mouse_position_local(&self) -> Vec2 {
-        let m = self.mouse_position();
+    // /// Return mouse position in range [-1; 1].
+    // pub fn mouse_position_local(&self) -> Vec2 {
+    //     let m = self.mouse_position();
 
-        self.convert_to_local(m)
-    }
+    //     self.convert_to_local(m)
+    // }
 
-    /// Convert a position in pixels to a position in the range [-1; 1].
-    fn convert_to_local(&self, pixel_pos: Vec2) -> Vec2 {
-        let context = self.input.lock().unwrap();
+    // /// Convert a position in pixels to a position in the range [-1; 1].
+    // fn convert_to_local(&self, pixel_pos: Vec2) -> Vec2 {
+    //     let context = self.input.lock().unwrap();
 
-        Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0
-            - Vec2::new(1.0, 1.0)
-    }
+    //     Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0
+    //         - Vec2::new(1.0, 1.0)
+    // }
 }
 
 impl InputContext {
@@ -247,18 +243,18 @@ impl InputContext {
         )
     }
 
-    /// Return mouse position in range [-1; 1].
-    pub fn mouse_position_local(&self) -> Vec2 {
-        let m = self.mouse_position();
+    // /// Return mouse position in range [-1; 1].
+    // pub fn mouse_position_local(&self) -> Vec2 {
+    //     let m = self.mouse_position();
 
-        self.convert_to_local(m)
-    }
+    //     self.convert_to_local(m)
+    // }
 
-    /// Convert a position in pixels to a position in the range [-1; 1].
-    fn convert_to_local(&self, pixel_pos: Vec2) -> Vec2 {
-        Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0
-            - Vec2::new(1.0, 1.0)
-    }
+    // /// Convert a position in pixels to a position in the range [-1; 1].
+    // fn convert_to_local(&self, pixel_pos: Vec2) -> Vec2 {
+    //     Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0
+    //         - Vec2::new(1.0, 1.0)
+    // }
 }
 // /// Detect if the button has been pressed once
 // pub fn is_mouse_button_pressed(btn: MouseButton) -> bool {
