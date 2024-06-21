@@ -531,6 +531,10 @@ impl EventHandler for Stage {
                 .iter_mut()
                 .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
         }
+
+        if context.update_on.mouse_motion {
+            miniquad::window::schedule_update();
+        }
     }
 
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
@@ -543,6 +547,10 @@ impl EventHandler for Stage {
             .input_events
             .iter_mut()
             .for_each(|arr| arr.push(MiniquadInputEvent::MouseWheel { x, y }));
+
+        if context.update_on.mouse_wheel {
+            miniquad::window::schedule_update();
+        }
     }
 
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
@@ -778,6 +786,8 @@ pub mod conf {
         pub key_down: bool,
         pub mouse_down: bool,
         pub mouse_up: bool,
+        pub mouse_motion: bool,
+        pub mouse_wheel: bool,
         pub specific_key: Option<Vec<crate::KeyCode>>,
         pub touch: bool,
     }
