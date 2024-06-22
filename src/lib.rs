@@ -40,6 +40,7 @@ use miniquad::*;
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
+use std::mem::ManuallyDrop;
 use std::pin::Pin;
 
 mod exec;
@@ -452,7 +453,7 @@ impl Context {
 }
 
 #[no_mangle]
-static mut CONTEXT: Option<Context> = None;
+static mut CONTEXT: ManuallyDrop<Option<Context>> = ManuallyDrop::new(None);
 
 // This is required for #[macroquad::test]
 //
@@ -843,7 +844,7 @@ impl Window {
             }
             let mut context = Context::new();
             context.update_on = update_on.unwrap_or_default();
-            unsafe { CONTEXT = Some(context) };
+            unsafe { CONTEXT = ManuallyDrop::new(Some(context)) };
 
             Box::new(Stage {})
         });
