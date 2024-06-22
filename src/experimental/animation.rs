@@ -40,7 +40,7 @@
 //!         clear_background(WHITE);
 //!         // Now we can draw our character
 //!         draw_texture_ex(
-//!             image,
+//!             &image,
 //!             10.,
 //!             10.,
 //!             WHITE,
