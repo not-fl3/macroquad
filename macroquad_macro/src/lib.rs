@@ -134,11 +134,7 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
         {crate_name}::Window::{method}({ident}, {main});
     }}
     ",
-        pub_main = if is_pub {
-            "pub"
-        } else {
-            ""
-        },
+        pub_main = if is_pub { "pub" } else { "" },
         crate_name = crate_name,
         method = method,
         ident = ident,
