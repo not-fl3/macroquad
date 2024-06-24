@@ -396,10 +396,8 @@ impl Skin {
                 .color_inactive(Color::from_rgba(238, 238, 238, 128))
                 .text_color(Color::from_rgba(0, 0, 0, 255))
                 .color(Color::from_rgba(220, 220, 220, 255))
-                .background(Image {
-                    width: 16,
-                    height: 30,
-                    bytes: include_bytes!("combobox.img").to_vec(),
+                .background(unsafe {
+                    Image::from_raw_parts(16, 30, include_bytes!("combobox.img").to_vec())
                 })
                 .build(),
             tabbar_style: Style {
@@ -416,14 +414,16 @@ impl Skin {
                 .background_margin(RectOffset::new(1., 1., 1., 1.))
                 .color_inactive(Color::from_rgba(238, 238, 238, 128))
                 .text_color(Color::from_rgba(0, 0, 0, 255))
-                .background(Image {
-                    width: 3,
-                    height: 3,
-                    bytes: vec![
-                        68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 238,
-                        238, 238, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68,
-                        68, 255,
-                    ],
+                .background(unsafe {
+                    Image::from_raw_parts(
+                        3,
+                        3,
+                        vec![
+                            68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255,
+                            238, 238, 238, 255, 68, 68, 68, 255, 68, 68, 68, 255, 68, 68, 68, 255,
+                            68, 68, 68, 255,
+                        ],
+                    )
                 })
                 .build(),
             window_titlebar_style: Style {

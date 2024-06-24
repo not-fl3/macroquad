@@ -68,9 +68,9 @@ impl TexturesContext {
 /// Image, data stored in CPU memory
 #[derive(Clone)]
 pub struct Image {
-    pub(crate) bytes: Vec<u8>,
-    pub(crate) width: u16,
-    pub(crate) height: u16,
+    bytes: Vec<u8>,
+    width: u16,
+    height: u16,
 }
 
 impl std::fmt::Debug for Image {
@@ -108,7 +108,7 @@ impl Image {
         Image {
             width,
             height,
-            bytes: vec![0; width as usize * height as usize * 4]
+            bytes: vec![0; width as usize * height as usize * 4],
         }
     }
 
@@ -146,6 +146,20 @@ impl Image {
         })
     }
 
+    /// Creates an image from the provided parts without checking their validity.
+    /// 
+    /// # Safety
+    /// If the amount of bytes is too low for the width and height, 
+    /// reading from these missing pixels is Undefined Behavior.
+    pub unsafe fn from_raw_parts(width: u16, height: u16, bytes: Vec<u8>) -> Image {
+        Image {
+            width,
+            height,
+            bytes,
+        }
+    }
+
+
     /// Creates an Image filled with the provided [Color].
     pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
         let mut bytes = vec![0; width as usize * height as usize * 4];
@@ -182,6 +196,11 @@ impl Image {
     /// Returns the height of this image.
     pub fn height(&self) -> u16 {
         self.height
+    }
+
+    /// Returns the bytes of this image.
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
     }
 
     /// Allows changing the width of this image unsafely.

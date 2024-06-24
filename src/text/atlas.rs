@@ -42,7 +42,7 @@ impl Atlas {
 
     pub fn new(ctx: &mut dyn miniquad::RenderingBackend, filter: miniquad::FilterMode) -> Atlas {
         let image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
-        let texture = ctx.new_texture_from_rgba8(image.width, image.height, &image.bytes);
+        let texture = ctx.new_texture_from_rgba8(image.width(), image.height(), &image.bytes());
         ctx.texture_set_filter(
             texture,
             miniquad::FilterMode::Nearest,
@@ -79,11 +79,11 @@ impl Atlas {
     }
 
     pub fn width(&self) -> u16 {
-        self.image.width
+        self.image.width()
     }
 
     pub fn height(&self) -> u16 {
-        self.image.height
+        self.image.height()
     }
 
     pub fn texture(&mut self) -> miniquad::TextureId {
@@ -91,18 +91,20 @@ impl Atlas {
         if self.dirty {
             self.dirty = false;
             let (texture_width, texture_height) = ctx.texture_size(self.texture);
-            if texture_width != self.image.width as _ || texture_height != self.image.height as _ {
+            if texture_width != self.image.width() as _
+                || texture_height != self.image.height() as _
+            {
                 ctx.delete_texture(self.texture);
 
                 self.texture = ctx.new_texture_from_rgba8(
-                    self.image.width,
-                    self.image.height,
-                    &self.image.bytes[..],
+                    self.image.width(),
+                    self.image.height(),
+                    &self.image.bytes()[..],
                 );
                 ctx.texture_set_filter(self.texture, self.filter, miniquad::MipmapFilterMode::None);
             }
 
-            ctx.texture_update(self.texture, &self.image.bytes);
+            ctx.texture_update(self.texture, self.image.bytes());
         }
 
         self.texture
@@ -123,9 +125,9 @@ impl Atlas {
     }
 
     pub fn cache_sprite(&mut self, key: SpriteKey, sprite: Image) {
-        let (width, height) = (sprite.width as usize, sprite.height as usize);
+        let (width, height) = (sprite.width() as usize, sprite.height() as usize);
 
-        let x = if self.cursor_x + (width as u16) < self.image.width {
+        let x = if self.cursor_x + (width as u16) < self.image.width() {
             if height as u16 > self.max_line_height {
                 self.max_line_height = height as u16;
             }
@@ -141,7 +143,7 @@ impl Atlas {
         let y = self.cursor_y;
 
         // texture bounds exceeded
-        if y + sprite.height > self.image.height || x + sprite.width > self.image.width {
+        if y + sprite.height() > self.image.height() || x + sprite.width() > self.image.width() {
             // reset glyph cache state
             let sprites = self.sprites.drain().collect::<Vec<_>>();
             self.cursor_x = 0;
@@ -154,8 +156,8 @@ impl Atlas {
             // note: if we tried to fit gigantic texture into a small atlas,
             // new_width will still be not enough. But its fine, it will
             // be regenerated on the recursion call.
-            let new_width = self.image.width * 2;
-            let new_height = self.image.height * 2;
+            let new_width = self.image.width() * 2;
+            let new_height = self.image.height() * 2;
 
             self.image =
                 Image::gen_image_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
