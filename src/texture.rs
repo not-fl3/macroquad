@@ -170,6 +170,30 @@ impl Image {
         self.height as usize
     }
 
+    /// Allows changing the width of this image unsafely.
+    ///
+    /// # Safety
+    /// Increasing the width without properly filling the new pixels can cause Undefined Behaviour.
+    pub unsafe fn width_mut(&mut self) -> &mut u16 {
+        &mut self.width
+    }
+
+    /// Allows changing the height of this image unsafely.
+    ///
+    /// # Safety
+    /// Increasing the height without properly filling the new pixels can cause Undefined Behaviour.
+    pub unsafe fn height_mut(&mut self) -> &mut u16 {
+        &mut self.height
+    }
+
+    /// Allows changing the bytes of this image unsafely.
+    ///
+    /// # Safety
+    /// Removing bytes and not changing width and height accordingly can cause Undefined Behaviour.
+    pub unsafe fn bytes_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.bytes
+    }
+
     /// Returns this image's data as a slice of 4-byte arrays.
     pub fn get_image_data(&self) -> &[[u8; 4]] {
         use std::slice;
