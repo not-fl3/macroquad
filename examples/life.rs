@@ -26,8 +26,8 @@ async fn main() {
     loop {
         clear_background(WHITE);
 
-        let w = image.width();
-        let h = image.height();
+        let w = image.width() as usize;
+        let h = image.height() as usize;
 
         for y in 0..h as i32 {
             for x in 0..w as i32 {

@@ -175,13 +175,13 @@ impl Image {
     }
 
     /// Returns the width of this image.
-    pub fn width(&self) -> usize {
-        self.width as usize
+    pub fn width(&self) -> u16 {
+        self.width
     }
 
     /// Returns the height of this image.
-    pub fn height(&self) -> usize {
-        self.height as usize
+    pub fn height(&self) -> u16 {
+        self.height
     }
 
     /// Allows changing the width of this image unsafely.
