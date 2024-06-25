@@ -124,7 +124,7 @@ impl Image {
     /// let icon = Image::from_file_with_format(
     ///     include_bytes!("../examples/rust.png"),
     ///     Some(ImageFormat::Png),
-    ///     );
+    ///  );
     /// ```
     pub fn from_file_with_format(
         bytes: &[u8],
@@ -147,9 +147,9 @@ impl Image {
     }
 
     /// Creates an image from the provided parts without checking their validity.
-    /// 
+    ///
     /// # Safety
-    /// If the amount of bytes is too low for the width and height, 
+    /// If the amount of bytes is too low for the width and height,
     /// reading from these missing pixels is Undefined Behavior.
     pub unsafe fn from_raw_parts(width: u16, height: u16, bytes: Vec<u8>) -> Image {
         Image {
@@ -159,20 +159,18 @@ impl Image {
         }
     }
 
-
     /// Creates an Image filled with the provided [Color].
     pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
-        let mut bytes = vec![0; width as usize * height as usize * 4];
-        for i in 0..width as usize * height as usize {
-            bytes[i * 4 + 0] = (color.r * 255.) as u8;
-            bytes[i * 4 + 1] = (color.g * 255.) as u8;
-            bytes[i * 4 + 2] = (color.b * 255.) as u8;
-            bytes[i * 4 + 3] = (color.a * 255.) as u8;
-        }
         Image {
             width,
             height,
-            bytes,
+            bytes: [
+                (color.r * 255.) as u8,
+                (color.g * 255.) as u8,
+                (color.b * 255.) as u8,
+                (color.a * 255.) as u8,
+            ]
+            .repeat(width as usize * height as usize),
         }
     }
 
