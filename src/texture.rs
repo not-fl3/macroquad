@@ -261,7 +261,7 @@ impl Image {
         let mut n = 0;
         for y in y..y + height {
             for x in x..x + width {
-                bytes[n] = self.bytes[y * self.width as usize * 4 + x * 4 + 0];
+                bytes[n] = self.bytes[y * self.width as usize * 4 + x * 4];
                 bytes[n + 1] = self.bytes[y * self.width as usize * 4 + x * 4 + 1];
                 bytes[n + 2] = self.bytes[y * self.width as usize * 4 + x * 4 + 2];
                 bytes[n + 3] = self.bytes[y * self.width as usize * 4 + x * 4 + 3];
@@ -284,19 +284,19 @@ impl Image {
         );
 
         for i in 0..self.bytes.len() / 4 {
-            let c1: Color = Color {
+            let c1 = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
                 a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let c2: Color = Color {
+            let c2 = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
                 a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let new_color: Color = Color {
+            let new_color = Color {
                 r: f32::min(c1.r * c1.a + c2.r * c2.a, 1.),
                 g: f32::min(c1.g * c1.a + c2.g * c2.a, 1.),
                 b: f32::min(c1.b * c1.a + c2.b * c2.a, 1.),
@@ -320,19 +320,19 @@ impl Image {
         );
 
         for i in 0..self.bytes.len() / 4 {
-            let c1: Color = Color {
+            let c1 = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
                 a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let c2: Color = Color {
+            let c2 = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
                 a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let new_color: Color = Color {
+            let new_color = Color {
                 r: f32::min(c1.r * (1. - c2.a) + c2.r * c2.a, 1.),
                 g: f32::min(c1.g * (1. - c2.a) + c2.g * c2.a, 1.),
                 b: f32::min(c1.b * (1. - c2.a) + c2.b * c2.a, 1.),
