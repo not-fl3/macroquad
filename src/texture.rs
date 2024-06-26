@@ -275,13 +275,17 @@ impl Image {
         }
     }
 
+    fn assert_same_size(&self, other: &Image) {
+        assert!(
+            self.width == other.width && self.height == other.height,
+            "Images have different sizes!"
+        );
+    }
+
     /// Blends this image with another image (of identical dimensions)
     /// Inspired by  OpenCV saturated blending
     pub fn blend(&mut self, other: &Image) {
-        assert!(
-            self.width as usize * self.height as usize
-                == other.width as usize * other.height as usize
-        );
+        self.assert_same_size(other);
 
         for i in 0..self.bytes.len() / 4 {
             let c1 = Color {
@@ -314,10 +318,7 @@ impl Image {
     /// overlaying a completely transparent image has no effect
     /// on the original image, though blending them would.
     pub fn overlay(&mut self, other: &Image) {
-        assert!(
-            self.width as usize * self.height as usize
-                == other.width as usize * other.height as usize
-        );
+        self.assert_same_size(other);
 
         for i in 0..self.bytes.len() / 4 {
             let c1 = Color {
