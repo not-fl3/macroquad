@@ -176,9 +176,9 @@ impl Atlas {
             for j in 0..height {
                 for i in 0..width {
                     self.image.set_pixel(
-                        x as u32 + i as u32,
-                        y as u32 + j as u32,
-                        sprite.get_pixel(i as u32, j as u32),
+                        x + i as u16,
+                        y + j as u16,
+                        sprite.get_pixel(i as u16, j as u16),
                     );
                 }
             }

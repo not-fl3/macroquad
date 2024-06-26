@@ -236,18 +236,21 @@ impl Image {
     }
 
     /// Modifies a pixel [Color] in this image.
-    pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
-        assert!(x < self.width as u32);
-        assert!(y < self.height as u32);
+    pub fn set_pixel(&mut self, x: u16, y: u16, color: Color) {
+        assert!(x < self.width);
+        assert!(y < self.height);
 
         let width = self.width;
 
-        self.get_image_data_mut()[(y * width as u32 + x) as usize] = color.into();
+        self.get_image_data_mut()[(y * width + x) as usize] = color.into();
     }
 
     /// Returns a pixel [Color] from this image.
-    pub fn get_pixel(&self, x: u32, y: u32) -> Color {
-        self.get_image_data()[(y * self.width as u32 + x) as usize].into()
+    pub fn get_pixel(&self, x: u16, y: u16) -> Color {
+        assert!(x < self.width);
+        assert!(y < self.height);
+
+        self.get_image_data()[(y * self.width + x) as usize].into()
     }
 
     /// Returns an Image from a rect inside this image.
