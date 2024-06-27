@@ -90,7 +90,8 @@ impl Font {
         let (width, height) = (metrics.width as u16, metrics.height as u16);
 
         let sprite = self.atlas.lock().unwrap().new_unique_id();
-        self.atlas.lock().unwrap().cache_sprite(sprite, unsafe {
+        self.atlas.lock().unwrap().cache_sprite(
+            sprite,
             Image::from_raw_parts(
                 width,
                 height,
@@ -98,8 +99,8 @@ impl Font {
                     .iter()
                     .flat_map(|coverage| vec![255, 255, 255, *coverage])
                     .collect(),
-            )
-        });
+            ),
+        );
         let advance = metrics.advance_width;
 
         let (offset_x, offset_y) = (metrics.xmin, metrics.ymin);

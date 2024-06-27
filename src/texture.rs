@@ -132,12 +132,13 @@ impl Image {
         })
     }
 
-    /// Creates an image from the provided parts without checking their validity.
+    /// Creates an image from the provided parts.
     ///
-    /// # Safety
-    /// If the amount of bytes is too low for the width and height,
-    /// reading from these missing pixels is Undefined Behavior.
-    pub unsafe fn from_raw_parts(width: u16, height: u16, bytes: Vec<u8>) -> Image {
+    /// # Panics
+    /// Panics if the width and height do not match the amount of bytes given.
+    pub fn from_raw_parts(width: u16, height: u16, bytes: Vec<u8>) -> Image {
+        assert_eq!(width as usize * height as usize * 4, bytes.len());
+
         Image {
             width,
             height,
