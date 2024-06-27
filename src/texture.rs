@@ -90,7 +90,7 @@ impl Image {
     /// # use macroquad::prelude::*;
     /// let image = Image::empty();
     /// ```
-    pub fn empty() -> Image {
+    pub const fn empty() -> Image {
         Image {
             width: 0,
             height: 0,
@@ -174,12 +174,12 @@ impl Image {
     }
 
     /// Returns the width of this image.
-    pub fn width(&self) -> u16 {
+    pub const fn width(&self) -> u16 {
         self.width
     }
 
     /// Returns the height of this image.
-    pub fn height(&self) -> u16 {
+    pub const fn height(&self) -> u16 {
         self.height
     }
 
