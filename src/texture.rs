@@ -162,8 +162,11 @@ impl Image {
     }
 
     /// Updates this image from a slice of [Color]s.
+    ///
+    /// # Panics
+    /// Panics if the amount of colors and the amount of image pixels differ.
     pub fn update(&mut self, colors: &[Color]) {
-        assert!(self.width as usize * self.height as usize == colors.len());
+        assert_eq!(self.pixel_amount(), colors.len());
 
         for i in 0..colors.len() {
             self.bytes[i * 4] = (colors[i].r * 255.) as u8;
@@ -212,16 +215,16 @@ impl Image {
         &mut self.bytes
     }
 
+    /// Returns the amount of pixels this image has according to its dimensions.
+    pub const fn pixel_amount(&self) -> usize {
+        self.width as usize * self.height as usize
+    }
+
     /// Returns this image's data as a slice of 4-byte arrays.
     pub fn get_image_data(&self) -> &[[u8; 4]] {
         use std::slice;
 
-        unsafe {
-            slice::from_raw_parts(
-                self.bytes.as_ptr() as *const [u8; 4],
-                self.width as usize * self.height as usize,
-            )
-        }
+        unsafe { slice::from_raw_parts(self.bytes.as_ptr() as *const [u8; 4], self.pixel_amount()) }
     }
 
     /// Returns this image's data as a mutable slice of 4-byte arrays.
@@ -229,14 +232,14 @@ impl Image {
         use std::slice;
 
         unsafe {
-            slice::from_raw_parts_mut(
-                self.bytes.as_mut_ptr() as *mut [u8; 4],
-                self.width as usize * self.height as usize,
-            )
+            slice::from_raw_parts_mut(self.bytes.as_mut_ptr() as *mut [u8; 4], self.pixel_amount())
         }
     }
 
     /// Modifies a pixel [Color] in this image.
+    ///
+    /// # Panics
+    /// Panics if the given pixel coordinates are not inside the image.
     pub fn set_pixel(&mut self, x: u16, y: u16, color: Color) {
         assert!(x < self.width);
         assert!(y < self.height);
@@ -247,6 +250,9 @@ impl Image {
     }
 
     /// Returns a pixel [Color] from this image.
+    ///
+    /// # Panics
+    /// Panics if the given pixel coordinates are not inside the image.
     pub fn get_pixel(&self, x: u16, y: u16) -> Color {
         assert!(x < self.width);
         assert!(y < self.height);
@@ -287,7 +293,7 @@ impl Image {
     }
 
     /// Blends this image with another image (of identical dimensions)
-    /// Inspired by  OpenCV saturated blending
+    /// Inspired by OpenCV saturated blending
     pub fn blend(&mut self, other: &Image) {
         self.assert_same_size(other);
 
@@ -354,21 +360,22 @@ impl Image {
     /// Saves this image as a PNG file.
     /// This method is not supported on web and will panic.
     pub fn export_png(&self, path: &str) {
-        let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
+        let mut bytes = vec![0; self.pixel_amount() * 4];
+        let height = self.height as usize;
+        let width = self.width as usize;
 
         // flip the image before saving
-        for y in 0..self.height as usize {
-            for x in 0..self.width as usize * 4 {
-                bytes[y * self.width as usize * 4 + x] =
-                    self.bytes[(self.height as usize - y - 1) * self.width as usize * 4 + x];
+        for y in 0..height {
+            for x in 0..width * 4 {
+                bytes[y * width * 4 + x] = self.bytes[(height - y - 1) * width * 4 + x];
             }
         }
 
         image::save_buffer(
             path,
             &bytes[..],
-            self.width as _,
-            self.height as _,
+            self.width as u32,
+            self.height as u32,
             image::ColorType::Rgba8,
         )
         .unwrap();
