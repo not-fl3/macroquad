@@ -362,6 +362,30 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
     }
 }
 
+/// Draw multiline text with the given font_size and color.
+pub fn draw_multiline_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+    draw_multiline_text_ex(
+        text,
+        x,
+        y,
+        TextParams {
+            font_size: font_size as u16,
+            font_scale: 1.0,
+            color,
+            ..Default::default()
+        },
+    )
+}
+
+/// Draw multiline text with custom params such as font, font size and font scale.
+pub fn draw_multiline_text_ex(text: &str, x: f32, mut y: f32, params: TextParams) {
+    for line in text.lines() {
+        let dimensions = measure_text(line, params.font, params.font_size, params.font_scale);
+        draw_text_ex(line, x, y, params.clone());
+        y += dimensions.height + dimensions.offset_y;
+    }
+}
+
 /// Get the text center.
 pub fn get_text_center(
     text: &str,
