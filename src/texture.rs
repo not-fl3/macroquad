@@ -147,18 +147,19 @@ impl Image {
     }
 
     /// Creates an Image filled with the provided [Color].
-    pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
+    pub fn from_color(width: u16, height: u16, color: Color) -> Image {
+        let bytes: [u8; 4] = color.into();
         Image {
             width,
             height,
-            bytes: [
-                (color.r * 255.) as u8,
-                (color.g * 255.) as u8,
-                (color.b * 255.) as u8,
-                (color.a * 255.) as u8,
-            ]
-            .repeat(width as usize * height as usize),
+            bytes: bytes.repeat(width as usize * height as usize),
         }
+    }
+
+    /// Creates an Image filled with the provided [Color].
+    #[deprecated(since = "0.4.11", note = "use `Image::from_color` instead")]
+    pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
+        Image::from_color(width, height, color)
     }
 
     /// Updates this image from a slice of [Color]s.
