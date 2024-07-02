@@ -18,7 +18,7 @@ fn with_ctx<F: Fn(&mut CompatContext)>(f: F) {
     CTX.with_borrow_mut(|v| f(v.as_mut().unwrap()));
 }
 pub fn init_compat_mode(ctx: crate::Context) {
-    let canvas = ctx.quad_gl.new_canvas();
+    let canvas = ctx.new_canvas();
 
     CTX.with_borrow_mut(|v| {
         *v = Some(CompatContext { ctx, canvas });

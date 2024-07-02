@@ -1,37 +1,43 @@
 use macroquad::{
-    hash,
-    prelude::*,
-    ui::widgets::{self, Group},
+    math::{vec2, Vec2, Vec3},
+    quad_gl::{
+        color::RED,
+        ui::{
+            hash,
+            widgets::{self, Group},
+        },
+    },
+    window::next_frame,
 };
 
-async fn game(ctx: macroquad::Context3) {
+async fn game(ctx: macroquad::Context) {
     let mut canvas = ctx.new_canvas();
-    let mut ui = ctx.new_ui();
 
     loop {
-        canvas.clear(GRAY);
+        ctx.clear_screen(RED);
+        canvas.clear();
 
-        ui.grab_input();
-        ui.label(None, "Hello");
-        ui.label(None, "AAAA");
+        ctx.root_ui().label(None, "Hello");
+        ctx.root_ui().label(None, "AAAA");
         widgets::Window::new(hash!(), vec2(400., 200.), vec2(320., 400.))
             .label("Shop")
             .titlebar(true)
-            .ui(&mut ui, |ui| {
+            .ui(&mut *ctx.root_ui(), |ui| {
                 for i in 0..30 {
-                    Group::new(hash!("shop", i), Vec2::new(300., 80.)).ui(ui, |ui| {
-                        ui.label(Vec2::new(10., 10.), &format!("Item N {}", i));
-                        ui.label(Vec2::new(260., 40.), "10/10");
-                        ui.label(Vec2::new(200., 58.), &format!("{} kr", 800));
-                        if ui.button(Vec2::new(260., 55.), "buy") {
-                            //data.inventory.push(format!("Item {}", i));
+                    Group::new(hash!("shop", i), vec2(300., 80.)).ui(ui, |ui| {
+                        ui.label(vec2(10., 10.), &format!("Item N {}", i));
+                        ui.label(vec2(260., 40.), "10/10");
+                        ui.label(vec2(200., 58.), &format!("{} kr", 800));
+                        if ui.button(vec2(260., 55.), "buy") {
+                            println!("aa");
                         }
                     });
                 }
             });
 
-        ui.draw(&mut canvas);
+        ctx.root_ui().draw(&mut canvas);
         canvas.draw();
+
         next_frame().await
     }
 }

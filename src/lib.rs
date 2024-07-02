@@ -72,6 +72,10 @@ pub use ::log as logging;
 pub use miniquad;
 
 pub mod compat;
+pub mod resources;
+
+pub use quad_gl;
+pub use quad_gl::math;
 
 use glam::{vec2, Mat4, Vec2};
 use std::sync::{Arc, Mutex, Weak};
@@ -142,19 +146,12 @@ impl MiniquadInputEvent {
     }
 }
 
-// This is required for #[macroquad::test]
-//
-// unfortunately #[cfg(test)] do not work with integration tests
-// so this module should be publicly available
-#[doc(hidden)]
-pub mod test {
-    pub static mut MUTEX: Option<std::sync::Mutex<()>> = None;
-    pub static ONCE: std::sync::Once = std::sync::Once::new();
-}
-
 struct Stage {
     main_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
-    ctx: Arc<Context>,
+    quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
+    quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
+    ui: Arc<Mutex<quad_gl::ui::Ui>>,
+    input: Arc<Mutex<input::InputContext>>,
 }
 
 impl EventHandler for Stage {
@@ -183,26 +180,32 @@ impl EventHandler for Stage {
     // }
 
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let mut context = self.ctx.input.lock().unwrap();
+        let mut context = self.input.lock().unwrap();
 
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
 
+        self.ui.lock().unwrap().mouse_down((x, y));
+        // if let Some(f) = context.wtf.as_mut() {
+        //     f();
+        // }
         // context
         //     .input_events
         //     .iter_mut()
         //     .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonDown { x, y, btn }));
 
-        // if !context.cursor_grabbed {
-        //     context.mouse_position = Vec2::new(x, y);
-        // }
+        //if !context.cursor_grabbed {
+        context.mouse_position = Vec2::new(x, y);
+        //}
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let mut context = self.ctx.input.lock().unwrap();
+        let mut context = self.input.lock().unwrap();
 
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
+
+        self.ui.lock().unwrap().mouse_up((x, y));
 
         // context
         //     .input_events
@@ -210,34 +213,26 @@ impl EventHandler for Stage {
         //     .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
 
         // if !context.cursor_grabbed {
-        //     context.mouse_position = Vec2::new(x, y);
+        context.mouse_position = Vec2::new(x, y);
         // }
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        let mut context = self.ctx.input.lock().unwrap();
+        let mut context = self.input.lock().unwrap();
 
         //if !context.cursor_grabbed {
         context.mouse_position = Vec2::new(x, y);
+
+        self.ui.lock().unwrap().mouse_move((x, y));
         //}
-        //     context
-        //         .input_events
-        //         .iter_mut()
-        //         .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
-        // }
     }
 
-    // fn mouse_wheel_event(&mut self, x: f32, y: f32) {
-    //     let context = get_context();
+    fn mouse_wheel_event(&mut self, x: f32, y: f32) {
+        let mut context = self.input.lock().unwrap();
 
-    //     context.mouse_wheel.x = x;
-    //     context.mouse_wheel.y = y;
-
-    //     context
-    //         .input_events
-    //         .iter_mut()
-    //         .for_each(|arr| arr.push(MiniquadInputEvent::MouseWheel { x, y }));
-    // }
+        context.mouse_wheel.x = x;
+        context.mouse_wheel.y = y;
+    }
 
     // fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
     //     let context = get_context();
@@ -337,11 +332,11 @@ impl EventHandler for Stage {
                 return;
             }
 
+            self.input.lock().unwrap().end_frame();
             compat::end_frame();
-            //get_context().coroutines_context.update();
         }
     }
-    
+
     fn window_restored_event(&mut self) {
         #[cfg(target_os = "android")]
         get_context().audio_context.resume();
@@ -361,24 +356,60 @@ impl EventHandler for Stage {
     }
 }
 
-#[derive(Clone)]
 pub struct Context {
     pub quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
-    pub quad_gl: quad_gl::QuadGl,
-    pub(crate) input: Arc<Mutex<input::InputContext>>,
+    quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
+    pub resources: resources::Resources,
+    pub input: Arc<Mutex<input::InputContext>>,
+    ui: Arc<Mutex<quad_gl::ui::Ui>>,
 }
 
 impl Context {
     pub(crate) fn new() -> Context {
         let quad_ctx = miniquad::window::new_rendering_backend();
         let quad_ctx = Arc::new(Mutex::new(quad_ctx));
+        let quad_gl = quad_gl::QuadGl::new(quad_ctx.clone());
+
+        let (w, h) = miniquad::window::screen_size();
+        let ui = quad_gl::ui::Ui::new(quad_ctx.clone(), w, h);
+
         Context {
             quad_ctx: quad_ctx.clone(),
-            quad_gl: quad_gl::QuadGl::new(quad_ctx),
+            quad_gl: Arc::new(Mutex::new(quad_gl)),
+            resources: resources::Resources::new(quad_ctx.clone()),
             input: Arc::new(Mutex::new(input::InputContext::new())),
+            ui: Arc::new(Mutex::new(ui)),
         }
     }
 
+    pub fn clear_screen(&self, color: quad_gl::color::Color) {
+        self.quad_ctx.lock().unwrap().clear(
+            Some((color.r, color.g, color.b, color.a)),
+            Some(1.),
+            None,
+        );
+    }
+
+    pub fn new_canvas(&self) -> quad_gl::sprite_batcher::SpriteBatcher {
+        let quad_gl = self.quad_gl.lock().unwrap();
+        quad_gl.new_canvas()
+    }
+
+    pub fn new_scene(&self) -> quad_gl::scene::Scene {
+        let quad_gl = self.quad_gl.lock().unwrap();
+        quad_gl.new_scene()
+    }
+
+    pub fn new_texture_from_image(
+        &self,
+        image: &quad_gl::texture::Image,
+    ) -> quad_gl::texture::Texture2D {
+        self.quad_gl.lock().unwrap().from_image(&image)
+    }
+
+    pub fn root_ui<'a>(&'a self) -> impl std::ops::DerefMut<Target = quad_gl::ui::Ui> + 'a {
+        self.ui.lock().unwrap()
+    }
     // pub fn new_scene(&self) -> scene::Scene {
     //     scene::Scene::new(self.quad_ctx.clone(), self.fonts_storage.clone())
     // }
@@ -393,10 +424,16 @@ pub fn start<F: Fn(Context) -> Fut + 'static, Fut: Future<Output = ()> + 'static
     future: F,
 ) {
     miniquad::start(conf::Conf { ..config }, move || {
-        let ctx = Context::new();
+        let mut ctx = Context::new();
+
+        unsafe { miniquad::gl::glEnable(miniquad::gl::GL_TEXTURE_CUBE_MAP_SEAMLESS) };
+
         Box::new(Stage {
-            main_future: Some(Box::pin(future(ctx.clone()))),
-            ctx: Arc::new(ctx),
+            input: ctx.input.clone(),
+            quad_ctx: ctx.quad_ctx.clone(),
+            quad_gl: ctx.quad_gl.clone(),
+            ui: ctx.ui.clone(),
+            main_future: Some(Box::pin(future(ctx))),
         })
     });
 }

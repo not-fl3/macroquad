@@ -51,17 +51,21 @@ dolly = "*"
 # workaround to fix the examples
 # this allows to use macroquad-particles in examples without two versions of 
 
-[patch."https://github.com/not-fl3/quad-gl"]
-quad-gl = { path = '../quad-gl' }
+#[patch."https://github.com/not-fl3/quad-gl"]
+#quad-gl = { path = '../quad-gl' }
+
+#[patch."https://github.com/not-fl3/miniquad"]
+#miniquad = { path = '../miniquad' }
 
 [patch.crates-io]
 macroquad = { path = './' }
 
 #quad-snd = {path = '../quad-snd'}
-miniquad = { path = '../miniquad' }
-#fontdue = { git = 'https://github.com/not-fl3/fontdue.git' }
-fontdue = { path = '../fontdue' }
-#quad-gl = {path = './quad-gl'}
+#miniquad = { path = '../miniquad' }
+fontdue = { git = 'https://github.com/not-fl3/fontdue.git' }
+miniquad = { git = 'https://github.com/not-fl3/miniquad.git' }
+#fontdue = { path = '../fontdue' }
+#quad-gl = {path = '../quad-gl'}
 #zune-jpeg = { path = "../zune-image/zune-jpeg" }
 #zune-png = { path = "../zune-image/zune-png" }
 #zune-core = { path = "../zune-image/zune-core" }

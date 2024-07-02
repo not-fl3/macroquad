@@ -5,7 +5,7 @@ pub use miniquad::{KeyCode, MouseButton};
 
 use std::collections::{HashMap, HashSet};
 
-pub(crate) struct InputContext {
+pub struct InputContext {
     pub simulate_mouse_with_touch: bool,
     pub keys_down: HashSet<KeyCode>,
     pub keys_pressed: HashSet<KeyCode>,
@@ -20,6 +20,7 @@ pub(crate) struct InputContext {
     pub last_mouse_position: Option<Vec2>,
     pub mouse_raw_delta: Vec2,
     pub mouse_wheel: Vec2,
+    pub wtf: Option<Box<dyn Fn()>>,
 }
 
 impl InputContext {
@@ -40,6 +41,7 @@ impl InputContext {
             last_mouse_position: None,
             mouse_raw_delta: vec2(0., 0.),
             mouse_wheel: vec2(0., 0.),
+            wtf: None,
         }
     }
 
@@ -50,7 +52,7 @@ impl InputContext {
         self.mouse_pressed.clear();
         self.mouse_released.clear();
 
-        //self.last_mouse_position = Some(self.mouse_position_local());
+        self.last_mouse_position = Some(self.mouse_position_local());
 
         // remove all touches that were Ended or Cancelled
         self.touches.retain(|_, touch| {
@@ -94,7 +96,7 @@ pub struct Touch {
 
 // /// Constrain mouse to window
 // pub fn set_cursor_grab(grab: bool) {
-//     let context = get_context();
+//     let context = self.input.lock().unwrap();
 //     context.cursor_grabbed = grab;
 //     miniquad::window::set_cursor_grab(grab);
 // }
@@ -105,7 +107,7 @@ pub struct Touch {
 // }
 
 // pub fn mouse_raw_delta_position() -> Vec2 {
-//     let context = get_context();
+//     let context = self.input.lock().unwrap();
 
 //     context.mouse_raw_delta
 // }
@@ -140,47 +142,49 @@ pub struct Touch {
 //         .collect()
 // }
 
-// /// Detect if the key has been pressed once
-// pub fn is_key_pressed(key_code: KeyCode) -> bool {
-//     let context = get_context();
+impl Context {
+    /// Detect if the key has been pressed once
+    pub fn is_key_pressed(&self, key_code: KeyCode) -> bool {
+        let context = self.input.lock().unwrap();
 
-//     context.keys_pressed.contains(&key_code)
-// }
+        context.keys_pressed.contains(&key_code)
+    }
 
-// /// Detect if the key is being pressed
-// pub fn is_key_down(key_code: KeyCode) -> bool {
-//     let context = get_context();
+    /// Detect if the key is being pressed
+    pub fn is_key_down(&self, key_code: KeyCode) -> bool {
+        let context = self.input.lock().unwrap();
 
-//     context.keys_down.contains(&key_code)
-// }
+        context.keys_down.contains(&key_code)
+    }
 
-// /// Detect if the key has been released this frame
-// pub fn is_key_released(key_code: KeyCode) -> bool {
-//     let context = get_context();
+    /// Detect if the key has been released this frame
+    pub fn is_key_released(&self, key_code: KeyCode) -> bool {
+        let context = self.input.lock().unwrap();
 
-//     context.keys_released.contains(&key_code)
-// }
+        context.keys_released.contains(&key_code)
+    }
 
-// /// Return the last pressed char.
-// /// Each "get_char_pressed" call will consume a character from the input queue.
-// pub fn get_char_pressed() -> Option<char> {
-//     let context = get_context();
+    /// Return the last pressed char.
+    /// Each "get_char_pressed" call will consume a character from the input queue.
+    pub fn get_char_pressed(&self) -> Option<char> {
+        let mut context = self.input.lock().unwrap();
 
-//     context.chars_pressed_queue.pop()
-// }
+        context.chars_pressed_queue.pop()
+    }
 
-// pub(crate) fn get_char_pressed_ui() -> Option<char> {
-//     let context = get_context();
+    pub(crate) fn get_char_pressed_ui(&self) -> Option<char> {
+        let mut context = self.input.lock().unwrap();
 
-//     context.chars_pressed_ui_queue.pop()
-// }
+        context.chars_pressed_ui_queue.pop()
+    }
 
-// /// Return the last pressed key.
-// pub fn get_last_key_pressed() -> Option<KeyCode> {
-//     let context = get_context();
-//     // TODO: this will return a random key from keys_pressed HashMap instead of the last one, fix me later
-//     context.keys_pressed.iter().next().cloned()
-// }
+    /// Return the last pressed key.
+    pub fn get_last_key_pressed(&self) -> Option<KeyCode> {
+        let context = self.input.lock().unwrap();
+        // TODO: this will return a random key from keys_pressed HashMap instead of the last one, fix me later
+        context.keys_pressed.iter().next().cloned()
+    }
+}
 
 impl Context {
     /// Detect if the button is being pressed
@@ -190,17 +194,31 @@ impl Context {
         context.mouse_down.contains(&btn)
     }
 
-    // /// Returns the difference between the current mouse position and the mouse position on the previous frame.
-    // pub fn mouse_delta(&self) -> Vec2 {
-    //     let current_position = self.mouse_position_local();
-    //     let context = self.input.lock().unwrap();
-    //     let last_position = context.last_mouse_position.unwrap_or(current_position);
+    /// Detect if the button has been pressed once
+    pub fn is_mouse_button_pressed(&self, btn: MouseButton) -> bool {
+        let context = self.input.lock().unwrap();
 
-    //     // Calculate the delta
-    //     let delta = last_position - current_position;
+        context.mouse_pressed.contains(&btn)
+    }
 
-    //     delta
-    // }
+    /// Detect if the button has been released this frame
+    pub fn is_mouse_button_released(&self, btn: MouseButton) -> bool {
+        let context = self.input.lock().unwrap();
+
+        context.mouse_released.contains(&btn)
+    }
+
+    /// Returns the difference between the current mouse position and the mouse position on the previous frame.
+    pub fn mouse_delta(&self) -> Vec2 {
+        let current_position = self.mouse_position_local();
+        let context = self.input.lock().unwrap();
+        let last_position = context.last_mouse_position.unwrap_or(current_position);
+
+        // Calculate the delta
+        let delta = last_position - current_position;
+
+        delta
+    }
 
     pub fn mouse_wheel(&self) -> (f32, f32) {
         let context = self.input.lock().unwrap();
@@ -219,22 +237,25 @@ impl Context {
     }
 
     // /// Return mouse position in range [-1; 1].
-    // pub fn mouse_position_local(&self) -> Vec2 {
-    //     let m = self.mouse_position();
-
-    //     self.convert_to_local(m)
-    // }
-
-    // /// Convert a position in pixels to a position in the range [-1; 1].
-    // fn convert_to_local(&self, pixel_pos: Vec2) -> Vec2 {
-    //     let context = self.input.lock().unwrap();
-
-    //     Vec2::new(pixel_pos.x / screen_width(), pixel_pos.y / screen_height()) * 2.0
-    //         - Vec2::new(1.0, 1.0)
-    // }
+    pub fn mouse_position_local(&self) -> Vec2 {
+        self.input.lock().unwrap().mouse_position_local()
+    }
 }
 
 impl InputContext {
+    pub fn mouse_position_local(&self) -> Vec2 {
+        let m = self.mouse_position();
+
+        self.convert_to_local(m)
+    }
+
+    /// Convert a position in pixels to a position in the range [-1; 1].
+    fn convert_to_local(&self, pixel_pos: Vec2) -> Vec2 {
+        let (w, h) = miniquad::window::screen_size();
+
+        Vec2::new(pixel_pos.x / w, pixel_pos.y / h) * 2.0 - Vec2::new(1.0, 1.0)
+    }
+
     /// Return mouse position in pixels.
     pub fn mouse_position(&self) -> Vec2 {
         vec2(
@@ -256,19 +277,6 @@ impl InputContext {
     //         - Vec2::new(1.0, 1.0)
     // }
 }
-// /// Detect if the button has been pressed once
-// pub fn is_mouse_button_pressed(btn: MouseButton) -> bool {
-//     let context = get_context();
-
-//     context.mouse_pressed.contains(&btn)
-// }
-
-// /// Detect if the button has been released this frame
-// pub fn is_mouse_button_released(btn: MouseButton) -> bool {
-//     let context = get_context();
-
-//     context.mouse_released.contains(&btn)
-// }
 
 // /// Prevents quit
 // pub fn prevent_quit() {
@@ -288,7 +296,7 @@ impl InputContext {
 
 //     /// Register input subscriber. Returns subscriber identifier that must be used in `repeat_all_miniquad_input`.
 //     pub fn register_input_subscriber() -> usize {
-//         let context = get_context();
+//         let context = self.input.lock().unwrap();
 
 //         context.input_events.push(vec![]);
 
@@ -297,7 +305,7 @@ impl InputContext {
 
 //     /// Repeats all events that came since last call of this function with current value of `subscriber`. This function must be called at each frame.
 //     pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T, subscriber: usize) {
-//         let context = get_context();
+//         let context = self.input.lock().unwrap();
 
 //         for event in &context.input_events[subscriber] {
 //             event.repeat(t);

@@ -2,9 +2,9 @@ use quad_gl::{color::*, math::*};
 use macroquad::window::next_frame;
 
 async fn game(ctx: macroquad::Context) {
-    let mut canvas1 = ctx.quad_gl.new_canvas();
-    let mut canvas2 = ctx.quad_gl.new_canvas();
-    let mut canvas3 = ctx.quad_gl.new_canvas();
+    let mut canvas1 = ctx.new_canvas();
+    let mut canvas2 = ctx.new_canvas();
+    let mut canvas3 = ctx.new_canvas();
 
     // canvas1 is a static background canvas.
     // It will be never updated.
@@ -20,11 +20,7 @@ async fn game(ctx: macroquad::Context) {
         );
         let p2 = vec2((t * 3.0).sin() * 400.0 + 800.0, t.cos() * 200.0 + 400.0);
 
-        // normal miniquad clearing code
-        ctx.quad_ctx
-            .lock()
-            .unwrap()
-            .clear(Some((1., 1., 1., 1.)), None, None);
+        ctx.clear_screen(WHITE);
 
         // canvas2 is an "additive" canvas. It holds its previous state
         // and will get an additiona red circle each frame.
