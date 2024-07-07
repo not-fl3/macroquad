@@ -265,18 +265,15 @@ impl Image {
     pub fn sub_image(&self, rect: Rect) -> Image {
         let width = rect.w as usize;
         let height = rect.h as usize;
-        let mut bytes = vec![0; width * height * 4];
+        let mut bytes = Vec::with_capacity(width * height * 4);
 
-        let x = rect.x as usize;
-        let y = rect.y as usize;
-        let mut n = 0;
-        for y in y..y + height {
-            for x in x..x + width {
-                bytes[n] = self.bytes[y * self.width as usize * 4 + x * 4];
-                bytes[n + 1] = self.bytes[y * self.width as usize * 4 + x * 4 + 1];
-                bytes[n + 2] = self.bytes[y * self.width as usize * 4 + x * 4 + 2];
-                bytes[n + 3] = self.bytes[y * self.width as usize * 4 + x * 4 + 3];
-                n += 4;
+        let rect_x = rect.x as usize;
+        let rect_y = rect.y as usize;
+
+        for y in rect_y..rect_y + height {
+            for x in rect_x..rect_x + width {
+                let b = y * self.width as usize * 4 + x * 4;
+                bytes.extend_from_slice(&self.bytes[b..b + 4]);
             }
         }
         Image {
