@@ -355,7 +355,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
                 dest_size: Some(vec2(dest.w, dest.h)),
                 source: Some(source),
                 rotation: angle_rad,
-                pivot: Option::Some(vec2(dest.x, dest.y)),
+                pivot: Some(vec2(dest.x, dest.y)),
                 ..Default::default()
             },
         );
@@ -363,12 +363,13 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
 }
 
 /// Draw multiline text with the given font_size, line_distance and color.
+/// If no line distance but a custom font is given, the fonts line gap will be used as line distance if it exists.
 pub fn draw_multiline_text(
     text: &str,
     x: f32,
     y: f32,
     font_size: f32,
-    line_distance: f32,
+    line_distance: Option<f32>,
     color: Color,
 ) {
     draw_multiline_text_ex(
@@ -386,13 +387,24 @@ pub fn draw_multiline_text(
 }
 
 /// Draw multiline text with the given line distance and custom params such as font, font size and font scale.
+/// If no line distance but a custom font is given, the fonts line gap will be used as line distance if it exists.
 pub fn draw_multiline_text_ex(
     text: &str,
     x: f32,
     mut y: f32,
-    line_distance: f32,
+    line_distance: Option<f32>,
     params: TextParams,
 ) {
+    let font_line_distance = params
+        .font
+        .map(|font| {
+            font.font
+                .horizontal_line_metrics(1.0)
+                .map(|metrics| metrics.line_gap)
+                .unwrap_or(0.0)
+        })
+        .unwrap_or(0.0);
+    let line_distance = line_distance.unwrap_or(font_line_distance);
     let max_height = text
         .lines()
         .map(|line| measure_text(line, params.font, params.font_size, params.font_scale).height)
