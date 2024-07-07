@@ -41,7 +41,7 @@ impl Atlas {
     const UNIQUENESS_OFFSET: u64 = 100000;
 
     pub fn new(ctx: &mut dyn miniquad::RenderingBackend, filter: miniquad::FilterMode) -> Atlas {
-        let image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
+        let image = Image::from_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
         let texture = ctx.new_texture_from_rgba8(image.width(), image.height(), &image.bytes());
         ctx.texture_set_filter(
             texture,
@@ -159,8 +159,7 @@ impl Atlas {
             let new_width = self.image.width() * 2;
             let new_height = self.image.height() * 2;
 
-            self.image =
-                Image::gen_image_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
+            self.image = Image::from_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
 
             // recache all previously cached symbols
             for (key, sprite) in sprites {

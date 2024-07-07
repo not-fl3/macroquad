@@ -664,7 +664,7 @@ impl Ui {
         atlas
             .lock()
             .unwrap()
-            .cache_sprite(SpriteKey::Id(0), Image::gen_image_color(1, 1, crate::WHITE));
+            .cache_sprite(SpriteKey::Id(0), Image::from_color(1, 1, crate::WHITE));
 
         let font = Arc::new(Mutex::new(font));
         Ui {

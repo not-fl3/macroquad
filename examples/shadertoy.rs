@@ -28,7 +28,7 @@ impl Uniform {
 fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
     let ratio = 1.0 / h as f32;
 
-    let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
+    let mut image = Image::from_color(w as u16, h as u16, WHITE);
     let image_data = image.get_image_data_mut();
 
     for j in 0..h {
@@ -301,7 +301,7 @@ async fn main() {
                     let y = mouse.1 as i32 - (cursor.y as i32 + 20);
 
                     let color = color_picker_image
-                        .get_pixel(x.max(0).min(199) as u32, y.max(0).min(199) as u32);
+                        .get_pixel(x.max(0).min(199) as u16, y.max(0).min(199) as u16);
 
                     canvas.rect(
                         Rect::new(cursor.x, cursor.y, 200.0, 18.0),
