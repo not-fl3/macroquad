@@ -1,7 +1,7 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, Error};
-use miniquad::{PipelineParams, UniformType};
+use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, tobytes::ToBytes, Error};
+use miniquad::{PipelineParams, UniformDesc, UniformType};
 use std::sync::Arc;
 
 #[derive(PartialEq)]
@@ -33,6 +33,12 @@ impl Material {
         get_context().gl.set_uniform(self.pipeline.0, name, uniform);
     }
 
+    pub fn set_uniform_array<T: ToBytes>(&self, name: &str, uniform: &[T]) {
+        get_context()
+            .gl
+            .set_uniform_array(self.pipeline.0, name, uniform);
+    }
+
     pub fn set_texture(&self, name: &str, texture: Texture2D) {
         get_context().gl.set_texture(self.pipeline.0, name, texture);
     }
@@ -41,6 +47,7 @@ impl Material {
 /// Params used for material loading.
 /// It is not possible to change material params at runtime, so this
 /// struct is used only once - at "load_material".
+#[derive(Default)]
 pub struct MaterialParams {
     /// miniquad pipeline configuration for this material.
     /// Things like blending, culling, depth dest
@@ -53,21 +60,33 @@ pub struct MaterialParams {
     pub textures: Vec<String>,
 }
 
-impl Default for MaterialParams {
-    fn default() -> Self {
-        MaterialParams {
-            pipeline_params: Default::default(),
-            uniforms: vec![],
-            textures: vec![],
+impl Into<MaterialParams2> for MaterialParams {
+    fn into(self) -> MaterialParams2 {
+        MaterialParams2 {
+            pipeline_params: self.pipeline_params,
+            uniforms: self
+                .uniforms
+                .into_iter()
+                .map(|u| UniformDesc::new(&u.0, u.1))
+                .collect(),
+            textures: self.textures,
         }
     }
 }
 
+#[derive(Default)]
+pub struct MaterialParams2 {
+    pub pipeline_params: PipelineParams,
+    pub uniforms: Vec<miniquad::UniformDesc>,
+    pub textures: Vec<String>,
+}
+
 pub fn load_material(
     shader: crate::ShaderSource,
-    params: MaterialParams,
+    params: impl Into<MaterialParams2>,
 ) -> Result<Material, Error> {
     let context = &mut get_context();
+    let params = params.into();
 
     let pipeline = context.gl.make_pipeline(
         &mut *context.quad_context,
