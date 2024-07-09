@@ -2,9 +2,9 @@
 
 use miniquad::*;
 
-pub use miniquad::{FilterMode, TextureId as MiniquadTexture};
+pub use miniquad::{FilterMode, TextureId as MiniquadTexture, UniformDesc};
 
-use crate::{color::Color, logging::warn, telemetry, texture::Texture2D, Error};
+use crate::{color::Color, logging::warn, telemetry, texture::Texture2D, tobytes::ToBytes, Error};
 
 use std::collections::BTreeMap;
 
@@ -350,6 +350,7 @@ struct Uniform {
     name: String,
     uniform_type: UniformType,
     byte_offset: usize,
+    byte_size: usize,
 }
 
 #[derive(Clone)]
@@ -387,6 +388,10 @@ impl PipelineExt {
             );
             return;
         }
+        if uniform_byte_size != uniform_meta.byte_size {
+            warn!("set_uniform do not support uniform arrays");
+            return;
+        }
         macro_rules! transmute_uniform {
             ($uniform_size:expr, $byte_offset:expr, $n:expr) => {
                 if $uniform_size == $n {
@@ -403,6 +408,35 @@ impl PipelineExt {
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 12);
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 16);
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 64);
+    }
+
+    fn set_uniform_array<T: ToBytes>(&mut self, name: &str, uniform: &[T]) {
+        let uniform_meta = self.uniforms.iter().find(
+            |Uniform {
+                 name: uniform_name, ..
+             }| uniform_name == name,
+        );
+        if uniform_meta.is_none() {
+            warn!("Trying to set non-existing uniform: {}", name);
+            return;
+        }
+        let uniform_meta = uniform_meta.unwrap();
+        let uniform_byte_size = uniform_meta.byte_size;
+        let uniform_byte_offset = uniform_meta.byte_offset;
+
+        let data = uniform.to_bytes();
+        if data.len() != uniform_byte_size {
+            warn!(
+                "Trying to set uniform {} sized {} bytes value of {} bytes",
+                name,
+                uniform_byte_size,
+                std::mem::size_of::<T>()
+            );
+            return;
+        }
+        for i in 0..uniform_byte_size {
+            self.uniforms_data[uniform_byte_offset + i] = data[i];
+        }
     }
 }
 
@@ -513,7 +547,7 @@ impl PipelinesStorage {
         shader: ShaderId,
         params: PipelineParams,
         wants_screen_texture: bool,
-        mut uniforms: Vec<(String, UniformType)>,
+        mut uniforms: Vec<UniformDesc>,
         textures: Vec<String>,
     ) -> GlPipeline {
         let pipeline = ctx.new_pipeline(
@@ -536,19 +570,20 @@ impl PipelinesStorage {
         let mut max_offset = 0;
 
         for (name, kind) in shader::uniforms().into_iter().rev() {
-            uniforms.insert(0, (name.to_owned(), kind));
+            uniforms.insert(0, UniformDesc::new(name, kind));
         }
 
         let uniforms = uniforms
             .iter()
             .scan(0, |offset, uniform| {
-                let uniform_byte_size = uniform.1.size();
+                let byte_size = uniform.uniform_type.size() * uniform.array_count;
                 let uniform = Uniform {
-                    name: uniform.0.clone(),
-                    uniform_type: uniform.1,
+                    name: uniform.name.clone(),
+                    uniform_type: uniform.uniform_type,
+                    byte_size,
                     byte_offset: *offset,
                 };
-                *offset += uniform_byte_size;
+                *offset += byte_size;
                 max_offset = *offset;
 
                 Some(uniform)
@@ -635,16 +670,13 @@ impl QuadGl {
         ctx: &mut dyn miniquad::RenderingBackend,
         shader: miniquad::ShaderSource,
         params: PipelineParams,
-        uniforms: Vec<(String, UniformType)>,
+        uniforms: Vec<UniformDesc>,
         textures: Vec<String>,
     ) -> Result<GlPipeline, Error> {
         let mut shader_meta: ShaderMeta = shader::meta();
 
         for uniform in &uniforms {
-            shader_meta
-                .uniforms
-                .uniforms
-                .push(UniformDesc::new(&uniform.0, uniform.1));
+            shader_meta.uniforms.uniforms.push(uniform.clone());
         }
 
         for texture in &textures {
@@ -982,6 +1014,13 @@ impl QuadGl {
         self.pipelines
             .get_quad_pipeline_mut(pipeline)
             .set_uniform(name, uniform);
+    }
+    pub fn set_uniform_array<T: ToBytes>(&mut self, pipeline: GlPipeline, name: &str, uniform: &[T]) {
+        self.state.break_batching = true;
+
+        self.pipelines
+            .get_quad_pipeline_mut(pipeline)
+            .set_uniform_array(name, uniform);
     }
 
     pub fn set_texture(&mut self, pipeline: GlPipeline, name: &str, texture: Texture2D) {
