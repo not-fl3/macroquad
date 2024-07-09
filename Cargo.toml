@@ -29,7 +29,7 @@ all-features = true
 miniquad = { version = "0.4", features = ["log-impl"] }
 quad-rand = "0.2.1"
 glam = {version = "0.24", features = ["scalar-math","mint"] }
-fontdue = { version = "0.8", default-features=false, features = ["std"] }
+fontdue = { git = "https://github.com/not-fl3/fontdue.git", default-features=false, features = ["std"] }
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
@@ -43,13 +43,6 @@ quad-gl = { git = "https://github.com/not-fl3/quad-gl", branch = "v0.4" }
 
 [dev-dependencies]
 dolly = "*"
-#macroquad-particles = { path = "./particles" }
-#macroquad-tiled = { path = "./tiled" }
-#macroquad-profiler = { path = "./profiler" }
-#macroquad-platformer = { path = "./physics-platformer" }
-
-# workaround to fix the examples
-# this allows to use macroquad-particles in examples without two versions of 
 
 #[patch."https://github.com/not-fl3/quad-gl"]
 #quad-gl = { path = '../quad-gl' }
@@ -62,8 +55,7 @@ macroquad = { path = './' }
 
 #quad-snd = {path = '../quad-snd'}
 #miniquad = { path = '../miniquad' }
-fontdue = { git = 'https://github.com/not-fl3/fontdue.git' }
-miniquad = { git = 'https://github.com/not-fl3/miniquad.git' }
+#miniquad = { git = 'https://github.com/not-fl3/miniquad.git' }
 #fontdue = { path = '../fontdue' }
 #quad-gl = {path = '../quad-gl'}
 #zune-jpeg = { path = "../zune-image/zune-jpeg" }

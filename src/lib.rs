@@ -72,10 +72,13 @@ pub use ::log as logging;
 pub use miniquad;
 
 pub mod compat;
+pub mod gizmos;
 pub mod resources;
 
 pub use quad_gl;
 pub use quad_gl::math;
+
+use quad_gl::{models::CpuMesh, scene::Model, texture::Image, texture::Texture2D};
 
 use glam::{vec2, Mat4, Vec2};
 use std::sync::{Arc, Mutex, Weak};
@@ -400,23 +403,23 @@ impl Context {
         quad_gl.new_scene()
     }
 
-    pub fn new_texture_from_image(
-        &self,
-        image: &quad_gl::texture::Image,
-    ) -> quad_gl::texture::Texture2D {
+    pub fn new_texture_from_image(&self, image: &Image) -> Texture2D {
         self.quad_gl.lock().unwrap().from_image(&image)
+    }
+
+    pub fn new_texture_from_rgba8(&self, width: u16, height: u16, data: &[u8]) -> Texture2D {
+        self.quad_gl
+            .lock()
+            .unwrap()
+            .from_rgba8(width, height, &data)
+    }
+    pub fn mesh(&self, mesh: CpuMesh, texture: Option<Texture2D>) -> Model {
+        self.quad_gl.lock().unwrap().mesh(mesh, texture)
     }
 
     pub fn root_ui<'a>(&'a self) -> impl std::ops::DerefMut<Target = quad_gl::ui::Ui> + 'a {
         self.ui.lock().unwrap()
     }
-    // pub fn new_scene(&self) -> scene::Scene {
-    //     scene::Scene::new(self.quad_ctx.clone(), self.fonts_storage.clone())
-    // }
-
-    // pub fn new_canvas(&self) -> sprite_layer::SpriteLayer {
-    //     //sprite_layer::SpriteLayer::new(self.quad_ctx.clone(), self.fonts_storage.clone())
-    // }
 }
 
 pub fn start<F: Fn(Context) -> Fut + 'static, Fut: Future<Output = ()> + 'static>(

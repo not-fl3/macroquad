@@ -1,7 +1,7 @@
 use macroquad::compat::*;
 
 async fn game(ctx: macroquad::Context) {
-    init_compat_mode(ctx);
+    init_compat_mode(&ctx);
 
     loop {
         clear_background(LIGHTGRAY);

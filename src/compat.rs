@@ -3,10 +3,13 @@
 pub use crate::window::next_frame;
 pub use quad_gl::color::*;
 
-use std::cell::RefCell;
+use std::{
+    cell::RefCell,
+    sync::{Arc, Mutex},
+};
 
 pub struct CompatContext {
-    ctx: crate::Context,
+    quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
     canvas: quad_gl::sprite_batcher::SpriteBatcher,
 }
 
@@ -17,11 +20,12 @@ thread_local! {
 fn with_ctx<F: Fn(&mut CompatContext)>(f: F) {
     CTX.with_borrow_mut(|v| f(v.as_mut().unwrap()));
 }
-pub fn init_compat_mode(ctx: crate::Context) {
+pub fn init_compat_mode(ctx: &crate::Context) {
     let canvas = ctx.new_canvas();
+    let quad_ctx = ctx.quad_ctx.clone();
 
     CTX.with_borrow_mut(|v| {
-        *v = Some(CompatContext { ctx, canvas });
+        *v = Some(CompatContext { quad_ctx, canvas });
     });
 }
 
@@ -35,8 +39,7 @@ pub(crate) fn end_frame() {
 }
 pub fn clear_background(color: Color) {
     with_ctx(|ctx| {
-        ctx.ctx
-            .quad_ctx
+        ctx.quad_ctx
             .lock()
             .unwrap()
             .clear(Some((1., 1., 1., 1.)), None, None)
