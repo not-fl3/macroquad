@@ -57,7 +57,8 @@ impl StyleBuilder {
         }
     }
 
-    pub fn font(self, mut font: Font) -> Result<StyleBuilder, Error> {
+    pub fn font(self, font: &Font) -> Result<StyleBuilder, Error> {
+        let mut font = font.clone();
         font.set_atlas(self.atlas.clone());
         Ok(StyleBuilder {
             font: Arc::new(Mutex::new(font)),
