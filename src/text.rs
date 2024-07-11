@@ -395,16 +395,19 @@ pub fn draw_multiline_text_ex(
     line_distance: Option<f32>,
     params: TextParams,
 ) {
-    let font_line_distance = params
-        .font
-        .map(|font| {
-            font.font
-                .horizontal_line_metrics(1.0)
-                .map(|metrics| metrics.line_gap)
-                .unwrap_or(0.0)
-        })
-        .unwrap_or(0.0);
-    let line_distance = line_distance.unwrap_or(font_line_distance);
+    let line_distance = match line_distance {
+        Some(distance) => distance,
+        None => {
+            let mut font_line_distance = 0.0;
+            if let Some(font) = params.font {
+                if let Some(metrics) = font.font.horizontal_line_metrics(1.0) {
+                    font_line_distance = metrics.line_gap;
+                }
+            }
+            font_line_distance
+        }
+    };
+
     let max_height = text
         .lines()
         .map(|line| measure_text(line, params.font, params.font_size, params.font_scale).height)
