@@ -57,9 +57,8 @@ impl StyleBuilder {
         }
     }
 
-    pub fn font(self, ttf_bytes: &[u8]) -> Result<StyleBuilder, Error> {
-        let font = Font::load_from_bytes(self.atlas.clone(), ttf_bytes)?;
-
+    pub fn font(self, mut font: Font) -> Result<StyleBuilder, Error> {
+        font.set_atlas(self.atlas.clone());
         Ok(StyleBuilder {
             font: Arc::new(Mutex::new(font)),
             ..self
