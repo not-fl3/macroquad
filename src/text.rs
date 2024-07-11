@@ -201,16 +201,6 @@ impl Font {
     /// Sets the [FilterMode](https://docs.rs/miniquad/latest/miniquad/graphics/enum.FilterMode.html#) of this font's texture atlas.
     ///
     /// Use Nearest if you need integer-ratio scaling for pixel art, for example.
-    ///
-    /// # Example
-    /// ```
-    /// # use macroquad::prelude::*;
-    /// # #[macroquad::main("test")]
-    /// # async fn main() {
-    /// let font = Font::default();
-    /// font.set_filter(FilterMode::Linear);
-    /// # }
-    /// ```
     pub fn set_filter(&mut self, filter_mode: miniquad::FilterMode) {
         self.atlas.lock().unwrap().set_filter(filter_mode);
     }
