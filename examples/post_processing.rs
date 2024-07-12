@@ -10,7 +10,7 @@ async fn main() {
             vertex: CRT_VERTEX_SHADER,
             fragment: CRT_FRAGMENT_SHADER,
         },
-        Default::default(),
+        MaterialParams::default(),
     )
     .unwrap();
 
