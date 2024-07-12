@@ -705,7 +705,7 @@ impl Texture2D {
 
     /// Creates a Texture2D from an [Image].
     pub fn from_image(image: &Image) -> Texture2D {
-        Texture2D::from_rgba8(image.width, image.height, &image.bytes)
+        Texture2D::from_rgba8(image.width(), image.height(), image.bytes())
     }
 
     /// Creates a Texture2D from a miniquad
@@ -746,10 +746,10 @@ impl Texture2D {
         let ctx = get_quad_context();
         let (width, height) = ctx.texture_size(self.raw_miniquad_id());
 
-        assert_eq!(width, image.width as u32);
-        assert_eq!(height, image.height as u32);
+        assert_eq!(width, image.width() as u32);
+        assert_eq!(height, image.height() as u32);
 
-        ctx.texture_update(self.raw_miniquad_id(), &image.bytes);
+        ctx.texture_update(self.raw_miniquad_id(), image.bytes());
     }
 
     // Updates the texture from an array of bytes.
@@ -780,7 +780,7 @@ impl Texture2D {
             y_offset,
             width,
             height,
-            &image.bytes,
+            image.bytes(),
         )
     }
 
@@ -880,11 +880,7 @@ impl Texture2D {
     pub fn get_texture_data(&self) -> Image {
         let ctx = get_quad_context();
         let (width, height) = ctx.texture_size(self.raw_miniquad_id());
-        let mut image = Image {
-            width: width as _,
-            height: height as _,
-            bytes: vec![0; width as usize * height as usize * 4],
-        };
+        let mut image = Image::from_color(width as u16, height as u16, crate::color::BLANK);
         ctx.texture_read_pixels(self.raw_miniquad_id(), &mut image.bytes);
         image
     }
