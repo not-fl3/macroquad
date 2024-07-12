@@ -60,6 +60,10 @@ impl Font {
         })
     }
 
+    pub(crate) fn set_atlas(&mut self, atlas: Arc<Mutex<Atlas>>) {
+        self.atlas = atlas;
+    }
+
     pub(crate) fn ascent(&self, font_size: f32) -> f32 {
         self.font.horizontal_line_metrics(font_size).unwrap().ascent
     }
