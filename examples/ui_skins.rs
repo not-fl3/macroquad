@@ -10,7 +10,7 @@ async fn main() {
             .unwrap();
         let label_style = root_ui()
             .style_builder()
-            .font(&font)
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 120, 255))
             .font_size(30)
@@ -54,7 +54,7 @@ async fn main() {
                 )
                 .unwrap(),
             )
-            .font(&font)
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
             .font_size(40)
@@ -63,7 +63,7 @@ async fn main() {
         let editbox_style = root_ui()
             .style_builder()
             .background_margin(RectOffset::new(0., 0., 0., 0.))
-            .font(&font)
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .color_selected(Color::from_rgba(190, 190, 190, 255))
@@ -85,7 +85,7 @@ async fn main() {
             .unwrap();
         let label_style = root_ui()
             .style_builder()
-            .font(&font)
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
@@ -128,7 +128,7 @@ async fn main() {
                 )
                 .unwrap(),
             )
-            .font(&font)
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
             .font_size(40)
@@ -169,7 +169,7 @@ async fn main() {
                 .unwrap(),
             )
             .background_margin(RectOffset::new(2., 2., 2., 2.))
-            .font(&font)
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
@@ -185,7 +185,7 @@ async fn main() {
                 .unwrap(),
             )
             .background_margin(RectOffset::new(4., 25., 6., 6.))
-            .font(&font)
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .color(Color::from_rgba(210, 210, 210, 255))
