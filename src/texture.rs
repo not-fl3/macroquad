@@ -147,7 +147,7 @@ impl Image {
     }
 
     /// Creates an Image filled with the provided [Color].
-    pub fn from_color(width: u16, height: u16, color: Color) -> Image {
+    pub fn filled_with_color(width: u16, height: u16, color: Color) -> Image {
         let bytes: [u8; 4] = color.into();
         Image {
             width,
@@ -157,9 +157,9 @@ impl Image {
     }
 
     /// Creates an Image filled with the provided [Color].
-    #[deprecated(since = "0.4.11", note = "use `Image::from_color` instead")]
+    #[deprecated(since = "0.4.12", note = "use `Image::filled_with_color` instead")]
     pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
-        Image::from_color(width, height, color)
+        Image::filled_with_color(width, height, color)
     }
 
     /// Updates this image from a slice of [Color]s.
@@ -880,7 +880,7 @@ impl Texture2D {
     pub fn get_texture_data(&self) -> Image {
         let ctx = get_quad_context();
         let (width, height) = ctx.texture_size(self.raw_miniquad_id());
-        let mut image = Image::from_color(width as u16, height as u16, crate::color::BLANK);
+        let mut image = Image::filled_with_color(width as u16, height as u16, crate::color::BLANK);
         ctx.texture_read_pixels(self.raw_miniquad_id(), &mut image.bytes);
         image
     }

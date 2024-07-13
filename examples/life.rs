@@ -14,7 +14,7 @@ async fn main() {
     let mut cells = vec![CellState::Dead; w * h];
     let mut buffer = vec![CellState::Dead; w * h];
 
-    let mut image = Image::from_color(w as u16, h as u16, WHITE);
+    let mut image = Image::filled_with_color(w as u16, h as u16, WHITE);
 
     for cell in cells.iter_mut() {
         if rand::gen_range(0, 5) == 0 {

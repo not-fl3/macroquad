@@ -661,10 +661,10 @@ impl Ui {
             font.cache_glyph(character, 13);
         }
 
-        atlas
-            .lock()
-            .unwrap()
-            .cache_sprite(SpriteKey::Id(0), Image::from_color(1, 1, crate::WHITE));
+        atlas.lock().unwrap().cache_sprite(
+            SpriteKey::Id(0),
+            Image::filled_with_color(1, 1, crate::WHITE),
+        );
 
         let font = Arc::new(Mutex::new(font));
         Ui {
