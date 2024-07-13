@@ -68,13 +68,28 @@ impl TexturesContext {
 /// Image, data stored in CPU memory
 #[derive(Clone)]
 pub struct Image {
-    bytes: Vec<u8>,
-    width: u16,
-    height: u16,
+    // FIXME: remove all the deprecation notes once the `Image` fields are private
+    #[deprecated(
+        since = "0.4.12",
+        note = "this will be made private, use `Image::bytes`, `Image::bytes_mut` or `Image::bytes_vec_mut` for reading and writing instead"
+    )]
+    pub bytes: Vec<u8>,
+    #[deprecated(
+        since = "0.4.12",
+        note = "this will be made private, use `Image::width` or `Image::width_mut` for reading and writing instead"
+    )]
+    pub width: u16,
+    #[deprecated(
+        since = "0.4.12",
+        note = "this will be made private, use `Image::height` or `Image::height_mut` for reading and writing instead"
+    )]
+    pub height: u16,
 }
 
 impl std::fmt::Debug for Image {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // FIXME: remove this once the `Image` fields are private
+        #[allow(deprecated)]
         f.debug_struct("Image")
             .field("width", &self.width)
             .field("height", &self.height)
@@ -83,6 +98,8 @@ impl std::fmt::Debug for Image {
     }
 }
 
+// FIXME: remove this once the `Image` fields are private
+#[allow(deprecated)]
 impl Image {
     /// Creates an empty Image.
     ///
@@ -889,7 +906,7 @@ impl Texture2D {
         let ctx = get_quad_context();
         let (width, height) = ctx.texture_size(self.raw_miniquad_id());
         let mut image = Image::filled_with_color(width as u16, height as u16, crate::color::BLANK);
-        ctx.texture_read_pixels(self.raw_miniquad_id(), &mut image.bytes);
+        ctx.texture_read_pixels(self.raw_miniquad_id(), image.bytes_mut());
         image
     }
 }
