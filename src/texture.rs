@@ -187,9 +187,14 @@ impl Image {
         self.height
     }
 
-    /// Returns the bytes of this image.
+    /// Returns the bytes of this image as an immutable slice.
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
+    }
+
+    /// Returns the bytes of this image as a mutable slice.
+    pub fn bytes_mut(&mut self) -> &mut [u8] {
+        &mut self.bytes
     }
 
     /// Allows changing the width of this image unsafely.
@@ -210,9 +215,12 @@ impl Image {
 
     /// Allows changing the bytes of this image unsafely.
     ///
+    /// If you do not intend to change the amount of the bytes,
+    /// use `Image::bytes_mut` instead, which is safe.
+    ///
     /// # Safety
     /// Removing bytes and not changing width and height accordingly can cause Undefined Behaviour.
-    pub unsafe fn bytes_mut(&mut self) -> &mut Vec<u8> {
+    pub unsafe fn bytes_vec_mut(&mut self) -> &mut Vec<u8> {
         &mut self.bytes
     }
 
