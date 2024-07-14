@@ -42,7 +42,8 @@ impl Atlas {
 
     pub fn new(ctx: &mut dyn miniquad::RenderingBackend, filter: miniquad::FilterMode) -> Atlas {
         let image = Image::filled_with_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
-        let texture = ctx.new_texture_from_rgba8(image.width(), image.height(), &image.bytes());
+        let texture =
+            ctx.new_texture_from_rgba8(image.width() as u16, image.height() as u16, &image.bytes());
         ctx.texture_set_filter(
             texture,
             miniquad::FilterMode::Nearest,
@@ -79,11 +80,11 @@ impl Atlas {
     }
 
     pub fn width(&self) -> u16 {
-        self.image.width()
+        self.image.width() as u16
     }
 
     pub fn height(&self) -> u16 {
-        self.image.height()
+        self.image.height() as u16
     }
 
     pub fn texture(&mut self) -> miniquad::TextureId {
@@ -97,8 +98,8 @@ impl Atlas {
                 ctx.delete_texture(self.texture);
 
                 self.texture = ctx.new_texture_from_rgba8(
-                    self.image.width(),
-                    self.image.height(),
+                    self.image.width() as u16,
+                    self.image.height() as u16,
                     &self.image.bytes()[..],
                 );
                 ctx.texture_set_filter(self.texture, self.filter, miniquad::MipmapFilterMode::None);
@@ -127,7 +128,7 @@ impl Atlas {
     pub fn cache_sprite(&mut self, key: SpriteKey, sprite: Image) {
         let (width, height) = (sprite.width() as usize, sprite.height() as usize);
 
-        let x = if self.cursor_x + (width as u16) < self.image.width() {
+        let x = if self.cursor_x + (width as u16) < self.image.width() as u16 {
             if height as u16 > self.max_line_height {
                 self.max_line_height = height as u16;
             }
@@ -143,7 +144,9 @@ impl Atlas {
         let y = self.cursor_y;
 
         // texture bounds exceeded
-        if y + sprite.height() > self.image.height() || x + sprite.width() > self.image.width() {
+        if y + sprite.height() as u16 > self.image.height() as u16
+            || x + sprite.width() as u16 > self.image.width() as u16
+        {
             // reset glyph cache state
             let sprites = self.sprites.drain().collect::<Vec<_>>();
             self.cursor_x = 0;
@@ -159,8 +162,11 @@ impl Atlas {
             let new_width = self.image.width() * 2;
             let new_height = self.image.height() * 2;
 
-            self.image =
-                Image::filled_with_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
+            self.image = Image::filled_with_color(
+                new_width as u16,
+                new_height as u16,
+                Color::new(0.0, 0.0, 0.0, 0.0),
+            );
 
             // recache all previously cached symbols
             for (key, sprite) in sprites {
@@ -176,9 +182,9 @@ impl Atlas {
             for j in 0..height {
                 for i in 0..width {
                     self.image.set_pixel(
-                        x + i as u16,
-                        y + j as u16,
-                        sprite.get_pixel(i as u16, j as u16),
+                        x as u32 + i as u32,
+                        y as u32 + j as u32,
+                        sprite.get_pixel(i as u32, j as u32),
                     );
                 }
             }

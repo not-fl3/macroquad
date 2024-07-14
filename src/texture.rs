@@ -195,13 +195,15 @@ impl Image {
     }
 
     /// Returns the width of this image.
-    pub const fn width(&self) -> u16 {
-        self.width
+    // FIXME: change the argument type to u16
+    pub const fn width(&self) -> usize {
+        self.width as usize
     }
 
     /// Returns the height of this image.
-    pub const fn height(&self) -> u16 {
-        self.height
+    // FIXME: change the argument type to u16
+    pub const fn height(&self) -> usize {
+        self.height as usize
     }
 
     /// Returns the bytes of this image as an immutable slice.
@@ -266,7 +268,10 @@ impl Image {
     ///
     /// # Panics
     /// Panics if the given pixel coordinates are not inside the image.
-    pub fn set_pixel(&mut self, x: u16, y: u16, color: Color) {
+    // FIXME: change the argument type to u16
+    pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
+        let x = x as u16;
+        let y = y as u16;
         assert!(x < self.width);
         assert!(y < self.height);
 
@@ -279,7 +284,10 @@ impl Image {
     ///
     /// # Panics
     /// Panics if the given pixel coordinates are not inside the image.
-    pub fn get_pixel(&self, x: u16, y: u16) -> Color {
+    // FIXME: change the argument type to u16
+    pub fn get_pixel(&self, x: u32, y: u32) -> Color {
+        let x = x as u16;
+        let y = y as u16;
         assert!(x < self.width);
         assert!(y < self.height);
 
@@ -311,7 +319,7 @@ impl Image {
     fn assert_same_size(&self, other: &Image) {
         assert!(
             self.width == other.width && self.height == other.height,
-            "Images have different sizes!"
+            "images have different sizes"
         );
     }
 
@@ -730,7 +738,7 @@ impl Texture2D {
 
     /// Creates a Texture2D from an [Image].
     pub fn from_image(image: &Image) -> Texture2D {
-        Texture2D::from_rgba8(image.width(), image.height(), image.bytes())
+        Texture2D::from_rgba8(image.width() as u16, image.height() as u16, image.bytes())
     }
 
     /// Creates a Texture2D from a miniquad
