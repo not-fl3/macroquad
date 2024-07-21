@@ -1015,7 +1015,12 @@ impl QuadGl {
             .get_quad_pipeline_mut(pipeline)
             .set_uniform(name, uniform);
     }
-    pub fn set_uniform_array<T: ToBytes>(&mut self, pipeline: GlPipeline, name: &str, uniform: &[T]) {
+    pub fn set_uniform_array<T: ToBytes>(
+        &mut self,
+        pipeline: GlPipeline,
+        name: &str,
+        uniform: &[T],
+    ) {
         self.state.break_batching = true;
 
         self.pipelines
