@@ -53,7 +53,7 @@ async fn main() {
             fragment: FRAGMENT,
         },
         MaterialParams {
-            uniforms: vec![("test_color".to_string(), UniformType::Float4)],
+            uniforms: vec![UniformDesc::new("test_color", UniformType::Float4)],
             pipeline_params,
             ..Default::default()
         },
@@ -65,7 +65,7 @@ async fn main() {
             vertex: VERTEX,
             fragment: FRAGMENT_WITH_ARRAY,
         },
-        MaterialParams2 {
+        MaterialParams {
             uniforms: vec![UniformDesc::array(
                 UniformDesc::new("test_color", UniformType::Float4),
                 10,

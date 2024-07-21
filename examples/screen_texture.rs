@@ -10,7 +10,7 @@ async fn main() {
             fragment: LENS_FRAGMENT_SHADER,
         },
         MaterialParams {
-            uniforms: vec![("Center".to_owned(), UniformType::Float2)],
+            uniforms: vec![UniformDesc::new("Center", UniformType::Float2)],
             ..Default::default()
         },
     )
