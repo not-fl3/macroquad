@@ -296,19 +296,24 @@ pub fn capability_trait_macro(input: proc_macro::TokenStream) -> proc_macro::Tok
         trait_decl.push_str(&format!(
             "fn {} {} -> {};",
             fn_name,
-            fn_args_decl.replace("node : HandleUntyped", "&self"),
+            fn_args_decl
+                .replace("node : HandleUntyped", "&self")
+                .replace("node: HandleUntyped", "&self"),
             fn_res
         ));
 
         let args = fn_args_impl
             .replace("node : HandleUntyped", "")
+            .replace("node: HandleUntyped", "")
             .replace("(", "")
             .replace(")", "");
 
         trait_impl.push_str(&format!(
             "fn {} {} -> {} {{",
             fn_name,
-            fn_args_decl.replace("node : HandleUntyped", "&self"),
+            fn_args_decl
+                .replace("node : HandleUntyped", "&self")
+                .replace("node: HandleUntyped", "&self"),
             fn_res
         ));
         trait_impl.push_str(&format!(
