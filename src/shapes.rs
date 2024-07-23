@@ -379,7 +379,7 @@ pub fn draw_arc(
     let part = arc.to_radians();
 
     let sides = (sides as f32 * part / std::f32::consts::TAU).ceil().max(1.0);
-    let span = part / (sides + 1.0);
+    let span = part / sides;
     let sides = sides as usize;
 
     let context = get_context();
@@ -399,7 +399,7 @@ pub fn draw_arc(
             (end_angle, radius),
             (end_angle, radius+thickness)
         ] {
-            let point = Vec2::new(x, y) + radius * Vec2::from_angle(start_angle);
+            let point = Vec2::new(x, y) + radius * Vec2::from_angle(angle);
             verticies.push(Vertex::new(
                 point.x,
                 point.y,
