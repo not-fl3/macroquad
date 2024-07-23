@@ -8,6 +8,7 @@ use crate::math::{Rect, Vec2};
 #[derive(Clone, Debug)]
 pub struct Scroll {
     pub scroll: Vec2,
+    #[allow(dead_code)]
     pub dragging_x: bool,
     pub dragging_y: bool,
     pub rect: Rect,

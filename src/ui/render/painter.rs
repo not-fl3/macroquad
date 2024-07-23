@@ -556,6 +556,7 @@ impl Default for Alignment {
 #[derive(Clone, Debug)]
 pub struct LabelParams {
     pub color: Color,
+    #[allow(dead_code)]
     pub alignment: Alignment,
 }
 

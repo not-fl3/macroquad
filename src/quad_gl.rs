@@ -198,10 +198,6 @@ mod snapshotter_shader {
             uniforms: UniformBlockLayout { uniforms: vec![] },
         }
     }
-
-    #[repr(C)]
-    #[derive(Debug)]
-    pub struct Uniforms {}
 }
 
 impl MagicSnapshotter {
