@@ -407,7 +407,7 @@ pub fn draw_arc(
                 0.,
                 0.,
                 color
-            );
+            ));
             indicies.push(indices.len());
         }
     }
