@@ -392,6 +392,12 @@ pub fn draw_arc(
     for i in 0..sides {
         let start_angle = i as f32 * span + rot;
         let end_angle = start_angle + span;
+        
+        indicies.extend(
+            [0,1,2,2,1,3].map(
+                |k|k+(verticies.len() as u16)
+            )
+        );
 
         for (angle, radius) in [
             (start_angle, radius),
@@ -409,12 +415,6 @@ pub fn draw_arc(
                 color
             ));
         }
-
-        indicies.extend(
-            [0,1,2,2,1,3].map(
-                |k|k+(indicies.len() as u16)
-            )
-        );
     }
 
     context.gl.geometry(
