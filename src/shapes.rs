@@ -378,20 +378,42 @@ pub fn draw_arc(
     let rot = rotation.to_radians();
     let part = arc.to_radians();
 
+    let sides = (sides as f32 * part / std::f32::consts::TAU).ceil().max(1.0);
+    let span = part / (sides + 1.0);
+    let sides = sides as usize;
+
+    let context = get_context();
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::TriangleStrip);
+
+    let mut verticies = Vec::<Vertex>::with_capacity(sides * 2);
+    let mut indicies = Vec::<u32>::with_capacity(sides * 2);
+    
     for i in 0..sides {
-        let angle = i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot;
-        let p0 = vec2(x + radius * angle.cos(), y + radius * angle.sin());
+        let start_angle = i as f32 * span + rot;
+        let end_angle = start_angle + span;
 
-        let angle = (i + 1) as f32 / sides as f32 * std::f32::consts::PI * 2. + rot;
-        if angle > part + rot {
-            continue;
+        for (angle, radius) in [
+            (start_angle, radius),
+            (start_angle, radius+thickness),
+            (end_angle, radius),
+            (end_angle, radius+thickness)
+        ] {
+            let point = Vec2::new(x, y) + radius * Vec2::from_angle(start_angle);
+            verticies.push(Vertex::new(
+                point.x,
+                point.y,
+                0.,
+                0.,
+                0.,
+                color
+            );
+            indicies.push(indices.len());
         }
-        let p1 = vec2(x + radius * angle.cos(), y + radius * angle.sin());
-
-        let mid = p0.midpoint(p1);
-        let v = (vec2(x, y) - mid).normalize() * (thickness / 2.);
-        let p0 = p0 + v;
-        let p1 = p1 + v;
-        draw_line(p0.x, p0.y, p1.x, p1.y, thickness, color);
     }
+
+    context.gl.geometry(
+        &verticies,
+        &indicies
+    );
 }
