@@ -384,7 +384,7 @@ pub fn draw_arc(
 
     let context = get_context();
     context.gl.texture(None);
-    context.gl.draw_mode(DrawMode::TriangleStrip);
+    context.gl.draw_mode(DrawMode::Triangles);
 
     let mut verticies = Vec::<Vertex>::with_capacity(sides * 2);
     let mut indicies = Vec::<u16>::with_capacity(sides * 2);
@@ -408,8 +408,13 @@ pub fn draw_arc(
                 0.,
                 color
             ));
-            indicies.push(indices.len() as u16);
         }
+
+        indicies.extend(
+            [0,1,2,2,1,3].map(
+                |k|k+(indicies.len() as u16)
+            )
+        );
     }
 
     context.gl.geometry(
