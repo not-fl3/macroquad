@@ -387,7 +387,7 @@ pub fn draw_arc(
     context.gl.draw_mode(DrawMode::TriangleStrip);
 
     let mut verticies = Vec::<Vertex>::with_capacity(sides * 2);
-    let mut indicies = Vec::<u32>::with_capacity(sides * 2);
+    let mut indicies = Vec::<u16>::with_capacity(sides * 2);
     
     for i in 0..sides {
         let start_angle = i as f32 * span + rot;
@@ -408,7 +408,7 @@ pub fn draw_arc(
                 0.,
                 color
             ));
-            indicies.push(indices.len());
+            indicies.push(indices.len() as u16);
         }
     }
 
