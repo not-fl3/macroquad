@@ -378,7 +378,9 @@ pub fn draw_arc(
     let rot = rotation.to_radians();
     let part = arc.to_radians();
 
-    let sides = (sides as f32 * part / std::f32::consts::TAU).ceil().max(1.0);
+    let sides = (sides as f32 * part / std::f32::consts::TAU)
+        .ceil()
+        .max(1.0);
     let span = part / sides;
     let sides = sides as usize;
 
@@ -388,37 +390,23 @@ pub fn draw_arc(
 
     let mut verticies = Vec::<Vertex>::with_capacity(sides * 2);
     let mut indicies = Vec::<u16>::with_capacity(sides * 2);
-    
+
     for i in 0..sides {
         let start_angle = i as f32 * span + rot;
         let end_angle = start_angle + span;
-        
-        indicies.extend(
-            [0,1,2,2,1,3].map(
-                |k|k+(verticies.len() as u16)
-            )
-        );
+
+        indicies.extend([0, 1, 2, 2, 1, 3].map(|k| k + (verticies.len() as u16)));
 
         for (angle, radius) in [
             (start_angle, radius),
-            (start_angle, radius+thickness),
+            (start_angle, radius + thickness),
             (end_angle, radius),
-            (end_angle, radius+thickness)
+            (end_angle, radius + thickness),
         ] {
             let point = Vec2::new(x, y) + radius * Vec2::from_angle(angle);
-            verticies.push(Vertex::new(
-                point.x,
-                point.y,
-                0.,
-                0.,
-                0.,
-                color
-            ));
+            verticies.push(Vertex::new(point.x, point.y, 0., 0., 0., color));
         }
     }
 
-    context.gl.geometry(
-        &verticies,
-        &indicies
-    );
+    context.gl.geometry(&verticies, &indicies);
 }
