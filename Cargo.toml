@@ -33,7 +33,6 @@ glam = {version = "0.27", features = ["scalar-math"] }
 image = { version = "0.24", default-features = false, features = ["png", "tga"] }
 macroquad_macro = { version = "0.1.8", path = "macroquad_macro" }
 fontdue = "0.7"
-bumpalo = "3.4"
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
