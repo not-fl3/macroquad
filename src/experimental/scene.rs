@@ -4,16 +4,14 @@ use crate::camera::Camera2D;
 
 pub use macroquad_macro::CapabilityTrait;
 
+mod arena;
+
 #[rustfmt::skip]
 pub trait Node {
     fn ready(_node: RefMut<Self>) where Self: Sized {}
     fn update(_node: RefMut<Self>) where Self: Sized  {}
     fn fixed_update(_node: RefMut<Self>) where Self: Sized  {}
     fn draw(_node: RefMut<Self>) where Self: Sized  {}
-}
-
-trait NodeTyped<T> {
-    fn self_node(&self) -> &T;
 }
 
 trait NodeAny: Any + Node {
@@ -345,7 +343,7 @@ struct Scene {
     dense: Vec<Id>,
     dense_ongoing: Vec<Result<Id, Id>>,
     nodes: Vec<Option<Cell>>,
-    arena: bumpalo::Bump,
+    arena: arena::Arena,
     camera: [Option<Camera2D>; 4],
     camera_pos: crate::Vec2,
 
@@ -363,7 +361,7 @@ impl Scene {
             dense: vec![],
             dense_ongoing: vec![],
             nodes: Vec::new(),
-            arena: bumpalo::Bump::new(),
+            arena: arena::Arena::new(),
             free_nodes: Vec::new(),
             camera: [Some(Camera2D::default()), None, None, None],
             camera_pos: crate::vec2(0., 0.),
@@ -461,15 +459,19 @@ impl Scene {
             let trait_obj = &data as &dyn NodeAny;
             let (_, vtable) = unsafe { std::mem::transmute::<_, (*mut (), *mut ())>(trait_obj) };
 
-            let data = self.arena.alloc(data) as *mut _ as *mut _;
-            let used = self.arena.alloc(false) as *mut _ as *mut _;
+            let ptr = self.arena.alloc(std::mem::size_of::<T>()) as *mut _ as *mut T;
+            unsafe { std::ptr::write(ptr, data); }
+            let ptr = ptr as *mut ();
+            let used = self.arena.alloc(1) as *mut _ as *mut bool;
+            unsafe { std::ptr::write(used, false); }
+            let used = used as *mut _ as *mut bool;
 
             id = Id {
                 id: self.nodes.len(),
                 generation: 0,
             };
             self.nodes
-                .push(Some(Cell::new::<T>(id, data, vtable, used)));
+                .push(Some(Cell::new::<T>(id, ptr, vtable, used)));
         }
 
         self.dense.push(id);
@@ -616,7 +618,7 @@ unsafe fn get_scene() -> &'static mut Scene {
 }
 
 pub(crate) fn allocated_memory() -> usize {
-    unsafe { get_scene() }.arena.allocated_bytes()
+    unsafe { get_scene().arena.offset() }
 }
 
 pub fn clear() {
