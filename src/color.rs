@@ -8,9 +8,9 @@ pub use colors::*;
 pub struct Color {
     /// Red channel value from 0.0 to 1.0
     pub r: f32,
-    /// Blue channel value from 0.0 to 1.0
-    pub g: f32,
     /// Green channel value from 0.0 to 1.0
+    pub g: f32,
+    /// Blue channel value from 0.0 to 1.0
     pub b: f32,
     /// Alpha channel value from 0.0 to 1.0
     pub a: f32,
