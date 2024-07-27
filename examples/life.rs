@@ -75,8 +75,8 @@ async fn main() {
             cells[i] = buffer[i];
 
             image.set_pixel(
-                (i % w) as u16,
-                (i / w) as u16,
+                (i % w) as u32,
+                (i / w) as u32,
                 match buffer[i] {
                     CellState::Alive => BLACK,
                     CellState::Dead => WHITE,

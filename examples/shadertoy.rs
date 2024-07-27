@@ -301,7 +301,7 @@ async fn main() {
                     let y = mouse.1 as i32 - (cursor.y as i32 + 20);
 
                     let color = color_picker_image
-                        .get_pixel(x.max(0).min(199) as u16, y.max(0).min(199) as u16);
+                        .get_pixel(x.max(0).min(199) as u32, y.max(0).min(199) as u32);
 
                     canvas.rect(
                         Rect::new(cursor.x, cursor.y, 200.0, 18.0),
