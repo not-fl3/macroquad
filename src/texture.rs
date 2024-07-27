@@ -323,8 +323,8 @@ impl Image {
         );
     }
 
-    /// Blends this image with another image (of identical dimensions)
-    /// Inspired by OpenCV saturated blending
+    /// Blends this image with another image (of identical dimensions).
+    /// Inspired by OpenCV saturated blending.
     pub fn blend(&mut self, other: &Image) {
         self.assert_same_size(other);
 
@@ -404,7 +404,7 @@ impl Image {
 
         image::save_buffer(
             path,
-            &bytes[..],
+            &bytes,
             self.width as u32,
             self.height as u32,
             image::ColorType::Rgba8,
