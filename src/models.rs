@@ -36,6 +36,14 @@ pub fn draw_mesh(mesh: &Mesh) {
     context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
 }
 
+pub fn draw_mesh_wires(mesh: &Mesh) {
+    let context = get_context();
+
+    context.gl.texture(mesh.texture.as_ref());
+    context.gl.draw_mode(DrawMode::Lines);
+    context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
+}
+
 fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
     let context = get_context();
     let indices = [0, 1, 2, 0, 2, 3];
