@@ -31,7 +31,7 @@ async fn main() {
     )
     .normalize();
     let mut right = front.cross(world_up).normalize();
-    let mut up;
+    let mut up = right.cross(front).normalize();
 
     let mut position = vec3(0.0, 1.0, 0.0);
     let mut last_mouse_position: Vec2 = mouse_position().into();
@@ -67,27 +67,30 @@ async fn main() {
 
         let mouse_position: Vec2 = mouse_position().into();
         let mouse_delta = mouse_position - last_mouse_position;
+
         last_mouse_position = mouse_position;
 
-        yaw += mouse_delta.x * delta * LOOK_SPEED;
-        pitch += mouse_delta.y * delta * -LOOK_SPEED;
+        if grabbed {
+            yaw += mouse_delta.x * delta * LOOK_SPEED;
+            pitch += mouse_delta.y * delta * -LOOK_SPEED;
 
-        pitch = if pitch > 1.5 { 1.5 } else { pitch };
-        pitch = if pitch < -1.5 { -1.5 } else { pitch };
+            pitch = if pitch > 1.5 { 1.5 } else { pitch };
+            pitch = if pitch < -1.5 { -1.5 } else { pitch };
 
-        front = vec3(
-            yaw.cos() * pitch.cos(),
-            pitch.sin(),
-            yaw.sin() * pitch.cos(),
-        )
-        .normalize();
+            front = vec3(
+                yaw.cos() * pitch.cos(),
+                pitch.sin(),
+                yaw.sin() * pitch.cos(),
+            )
+            .normalize();
 
-        right = front.cross(world_up).normalize();
-        up = right.cross(front).normalize();
+            right = front.cross(world_up).normalize();
+            up = right.cross(front).normalize();
 
-        x += if switch { 0.04 } else { -0.04 };
-        if x >= bounds || x <= -bounds {
-            switch = !switch;
+            x += if switch { 0.04 } else { -0.04 };
+            if x >= bounds || x <= -bounds {
+                switch = !switch;
+            }
         }
 
         clear_background(LIGHTGRAY);
