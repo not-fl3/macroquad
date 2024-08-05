@@ -17,11 +17,15 @@ use std::sync::{Arc, Mutex};
 
 pub struct Resources {
     quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
+    quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
 }
 
 impl Resources {
-    pub fn new(quad_ctx: Arc<Mutex<Box<miniquad::Context>>>) -> Resources {
-        Resources { quad_ctx }
+    pub fn new(
+        quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
+        quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
+    ) -> Resources {
+        Resources { quad_ctx, quad_gl }
     }
 
     pub async fn load_gltf(&self, path: &str) -> Result<Model, crate::Error> {
@@ -238,5 +242,13 @@ impl Resources {
         let mut quad_ctx = self.quad_ctx.lock().unwrap();
         let cubemap = quad_gl::cubemap::Cubemap::new(quad_ctx.as_mut(), &cubemap[..]);
         Ok(cubemap)
+    }
+
+    pub async fn load_texture(
+        &self,
+        path: &str,
+    ) -> Result<quad_gl::texture::Texture2D, crate::Error> {
+        let bytes = &load_file(path).await?;
+        Ok(self.quad_gl.lock().unwrap().load_texture(&bytes))
     }
 }

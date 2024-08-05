@@ -18,8 +18,8 @@ async fn game(ctx: macroquad::Context) {
 
     let mut scene = ctx.new_scene();
 
-    let heightmap = load_file("examples/ferris.png").await.unwrap();
-    let heightmap = quad_gl::image::decode(&heightmap).unwrap();
+    let texture = load_file("examples/ferris.png").await.unwrap();
+    let texture = quad_gl::image::decode(&texture).unwrap();
 
     let indices = vec![0u16, 1, 2, 0, 2, 3];
 
@@ -40,9 +40,9 @@ async fn game(ctx: macroquad::Context) {
     let mesh = ctx.mesh(
         mesh,
         Some(ctx.new_texture_from_rgba8(
-            heightmap.width as _,
-            heightmap.height as _,
-            &heightmap.data,
+            texture.width as _,
+            texture.height as _,
+            &texture.data,
         )),
     );
     let _mesh = scene.add_model(&mesh);

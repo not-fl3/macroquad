@@ -372,14 +372,14 @@ impl Context {
         let quad_ctx = miniquad::window::new_rendering_backend();
         let quad_ctx = Arc::new(Mutex::new(quad_ctx));
         let quad_gl = quad_gl::QuadGl::new(quad_ctx.clone());
-
+        let quad_gl = Arc::new(Mutex::new(quad_gl));
         let (w, h) = miniquad::window::screen_size();
         let ui = quad_gl::ui::Ui::new(quad_ctx.clone(), w, h);
 
         Context {
             quad_ctx: quad_ctx.clone(),
-            quad_gl: Arc::new(Mutex::new(quad_gl)),
-            resources: resources::Resources::new(quad_ctx.clone()),
+            quad_gl: quad_gl.clone(),
+            resources: resources::Resources::new(quad_ctx.clone(), quad_gl.clone()),
             input: Arc::new(Mutex::new(input::InputContext::new())),
             ui: Arc::new(Mutex::new(ui)),
         }
