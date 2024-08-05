@@ -224,7 +224,9 @@ struct Context {
 
     quad_context: Box<dyn miniquad::RenderingBackend>,
 
+    default_filter_mode: crate::quad_gl::FilterMode,
     textures: crate::texture::TexturesContext,
+    
     update_on: conf::UpdateTrigger,
 }
 
@@ -351,6 +353,8 @@ impl Context {
             recovery_future: None,
 
             quad_context: ctx,
+
+	    default_filter_mode: crate::quad_gl::FilterMode::Linear,
             textures: crate::texture::TexturesContext::new(),
             update_on: Default::default(),
         }
