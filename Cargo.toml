@@ -2,7 +2,7 @@
 name = "macroquad"
 version = "0.4.2"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
-edition = "2018"
+edition = "2021"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/not-fl3/macroquad"
 repository = "https://github.com/not-fl3/macroquad"
