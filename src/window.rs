@@ -99,9 +99,9 @@ pub fn set_fullscreen(fullscreen: bool) {
 /// set_panic_handler(|msg, backtrace| async move {
 ///     loop {
 ///         clear_background(RED);
-///         ui::root_ui().label(None, &msg);
+///         ui::root_ui().label(UiPosition::Auto, &msg);
 ///         for line in backtrace.split('\n') {
-///             root_ui().label(None, line);
+///             root_ui().label(UiPosition::Auto, line);
 ///         }
 ///         next_frame().await;
 ///      }

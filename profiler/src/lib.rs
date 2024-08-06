@@ -2,7 +2,7 @@ use macroquad::{experimental::collections::storage, telemetry};
 
 use macroquad::prelude::*;
 
-use macroquad::ui::{hash, root_ui, widgets::Window, Ui};
+use macroquad::ui::{hash, root_ui, widgets::Window, Ui, UiPosition};
 
 pub struct ProfilerState {
     fps_buffer: Vec<f32>,
@@ -42,7 +42,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
                 }
             });
         } else {
-            ui.label(None, &label);
+            ui.label(UiPosition::Auto, &label);
         }
     }
 
@@ -104,7 +104,7 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         .or_else(|| state.frames_buffer.get(0))
     {
         ui.label(
-            None,
+            UiPosition::Auto,
             &format!(
                 "Full frame time: {:.3}ms {:.1}(1/t)",
                 frame.full_frame_time * 1000.0,
@@ -114,17 +114,17 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
     }
 
     if state.paused {
-        if ui.button(None, "resume") {
+        if ui.button(UiPosition::Auto, "resume") {
             state.paused = false;
         }
     } else {
-        if ui.button(None, "pause") {
+        if ui.button(UiPosition::Auto, "pause") {
             state.paused = true;
         }
     }
     if state.selected_frame.is_some() {
         ui.same_line(100.0);
-        if ui.button(None, "deselect frame") {
+        if ui.button(UiPosition::Auto, "deselect frame") {
             state.selected_frame = None;
         }
     }
@@ -148,12 +148,12 @@ fn profiler_window(ui: &mut Ui, state: &mut ProfilerState) {
         for query in queries {
             let t = query.1 as f64 / 1_000_000_000.0;
             ui.label(
-                None,
+                UiPosition::Auto,
                 &format!("{}: {:.3}ms {:.1}(1/t)", query.0, t * 1000.0, 1.0 / t),
             );
         }
     });
-    if ui.button(None, "sample gpu") {
+    if ui.button(UiPosition::Auto, "sample gpu") {
         telemetry::sample_gpu_queries();
     }
 }
@@ -246,7 +246,7 @@ pub fn profiler(params: ProfilerParams) {
             match tab {
                 0 => profiler_window(ui, &mut state),
                 1 => ui.label(
-                    None,
+                    UiPosition::Auto,
                     &format!(
                         "scene allocated memory: {:.1} kb",
                         (telemetry::scene_allocated_memory() as f32) / 1000.0
@@ -254,34 +254,34 @@ pub fn profiler(params: ProfilerParams) {
                 ),
                 2 => {
                     let drawcalls = telemetry::drawcalls();
-                    ui.label(None, &format!("Draw calls: {}", drawcalls.len()));
+                    ui.label(UiPosition::Auto, &format!("Draw calls: {}", drawcalls.len()));
                     for telemetry::DrawCallTelemetry { indices_count, .. } in &drawcalls {
                         ui.same_line(0.0);
 
-                        ui.label(None, &format!("{}", indices_count));
+                        ui.label(UiPosition::Auto, &format!("{}", indices_count));
                         ui.same_line(0.0);
                     }
-                    ui.label(None, " ");
+                    ui.label(UiPosition::Auto, " ");
 
                     for telemetry::DrawCallTelemetry {
                         indices_count,
                         texture,
                     } in &drawcalls
                     {
-                        ui.label(None, &format!("{}", *indices_count));
+                        ui.label(UiPosition::Auto, &format!("{}", *indices_count));
                         ui.same_line(0.0);
                         ui.texture(Texture2D::from_miniquad_texture(*texture), 100., 100.0);
                         ui.same_line(0.0);
                     }
-                    ui.label(None, " ");
+                    ui.label(UiPosition::Auto, " ");
 
-                    if ui.button(None, "Capture frame") {
+                    if ui.button(UiPosition::Auto, "Capture frame") {
                         telemetry::capture_frame();
                     }
                 }
                 3 => {
                     for label in telemetry::strings() {
-                        ui.label(None, &label);
+                        ui.label(UiPosition::Auto, &label);
                     }
                 }
                 _ => unreachable!(),

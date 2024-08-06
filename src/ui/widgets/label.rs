@@ -1,12 +1,12 @@
 use crate::{
     math::Vec2,
-    ui::{ElementState, Layout, Ui, UiContent},
+    ui::{fit, ElementState, Ui, UiContent, UiPosition},
 };
 
 use std::borrow::Cow;
 
 pub struct Label<'a> {
-    position: Option<Vec2>,
+    position: UiPosition,
     _multiline: Option<f32>,
     size: Option<Vec2>,
     label: Cow<'a, str>,
@@ -18,7 +18,7 @@ impl<'a> Label<'a> {
         S: Into<Cow<'a, str>>,
     {
         Label {
-            position: None,
+            position: UiPosition::Auto,
             _multiline: None,
             size: None,
             label: label.into(),
@@ -32,7 +32,7 @@ impl<'a> Label<'a> {
         }
     }
 
-    pub fn position<P: Into<Option<Vec2>>>(self, position: P) -> Self {
+    pub fn position<P: Into<UiPosition>>(self, position: P) -> Self {
         let position = position.into();
 
         Label { position, ..self }
@@ -46,7 +46,7 @@ impl<'a> Label<'a> {
     }
 
     pub fn ui(self, ui: &mut Ui) {
-        let context = ui.get_active_window_context();
+        let mut context = ui.get_active_window_context();
 
         let size = self.size.unwrap_or_else(|| {
             context.window.painter.content_with_margins_size(
@@ -55,10 +55,7 @@ impl<'a> Label<'a> {
             )
         });
 
-        let pos = context
-            .window
-            .cursor
-            .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
+        let pos = fit(&mut context, size, self.position);
 
         context.window.painter.draw_element_content(
             &context.style.label_style,
@@ -76,7 +73,7 @@ impl<'a> Label<'a> {
 }
 
 impl Ui {
-    pub fn label<P: Into<Option<Vec2>>>(&mut self, position: P, label: &str) {
+    pub fn label<P: Into<UiPosition>>(&mut self, position: P, label: &str) {
         Label::new(label).position(position).ui(self)
     }
 

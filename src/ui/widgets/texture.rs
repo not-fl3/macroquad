@@ -1,11 +1,11 @@
 use crate::{
     math::{Rect, Vec2},
     texture::Texture2D,
-    ui::{Layout, Ui},
+    ui::{fit, Ui, UiPosition},
 };
 
 pub struct Texture {
-    position: Option<Vec2>,
+    position: UiPosition,
     w: f32,
     h: f32,
     texture: Texture2D,
@@ -14,7 +14,7 @@ pub struct Texture {
 impl Texture {
     pub fn new(texture: Texture2D) -> Texture {
         Texture {
-            position: None,
+            position: UiPosition::Auto,
             w: 100.,
             h: 100.,
             texture,
@@ -25,21 +25,18 @@ impl Texture {
         Texture { w, h, ..self }
     }
 
-    pub fn position<P: Into<Option<Vec2>>>(self, position: P) -> Self {
+    pub fn position<P: Into<UiPosition>>(self, position: P) -> Self {
         let position = position.into();
 
         Texture { position, ..self }
     }
 
     pub fn ui(self, ui: &mut Ui) -> bool {
-        let context = ui.get_active_window_context();
+        let mut context = ui.get_active_window_context();
 
         let size = Vec2::new(self.w, self.h);
 
-        let pos = context
-            .window
-            .cursor
-            .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
+        let pos = fit(&mut context, size, self.position);
         context
             .window
             .painter

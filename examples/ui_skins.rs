@@ -1,6 +1,6 @@
 use macroquad::prelude::*;
 
-use macroquad::ui::{hash, root_ui, widgets, Skin};
+use macroquad::ui::{hash, root_ui, widgets, Skin, UiPosition};
 
 #[macroquad::main("UI showcase")]
 async fn main() {
@@ -216,28 +216,28 @@ async fn main() {
         clear_background(GRAY);
 
         root_ui().group(hash!(), vec2(70.0, 100.0), |ui| {
-            ui.label(None, "Window 1");
+            ui.label(UiPosition::Auto, "Window 1");
 
-            if ui.button(None, "Skin 1") {
+            if ui.button(UiPosition::Auto, "Skin 1") {
                 window1_skin = skin1.clone();
             }
-            if ui.button(None, "Skin 2") {
+            if ui.button(UiPosition::Auto, "Skin 2") {
                 window1_skin = skin2.clone();
             }
-            if ui.button(None, "No Skin") {
+            if ui.button(UiPosition::Auto, "No Skin") {
                 window1_skin = default_skin.clone();
             }
         });
         root_ui().same_line(0.);
         root_ui().group(hash!(), vec2(70.0, 100.0), |ui| {
-            ui.label(None, "Window 2");
-            if ui.button(None, "Skin 1") {
+            ui.label(UiPosition::Auto, "Window 2");
+            if ui.button(UiPosition::Auto, "Skin 1") {
                 window2_skin = skin1.clone();
             }
-            if ui.button(None, "Skin 2") {
+            if ui.button(UiPosition::Auto, "Skin 2") {
                 window2_skin = skin2.clone();
             }
-            if ui.button(None, "No Skin") {
+            if ui.button(UiPosition::Auto, "No Skin") {
                 window2_skin = default_skin.clone();
             }
         });

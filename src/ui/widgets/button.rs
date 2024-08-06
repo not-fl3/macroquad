@@ -1,10 +1,10 @@
 use crate::{
     math::{Rect, Vec2},
-    ui::{ElementState, Layout, Ui, UiContent},
+    ui::{fit, ElementState, Ui, UiContent, UiPosition},
 };
 
 pub struct Button<'a> {
-    position: Option<Vec2>,
+    position: UiPosition,
     size: Option<Vec2>,
     content: UiContent<'a>,
     selected: bool,
@@ -16,14 +16,14 @@ impl<'a> Button<'a> {
         S: Into<UiContent<'a>>,
     {
         Button {
-            position: None,
+            position: UiPosition::default(),
             size: None,
             content: content.into(),
             selected: false,
         }
     }
 
-    pub fn position<P: Into<Option<Vec2>>>(self, position: P) -> Self {
+    pub fn position<P: Into<UiPosition>>(self, position: P) -> Self {
         let position = position.into();
 
         Button { position, ..self }
@@ -50,10 +50,7 @@ impl<'a> Button<'a> {
                 .content_with_margins_size(&context.style.button_style, &self.content)
         });
 
-        let pos = context
-            .window
-            .cursor
-            .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
+        let pos = fit(&mut context, size, self.position);
         let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
         let (hovered, clicked) = context.register_click_intention(rect);
 
@@ -103,7 +100,7 @@ impl<'a> Button<'a> {
 }
 
 impl Ui {
-    pub fn button<'a, P: Into<Option<Vec2>>, S: Into<UiContent<'a>>>(
+    pub fn button<'a, P: Into<UiPosition>, S: Into<UiContent<'a>>>(
         &mut self,
         position: P,
         label: S,

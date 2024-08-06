@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+use macroquad::ui::UiPosition;
 use macroquad::ui::{
     hash, root_ui,
     widgets::{self, Group},
@@ -182,15 +183,15 @@ async fn main() {
             .label("Megaui Showcase Window")
             .ui(&mut *root_ui(), |ui| {
                 ui.tree_node(hash!(), "input", |ui| {
-                    ui.label(None, "Some random text");
-                    if ui.button(None, "click me") {
+                    ui.label(UiPosition::Auto, "Some random text");
+                    if ui.button(UiPosition::Auto, "click me") {
                         println!("hi");
                     }
 
                     ui.separator();
 
-                    ui.label(None, "Some other random text");
-                    if ui.button(None, "other button") {
+                    ui.label(UiPosition::Auto, "Some other random text");
+                    if ui.button(UiPosition::Auto, "other button") {
                         println!("hi2");
                     }
 
@@ -199,7 +200,7 @@ async fn main() {
                     ui.input_text(hash!(), "<- input text 1", &mut data0);
                     ui.input_text(hash!(), "<- input text 2", &mut data1);
                     ui.label(
-                        None,
+                        UiPosition::Auto,
                         &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
                     );
 
@@ -222,11 +223,11 @@ async fn main() {
                     ui.slider(hash!(), "[0 .. 100]", 0f32..100f32, &mut number1);
                 });
                 ui.tree_node(hash!(), "editbox 1", |ui| {
-                    ui.label(None, "This is editbox!");
+                    ui.label(UiPosition::Auto, "This is editbox!");
                     ui.editbox(hash!(), vec2(285., 165.), &mut text0);
                 });
                 ui.tree_node(hash!(), "editbox 2", |ui| {
-                    ui.label(None, "This is editbox!");
+                    ui.label(UiPosition::Auto, "This is editbox!");
                     ui.editbox(hash!(), vec2(285., 165.), &mut text1);
                 });
             });
