@@ -169,7 +169,6 @@ impl Font {
 
             let atlas = self.atlas.lock().unwrap();
             let glyph = atlas.get(font_data.sprite).unwrap().rect;
-
             width += font_data.advance * font_scale_x;
             min_y = min_y.min(offset_y);
             max_y = max_y.max(glyph.h * font_scale_y + offset_y);
