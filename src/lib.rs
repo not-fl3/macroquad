@@ -38,7 +38,6 @@
 #![allow(warnings)]
 use miniquad::*;
 
-use slotmap::SlotMap;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
@@ -393,6 +392,14 @@ impl Context {
         );
     }
 
+    pub fn screen_width(&self) -> f32 {
+        crate::window::screen_width()
+    }
+
+    pub fn screen_height(&self) -> f32 {
+        crate::window::screen_height()
+    }
+
     pub fn new_canvas(&self) -> quad_gl::sprite_batcher::SpriteBatcher {
         let quad_gl = self.quad_gl.lock().unwrap();
         quad_gl.new_canvas()
@@ -403,17 +410,17 @@ impl Context {
         quad_gl.new_scene()
     }
 
-    pub fn new_texture_from_image(&self, image: &Image) -> Texture2D {
+    pub fn new_texture_from_image(&self, image: &Image) -> Arc<Texture2D> {
         self.quad_gl.lock().unwrap().from_image(&image)
     }
 
-    pub fn new_texture_from_rgba8(&self, width: u16, height: u16, data: &[u8]) -> Texture2D {
+    pub fn new_texture_from_rgba8(&self, width: u16, height: u16, data: &[u8]) -> Arc<Texture2D> {
         self.quad_gl
             .lock()
             .unwrap()
             .from_rgba8(width, height, &data)
     }
-    pub fn mesh(&self, mesh: CpuMesh, texture: Option<Texture2D>) -> Model {
+    pub fn mesh(&self, mesh: CpuMesh, texture: Option<Arc<Texture2D>>) -> Model {
         self.quad_gl.lock().unwrap().mesh(mesh, texture)
     }
 

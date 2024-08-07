@@ -2,7 +2,7 @@ use macroquad::{
     file::load_file,
     gizmos::{draw_gizmos, gizmos_add_line, init_gizmos},
     math::{vec2, vec3},
-    quad_gl::{camera::Environment, color},
+    quad_gl::color,
     time::get_time,
     window::next_frame,
 };
@@ -39,18 +39,14 @@ async fn game(ctx: macroquad::Context) {
     let mesh = quad_gl::models::CpuMesh(vertices, uvs, normals, indices);
     let mesh = ctx.mesh(
         mesh,
-        Some(ctx.new_texture_from_rgba8(
-            texture.width as _,
-            texture.height as _,
-            &texture.data,
-        )),
+        Some(ctx.new_texture_from_rgba8(texture.width as _, texture.height as _, &texture.data)),
     );
     let _mesh = scene.add_model(&mesh);
     let mut orbit = orbit_camera::OrbitCamera::new();
 
     loop {
         let t = get_time();
-        let mut p = vec3(t.sin() as f32, 0.0, t.cos() as f32);
+        let p = vec3(t.sin() as f32, 0.0, t.cos() as f32);
 
         gizmos_add_line(true, p, p * 1.2);
         gizmos_add_line(false, vec3(0.0, 0.0, 0.0), p);

@@ -75,7 +75,11 @@ impl Resources {
             let texture =
                 ctx.new_texture_from_rgba8(image.width as u16, image.height as u16, &image.data);
             ctx.texture_set_wrap(texture, TextureWrap::Repeat, TextureWrap::Repeat);
-            textures.push(quad_gl::texture::Texture2D::from_miniquad_texture(texture));
+            textures.push(Arc::new(quad_gl::texture::Texture2D::from_miniquad_id(
+                texture,
+                image.width as _,
+                image.height as _,
+            )));
         }
 
         let mut nodes = vec![];
@@ -247,7 +251,7 @@ impl Resources {
     pub async fn load_texture(
         &self,
         path: &str,
-    ) -> Result<quad_gl::texture::Texture2D, crate::Error> {
+    ) -> Result<Arc<quad_gl::texture::Texture2D>, crate::Error> {
         let bytes = &load_file(path).await?;
         Ok(self.quad_gl.lock().unwrap().load_texture(&bytes))
     }

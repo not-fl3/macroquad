@@ -33,7 +33,6 @@ fontdue = { git = "https://github.com/not-fl3/fontdue.git", default-features=fal
 backtrace = { version = "0.3.60", optional = true, default-features = false, features = [ "std", "libbacktrace" ] }
 log = { version = "0.4", optional = true }
 quad-snd = { version = "0.2", optional = true }
-slotmap = "1.0"
 nanogltf = "0.1"
 shadermagic = "0.1"
 zune-jpeg = "*"
