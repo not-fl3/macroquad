@@ -805,12 +805,15 @@ pub mod conf {
         /// zero CPU usage.
         /// update_on will tell macroquad when to proceed with the event loop.
         pub update_on: Option<UpdateTrigger>,
+
+	pub default_filter_mode: crate::quad_gl::FilterMode,
     }
 }
 
 impl From<miniquad::conf::Conf> for conf::Conf {
     fn from(conf: miniquad::conf::Conf) -> conf::Conf {
         conf::Conf {
+	    default_filter_mode: conf.default_filter_mode,
             miniquad_conf: conf,
             update_on: None,
         }
@@ -840,6 +843,7 @@ impl Window {
         let conf::Conf {
             miniquad_conf,
             update_on,
+	    default_filter_mode,
         } = config.into();
         miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
@@ -848,6 +852,7 @@ impl Window {
             }
             let mut context = Context::new();
             context.update_on = update_on.unwrap_or_default();
+	    context.default_filter_mode = default_filter_mode;
             unsafe { CONTEXT = Some(context) };
 
             Box::new(Stage {})
