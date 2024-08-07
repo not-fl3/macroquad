@@ -169,11 +169,10 @@ impl Font {
 
             let atlas = self.atlas.lock().unwrap();
             let glyph = atlas.get(font_data.sprite).unwrap().rect;
-            let glyph_h = glyph.h as f32;
 
             width += font_data.advance * font_scale_x;
             min_y = min_y.min(offset_y);
-            max_y = max_y.max(glyph_h * font_scale_y + offset_y);
+            max_y = max_y.max(glyph.h * font_scale_y + offset_y);
         }
 
         TextDimensions {
@@ -334,11 +333,8 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) -> TextDimen
 
         let mut atlas = font.atlas.lock().unwrap();
         let glyph = atlas.get(char_data.sprite).unwrap().rect;
-        let glyph_w = glyph.w as f32;
-        let glyph_h = glyph.h as f32;
-        let glyph_scaled_h = glyph_h * font_scale_y;
+        let glyph_scaled_h = glyph.h * font_scale_y;
 
-        total_width += char_data.advance * font_scale_x;
         min_offset_y = min_offset_y.min(offset_y);
         max_offset_y = max_offset_y.max(glyph_scaled_h + offset_y);
 
@@ -353,12 +349,8 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) -> TextDimen
             glyph.w / dpi_scaling * font_scale_x,
             glyph.h / dpi_scaling * font_scale_y,
         );
-        let source = Rect::new(
-            glyph.x as f32,
-            glyph.y as f32,
-            glyph_w,
-            glyph_h,
-        );
+
+        total_width += char_data.advance * font_scale_x;
 
         crate::texture::draw_texture_ex(
             &crate::texture::Texture2D {
@@ -369,7 +361,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) -> TextDimen
             params.color,
             crate::texture::DrawTextureParams {
                 dest_size: Some(vec2(dest.w, dest.h)),
-                source: Some(source),
+                source: Some(glyph),
                 rotation: rot,
                 pivot: Some(vec2(dest.x, dest.y)),
                 ..Default::default()
