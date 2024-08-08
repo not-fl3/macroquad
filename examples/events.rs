@@ -8,11 +8,20 @@ async fn main() {
         clear_background(WHITE);
         root_ui().window(hash!(), Vec2::new(20., 20.), Vec2::new(450., 200.), |ui| {
             let (mouse_x, mouse_y) = mouse_position();
-            ui.label(UiPosition::Auto, &format!("Mouse position: {} {}", mouse_x, mouse_y));
+            ui.label(
+                UiPosition::Auto,
+                &format!("Mouse position: {} {}", mouse_x, mouse_y),
+            );
 
             let (mouse_wheel_x, mouse_wheel_y) = mouse_wheel();
-            ui.label(UiPosition::Auto, &format!("Mouse wheel x: {}", mouse_wheel_x));
-            ui.label(UiPosition::Auto, &format!("Mouse wheel y: {}", mouse_wheel_y));
+            ui.label(
+                UiPosition::Auto,
+                &format!("Mouse wheel x: {}", mouse_wheel_x),
+            );
+            ui.label(
+                UiPosition::Auto,
+                &format!("Mouse wheel y: {}", mouse_wheel_y),
+            );
 
             widgets::Group::new(hash!(), Vec2::new(200., 90.))
                 .position(Vec2::new(240., 0.))

@@ -115,7 +115,6 @@ impl From<crate::texture::Texture2D> for UiContent<'static> {
 pub enum UiPosition {
     Auto,
     Absolute(Vec2),
-
 }
 impl From<Vec2> for UiPosition {
     fn from(px: Vec2) -> Self {
@@ -128,13 +127,13 @@ impl Default for UiPosition {
     }
 }
 pub(crate) fn fit(context: &mut WindowContext, size: Vec2, position: UiPosition) -> Vec2 {
-    context
-        .window
-        .cursor
-        .fit(size, match position {
+    context.window.cursor.fit(
+        size,
+        match position {
             UiPosition::Auto => Layout::Vertical,
             UiPosition::Absolute(pos) => Layout::Free(pos),
-    })
+        },
+    )
 }
 
 pub(crate) struct Window {

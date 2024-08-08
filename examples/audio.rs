@@ -1,4 +1,8 @@
-use macroquad::{audio, prelude::*, ui::{self, UiPosition}};
+use macroquad::{
+    audio,
+    prelude::*,
+    ui::{self, UiPosition},
+};
 
 #[macroquad::main("Audio")]
 async fn main() {

@@ -254,7 +254,10 @@ pub fn profiler(params: ProfilerParams) {
                 ),
                 2 => {
                     let drawcalls = telemetry::drawcalls();
-                    ui.label(UiPosition::Auto, &format!("Draw calls: {}", drawcalls.len()));
+                    ui.label(
+                        UiPosition::Auto,
+                        &format!("Draw calls: {}", drawcalls.len()),
+                    );
                     for telemetry::DrawCallTelemetry { indices_count, .. } in &drawcalls {
                         ui.same_line(0.0);
 
