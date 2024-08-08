@@ -649,7 +649,13 @@ impl Texture2D {
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        Self::from_rgba8(width, height, &bytes)
+        let t = Self::from_rgba8(width, height, &bytes);
+	
+	let ctx = get_context();
+	
+	t.set_filter(ctx.default_filter_mode);
+
+	t
     }
 
     /// Creates a Texture2D from an [Image].
@@ -891,4 +897,10 @@ pub unsafe fn reset_textures_atlas() {
     let context = get_context();
     context.fonts_storage = crate::text::FontsStorage::new(&mut *context.quad_context);
     context.texture_batcher = Batcher::new(&mut *context.quad_context);
+}
+
+pub fn set_default_filter_mode(filter: FilterMode) {
+    let context = get_context();
+
+    context.default_filter_mode = filter;
 }
