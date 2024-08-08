@@ -4,8 +4,8 @@
 //!
 //! The UI entrypoint is `root_ui()` call.
 //! ```ignore
-//! root_ui().label(None, "hello megaui");
-//! if root_ui().button(None, "Push me") {
+//! root_ui().label(Auto, "hello megaui");
+//! if root_ui().button(Auto, "Push me") {
 //!    println!("pushed");
 //! }
 //! ```
@@ -109,6 +109,32 @@ impl From<crate::texture::Texture2D> for UiContent<'static> {
     fn from(data: crate::texture::Texture2D) -> UiContent<'static> {
         UiContent::Texture(data)
     }
+}
+/// An enum used to store an ui object's position
+/// For legacy: The `UiPosition::Auto` was previously `None`, and the `Some(vec2 position)` is the Absolute variant.
+pub enum UiPosition {
+    Auto,
+    Absolute(Vec2),
+
+}
+impl From<Vec2> for UiPosition {
+    fn from(px: Vec2) -> Self {
+        Self::Absolute(px)
+    }
+}
+impl Default for UiPosition {
+    fn default() -> Self {
+        Self::Auto
+    }
+}
+pub(crate) fn fit(context: &mut WindowContext, size: Vec2, position: UiPosition) -> Vec2 {
+    context
+        .window
+        .cursor
+        .fit(size, match position {
+            UiPosition::Auto => Layout::Vertical,
+            UiPosition::Absolute(pos) => Layout::Free(pos),
+    })
 }
 
 pub(crate) struct Window {

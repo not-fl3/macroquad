@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+use macroquad::ui::UiPosition;
 use macroquad::ui::{
     hash, root_ui,
     widgets::{self, Label, TreeNode},
@@ -118,34 +119,34 @@ async fn main() {
         widgets::Window::new(hash!(), vec2(20., 20.), vec2(470., 650.))
             .label("Shader")
             .ui(&mut *root_ui(), |ui| {
-                ui.label(None, "Camera: ");
+                ui.label(UiPosition::Auto, "Camera: ");
                 ui.same_line(0.0);
-                if ui.button(None, "Ortho") {
+                if ui.button(UiPosition::Auto, "Ortho") {
                     camera.projection = Projection::Orthographics;
                 }
                 ui.same_line(0.0);
-                if ui.button(None, "Perspective") {
+                if ui.button(UiPosition::Auto, "Perspective") {
                     camera.projection = Projection::Perspective;
                 }
-                ui.label(None, "Mesh: ");
+                ui.label(UiPosition::Auto, "Mesh: ");
                 ui.same_line(0.0);
-                if ui.button(None, "Sphere") {
+                if ui.button(UiPosition::Auto, "Sphere") {
                     mesh = Mesh::Sphere;
                 }
                 ui.same_line(0.0);
-                if ui.button(None, "Cube") {
+                if ui.button(UiPosition::Auto, "Cube") {
                     mesh = Mesh::Cube;
                 }
                 ui.same_line(0.0);
-                if ui.button(None, "Plane") {
+                if ui.button(UiPosition::Auto, "Plane") {
                     mesh = Mesh::Plane;
                 }
 
-                ui.label(None, "Uniforms:");
+                ui.label(UiPosition::Auto, "Uniforms:");
                 ui.separator();
 
                 for (i, (name, uniform)) in uniforms.iter_mut().enumerate() {
-                    ui.label(None, &format!("{}", name));
+                    ui.label(UiPosition::Auto, &format!("{}", name));
                     ui.same_line(120.0);
 
                     match uniform {
@@ -214,7 +215,7 @@ async fn main() {
                                 Color::new(color.x, color.y, color.z, 1.0),
                             );
 
-                            if ui.button(None, "change") {
+                            if ui.button(UiPosition::Auto, "change") {
                                 colorpicker_window = true;
                                 color_picking_uniform = Some(name.to_owned());
                             }
@@ -223,7 +224,7 @@ async fn main() {
                     }
                 }
                 ui.separator();
-                if ui.button(None, "New uniform") {
+                if ui.button(UiPosition::Auto, "New uniform") {
                     new_uniform_window = true;
                 }
                 TreeNode::new(hash!(), "Fragment shader")
@@ -259,7 +260,7 @@ async fn main() {
                         None,
                     );
 
-                    if ui.button(None, "Add") {
+                    if ui.button(UiPosition::Auto, "Add") {
                         if new_uniform_name.is_empty() == false {
                             let uniform = match uniform_type {
                                 0 => Uniform::Float1("0".to_string()),
@@ -280,7 +281,7 @@ async fn main() {
                     }
 
                     ui.same_line(0.0);
-                    if ui.button(None, "Cancel") {
+                    if ui.button(UiPosition::Auto, "Cancel") {
                         new_uniform_window = false;
                     }
                 });
