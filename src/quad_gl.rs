@@ -8,6 +8,8 @@ use crate::{color::Color, logging::warn, telemetry, texture::Texture2D, tobytes:
 
 use std::collections::BTreeMap;
 
+pub(crate) use crate::models::Vertex;
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DrawMode {
     Triangles,
@@ -35,60 +37,6 @@ struct DrawCall {
     uniforms: Option<Vec<u8>>,
     render_pass: Option<RenderPass>,
     capture: bool,
-}
-
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Vertex {
-    pos: [f32; 3],
-    uv: [f32; 2],
-    color: [u8; 4],
-}
-
-pub type VertexInterop = ([f32; 3], [f32; 2], [f32; 4]);
-
-impl Into<VertexInterop> for Vertex {
-    fn into(self) -> VertexInterop {
-        (
-            self.pos,
-            self.uv,
-            [
-                self.color[0] as f32 / 255.0,
-                self.color[1] as f32 / 255.0,
-                self.color[2] as f32 / 255.0,
-                self.color[3] as f32 / 255.0,
-            ],
-        )
-    }
-}
-impl Into<Vertex> for VertexInterop {
-    fn into(self) -> Vertex {
-        Vertex {
-            pos: self.0,
-            uv: self.1,
-            color: [
-                ((self.2)[0] * 255.) as u8,
-                ((self.2)[1] * 255.) as u8,
-                ((self.2)[2] * 255.) as u8,
-                ((self.2)[3] * 255.) as u8,
-            ],
-        }
-    }
-}
-
-impl Vertex {
-    pub fn new(x: f32, y: f32, z: f32, u: f32, v: f32, color: Color) -> Vertex {
-        Vertex {
-            pos: [x, y, z],
-            uv: [u, v],
-            color: [
-                (color.r * 255.) as u8,
-                (color.g * 255.) as u8,
-                (color.b * 255.) as u8,
-                (color.a * 255.) as u8,
-            ],
-        }
-    }
 }
 
 impl DrawCall {
@@ -552,6 +500,7 @@ impl PipelinesStorage {
                 VertexAttribute::new("position", VertexFormat::Float3),
                 VertexAttribute::new("texcoord", VertexFormat::Float2),
                 VertexAttribute::new("color0", VertexFormat::Byte4),
+                VertexAttribute::new("normal", VertexFormat::Float4),
             ],
             shader,
             params,
@@ -918,7 +867,7 @@ impl QuadGl {
         self.state.draw_mode = mode;
     }
 
-    pub fn geometry(&mut self, vertices: &[impl Into<VertexInterop> + Copy], indices: &[u16]) {
+    pub fn geometry(&mut self, vertices: &[Vertex], indices: &[u16]) {
         if vertices.len() >= self.max_vertices || indices.len() >= self.max_indices {
             warn!("geometry() exceeded max drawcall size, clamping");
         }
@@ -989,7 +938,7 @@ impl QuadGl {
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
         for i in 0..vertices.len() {
-            dc.vertices[dc.vertices_count + i] = vertices[i].into().into();
+            dc.vertices[dc.vertices_count + i] = vertices[i];
         }
 
         for i in 0..indices.len() {
@@ -1084,6 +1033,7 @@ mod shader {
     attribute vec3 position;
     attribute vec2 texcoord;
     attribute vec4 color0;
+    attribute vec4 normal;
 
     varying lowp vec2 uv;
     varying lowp vec4 color;
