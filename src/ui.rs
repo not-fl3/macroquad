@@ -1338,7 +1338,7 @@ pub(crate) mod ui_context {
                         .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
                 );
                 quad_gl.draw_mode(DrawMode::Triangles);
-                quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
+                quad_gl.geometry(&draw_command.vertices[..], &draw_command.indices);
             }
             quad_gl.texture(None);
 
