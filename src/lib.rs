@@ -797,7 +797,7 @@ pub mod conf {
         pub touch: bool,
     }
 
-    #[derive(Default, Debug)]
+    #[derive(Debug)]
     pub struct Conf {
         pub miniquad_conf: miniquad::conf::Conf,
         /// With miniquad_conf.platform.blocking_event_loop = true,
@@ -805,6 +805,17 @@ pub mod conf {
         /// zero CPU usage.
         /// update_on will tell macroquad when to proceed with the event loop.
         pub update_on: Option<UpdateTrigger>,
+	pub default_filter_mode: crate::FilterMode, 
+    }
+
+    impl Default for Conf {
+	fn default() -> Self {
+	    Self {
+		miniquad_conf: miniquad::conf::Conf::default(),
+		update_on: Some(UpdateTrigger::default()),
+		default_filter_mode: crate::FilterMode::Linear
+	    }
+	}
     }
 }
 
@@ -813,6 +824,7 @@ impl From<miniquad::conf::Conf> for conf::Conf {
         conf::Conf {
             miniquad_conf: conf,
             update_on: None,
+	    default_filter_mode: crate::FilterMode::Linear,
         }
     }
 }
@@ -827,7 +839,6 @@ impl Window {
             conf::Conf {
                 miniquad_conf: miniquad::conf::Conf {
                     window_title: label.to_string(),
-                    //high_dpi: true,
                     ..Default::default()
                 },
                 ..Default::default()
@@ -840,6 +851,7 @@ impl Window {
         let conf::Conf {
             miniquad_conf,
             update_on,
+	    default_filter_mode,
         } = config.into();
         miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
@@ -848,6 +860,7 @@ impl Window {
             }
             let mut context = Context::new();
             context.update_on = update_on.unwrap_or_default();
+	    context.default_filter_mode = default_filter_mode;
             unsafe { CONTEXT = Some(context) };
 
             Box::new(Stage {})
