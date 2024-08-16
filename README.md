@@ -1,5 +1,7 @@
 # Reimagining macroquad
 
+![macroquad](https://github.com/user-attachments/assets/409e2345-fd0c-4aab-8435-a74588136cc0)
+
 *Disclaimer on this branch*
 
 The idea here - anything goes, the more ideas are going to be tried - the better. Implement first, think later kind of thing.
