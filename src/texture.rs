@@ -389,21 +389,34 @@ fn render_pass(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> Re
 
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     let context = get_context();
+    let quad_ctx = get_quad_context();
 
-    let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
+    let color_id = quad_ctx.new_render_texture(miniquad::TextureParams {
         width,
         height,
+        format: miniquad::TextureFormat::RGBA8,
         ..Default::default()
     });
 
-    let texture = Texture2D {
-        texture: context.textures.store_texture(texture_id),
+    let depth_id = quad_ctx.new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        format: miniquad::TextureFormat::Depth,
+        ..Default::default()
+    });
+
+    let color_tex = Texture2D {
+        texture: context.textures.store_texture(color_id),
     };
 
-    let render_pass = render_pass(texture.clone(), None);
+    let depth_tex = Texture2D {
+        texture: context.textures.store_texture(depth_id),
+    };
+
+    let render_pass = render_pass(color_tex.clone(), Some(depth_tex.clone()));
 
     RenderTarget {
-        texture,
+        texture: color_tex,
         render_pass,
     }
 }
