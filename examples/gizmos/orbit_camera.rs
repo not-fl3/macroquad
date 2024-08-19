@@ -23,14 +23,14 @@ impl OrbitCamera {
             .build();
 
         let camera = Camera {
-            environment: Environment::SolidColor(color::WHITE),
+            environment: Environment::SolidColor(color::BLACK),
             depth_enabled: true,
             projection: Projection::Perspective,
             position: vec3(0., 1.5, 4.),
             up: vec3(0., 1., 0.),
             target: vec3(0., 0., 0.),
             z_near: 0.1,
-            z_far: 1500.0,
+            z_far: 150.0,
             ..Default::default()
         };
 

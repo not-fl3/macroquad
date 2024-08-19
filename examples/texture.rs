@@ -1,5 +1,5 @@
 use macroquad::window::next_frame;
-use quad_gl::{color::*, math::*, shapes::ShapeBuilder};
+use quad_gl::{color::*, math::*, shapes::*};
 
 async fn game(ctx: macroquad::Context) {
     let texture = ctx
@@ -12,11 +12,15 @@ async fn game(ctx: macroquad::Context) {
     loop {
         ctx.clear_screen(WHITE);
         canvas.clear();
-        ShapeBuilder::rectangle(vec2(texture.width() as f32, texture.height() as f32))
-            .texture(&texture)
-            .position(vec2(ctx.screen_width() / 2.0, ctx.screen_height() / 2.0))
-            .draw(&mut canvas);
-        canvas.draw();
+        canvas.draw(
+            Sprite::new(&texture),
+            vec2(
+                ctx.screen_width() - texture.width() as f32,
+                ctx.screen_height() - texture.height() as f32,
+            ) / 2.,
+            WHITE,
+        );
+        ctx.draw_canvas(&mut canvas);
         next_frame().await
     }
 }

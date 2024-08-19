@@ -32,7 +32,7 @@ pub fn init_compat_mode(ctx: &crate::Context) {
 pub(crate) fn end_frame() {
     if CTX.with_borrow(|ctx| ctx.is_some()) {
         with_ctx(|ctx| {
-            ctx.canvas.draw();
+            ctx.canvas.blit();
             ctx.canvas.reset();
         });
     }
@@ -46,21 +46,21 @@ pub fn clear_background(color: Color) {
     });
 }
 
-pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
-    with_ctx(|ctx| ctx.canvas.draw_line(x1, y1, x2, y2, thickness, color));
-}
+// pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
+//     with_ctx(|ctx| ctx.canvas.draw_line(x1, y1, x2, y2, thickness, color));
+// }
 
-pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
-    with_ctx(|ctx| ctx.canvas.draw_rectangle(x, y, w, h, color));
-}
+// pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
+//     with_ctx(|ctx| ctx.canvas.draw_rectangle(x, y, w, h, color));
+// }
 
-pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
-    with_ctx(|ctx| ctx.canvas.draw_circle(x, y, r, color));
-}
+// pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
+//     with_ctx(|ctx| ctx.canvas.draw_circle(x, y, r, color));
+// }
 
-pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
-    with_ctx(|ctx| ctx.canvas.draw_text(text, x, y, font_size, color));
-}
+// pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+//     with_ctx(|ctx| ctx.canvas.draw_text(text, x, y, font_size, color));
+// }
 
 pub fn screen_width() -> f32 {
     crate::window::screen_width()

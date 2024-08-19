@@ -46,7 +46,6 @@ mod exec;
 
 pub mod file;
 pub mod input;
-pub mod time;
 pub mod window;
 
 pub mod telemetry;
@@ -364,6 +363,7 @@ pub struct Context {
     pub resources: resources::Resources,
     pub input: Arc<Mutex<input::InputContext>>,
     ui: Arc<Mutex<quad_gl::ui::Ui>>,
+    start_time: f64,
 }
 
 impl Context {
@@ -374,6 +374,7 @@ impl Context {
         let quad_gl = Arc::new(Mutex::new(quad_gl));
         let (w, h) = miniquad::window::screen_size();
         let ui = quad_gl::ui::Ui::new(quad_ctx.clone(), w, h);
+        let start_time = miniquad::date::now();
 
         Context {
             quad_ctx: quad_ctx.clone(),
@@ -381,7 +382,12 @@ impl Context {
             resources: resources::Resources::new(quad_ctx.clone(), quad_gl.clone()),
             input: Arc::new(Mutex::new(input::InputContext::new())),
             ui: Arc::new(Mutex::new(ui)),
+            start_time
         }
+    }
+
+    pub fn time_since_start(&self) -> f32 {
+        (miniquad::date::now() - self.start_time) as f32
     }
 
     pub fn clear_screen(&self, color: quad_gl::color::Color) {
@@ -390,6 +396,10 @@ impl Context {
             Some(1.),
             None,
         );
+    }
+
+    pub fn draw_canvas(&self, canvas: &mut quad_gl::sprite_batcher::SpriteBatcher) {
+        canvas.blit();
     }
 
     pub fn screen_width(&self) -> f32 {

@@ -64,7 +64,7 @@ pub fn draw_gizmos(camera: &quad_gl::camera::Camera) {
                 draw_line(gl, line.p0, line.p1);
             }
 
-            ctx.canvas.draw2(camera);
+            ctx.canvas.blit2(camera);
             ctx.canvas.reset();
 
             ctx.lines.retain(|line| line.persist);
