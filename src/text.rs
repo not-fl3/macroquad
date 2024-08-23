@@ -283,7 +283,7 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
     let ctx = get_context();
 
     font.set_filter(ctx.default_filter_mode);
-    
+
     Ok(font)
 }
 

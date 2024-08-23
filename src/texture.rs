@@ -650,12 +650,12 @@ impl Texture2D {
         let bytes = img.into_raw();
 
         let t = Self::from_rgba8(width, height, &bytes);
-	
-	let ctx = get_context();
-	
-	t.set_filter(ctx.default_filter_mode);
 
-	t
+        let ctx = get_context();
+
+        t.set_filter(ctx.default_filter_mode);
+
+        t
     }
 
     /// Creates a Texture2D from an [Image].
