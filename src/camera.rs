@@ -192,7 +192,7 @@ impl Default for Camera3D {
             target: vec3(0., 0., 0.),
             aspect: None,
             up: vec3(0., 0., 1.),
-            fovy: 45.,
+            fovy: 45.0_f32.to_radians(),
             projection: Projection::Perspective,
             render_target: None,
             viewport: None,
