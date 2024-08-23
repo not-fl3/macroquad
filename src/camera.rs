@@ -160,7 +160,7 @@ pub struct Camera3D {
     pub target: Vec3,
     /// Camera up vector (rotation over its axis).
     pub up: Vec3,
-    /// Camera field-of-view aperture in Y (degrees)
+    /// Camera field-of-view aperture in Y (radians)
     /// in perspective, used as near plane width in orthographic.
     pub fovy: f32,
     /// Screen aspect ratio.
