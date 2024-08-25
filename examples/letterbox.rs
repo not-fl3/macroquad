@@ -6,7 +6,7 @@ const VIRTUAL_HEIGHT: f32 = 720.0;
 #[macroquad::main("Letterbox")]
 async fn main() {
     // Setup 'render_target', used to hold the rendering result so we can resize it
-    let render_target = render_target(VIRTUAL_WIDTH as u32, VIRTUAL_HEIGHT as u32);
+    let render_target = render_target_msaa(VIRTUAL_WIDTH as u32, VIRTUAL_HEIGHT as u32, 4);
     render_target.texture.set_filter(FilterMode::Linear);
 
     // Setup camera for the virtual screen, that will render to 'render_target'

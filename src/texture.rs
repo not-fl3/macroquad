@@ -383,24 +383,52 @@ pub struct RenderTarget {
     pub render_pass: RenderPass,
 }
 
-fn render_pass(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> RenderPass {
-    RenderPass::new(color_texture, depth_texture)
-}
-
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     let context = get_context();
-
     let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
         width,
         height,
         ..Default::default()
     });
-
+    let render_pass = get_quad_context().new_render_pass_mrt2(&[texture_id], &[], None);
     let texture = Texture2D {
         texture: context.textures.store_texture(texture_id),
     };
+    let render_pass = RenderPass {
+        color_texture: texture.clone(),
+        depth_texture: None,
+        render_pass: Arc::new(render_pass),
+    };
+    RenderTarget {
+        texture,
+        render_pass,
+    }
+}
 
-    let render_pass = render_pass(texture.clone(), None);
+pub fn render_target_msaa(width: u32, height: u32, sample_count: i32) -> RenderTarget {
+    let context = get_context();
+
+    let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        sample_count,
+        ..Default::default()
+    });
+    let texture_resolve_id = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        ..Default::default()
+    });
+    let render_pass =
+        get_quad_context().new_render_pass_mrt2(&[texture_id], &[texture_resolve_id], None);
+    let texture = Texture2D {
+        texture: context.textures.store_texture(texture_resolve_id),
+    };
+    let render_pass = RenderPass {
+        color_texture: texture.clone(),
+        depth_texture: None,
+        render_pass: Arc::new(render_pass),
+    };
 
     RenderTarget {
         texture,
