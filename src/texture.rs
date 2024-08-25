@@ -351,17 +351,6 @@ pub struct RenderPass {
 }
 
 impl RenderPass {
-    fn new(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> RenderPass {
-        let render_pass = get_quad_context().new_render_pass(
-            color_texture.raw_miniquad_id(),
-            depth_texture.as_ref().map(|t| t.raw_miniquad_id()),
-        );
-        RenderPass {
-            color_texture,
-            depth_texture: depth_texture.map(|t| t.clone()),
-            render_pass: Arc::new(render_pass),
-        }
-    }
     /// Returns the miniquad handle for this render pass.
     pub fn raw_miniquad_id(&self) -> miniquad::RenderPass {
         *self.render_pass
@@ -383,24 +372,55 @@ pub struct RenderTarget {
     pub render_pass: RenderPass,
 }
 
-fn render_pass(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> RenderPass {
-    RenderPass::new(color_texture, depth_texture)
-}
-
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     let context = get_context();
-
     let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
         width,
         height,
         ..Default::default()
     });
-
+    let render_pass = get_quad_context().new_render_pass_mrt(&[texture_id], None, None);
     let texture = Texture2D {
         texture: context.textures.store_texture(texture_id),
     };
+    let render_pass = RenderPass {
+        color_texture: texture.clone(),
+        depth_texture: None,
+        render_pass: Arc::new(render_pass),
+    };
+    RenderTarget {
+        texture,
+        render_pass,
+    }
+}
 
-    let render_pass = render_pass(texture.clone(), None);
+pub fn render_target_msaa(width: u32, height: u32, sample_count: i32) -> RenderTarget {
+    let context = get_context();
+
+    let color_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        sample_count,
+        ..Default::default()
+    });
+    let color_resolve_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        ..Default::default()
+    });
+    let render_pass = get_quad_context().new_render_pass_mrt(
+        &[color_texture],
+        Some(&[color_resolve_texture]),
+        None,
+    );
+    let texture = Texture2D {
+        texture: context.textures.store_texture(color_resolve_texture),
+    };
+    let render_pass = RenderPass {
+        color_texture: texture.clone(),
+        depth_texture: None,
+        render_pass: Arc::new(render_pass),
+    };
 
     RenderTarget {
         texture,
