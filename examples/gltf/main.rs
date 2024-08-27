@@ -26,6 +26,12 @@ async fn game(ctx: macroquad::Context) {
         .await
         .unwrap();
     let _helmet = scene.add_model(&helmet);
+
+    let text = scene.model(Text::new("HELLO  3D", 100), DrawParams::default());
+    let text = scene.add_model(&text);
+    scene.set_translation(&text, vec3(-8.0, 0.0, 0.0));
+    scene.set_scale(&text, vec3(0.03, 1.0, 0.03));
+
     let skybox = ctx
         .resources
         .load_cubemap(
