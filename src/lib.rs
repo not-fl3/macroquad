@@ -43,6 +43,14 @@ use std::future::Future;
 use std::pin::Pin;
 
 mod exec;
+mod time;
+
+pub use quad_gl::camera;
+pub use quad_gl::color;
+pub use quad_gl::models;
+pub use quad_gl::scene;
+pub use quad_gl::shapes;
+pub use quad_gl::texture;
 
 pub mod file;
 pub mod input;
@@ -153,6 +161,7 @@ struct Stage {
     quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
     ui: Arc<Mutex<quad_gl::ui::Ui>>,
     input: Arc<Mutex<input::InputContext>>,
+    time: Arc<Mutex<time::Time>>,
 }
 
 impl EventHandler for Stage {
@@ -282,32 +291,19 @@ impl EventHandler for Stage {
     //     });
     // }
 
-    // fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
-    //     let context = get_context();
-    //     context.keys_down.insert(keycode);
-    //     if repeat == false {
-    //         context.keys_pressed.insert(keycode);
-    //     }
+    fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
+        let mut context = self.input.lock().unwrap();
+        context.keys_down.insert(keycode);
+        if repeat == false {
+            context.keys_pressed.insert(keycode);
+        }
+    }
 
-    //     context.input_events.iter_mut().for_each(|arr| {
-    //         arr.push(MiniquadInputEvent::KeyDown {
-    //             keycode,
-    //             modifiers,
-    //             repeat,
-    //         })
-    //     });
-    // }
-
-    // fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
-    //     let context = get_context();
-    //     context.keys_down.remove(&keycode);
-    //     context.keys_released.insert(keycode);
-
-    //     context
-    //         .input_events
-    //         .iter_mut()
-    //         .for_each(|arr| arr.push(MiniquadInputEvent::KeyUp { keycode, modifiers }));
-    // }
+    fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
+        let mut context = self.input.lock().unwrap();
+        context.keys_down.remove(&keycode);
+        context.keys_released.insert(keycode);
+    }
 
     fn update(&mut self) {
         let _z = telemetry::ZoneGuard::new("Event::update");
@@ -323,6 +319,7 @@ impl EventHandler for Stage {
     }
 
     fn draw(&mut self) {
+        self.time.lock().unwrap().update();
         //let result = maybe_unwind(get_context().unwind, || {
         if let Some(future) = self.main_future.as_mut() {
             let _z = telemetry::ZoneGuard::new("user code");
@@ -362,8 +359,8 @@ pub struct Context {
     quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
     pub resources: resources::Resources,
     pub input: Arc<Mutex<input::InputContext>>,
+    time: Arc<Mutex<time::Time>>,
     ui: Arc<Mutex<quad_gl::ui::Ui>>,
-    start_time: f64,
 }
 
 impl Context {
@@ -374,20 +371,23 @@ impl Context {
         let quad_gl = Arc::new(Mutex::new(quad_gl));
         let (w, h) = miniquad::window::screen_size();
         let ui = quad_gl::ui::Ui::new(quad_ctx.clone(), w, h);
-        let start_time = miniquad::date::now();
-
+        let time = time::Time::new();
         Context {
             quad_ctx: quad_ctx.clone(),
             quad_gl: quad_gl.clone(),
             resources: resources::Resources::new(quad_ctx.clone(), quad_gl.clone()),
             input: Arc::new(Mutex::new(input::InputContext::new())),
             ui: Arc::new(Mutex::new(ui)),
-            start_time
+            time: Arc::new(Mutex::new(time)),
         }
     }
 
+    pub fn frame_time(&self) -> f32 {
+        self.time.lock().unwrap().frame_time as f32
+    }
+
     pub fn time_since_start(&self) -> f32 {
-        (miniquad::date::now() - self.start_time) as f32
+        self.time.lock().unwrap().time_since_start()
     }
 
     pub fn clear_screen(&self, color: quad_gl::color::Color) {
@@ -430,8 +430,13 @@ impl Context {
             .unwrap()
             .from_rgba8(width, height, &data)
     }
+
     pub fn mesh(&self, mesh: CpuMesh, texture: Option<Arc<Texture2D>>) -> Model {
         self.quad_gl.lock().unwrap().mesh(mesh, texture)
+    }
+
+    pub fn gl<'a>(&'a mut self) -> impl std::ops::DerefMut<Target = quad_gl::QuadGl> + 'a {
+        self.quad_gl.lock().unwrap()
     }
 
     pub fn root_ui<'a>(&'a self) -> impl std::ops::DerefMut<Target = quad_gl::ui::Ui> + 'a {
@@ -453,6 +458,7 @@ pub fn start<F: Fn(Context) -> Fut + 'static, Fut: Future<Output = ()> + 'static
             quad_ctx: ctx.quad_ctx.clone(),
             quad_gl: ctx.quad_gl.clone(),
             ui: ctx.ui.clone(),
+            time: ctx.time.clone(),
             main_future: Some(Box::pin(future(ctx))),
         })
     });

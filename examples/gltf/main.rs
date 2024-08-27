@@ -7,6 +7,7 @@ use macroquad::{
         camera::{Camera, Environment, Projection},
         color,
     },
+    shapes::*,
     window::next_frame,
 };
 
@@ -25,7 +26,6 @@ async fn game(ctx: macroquad::Context) {
         .await
         .unwrap();
     let _helmet = scene.add_model(&helmet);
-
     let skybox = ctx
         .resources
         .load_cubemap(

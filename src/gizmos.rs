@@ -1,7 +1,10 @@
-pub use crate::{math::Vec3, window::next_frame};
+pub use crate::{
+    math::{vec2, vec3, Vec3},
+    window::next_frame,
+};
 pub use quad_gl::{
     color::*,
-    draw_calls_batcher::{DrawCallsBatcher, DrawMode},
+    draw_calls_batcher::{DrawCallsBatcher, DrawMode, Vertex},
 };
 
 use std::{
@@ -42,13 +45,12 @@ pub fn init_gizmos(ctx: &crate::Context) {
 }
 
 fn draw_line(gl: &mut DrawCallsBatcher, p0: Vec3, p1: Vec3) {
-    let uv = [0., 0.];
-    let color: [f32; 4] = [0.0, 0.0, 1.0, 1.0];
+    let uv = vec2(0., 0.);
     let indices = [0, 1];
 
     let line = [
-        ([p0.x, p0.y, p0.z], uv, color),
-        ([p1.x, p1.y, p1.z], uv, color),
+        Vertex::new2(vec3(p0.x, p0.y, p0.z), uv, BLUE),
+        Vertex::new2(vec3(p1.x, p1.y, p1.z), uv, BLUE),
     ];
     gl.texture(None);
     gl.draw_mode(DrawMode::Lines);

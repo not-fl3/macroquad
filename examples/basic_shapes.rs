@@ -27,10 +27,6 @@ async fn game(ctx: macroquad::Context) {
         // and will get an additiona red circle each frame.
         canvas2.draw(Circle::new(10.0), p1, RED);
 
-        canvas2.draw(Circle::new(10.0), p1, RED);
-        canvas2.draw(Circle::new(10.0), p1, GREEN);
-
-        canvas2.draw(Text::new("asd", 30), p1, RED);
         // canvas3 is a "dynamic" canvas. starts from scratch each frame.
         // Useful for animated content.
         canvas3.clear();
