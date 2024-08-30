@@ -398,7 +398,7 @@ impl Context {
         );
     }
 
-    pub fn draw_canvas(&self, canvas: &mut quad_gl::sprite_batcher::SpriteBatcher) {
+    pub fn blit_canvas(&self, canvas: &mut quad_gl::sprite_batcher::SpriteBatcher) {
         canvas.blit();
     }
 

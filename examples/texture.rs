@@ -20,7 +20,7 @@ async fn game(ctx: macroquad::Context) {
             ) / 2.,
             WHITE,
         );
-        ctx.draw_canvas(&mut canvas);
+        ctx.blit_canvas(&mut canvas);
         next_frame().await
     }
 }

@@ -34,9 +34,9 @@ async fn game(ctx: macroquad::Context) {
 
         // .draws order defines "Z" order, here canvas1 content will be
         // on the background and canvas3's blue circle will be on top of everything
-        ctx.draw_canvas(&mut canvas1);
-        ctx.draw_canvas(&mut canvas2);
-        ctx.draw_canvas(&mut canvas3);
+        ctx.blit_canvas(&mut canvas1);
+        ctx.blit_canvas(&mut canvas2);
+        ctx.blit_canvas(&mut canvas3);
 
         next_frame().await;
     }
