@@ -30,6 +30,10 @@ pub struct Object {
     pub properties: HashMap<String, String>,
 }
 
+/// Flip operation application order:
+/// 1. flip diagonally
+/// 2. flip horizontally
+/// 3. flip vertically
 #[derive(Debug)]
 pub struct Tile {
     /// id in the tileset
@@ -38,6 +42,12 @@ pub struct Tile {
     pub tileset: String,
     /// "type" from tiled
     pub attrs: String,
+    /// Whether the tile is horizontally flipped
+    pub flip_x: bool,
+    /// Whether the tile is vertically flipped
+    pub flip_y: bool,
+    /// Whether the tile is anti-diagonally flipped
+    pub flip_d: bool,
 }
 
 #[derive(Debug, Default)]
@@ -292,6 +302,9 @@ pub fn load_map(
     textures: &[(&str, Texture2D)],
     external_tilesets: &[(&str, &str)],
 ) -> Result<Map, error::Error> {
+    // Tiled reserves 4 high bits for flip flags
+    const TILE_FLIP_FLAGS: u32 = 0b11110000000000000000000000000000;
+
     let map: tiled::Map = DeJson::deserialize_json(data)?;
 
     let mut layers = HashMap::new();
@@ -367,6 +380,8 @@ pub fn load_map(
         }
 
         let find_tileset = |tile: u32| {
+            // Discard flip flags
+            let tile = tile & !TILE_FLIP_FLAGS;
             map_tilesets.iter().find(|tileset| {
                 tile >= tileset.firstgid && tile < tileset.firstgid + tileset.tilecount
             })
@@ -391,10 +406,16 @@ pub fn load_map(
                                     .and_then(|tile| tile.ty.clone())
                                     .unwrap_or("".to_owned());
 
+                                let flip_flags = (*tile & TILE_FLIP_FLAGS) >> 28;
+                                let tile = *tile & !TILE_FLIP_FLAGS;
+
                                 Tile {
-                                    id: *tile - tileset.firstgid,
+                                    id: tile - tileset.firstgid,
                                     tileset: tileset.name.clone(),
                                     attrs,
+                                    flip_x: (flip_flags & 0b1000) != 0,
+                                    flip_y: (flip_flags & 0b0100) != 0,
+                                    flip_d: (flip_flags & 0b0010) != 0,
                                 }
                             })
                         })
