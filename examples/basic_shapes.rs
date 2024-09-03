@@ -1,5 +1,5 @@
 use macroquad::window::next_frame;
-use quad_gl::{color::*, math::*, shapes::*};
+use macroquad::{color::*, math::*, shapes::*};
 
 async fn game(ctx: macroquad::Context) {
     let mut canvas1 = ctx.new_canvas();
