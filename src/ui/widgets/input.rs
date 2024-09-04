@@ -11,6 +11,7 @@ pub struct InputText<'a> {
     numbers: bool,
     ratio: f32,
     pos: Option<Vec2>,
+    margin: Option<Vec2>,
 }
 
 impl<'a> InputText<'a> {
@@ -23,6 +24,7 @@ impl<'a> InputText<'a> {
             password: false,
             ratio: 0.5,
             pos: None,
+            margin: None,
         }
     }
 
@@ -35,6 +37,7 @@ impl<'a> InputText<'a> {
             password: self.password,
             ratio: self.ratio,
             pos: self.pos,
+            margin: self.margin,
         }
     }
 
@@ -67,6 +70,13 @@ impl<'a> InputText<'a> {
         }
     }
 
+    pub fn margin(self, margin: Vec2) -> Self {
+        Self {
+            margin: Some(margin),
+            ..self
+        }
+    }
+
     pub fn ui(self, ui: &mut Ui, data: &mut String) {
         let context = ui.get_active_window_context();
 
@@ -93,6 +103,10 @@ impl<'a> InputText<'a> {
             .password(self.password)
             .position(pos)
             .multiline(false);
+
+        if let Some(margin) = self.margin {
+            editbox = editbox.margin(margin);
+        }
 
         if self.numbers {
             editbox = editbox
