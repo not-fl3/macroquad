@@ -17,7 +17,7 @@ pub struct Editbox<'a> {
 
 mod text_editor;
 
-use text_editor::EditboxState;
+pub(crate) use text_editor::EditboxState;
 
 const LEFT_MARGIN: f32 = 2.;
 
@@ -65,6 +65,34 @@ impl<'a> Editbox<'a> {
             size: self.size,
             password: self.password,
             filter: Some(filter),
+        }
+    }
+
+    pub fn get_cursor(&self, ui: &mut Ui) -> u32 {
+        let context = ui.get_active_window_context();
+        let state = context
+            .storage_any
+            .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
+        state.cursor
+    }
+
+    pub fn set_cursor(&self, ui: &mut Ui, cursor: u32) {
+        let context = ui.get_active_window_context();
+        let state = context
+            .storage_any
+            .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
+        state.cursor = cursor
+    }
+
+    pub fn move_cursor(&self, ui: &mut Ui, amount: i32) {
+        let context = ui.get_active_window_context();
+        let state = context
+            .storage_any
+            .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
+        if amount > 0 {
+            state.cursor = state.cursor.saturating_add(amount as u32);
+        } else if amount < 0 {
+            state.cursor = state.cursor.saturating_sub(-amount as u32);
         }
     }
 
