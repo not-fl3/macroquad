@@ -13,6 +13,7 @@ pub struct Editbox<'a> {
     filter: Option<&'a dyn Fn(char) -> bool>,
     pos: Option<Vec2>,
     password: bool,
+    margin: Option<Vec2>,
 }
 
 mod text_editor;
@@ -31,6 +32,7 @@ impl<'a> Editbox<'a> {
             multiline: true,
             pos: None,
             password: false,
+            margin: None,
         }
     }
 
@@ -65,6 +67,14 @@ impl<'a> Editbox<'a> {
             size: self.size,
             password: self.password,
             filter: Some(filter),
+            margin: self.margin,
+        }
+    }
+
+    pub fn margin(self, margin: Vec2) -> Self {
+        Editbox {
+            margin: Some(margin),
+            ..self
         }
     }
 
@@ -363,8 +373,8 @@ impl<'a> Editbox<'a> {
             line_height * text_vec.iter().filter(|c| **c == '\n').count() as f32,
         );
 
-        // TODO: this is very weird hardcoded text_vec margin
-        let pos = context.window.cursor.fit(size, Layout::Free(vec2(2., 2.)));
+        let margin = self.margin.unwrap_or(vec2(2., 2.));
+        let pos = context.window.cursor.fit(size, Layout::Free(margin));
 
         context.window.painter.clip(parent_rect);
 
