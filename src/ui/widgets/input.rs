@@ -72,7 +72,7 @@ impl<'a> InputText<'a> {
             ..self
         }
     }
-  
+
     pub fn get_cursor(&self, ui: &mut Ui) -> u32 {
         let context = ui.get_active_window_context();
         let state = context
@@ -100,7 +100,7 @@ impl<'a> InputText<'a> {
             state.cursor = state.cursor.saturating_sub(-amount as u32);
         }
     }
-  
+
     pub fn margin(self, margin: Vec2) -> Self {
         Self {
             margin: Some(margin),
