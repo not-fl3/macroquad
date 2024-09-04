@@ -72,7 +72,7 @@ impl<'a> InputText<'a> {
 
         let label_size = context.window.painter.content_with_margins_size(
             &context.style.editbox_style,
-            &UiContent::Label((&*data).into()),
+            &UiContent::Label(((&*data).into(), None)),
         );
 
         let size = self.size.unwrap_or(vec2(

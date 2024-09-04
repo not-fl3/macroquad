@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 pub struct Label<'a> {
     position: Option<Vec2>,
-    _multiline: Option<f32>,
+    multiline: Option<f32>,
     size: Option<Vec2>,
     label: Cow<'a, str>,
 }
@@ -19,7 +19,7 @@ impl<'a> Label<'a> {
     {
         Label {
             position: None,
-            _multiline: None,
+            multiline: None,
             size: None,
             label: label.into(),
         }
@@ -27,7 +27,7 @@ impl<'a> Label<'a> {
 
     pub fn multiline(self, line_height: f32) -> Self {
         Label {
-            _multiline: Some(line_height),
+            multiline: Some(line_height),
             ..self
         }
     }
@@ -51,7 +51,7 @@ impl<'a> Label<'a> {
         let size = self.size.unwrap_or_else(|| {
             context.window.painter.content_with_margins_size(
                 &context.style.label_style,
-                &UiContent::Label(self.label.clone()),
+                &UiContent::Label((self.label.clone(), self.multiline)),
             )
         });
 
@@ -64,7 +64,7 @@ impl<'a> Label<'a> {
             &context.style.label_style,
             pos,
             size,
-            &UiContent::Label(self.label),
+            &UiContent::Label((self.label, self.multiline)),
             ElementState {
                 focused: context.focused,
                 hovered: false,
@@ -83,9 +83,9 @@ impl Ui {
     pub fn calc_size(&mut self, label: &str) -> Vec2 {
         let context = self.get_active_window_context();
 
-        context
-            .window
-            .painter
-            .content_with_margins_size(&context.style.label_style, &UiContent::Label(label.into()))
+        context.window.painter.content_with_margins_size(
+            &context.style.label_style,
+            &UiContent::Label((label.into(), None)),
+        )
     }
 }

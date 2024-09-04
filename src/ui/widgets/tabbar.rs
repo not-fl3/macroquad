@@ -77,7 +77,7 @@ impl<'a, 'b> Tabbar<'a, 'b> {
                 &context.style.tabbar_style,
                 pos + vec2(width * n as f32, 0.0),
                 vec2(width, self.size.y),
-                &UiContent::Label((*label).into()),
+                &UiContent::Label(((*label).into(), None)),
                 ElementState {
                     focused: context.focused,
                     hovered,

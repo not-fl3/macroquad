@@ -190,9 +190,13 @@ impl Painter {
         let margin = style.margin.unwrap_or_default();
 
         let size = match content {
-            UiContent::Label(label) => {
-                let text_measures = self.label_size(&*label, None, font, font_size);
-                (text_measures.width, font_size as f32)
+            UiContent::Label((label, multiline)) => {
+                let text_measures = self.label_size(&*label, *multiline, font, font_size);
+                if multiline.is_some() {
+                    (text_measures.width, text_measures.height)
+                } else {
+                    (text_measures.width, font_size as f32)
+                }
             }
             UiContent::Texture(texture) => (texture.width(), texture.height()),
         };
@@ -267,11 +271,11 @@ impl Painter {
         element_state: ElementState,
     ) {
         match content {
-            UiContent::Label(data) => {
+            UiContent::Label((data, multiline)) => {
                 let font = &mut *style.font.lock().unwrap();
                 let font_size = style.font_size;
                 let text_color = style.text_color(element_state);
-                let text_measures = self.label_size(data, None, font, font_size);
+                let text_measures = self.label_size(data, *multiline, font, font_size);
 
                 let left_coord = (element_size.x - text_measures.width) / 2.;
                 let top_coord =
@@ -280,7 +284,11 @@ impl Painter {
                 self.draw_label(
                     &*data,
                     element_pos + Vec2::new(left_coord, top_coord),
-                    Some(text_color),
+                    LabelParams {
+                        color: text_color,
+                        multiline: *multiline,
+                        ..Default::default()
+                    },
                     font,
                     font_size,
                 );
@@ -307,11 +315,11 @@ impl Painter {
     pub fn label_size(
         &self,
         label: &str,
-        _multiline: Option<f32>,
+        multiline: Option<f32>,
         font: &mut Font,
         font_size: u16,
     ) -> TextDimensions {
-        font.measure_text(label, font_size, 1.0, 1.0)
+        font.measure_text(label, font_size, 1.0, 1.0, multiline)
     }
 
     /// If character is in font atlas - will return x advance from position to potential next character position
@@ -386,17 +394,25 @@ impl Painter {
 
         let params = params.into();
 
-        let mut total_width = 0.;
+        let mut dx = 0.;
+        let mut dy = 0.;
         let position = vec2(position.x.trunc(), position.y.trunc());
         for character in label.chars() {
+            if let Some(line_height) = params.multiline {
+                if character == '\n' {
+                    dy += line_height;
+                    dx = 0.;
+                    continue;
+                }
+            }
             if let Some(advance) = self.draw_character(
                 character,
-                position + Vec2::new(total_width, 0.),
+                position + Vec2::new(dx, dy),
                 params.color,
                 font,
                 font_size,
             ) {
-                total_width += advance;
+                dx += advance;
             }
         }
     }
@@ -558,6 +574,7 @@ pub struct LabelParams {
     pub color: Color,
     #[allow(dead_code)]
     pub alignment: Alignment,
+    pub multiline: Option<f32>,
 }
 
 impl Default for LabelParams {
@@ -565,6 +582,7 @@ impl Default for LabelParams {
         LabelParams {
             color: Color::new(0., 0., 0., 1.),
             alignment: Alignment::default(),
+            multiline: None,
         }
     }
 }
@@ -587,6 +605,10 @@ impl From<Color> for LabelParams {
 }
 impl From<(Color, Alignment)> for LabelParams {
     fn from((color, alignment): (Color, Alignment)) -> LabelParams {
-        LabelParams { color, alignment }
+        LabelParams {
+            color,
+            alignment,
+            multiline: None,
+        }
     }
 }

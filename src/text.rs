@@ -151,6 +151,7 @@ impl Font {
         font_size: u16,
         font_scale_x: f32,
         font_scale_y: f32,
+        multiline: Option<f32>,
     ) -> TextDimensions {
         let dpi_scaling = miniquad::window::dpi_scale();
         let font_size = (font_size as f32 * dpi_scaling).ceil() as u16;
@@ -158,8 +159,14 @@ impl Font {
         let mut width = 0.0;
         let mut min_y = f32::MAX;
         let mut max_y = f32::MIN;
+        let mut lines = 0;
 
         for character in text.chars() {
+            if character == '\n' && multiline.is_some() {
+                lines += 1;
+                continue;
+            }
+
             if !self.contains(character, font_size) {
                 self.cache_glyph(character, font_size);
             }
@@ -174,10 +181,18 @@ impl Font {
             max_y = max_y.max(glyph.h * font_scale_y + offset_y);
         }
 
-        TextDimensions {
-            width: width / dpi_scaling,
-            height: (max_y - min_y) / dpi_scaling,
-            offset_y: max_y / dpi_scaling,
+        if let Some(line_distance) = multiline {
+            TextDimensions {
+                width: width / dpi_scaling,
+                height: (lines as f32 * line_distance + max_y - min_y) / dpi_scaling,
+                offset_y: (min_y.abs() / 2. + max_y) / dpi_scaling,
+            }
+        } else {
+            TextDimensions {
+                width: width / dpi_scaling,
+                height: (max_y - min_y) / dpi_scaling,
+                offset_y: max_y / dpi_scaling,
+            }
         }
     }
 }
@@ -455,7 +470,7 @@ pub fn measure_text(
 ) -> TextDimensions {
     let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
 
-    font.measure_text(text, font_size, font_scale, font_scale)
+    font.measure_text(text, font_size, font_scale, font_scale, None)
 }
 
 pub(crate) struct FontsStorage {

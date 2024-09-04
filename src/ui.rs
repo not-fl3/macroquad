@@ -89,19 +89,19 @@ use input::{InputCharacter, Key};
 pub type Id = u64;
 
 pub enum UiContent<'a> {
-    Label(Cow<'a, str>),
+    Label((Cow<'a, str>, Option<f32>)),
     Texture(crate::texture::Texture2D),
 }
 
 impl<'a> From<&'a str> for UiContent<'a> {
     fn from(data: &'a str) -> UiContent<'a> {
-        UiContent::Label(data.into())
+        UiContent::Label((data.into(), None))
     }
 }
 
 impl From<String> for UiContent<'static> {
     fn from(data: String) -> UiContent<'static> {
-        UiContent::Label(data.into())
+        UiContent::Label((data.into(), None))
     }
 }
 
