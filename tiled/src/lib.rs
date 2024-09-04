@@ -459,9 +459,14 @@ pub fn load_map(
         );
     }
 
+    // Some external tilesets could be resolved, so we
+    // include the new "map_tilesets"
     Ok(Map {
         layers,
         tilesets,
-        raw_tiled_map: map,
+        raw_tiled_map: tiled::Map {
+            tilesets: map_tilesets,
+            ..map
+        },
     })
 }
