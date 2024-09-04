@@ -14,6 +14,7 @@ pub struct InputText<'a> {
     numbers: bool,
     ratio: f32,
     pos: Option<Vec2>,
+    margin: Option<Vec2>,
 }
 
 impl<'a> InputText<'a> {
@@ -26,6 +27,7 @@ impl<'a> InputText<'a> {
             password: false,
             ratio: 0.5,
             pos: None,
+            margin: None,
         }
     }
 
@@ -38,6 +40,7 @@ impl<'a> InputText<'a> {
             password: self.password,
             ratio: self.ratio,
             pos: self.pos,
+            margin: self.margin,
         }
     }
 
@@ -69,7 +72,7 @@ impl<'a> InputText<'a> {
             ..self
         }
     }
-
+  
     pub fn get_cursor(&self, ui: &mut Ui) -> u32 {
         let context = ui.get_active_window_context();
         let state = context
@@ -95,6 +98,13 @@ impl<'a> InputText<'a> {
             state.cursor = state.cursor.saturating_add(amount as u32);
         } else if amount < 0 {
             state.cursor = state.cursor.saturating_sub(-amount as u32);
+        }
+    }
+  
+    pub fn margin(self, margin: Vec2) -> Self {
+        Self {
+            margin: Some(margin),
+            ..self
         }
     }
 
@@ -124,6 +134,10 @@ impl<'a> InputText<'a> {
             .password(self.password)
             .position(pos)
             .multiline(false);
+
+        if let Some(margin) = self.margin {
+            editbox = editbox.margin(margin);
+        }
 
         if self.numbers {
             editbox = editbox
