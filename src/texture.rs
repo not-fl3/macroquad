@@ -5,17 +5,13 @@ use crate::{
     text::atlas::SpriteKey, Error,
 };
 
+pub use crate::quad_gl::FilterMode;
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
-
-pub use crate::quad_gl::FilterMode;
-
-use slotmap::SlotMap;
+use slotmap::{TextureIdSlotMap, TextureSlotId};
 use std::sync::Arc;
 
-slotmap::new_key_type! {
-    pub(crate) struct TextureSlotId;
-}
+mod slotmap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct TextureSlotGuarded(pub TextureSlotId);
@@ -30,13 +26,13 @@ pub(crate) enum TextureHandle {
 }
 
 pub(crate) struct TexturesContext {
-    textures: SlotMap<crate::texture::TextureSlotId, miniquad::TextureId>,
+    textures: TextureIdSlotMap,
     removed: Vec<TextureSlotId>,
 }
 impl TexturesContext {
     pub fn new() -> TexturesContext {
         TexturesContext {
-            textures: SlotMap::with_key(),
+            textures: TextureIdSlotMap::new(),
             removed: Vec::with_capacity(200),
         }
     }
@@ -47,7 +43,7 @@ impl TexturesContext {
         TextureHandle::Managed(Arc::new(TextureSlotGuarded(self.textures.insert(texture))))
     }
     pub fn texture(&self, texture: TextureSlotId) -> Option<miniquad::TextureId> {
-        self.textures.get(texture).copied()
+        self.textures.get(texture)
     }
     // fn remove(&mut self, texture: TextureSlotId) {
     //     self.textures.remove(texture);
@@ -57,7 +53,7 @@ impl TexturesContext {
     }
     pub fn garbage_collect(&mut self, ctx: &mut miniquad::Context) {
         for texture in self.removed.drain(0..) {
-            if let Some(texture) = self.textures.get(texture).copied() {
+            if let Some(texture) = self.textures.get(texture) {
                 ctx.delete_texture(texture);
             }
             self.textures.remove(texture);
