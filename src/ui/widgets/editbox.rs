@@ -213,6 +213,7 @@ impl<'a> Editbox<'a> {
                 }
                 InputCharacter {
                     key: Key::KeyCode(Home),
+                    modifier_ctrl: false,
                     modifier_shift,
                     ..
                 } => {
@@ -220,12 +221,31 @@ impl<'a> Editbox<'a> {
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                 }
                 InputCharacter {
+                    key: Key::KeyCode(Home),
+                    modifier_ctrl: true,
+                    modifier_shift,
+                    ..
+                } => {
+                    let to_text_being = state.cursor as i32;
+                    state.move_cursor(text, -to_text_being, modifier_shift);
+                }
+                InputCharacter {
                     key: Key::KeyCode(End),
+                    modifier_ctrl: false,
                     modifier_shift,
                     ..
                 } => {
                     let to_line_end = state.find_line_end(text) as i32;
                     state.move_cursor(text, to_line_end, modifier_shift);
+                }
+                InputCharacter {
+                    key: Key::KeyCode(End),
+                    modifier_ctrl: true,
+                    modifier_shift,
+                    ..
+                } => {
+                    let to_text_end = (text.len() as u32 - state.cursor) as i32;
+                    state.move_cursor(text, to_text_end, modifier_shift);
                 }
                 InputCharacter {
                     key: Key::KeyCode(Up),
