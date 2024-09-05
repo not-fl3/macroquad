@@ -18,6 +18,7 @@ pub use button::Button;
 pub use checkbox::Checkbox;
 pub use combobox::ComboBox;
 pub use editbox::Editbox;
+pub(crate) use editbox::EditboxState;
 pub use group::{Group, GroupToken};
 pub use input::InputText;
 pub use label::Label;

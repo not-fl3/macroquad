@@ -1,6 +1,9 @@
 use crate::{
     math::{vec2, Vec2},
-    ui::{widgets::Editbox, ElementState, Id, Layout, Ui, UiContent},
+    ui::{
+        widgets::{Editbox, EditboxState},
+        ElementState, Id, Layout, Ui, UiContent,
+    },
 };
 
 pub struct InputText<'a> {
@@ -67,6 +70,34 @@ impl<'a> InputText<'a> {
         Self {
             numbers: true,
             ..self
+        }
+    }
+
+    pub fn get_cursor(&self, ui: &mut Ui) -> u32 {
+        let context = ui.get_active_window_context();
+        let state = context
+            .storage_any
+            .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
+        state.cursor
+    }
+
+    pub fn set_cursor(&self, ui: &mut Ui, cursor: u32) {
+        let context = ui.get_active_window_context();
+        let state = context
+            .storage_any
+            .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
+        state.cursor = cursor
+    }
+
+    pub fn move_cursor(&self, ui: &mut Ui, amount: i32) {
+        let context = ui.get_active_window_context();
+        let state = context
+            .storage_any
+            .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
+        if amount > 0 {
+            state.cursor = state.cursor.saturating_add(amount as u32);
+        } else if amount < 0 {
+            state.cursor = state.cursor.saturating_sub(-amount as u32);
         }
     }
 
