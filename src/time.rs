@@ -13,11 +13,13 @@ pub fn get_fps() -> i32 {
 pub fn get_frame_time() -> f32 {
     let context = get_context();
 
-    if crate::experimental::scene::in_fixed_update() {
-        crate::experimental::scene::fixed_frame_time()
-    } else {
-        context.frame_time as f32
+    if let Some(handler) = &context.scene_handler {
+        if (handler.in_fixed_update)() {
+            return (handler.fixed_frame_time)();
+        }
     }
+
+    context.frame_time as f32
 }
 
 /// Returns elapsed wall-clock time in seconds since start

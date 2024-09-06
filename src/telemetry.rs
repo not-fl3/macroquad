@@ -280,9 +280,12 @@ pub struct GpuQuery {
 }
 
 pub fn scene_allocated_memory() -> usize {
-    use crate::experimental::scene;
-
-    scene::allocated_memory()
+    let context = get_context();
+    if let Some(handler) = &context.scene_handler {
+        (handler.allocated_memory)()
+    } else {
+        0
+    }
 }
 
 /// ```skip
