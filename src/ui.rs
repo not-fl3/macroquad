@@ -984,7 +984,7 @@ impl Ui {
                 return true;
             }
         }
-        for window in &self.modal {
+        if let Some(window) = &self.modal {
             if window.was_active {
                 if window.full_rect().contains(mouse_position) {
                     return true;
@@ -1080,7 +1080,7 @@ impl Ui {
             window.childs.clear();
         }
 
-        for window in &mut self.modal {
+        if let Some(window) = &mut self.modal {
             window.painter.clear();
             window.cursor.reset();
             window.was_active = window.active;
