@@ -78,42 +78,6 @@ impl<T> Handle<T> {
     pub fn as_trait<T1: ?Sized>(&self) {}
 }
 
-pub(crate) struct Lens<T> {
-    handle: HandleUntyped,
-    offset: isize,
-    _marker: PhantomData<T>,
-}
-
-impl<T> Lens<T> {
-    pub fn get(&mut self) -> Option<&mut T> {
-        let node = get_untyped_node(self.handle)?;
-
-        Some(unsafe { &mut *((node.data as *mut u8).offset(self.offset) as *mut T) })
-    }
-}
-
-impl<T> Handle<T> {
-    pub(crate) fn lens<F, T1>(&self, f: F) -> Lens<T1>
-    where
-        F: for<'r> FnOnce(&'r mut T) -> &'r mut T1,
-    {
-        assert!(self.id.is_some());
-
-        let offset = unsafe {
-            let mut base = std::mem::MaybeUninit::<T>::uninit();
-            let field = f(std::mem::transmute(base.as_mut_ptr())) as *mut _ as *mut u8;
-
-            (field as *mut u8).offset_from(base.as_mut_ptr() as *mut u8)
-        };
-
-        Lens {
-            handle: HandleUntyped(self.id.unwrap()),
-            offset,
-            _marker: PhantomData,
-        }
-    }
-}
-
 pub struct NodeWith<T> {
     pub node: HandleUntyped,
     pub capability: T,
