@@ -87,7 +87,7 @@ impl<'a> Drag<'a> {
 
         let label_size = context.window.painter.content_with_margins_size(
             &context.style.label_style,
-            &UiContent::Label(self.label.into()),
+            &UiContent::Label((self.label.into(), None)),
         );
         let size = vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,
@@ -132,7 +132,7 @@ impl<'a> Drag<'a> {
             let label = format!("{:.2}", (*data));
             let value_size = context.window.painter.content_with_margins_size(
                 &context.style.label_style,
-                &UiContent::Label((&label).into()),
+                &UiContent::Label(((&label).into(), None)),
             );
 
             context.window.painter.draw_element_label(

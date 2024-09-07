@@ -55,7 +55,7 @@ impl<'a> Checkbox<'a> {
 
         let label_size = context.window.painter.content_with_margins_size(
             &context.style.label_style,
-            &UiContent::Label(self.label.into()),
+            &UiContent::Label((self.label.into(), None)),
         );
         let size = self.size.unwrap_or(vec2(
             context.window.cursor.area.w - context.style.margin * 2. - context.window.cursor.ident,

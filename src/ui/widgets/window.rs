@@ -145,7 +145,7 @@ impl Window {
                     &context.style.window_titlebar_style,
                     position,
                     vec2(size.x, style.title_height),
-                    &UiContent::Label(label.into()),
+                    &UiContent::Label((label.into(), None)),
                     ElementState {
                         focused,
                         clicked: false,
