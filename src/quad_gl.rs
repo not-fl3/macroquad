@@ -642,7 +642,7 @@ impl QuadGl {
             ShaderSource::Glsl { fragment, .. } => fragment,
             ShaderSource::Msl { program } => program,
         };
-        let wants_screen_texture = source.find("_ScreenTexture").is_some();
+        let wants_screen_texture = source.contains("_ScreenTexture");
         let shader = ctx.new_shader(shader, shader_meta)?;
         Ok(self.pipelines.make_pipeline(
             ctx,
@@ -911,7 +911,7 @@ impl QuadGl {
 
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(
-                    self.state.texture.clone(),
+                    self.state.texture,
                     self.state.model(),
                     self.state.draw_mode,
                     pip,
@@ -921,7 +921,7 @@ impl QuadGl {
                     self.max_indices,
                 ));
             }
-            self.draw_calls[self.draw_calls_count].texture = self.state.texture.clone();
+            self.draw_calls[self.draw_calls_count].texture = self.state.texture;
             self.draw_calls[self.draw_calls_count].uniforms = uniforms;
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
@@ -946,7 +946,7 @@ impl QuadGl {
         }
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();
-        dc.texture = self.state.texture.clone();
+        dc.texture = self.state.texture;
     }
 
     pub fn delete_pipeline(&mut self, pipeline: GlPipeline) {

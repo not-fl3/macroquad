@@ -607,7 +607,7 @@ impl Texture2D {
                 texture: TextureHandle::ManagedWeak((**t).0),
             },
             TextureHandle::ManagedWeak(t) => Texture2D {
-                texture: TextureHandle::ManagedWeak(t.clone()),
+                texture: TextureHandle::ManagedWeak(*t),
             },
         }
     }
@@ -648,10 +648,7 @@ impl Texture2D {
     ///     );
     /// # }
     /// ```
-    pub fn from_file_with_format<'a>(
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Texture2D {
+    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Texture2D {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
@@ -728,8 +725,8 @@ impl Texture2D {
         let ctx = get_quad_context();
         let (texture_width, texture_height) = ctx.texture_size(self.raw_miniquad_id());
 
-        assert_eq!(texture_width, width as u32);
-        assert_eq!(texture_height, height as u32);
+        assert_eq!(texture_width, width);
+        assert_eq!(texture_height, height);
 
         ctx.texture_update(self.raw_miniquad_id(), bytes);
     }

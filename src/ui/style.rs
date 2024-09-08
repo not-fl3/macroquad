@@ -155,14 +155,14 @@ impl StyleBuilder {
 
     pub fn color_selected(self, color_selected: Color) -> StyleBuilder {
         StyleBuilder {
-            color_selected: color_selected,
+            color_selected,
             ..self
         }
     }
 
     pub fn color_selected_hovered(self, color_selected_hovered: Color) -> StyleBuilder {
         StyleBuilder {
-            color_selected_hovered: color_selected_hovered,
+            color_selected_hovered,
             ..self
         }
     }
@@ -322,10 +322,10 @@ impl Style {
 
         if focused == false {
             return self.color_inactive.unwrap_or(Color::from_rgba(
-                (self.color.r as f32 * 255.) as u8,
-                (self.color.g as f32 * 255.) as u8,
-                (self.color.b as f32 * 255.) as u8,
-                (self.color.a as f32 * 255. * 0.8) as u8,
+                (self.color.r * 255.) as u8,
+                (self.color.g * 255.) as u8,
+                (self.color.b * 255.) as u8,
+                (self.color.a * 255. * 0.8) as u8,
             ));
         }
         if clicked {

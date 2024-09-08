@@ -479,7 +479,7 @@ fn get_quad_context() -> &'static mut dyn miniquad::RenderingBackend {
     thread_assert::same_thread();
 
     unsafe {
-        assert!(!CONTEXT.is_none());
+        assert!(CONTEXT.is_some());
     }
 
     unsafe { &mut *CONTEXT.as_mut().unwrap().quad_context }
