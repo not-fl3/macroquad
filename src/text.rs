@@ -65,7 +65,7 @@ impl Font {
     pub(crate) fn load_from_bytes(atlas: Arc<Mutex<Atlas>>, bytes: &[u8]) -> Result<Font, Error> {
         Ok(Font {
             font: Arc::new(fontdue::Font::from_bytes(
-                &bytes[..],
+                bytes,
                 fontdue::FontSettings::default(),
             )?),
             characters: Arc::new(Mutex::new(HashMap::new())),
@@ -314,7 +314,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) -> TextDimen
         .font
         .unwrap_or(&get_context().fonts_storage.default_font);
 
-    let dpi_scaling = miniquad::window::dpi_scale() as f32;
+    let dpi_scaling = miniquad::window::dpi_scale();
 
     let rot = params.rotation;
     let font_scale_x = params.font_scale * params.font_scale_aspect;

@@ -54,7 +54,7 @@ impl<'a> Button<'a> {
             .window
             .cursor
             .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
-        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let rect = Rect::new(pos.x, pos.y, size.x, size.y);
         let (hovered, clicked) = context.register_click_intention(rect);
 
         if !context.style.button_style.reverse_background_z {

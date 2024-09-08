@@ -5,10 +5,10 @@
 use crate::{file::load_file, get_context, Error};
 use std::sync::Arc;
 
-#[cfg(all(feature = "audio"))]
+#[cfg(feature = "audio")]
 use quad_snd::{AudioContext as QuadSndContext, Sound as QuadSndSound};
 
-#[cfg(all(feature = "audio"))]
+#[cfg(feature = "audio")]
 pub use quad_snd::PlaySoundParams;
 
 #[cfg(not(feature = "audio"))]

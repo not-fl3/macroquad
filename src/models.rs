@@ -201,19 +201,18 @@ pub fn draw_affine_parallelepiped(
     texture: Option<&Texture2D>,
     color: Color,
 ) {
-    let texture_base = texture.into();
-    draw_affine_parallelogram(offset, e1, e2, texture_base, color);
-    draw_affine_parallelogram(offset, e1, e3, texture_base, color);
-    draw_affine_parallelogram(offset, e2, e3, texture_base, color);
+    draw_affine_parallelogram(offset, e1, e2, texture, color);
+    draw_affine_parallelogram(offset, e1, e3, texture, color);
+    draw_affine_parallelogram(offset, e2, e3, texture, color);
 
-    draw_affine_parallelogram(offset + e1, e2, e3, texture_base, color);
-    draw_affine_parallelogram(offset + e2, e1, e3, texture_base, color);
-    draw_affine_parallelogram(offset + e3, e1, e2, texture_base, color);
+    draw_affine_parallelogram(offset + e1, e2, e3, texture, color);
+    draw_affine_parallelogram(offset + e2, e1, e3, texture, color);
+    draw_affine_parallelogram(offset + e3, e1, e2, texture, color);
 }
 
 pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color: Color) {
     let context = get_context();
-    context.gl.texture(texture.into());
+    context.gl.texture(texture);
 
     let (x, y, z) = (position.x, position.y, position.z);
     let (width, height, length) = (size.x, size.y, size.z);
@@ -470,7 +469,7 @@ pub fn draw_sphere_ex(
 
     let scale = vec3(radius, radius, radius);
 
-    context.gl.texture(texture.into());
+    context.gl.texture(texture);
     context.gl.draw_mode(params.draw_mode);
 
     for i in 0..rings + 1 {
@@ -614,7 +613,7 @@ pub fn draw_cylinder_ex(
 
     let sides = params.sides;
 
-    context.gl.texture(texture.into());
+    context.gl.texture(texture);
     context.gl.draw_mode(params.draw_mode);
 
     use std::f32::consts::PI;
