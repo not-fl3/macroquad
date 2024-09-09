@@ -399,15 +399,15 @@ pub fn load_map(
                         .iter()
                         .map(|tile| {
                             find_tileset(*tile).map(|tileset| {
+                                let flip_flags = (*tile & TILE_FLIP_FLAGS) >> 28;
+                                let tile = *tile & !TILE_FLIP_FLAGS;
+
                                 let attrs = tileset
                                     .tiles
                                     .iter()
-                                    .find(|t| t.id as u32 == *tile - tileset.firstgid)
+                                    .find(|t| t.id as u32 == tile - tileset.firstgid)
                                     .and_then(|tile| tile.ty.clone())
                                     .unwrap_or("".to_owned());
-
-                                let flip_flags = (*tile & TILE_FLIP_FLAGS) >> 28;
-                                let tile = *tile & !TILE_FLIP_FLAGS;
 
                                 Tile {
                                     id: tile - tileset.firstgid,
