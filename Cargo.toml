@@ -15,7 +15,8 @@ license = "MIT OR Apache-2.0"
 audio = ["quad-snd"]
 log-rs = ["log"]
 glam-serde = ["glam/serde"]
-default = []
+default = ["image-crate"]
+image-crate = ["image"]
 
 [package.metadata.android]
 assets = "examples/"
@@ -30,7 +31,7 @@ all-features = true
 miniquad = { version = "=0.4.8", features = ["log-impl"] }
 quad-rand = "0.2.3"
 glam = { version = "0.27", features = ["scalar-math"] }
-image = { version = "0.24", default-features = false, features = ["png", "tga"] }
+image = { version = "0.24", default-features = false, features = ["png", "tga"], optional = true }
 macroquad_macro = { version = "0.1.8", path = "macroquad_macro" }
 fontdue = "0.9"
 backtrace = { version = "0.3.60", optional = true }

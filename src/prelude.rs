@@ -26,4 +26,5 @@ pub use crate::logging::*;
 
 pub use crate::{color_u8, DroppedFile};
 
+#[cfg(feature = "image-crate")]
 pub use image::ImageFormat;
