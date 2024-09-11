@@ -70,17 +70,17 @@ impl TexturesContext {
 pub struct Image {
     // FIXME: remove all the deprecation notes once the `Image` fields are private
     #[deprecated(
-        since = "0.4.12",
+        since = "0.4.14",
         note = "this will be made private, use `Image::bytes`, `Image::bytes_mut` or `Image::bytes_vec_mut` for reading and writing instead"
     )]
     pub bytes: Vec<u8>,
     #[deprecated(
-        since = "0.4.12",
+        since = "0.4.14",
         note = "this will be made private, use `Image::width` or `Image::width_mut` for reading and writing instead"
     )]
     pub width: u16,
     #[deprecated(
-        since = "0.4.12",
+        since = "0.4.14",
         note = "this will be made private, use `Image::height` or `Image::height_mut` for reading and writing instead"
     )]
     pub height: u16,
@@ -174,7 +174,7 @@ impl Image {
     }
 
     /// Creates an Image filled with the provided [Color].
-    #[deprecated(since = "0.4.12", note = "use `Image::filled_with_color` instead")]
+    #[deprecated(since = "0.4.14", note = "use `Image::filled_with_color` instead")]
     pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
         Image::filled_with_color(width, height, color)
     }
@@ -261,6 +261,21 @@ impl Image {
 
         unsafe {
             slice::from_raw_parts_mut(self.bytes.as_mut_ptr() as *mut [u8; 4], self.pixel_amount())
+        }
+    }
+
+    /// Replace the bytes of this image with the bytes from `data`.
+    ///
+    /// # Panics
+    /// Panics if `data` has a different length than `self.bytes`.
+    pub fn set_image_data(&mut self, data: &[[u8; 4]]) {
+        assert_eq!(self.pixel_amount(), data.len());
+
+        for i in 0..data.len() {
+            self.bytes[i * 4] = data[i][0];
+            self.bytes[i * 4 + 1] = data[i][1];
+            self.bytes[i * 4 + 2] = data[i][2];
+            self.bytes[i * 4 + 3] = data[i][3];
         }
     }
 
