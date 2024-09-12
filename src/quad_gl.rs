@@ -20,9 +20,6 @@ pub enum DrawMode {
 pub struct GlPipeline(usize);
 
 struct DrawCall {
-    // vertices: Vec<Vertex>,
-    // indices: Vec<u16>,
-
     vertices_count: usize,
     indices_count: usize,
     vertices_start: usize,
@@ -49,8 +46,6 @@ impl DrawCall {
         pipeline: GlPipeline,
         uniforms: Option<Vec<u8>>,
         render_pass: Option<RenderPass>,
-        max_vertices: usize,
-        max_indices: usize,
     ) -> DrawCall {
         DrawCall {
             vertices_start: 0,
@@ -68,14 +63,6 @@ impl DrawCall {
             capture: false,
         }
     }
-
-    // fn vertices(&self) -> &[Vertex] {
-    //     &self.vertices[0..self.vertices_count]
-    // }
-
-    // fn indices(&self) -> &[u16] {
-    //     &self.indices[0..self.indices_count]
-    // }
 }
 
 struct MagicSnapshotter {
@@ -927,8 +914,6 @@ impl QuadGl {
                     pip,
                     uniforms.clone(),
                     self.state.render_pass,
-                    self.max_vertices,
-                    self.max_indices,
                 ));
             }
             self.draw_calls[self.draw_calls_count].texture = self.state.texture;
