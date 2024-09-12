@@ -8,7 +8,7 @@ mod error;
 mod tiled;
 
 pub use error::Error;
-pub use tiled::layer::Property;
+pub use tiled::{Property, PropertyVal};
 
 #[derive(Debug, Clone)]
 pub struct Object {

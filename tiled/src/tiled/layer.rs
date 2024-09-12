@@ -1,3 +1,4 @@
+use super::Property;
 use nanoserde::DeJson;
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-chunk
@@ -49,15 +50,6 @@ pub struct Layer {
 
     /// for type = "imagelayer"
     pub image: Option<String>,
-}
-
-#[derive(Clone, Debug, Default, DeJson)]
-#[nserde(default)]
-pub struct Property {
-    pub name: String,
-    #[nserde(rename = "type")]
-    pub ty: String,
-    pub value: String,
 }
 
 #[derive(Clone, Debug, Default, DeJson)]
