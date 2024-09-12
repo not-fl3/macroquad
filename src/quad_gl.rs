@@ -8,7 +8,14 @@ use crate::{color::Color, logging::warn, telemetry, texture::Texture2D, tobytes:
 
 use std::collections::BTreeMap;
 
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
+};
+
 pub(crate) use crate::models::Vertex;
+
+const DRAWCALLS_ARENA_BUFFER_SIZE_MULTIPLIER: usize = 10;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DrawMode {
@@ -20,7 +27,7 @@ pub enum DrawMode {
 pub struct GlPipeline(usize);
 
 struct DrawCall {
-    vertices: Vec<Vertex>,
+    vertices: ArenaAllocation<Vertex>,
     indices: Vec<u16>,
 
     vertices_count: usize,
@@ -47,14 +54,11 @@ impl DrawCall {
         pipeline: GlPipeline,
         uniforms: Option<Vec<u8>>,
         render_pass: Option<RenderPass>,
-        max_vertices: usize,
+        vertices: ArenaAllocation<Vertex>,
         max_indices: usize,
     ) -> DrawCall {
         DrawCall {
-            vertices: vec![
-                Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0));
-                max_vertices
-            ],
+            vertices,
             indices: vec![0; max_indices],
             vertices_count: 0,
             indices_count: 0,
@@ -70,8 +74,12 @@ impl DrawCall {
         }
     }
 
-    fn vertices(&self) -> &[Vertex] {
-        &self.vertices[0..self.vertices_count]
+    fn vertices(&self) -> Ref<[Vertex]> {
+        self.vertices.borrow()
+    }
+
+    fn free_unused_vertices(&mut self) {
+        self.vertices.realloc(self.vertices_count);
     }
 
     fn indices(&self) -> &[u16] {
@@ -572,6 +580,7 @@ pub struct QuadGl {
     draw_calls: Vec<DrawCall>,
     draw_calls_bindings: Vec<Bindings>,
     draw_calls_count: usize,
+    draw_calls_vertices_arena: Arena<Vertex>,
     state: GlState,
     start_time: f64,
 
@@ -602,6 +611,10 @@ impl QuadGl {
             draw_calls: Vec::with_capacity(200),
             draw_calls_bindings: Vec::with_capacity(200),
             draw_calls_count: 0,
+            draw_calls_vertices_arena: Arena::new(
+                10000 * DRAWCALLS_ARENA_BUFFER_SIZE_MULTIPLIER,
+                Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0)),
+            ),
             start_time: miniquad::date::now(),
 
             white_texture: white_texture,
@@ -670,6 +683,7 @@ impl QuadGl {
     /// Reset only draw calls state
     pub fn clear_draw_calls(&mut self) {
         self.draw_calls_count = 0;
+        self.draw_calls_vertices_arena.clear();
     }
 
     /// Reset internal state to known default
@@ -679,6 +693,7 @@ impl QuadGl {
         self.state.model_stack = vec![glam::Mat4::IDENTITY];
 
         self.draw_calls_count = 0;
+        self.draw_calls_vertices_arena.clear();
     }
 
     pub fn draw(&mut self, ctx: &mut dyn miniquad::RenderingBackend, projection: glam::Mat4) {
@@ -735,7 +750,7 @@ impl QuadGl {
 
             ctx.buffer_update(
                 bindings.vertex_buffers[0],
-                BufferSource::slice(dc.vertices()),
+                BufferSource::slice(&dc.vertices()),
             );
             ctx.buffer_update(bindings.index_buffer, BufferSource::slice(dc.indices()));
 
@@ -792,6 +807,7 @@ impl QuadGl {
         }
 
         self.draw_calls_count = 0;
+        self.draw_calls_vertices_arena.clear();
     }
 
     pub(crate) fn capture(&mut self, capture: bool) {
@@ -909,6 +925,10 @@ impl QuadGl {
                 )
             });
 
+            if let Some(previous_dc) = previous_dc_ix.and_then(|ix| self.draw_calls.get_mut(ix)) {
+                previous_dc.free_unused_vertices();
+            }
+
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(
                     self.state.texture,
@@ -917,7 +937,7 @@ impl QuadGl {
                     pip,
                     uniforms.clone(),
                     self.state.render_pass,
-                    self.max_vertices,
+                    self.draw_calls_vertices_arena.alloc(0),
                     self.max_indices,
                 ));
             }
@@ -931,14 +951,17 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].pipeline = pip;
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
             self.draw_calls[self.draw_calls_count].capture = self.state.capture;
+            self.draw_calls[self.draw_calls_count].vertices =
+                self.draw_calls_vertices_arena.alloc(self.max_vertices);
 
             self.draw_calls_count += 1;
             self.state.break_batching = false;
         };
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
+        let mut dc_vertices = dc.vertices.borrow_mut();
 
         for i in 0..vertices.len() {
-            dc.vertices[dc.vertices_count + i] = vertices[i];
+            dc_vertices[dc.vertices_count + i] = vertices[i];
         }
 
         for i in 0..indices.len() {
@@ -1000,10 +1023,14 @@ impl QuadGl {
     ) {
         self.max_vertices = max_vertices;
         self.max_indices = max_indices;
+        self.draw_calls_count = 0;
+        self.draw_calls_vertices_arena = Arena::new(
+            max_vertices * DRAWCALLS_ARENA_BUFFER_SIZE_MULTIPLIER,
+            Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0)),
+        );
 
         for draw_call in &mut self.draw_calls {
-            draw_call.vertices =
-                vec![Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0)); max_vertices];
+            draw_call.vertices = self.draw_calls_vertices_arena.alloc(0);
             draw_call.indices = vec![0; max_indices];
         }
         for binding in &mut self.draw_calls_bindings {
@@ -1115,5 +1142,170 @@ mod shader {
                     .collect(),
             },
         }
+    }
+}
+
+// a simple arena allocator to optimize drawcalls vertices allocation.
+// it does not make perfect use of the memory it allocates,
+// but that makes the implementation simpler and cheaper cpu wise.
+// it should be used with care,
+// as ArenaAllocation does not own the underlying data, nor have a set lifetime,
+// so using an existing ArenaAllocation after clear is lowkey undefined behaviour.
+// in the context of DrawCalls vertices, draw_calls_count must be set to 0 everytime the arena is cleared,
+// and all data should be initialized before reading from it again.
+struct Arena<T> {
+    data: Rc<RefCell<ArenaData<T>>>,
+}
+
+// stored in a saperate struct so it can be used by both the arena and the allocations,
+// without having to deal with borrowing and lifetimes.
+// although referencing it using Rc<RefCell<>> does add some indendation and overhead.
+struct ArenaData<T> {
+    // Boxed so the vec only stores a pointers to the buffers, not the buffers themselves.
+    // we use multiple small buffers, so when we need more memory,
+    // we can just add more instead of having to reallocate the whole thing.
+    buffers: Vec<Box<[T]>>,
+    current_buffer: usize,
+    current_offset: usize,
+    buffer_size: usize,
+    // default value that the buffers will be filled with
+    default: T,
+}
+
+struct ArenaAllocation<T> {
+    data: Rc<RefCell<ArenaData<T>>>,
+    buffer: usize,
+    offset: usize,
+    len: usize,
+}
+
+impl<T: Clone> Arena<T> {
+    fn new(buffer_size: usize, default: T) -> Arena<T> {
+        let data = ArenaData {
+            default: default.clone(),
+            buffers: vec![vec![default; buffer_size].into_boxed_slice()],
+            current_buffer: 0,
+            current_offset: 0,
+            buffer_size,
+        };
+        Arena {
+            data: Rc::new(RefCell::new(data)),
+        }
+    }
+
+    fn alloc(&mut self, len: usize) -> ArenaAllocation<T> {
+        let mut data = self.data.borrow_mut();
+
+        if len > data.buffer_size {
+            panic!("can't allocate a slice larger than a single buffer's size");
+        }
+
+        // if there isn't enough space in the current buffer
+        if data.current_offset + len > data.buffers[data.current_buffer].len() {
+            data.request_new_buffer();
+        }
+
+        let allocation = ArenaAllocation {
+            data: self.data.clone(),
+            buffer: data.current_buffer,
+            offset: data.current_offset,
+            len,
+        };
+
+        data.current_offset += len;
+
+        allocation
+    }
+
+    fn clear(&mut self) {
+        // we don't clear the buffers, only reset the offsets
+        let mut data = self.data.borrow_mut();
+        data.current_buffer = 0;
+        data.current_offset = 0;
+    }
+}
+
+impl<T> ArenaAllocation<T> {
+    fn borrow(&self) -> Ref<[T]> {
+        let data = self.data.borrow();
+
+        // Rust automatically checks for out of bounds accesses
+        // if self.buffer >= data.buffers.len() {
+        //     panic!("arena allocation buffer index out of bounds");
+        // }
+        //
+        // let buffer = &data.buffers[self.buffer];
+        //
+        // if self.offset >= buffer.len() {
+        //     panic!("arena allocation offset out of bounds");
+        // }
+        //
+        // if self.offset + self.len > buffer.len() {
+        //     panic!("arena allocation len out of bounds");
+        // }
+
+        Ref::map(data, |data| {
+            &data.buffers[self.buffer][self.offset..self.offset + self.len]
+        })
+    }
+
+    fn borrow_mut(&mut self) -> RefMut<[T]> {
+        let data = self.data.borrow_mut();
+
+        // Rust automatically checks for out of bounds accesses
+        // if self.buffer >= data.buffers.len() {
+        //     panic!("arena allocation buffer index out of bounds");
+        // }
+        //
+        // let buffer = &data.buffers[self.buffer];
+        //
+        // if self.offset >= buffer.len() {
+        //     panic!("arena allocation offset out of bounds");
+        // }
+        //
+        // if self.offset + self.len > buffer.len() {
+        //     panic!("arena allocation len out of bounds");
+        // }
+
+        RefMut::map(data, |data| {
+            &mut data.buffers[self.buffer][self.offset..self.offset + self.len]
+        })
+    }
+
+    fn realloc(&mut self, len: usize) {
+        let mut data = self.data.borrow_mut();
+
+        if len == self.len {
+            return;
+        }
+
+        let is_most_recent_allocation =
+            self.buffer == data.current_buffer && self.offset + self.len == data.current_offset;
+
+        if len < self.len {
+            self.len = len;
+            if is_most_recent_allocation {
+                data.current_offset = self.offset + self.len;
+            }
+            return;
+        }
+
+        // as of the current use in DrawCall
+        // the realloc method is only called to reduce slice size
+        // so this shouldn't be reached
+        unimplemented!();
+    }
+}
+
+impl<T: Clone> ArenaData<T> {
+    fn request_new_buffer(&mut self) {
+        // allocate a new buffer if there isn't one
+        if self.buffers.len() == self.current_buffer + 1 {
+            self.buffers
+                .push(vec![self.default.clone(); self.buffer_size].into_boxed_slice());
+        }
+
+        self.current_buffer += 1;
+        self.current_offset = 0;
     }
 }
