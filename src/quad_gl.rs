@@ -728,9 +728,18 @@ impl QuadGl {
 
             ctx.buffer_update(
                 bindings.vertex_buffers[0],
-                BufferSource::slice(&self.batch_vertex_buffer[dc.vertices_start..(dc.vertices_start + dc.vertices_count)]),
+                BufferSource::slice(
+                    &self.batch_vertex_buffer
+                        [dc.vertices_start..(dc.vertices_start + dc.vertices_count)],
+                ),
             );
-            ctx.buffer_update(bindings.index_buffer, BufferSource::slice(&self.batch_index_buffer[dc.indices_start..(dc.indices_start + dc.indices_count)]));
+            ctx.buffer_update(
+                bindings.index_buffer,
+                BufferSource::slice(
+                    &self.batch_index_buffer
+                        [dc.indices_start..(dc.indices_start + dc.indices_count)],
+                ),
+            );
 
             bindings.images[0] = dc.texture.unwrap_or(white_texture);
             bindings.images[1] = self
@@ -935,10 +944,8 @@ impl QuadGl {
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
         self.batch_vertex_buffer.extend(vertices);
-        self.batch_index_buffer.extend(
-            indices.iter()
-            .map(|x| *x + dc.vertices_count as u16)
-        );
+        self.batch_index_buffer
+            .extend(indices.iter().map(|x| *x + dc.vertices_count as u16));
 
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();
