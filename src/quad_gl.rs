@@ -558,6 +558,7 @@ pub struct QuadGl {
     draw_calls: Vec<DrawCall>,
     draw_calls_bindings: Vec<Bindings>,
     draw_calls_count: usize,
+    draw_calls_batching_search_depth: usize,
     state: GlState,
     start_time: f64,
 
@@ -591,6 +592,7 @@ impl QuadGl {
             draw_calls: Vec::with_capacity(200),
             draw_calls_bindings: Vec::with_capacity(200),
             draw_calls_count: 0,
+            draw_calls_batching_search_depth: 1,
             start_time: miniquad::date::now(),
 
             white_texture: white_texture,
@@ -886,26 +888,28 @@ impl QuadGl {
                 .get(self.state.draw_mode, self.state.depth_test_enable),
         );
 
-        let previous_dc_ix = if self.draw_calls_count == 0 {
+        let batch_dc_ix = if self.state.break_batching {
             None
         } else {
-            Some(self.draw_calls_count - 1)
+            let start = self
+                .draw_calls_count
+                .saturating_sub(self.draw_calls_batching_search_depth);
+            (start..self.draw_calls_count).find(|ix| {
+                let draw_call = &self.draw_calls[*ix];
+                draw_call.texture == self.state.texture
+                    && draw_call.clip == self.state.clip
+                    && draw_call.viewport == self.state.viewport
+                    && draw_call.model == self.state.model()
+                    && draw_call.pipeline == pip
+                    && draw_call.render_pass == self.state.render_pass
+                    && draw_call.draw_mode == self.state.draw_mode
+                    && draw_call.vertices_count <= self.max_vertices - vertices.len()
+                    && draw_call.indices_count <= self.max_indices - indices.len()
+                    && draw_call.capture == self.state.capture
+            })
         };
-        let previous_dc = previous_dc_ix.and_then(|ix| self.draw_calls.get(ix));
 
-        if previous_dc.map_or(true, |draw_call| {
-            draw_call.texture != self.state.texture
-                || draw_call.clip != self.state.clip
-                || draw_call.viewport != self.state.viewport
-                || draw_call.model != self.state.model()
-                || draw_call.pipeline != pip
-                || draw_call.render_pass != self.state.render_pass
-                || draw_call.draw_mode != self.state.draw_mode
-                || draw_call.vertices_count >= self.max_vertices - vertices.len()
-                || draw_call.indices_count >= self.max_indices - indices.len()
-                || draw_call.capture != self.state.capture
-                || self.state.break_batching
-        }) {
+        if batch_dc_ix.is_none() {
             let uniforms = self.state.pipeline.map_or(None, |pipeline| {
                 Some(
                     self.pipelines
@@ -941,7 +945,7 @@ impl QuadGl {
             self.draw_calls_count += 1;
             self.state.break_batching = false;
         };
-        let dc = &mut self.draw_calls[self.draw_calls_count - 1];
+        let dc = &mut self.draw_calls[batch_dc_ix.unwrap_or(self.draw_calls_count - 1)];
 
         self.batch_vertex_buffer.extend(vertices);
         self.batch_index_buffer
@@ -1031,6 +1035,10 @@ impl QuadGl {
                 images: vec![self.white_texture, self.white_texture],
             };
         }
+    }
+
+    pub(crate) fn update_drawcalls_batching_search_depth(&mut self, depth: usize) {
+        self.draw_calls_batching_search_depth = depth;
     }
 }
 

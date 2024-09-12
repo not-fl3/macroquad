@@ -32,6 +32,12 @@ pub fn gl_set_drawcall_buffer_capacity(max_vertices: usize, max_indices: usize) 
         .update_drawcall_capacity(get_quad_context(), max_vertices, max_indices);
 }
 
+#[doc(hidden)]
+pub fn gl_set_drawcalls_batching_search_depth(depth: usize) {
+    let context = get_context();
+    context.gl.update_drawcalls_batching_search_depth(depth);
+}
+
 pub struct InternalGlContext<'a> {
     pub quad_context: &'a mut dyn miniquad::RenderingBackend,
     pub quad_gl: &'a mut crate::quad_gl::QuadGl,
