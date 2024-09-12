@@ -299,7 +299,12 @@ impl MiniquadInputEvent {
 impl Context {
     const DEFAULT_BG_COLOR: Color = BLACK;
 
-    fn new() -> Context {
+    fn new(
+        update_on: conf::UpdateTrigger,
+        default_filter_mode: crate::FilterMode,
+        draw_call_vertex_capacity: usize,
+        draw_call_index_capacity: usize,
+    ) -> Context {
         let mut ctx: Box<dyn miniquad::RenderingBackend> =
             miniquad::window::new_rendering_backend();
         let (screen_width, screen_height) = miniquad::window::screen_size();
@@ -331,7 +336,11 @@ impl Context {
             input_events: Vec::new(),
 
             camera_matrix: None,
-            gl: QuadGl::new(&mut *ctx),
+            gl: QuadGl::new(
+                &mut *ctx,
+                draw_call_vertex_capacity,
+                draw_call_index_capacity,
+            ),
 
             ui_context: UiContext::new(&mut *ctx, screen_width, screen_height),
             fonts_storage: text::FontsStorage::new(&mut *ctx),
@@ -354,9 +363,9 @@ impl Context {
 
             quad_context: ctx,
 
-            default_filter_mode: crate::quad_gl::FilterMode::Linear,
+            default_filter_mode,
             textures: crate::texture::TexturesContext::new(),
-            update_on: Default::default(),
+            update_on,
         }
     }
 
@@ -806,6 +815,18 @@ pub mod conf {
         /// update_on will tell macroquad when to proceed with the event loop.
         pub update_on: Option<UpdateTrigger>,
         pub default_filter_mode: crate::FilterMode,
+        /// Macroquad performs automatic and static batching for each
+        /// draw_* call. For each draw call, it pre-allocate a huge cpu/gpu
+        /// buffer to add vertices to. When it exceeds the buffer, it allocates the
+        /// new one, marking the new draw call.
+        ///
+        /// Some examples when altering those values migh be convinient:
+        /// - for huge 3d models that do not fit into a single draw call, increasing
+        ///     the buffer size might be easier than splitting the model.
+        /// - when each draw_* call got its own material,
+        ///     buffer size might be reduced to save some memory
+        pub draw_call_vertex_capacity: usize,
+        pub draw_call_index_capacity: usize,
     }
 
     impl Default for Conf {
@@ -814,6 +835,8 @@ pub mod conf {
                 miniquad_conf: miniquad::conf::Conf::default(),
                 update_on: Some(UpdateTrigger::default()),
                 default_filter_mode: crate::FilterMode::Linear,
+                draw_call_vertex_capacity: 10000,
+                draw_call_index_capacity: 5000,
             }
         }
     }
@@ -825,6 +848,8 @@ impl From<miniquad::conf::Conf> for conf::Conf {
             miniquad_conf: conf,
             update_on: None,
             default_filter_mode: crate::FilterMode::Linear,
+            draw_call_vertex_capacity: 10000,
+            draw_call_index_capacity: 5000,
         }
     }
 }
@@ -852,15 +877,20 @@ impl Window {
             miniquad_conf,
             update_on,
             default_filter_mode,
+            draw_call_vertex_capacity,
+            draw_call_index_capacity,
         } = config.into();
         miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
             unsafe {
                 MAIN_FUTURE = Some(Box::pin(future));
             }
-            let mut context = Context::new();
-            context.update_on = update_on.unwrap_or_default();
-            context.default_filter_mode = default_filter_mode;
+            let context = Context::new(
+                update_on.unwrap_or_default(),
+                default_filter_mode,
+                draw_call_vertex_capacity,
+                draw_call_index_capacity,
+            );
             unsafe { CONTEXT = Some(context) };
 
             Box::new(Stage {})

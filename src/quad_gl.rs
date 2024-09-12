@@ -570,7 +570,11 @@ pub struct QuadGl {
 }
 
 impl QuadGl {
-    pub fn new(ctx: &mut dyn miniquad::RenderingBackend) -> QuadGl {
+    pub fn new(
+        ctx: &mut dyn miniquad::RenderingBackend,
+        max_vertices: usize,
+        max_indices: usize,
+    ) -> QuadGl {
         let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
 
         QuadGl {
@@ -594,12 +598,10 @@ impl QuadGl {
             start_time: miniquad::date::now(),
 
             white_texture: white_texture,
-            max_vertices: 10000,
-            max_indices: 5000,
-
-            // Good first estimates. Vec will scale exponentially if needed
-            batch_vertex_buffer: Vec::with_capacity(10000),
-            batch_index_buffer: Vec::with_capacity(5000),
+            batch_vertex_buffer: Vec::with_capacity(max_vertices),
+            batch_index_buffer: Vec::with_capacity(max_indices),
+            max_vertices,
+            max_indices,
         }
     }
 
