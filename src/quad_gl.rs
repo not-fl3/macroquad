@@ -20,11 +20,10 @@ pub enum DrawMode {
 pub struct GlPipeline(usize);
 
 struct DrawCall {
-    vertices: Vec<Vertex>,
-    indices: Vec<u16>,
-
     vertices_count: usize,
     indices_count: usize,
+    vertices_start: usize,
+    indices_start: usize,
 
     clip: Option<(i32, i32, i32, i32)>,
     viewport: Option<(i32, i32, i32, i32)>,
@@ -47,15 +46,10 @@ impl DrawCall {
         pipeline: GlPipeline,
         uniforms: Option<Vec<u8>>,
         render_pass: Option<RenderPass>,
-        max_vertices: usize,
-        max_indices: usize,
     ) -> DrawCall {
         DrawCall {
-            vertices: vec![
-                Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0));
-                max_vertices
-            ],
-            indices: vec![0; max_indices],
+            vertices_start: 0,
+            indices_start: 0,
             vertices_count: 0,
             indices_count: 0,
             viewport: None,
@@ -68,14 +62,6 @@ impl DrawCall {
             render_pass,
             capture: false,
         }
-    }
-
-    fn vertices(&self) -> &[Vertex] {
-        &self.vertices[0..self.vertices_count]
-    }
-
-    fn indices(&self) -> &[u16] {
-        &self.indices[0..self.indices_count]
     }
 }
 
@@ -578,6 +564,9 @@ pub struct QuadGl {
     pub(crate) white_texture: miniquad::TextureId,
     max_vertices: usize,
     max_indices: usize,
+
+    batch_vertex_buffer: Vec<Vertex>,
+    batch_index_buffer: Vec<u16>,
 }
 
 impl QuadGl {
@@ -607,6 +596,10 @@ impl QuadGl {
             white_texture: white_texture,
             max_vertices: 10000,
             max_indices: 5000,
+
+            // Good first estimates. Vec will scale exponentially if needed
+            batch_vertex_buffer: Vec::with_capacity(10000),
+            batch_index_buffer: Vec::with_capacity(5000),
         }
     }
 
@@ -735,9 +728,9 @@ impl QuadGl {
 
             ctx.buffer_update(
                 bindings.vertex_buffers[0],
-                BufferSource::slice(dc.vertices()),
+                BufferSource::slice(&self.batch_vertex_buffer[dc.vertices_start..(dc.vertices_start + dc.vertices_count)]),
             );
-            ctx.buffer_update(bindings.index_buffer, BufferSource::slice(dc.indices()));
+            ctx.buffer_update(bindings.index_buffer, BufferSource::slice(&self.batch_index_buffer[dc.indices_start..(dc.indices_start + dc.indices_count)]));
 
             bindings.images[0] = dc.texture.unwrap_or(white_texture);
             bindings.images[1] = self
@@ -789,9 +782,13 @@ impl QuadGl {
 
             dc.vertices_count = 0;
             dc.indices_count = 0;
+            dc.vertices_start = 0;
+            dc.indices_start = 0;
         }
 
         self.draw_calls_count = 0;
+        self.batch_index_buffer.clear();
+        self.batch_vertex_buffer.clear();
     }
 
     pub(crate) fn capture(&mut self, capture: bool) {
@@ -917,8 +914,6 @@ impl QuadGl {
                     pip,
                     uniforms.clone(),
                     self.state.render_pass,
-                    self.max_vertices,
-                    self.max_indices,
                 ));
             }
             self.draw_calls[self.draw_calls_count].texture = self.state.texture;
@@ -931,21 +926,23 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].pipeline = pip;
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
             self.draw_calls[self.draw_calls_count].capture = self.state.capture;
+            self.draw_calls[self.draw_calls_count].indices_start = self.batch_index_buffer.len();
+            self.draw_calls[self.draw_calls_count].vertices_start = self.batch_vertex_buffer.len();
 
             self.draw_calls_count += 1;
             self.state.break_batching = false;
         };
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
-        for i in 0..vertices.len() {
-            dc.vertices[dc.vertices_count + i] = vertices[i];
-        }
+        self.batch_vertex_buffer.extend(vertices);
+        self.batch_index_buffer.extend(
+            indices.iter()
+            .map(|x| *x + dc.vertices_count as u16)
+        );
 
-        for i in 0..indices.len() {
-            dc.indices[dc.indices_count + i] = indices[i] + dc.vertices_count as u16;
-        }
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();
+
         dc.texture = self.state.texture;
     }
 
@@ -1003,9 +1000,8 @@ impl QuadGl {
         self.draw_calls_count = 0;
 
         for draw_call in &mut self.draw_calls {
-            draw_call.vertices =
-                vec![Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0)); max_vertices];
-            draw_call.indices = vec![0; max_indices];
+            draw_call.indices_start = 0;
+            draw_call.vertices_start = 0;
         }
         for binding in &mut self.draw_calls_bindings {
             ctx.delete_buffer(binding.index_buffer);
