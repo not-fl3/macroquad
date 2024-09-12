@@ -950,7 +950,10 @@ impl QuadGl {
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
         self.batch_vertex_buffer.extend(vertices);
-        self.batch_index_buffer.extend(indices);
+        self.batch_index_buffer.extend(
+            indices.iter()
+            .map(|x| *x + dc.vertices_count as u16)
+        );
 
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();
