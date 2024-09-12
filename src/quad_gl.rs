@@ -1000,6 +1000,7 @@ impl QuadGl {
     ) {
         self.max_vertices = max_vertices;
         self.max_indices = max_indices;
+        self.draw_calls_count = 0;
 
         for draw_call in &mut self.draw_calls {
             draw_call.vertices =
@@ -1007,6 +1008,10 @@ impl QuadGl {
             draw_call.indices = vec![0; max_indices];
         }
         for binding in &mut self.draw_calls_bindings {
+            ctx.delete_buffer(binding.index_buffer);
+            for vertex_buffer in &binding.vertex_buffers {
+                ctx.delete_buffer(*vertex_buffer);
+            }
             let vertex_buffer = ctx.new_buffer(
                 BufferType::VertexBuffer,
                 BufferUsage::Stream,
