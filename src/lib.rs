@@ -228,6 +228,7 @@ struct Context {
     textures: crate::texture::TexturesContext,
 
     update_on: conf::UpdateTrigger,
+    scene_handler: Option<experimental::scene::SceneHandler>,
 }
 
 #[derive(Clone)]
@@ -357,6 +358,7 @@ impl Context {
             default_filter_mode: crate::quad_gl::FilterMode::Linear,
             textures: crate::texture::TexturesContext::new(),
             update_on: Default::default(),
+            scene_handler: None,
         }
     }
 
@@ -387,7 +389,9 @@ impl Context {
     }
 
     fn end_frame(&mut self) {
-        crate::experimental::scene::update();
+        if let Some(handler) = &self.scene_handler {
+            (handler.update)();
+        }
 
         self.perform_render_passes();
 
