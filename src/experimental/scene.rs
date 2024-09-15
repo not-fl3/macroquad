@@ -617,7 +617,7 @@ impl Iterator for MagicVecIterator {
 static mut SCENE: Option<Scene> = None;
 
 unsafe fn get_scene() -> &'static mut Scene {
-    SCENE.get_or_insert(Scene::new())
+    SCENE.get_or_insert_with(|| Scene::new())
 }
 
 pub(crate) fn allocated_memory() -> usize {
