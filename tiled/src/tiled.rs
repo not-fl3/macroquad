@@ -2,6 +2,8 @@ use nanoserde::DeJson;
 
 pub mod layer;
 
+use layer::Layer;
+
 /// https://doc.mapeditor.org/en/stable/reference/tmx-map-format/#tmx-grid
 #[derive(Clone, Debug, Default, DeJson)]
 pub struct Grid {
@@ -16,10 +18,6 @@ pub struct Property {
     #[nserde(rename = "type")]
     pub ty: String,
 }
-
-/// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-layer
-#[derive(Clone, Debug, Default, DeJson)]
-pub struct Layer {}
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-frame
 #[derive(Clone, Debug, Default, DeJson)]
