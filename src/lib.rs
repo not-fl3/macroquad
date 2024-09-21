@@ -902,7 +902,14 @@ impl Window {
             unsafe { CONTEXT = Some(context) };
 
             Box::new(Stage {
-                main_future: Box::pin(future),
+                main_future: Box::pin(async {
+                    future.await;
+                    unsafe {
+                        if let Some(ctx) = CONTEXT.as_mut() {
+                            ctx.gl.reset();
+                        }
+                    }
+                }),
             })
         });
     }
