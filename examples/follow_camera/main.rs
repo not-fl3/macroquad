@@ -3,6 +3,8 @@
 use macroquad::window::next_frame;
 use macroquad::{color::*, input::*, math::*, shapes::*};
 
+mod camera;
+
 fn draw_grid(canvas: &mut SpriteBatcher) {
     for i in 0..11 {
         canvas.draw(
@@ -41,17 +43,27 @@ async fn game(ctx: macroquad::Context) {
         .load_texture("examples/ferris.png")
         .await
         .unwrap();
+    let render_target = ctx.resources.render_target(250, 250).unwrap();
+    let mut camera = camera::Camera::new(Rect::new(-100.0, -100.0, 200.0, 200.0));
     let mut crab_position = vec2(0.0, 0.0);
     let mut canvas = ctx.new_canvas();
-    // This will guarantee that no matter what window size,
-    // the top to bottom distance will be 100 in world space.
+    let mut ui_canvas = ctx.new_canvas();
     canvas.set_viewport_bound(ViewportBound::Horizontal(100.0));
     loop {
+        if ctx.is_key_pressed(KeyCode::Z) {
+            camera.shake_rotational(5.0, 10);
+        }
+        if ctx.is_key_pressed(KeyCode::X) {
+            camera.shake_noise(1., 10, 1.0);
+        }
         ctx.clear_screen(WHITE);
-        crab_position += crab_direction(&ctx);
-        // crab_position will be exactly in the middle of the window
-        canvas.set_viewport_center(crab_position);
+        ctx.clear_render_target(&render_target, WHITE);
+        ui_canvas.clear();
         canvas.clear();
+        crab_position += crab_direction(&ctx);
+        let (p, r) = camera.update(canvas.viewport(None), crab_position);
+        canvas.set_viewport_center(p);
+        canvas.set_viewport_rotation(r);
         draw_grid(&mut canvas);
         canvas.draw(
             Sprite::new(&crab).size(vec2(10.0, 10.0)),
@@ -59,6 +71,11 @@ async fn game(ctx: macroquad::Context) {
             WHITE,
         );
         ctx.blit_canvas(&mut canvas);
+        canvas.set_viewport_center(crab_position);
+        canvas.set_viewport_rotation(0.0);
+        ctx.blit_canvas2(&render_target, &mut canvas);
+        ui_canvas.draw(Sprite::new(&render_target.texture), vec2(0.0, 0.0), WHITE);
+        ctx.blit_canvas(&mut ui_canvas);
         next_frame().await
     }
 }

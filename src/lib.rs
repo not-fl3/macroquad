@@ -397,9 +397,29 @@ impl Context {
             None,
         );
     }
+    pub fn clear_render_target(
+        &self,
+        render_target: &crate::texture::RenderTarget,
+        color: quad_gl::color::Color,
+    ) {
+        let clear = PassAction::clear_color(color.r, color.g, color.b, color.a);
+        {
+            let mut ctx = self.quad_ctx.lock().unwrap();
+            ctx.begin_pass(Some(render_target.render_pass), clear);
+            ctx.end_render_pass();
+        }
+    }
 
     pub fn blit_canvas(&self, canvas: &mut quad_gl::sprite_batcher::SpriteBatcher) {
-        canvas.blit();
+        canvas.blit(None);
+    }
+
+    pub fn blit_canvas2(
+        &self,
+        render_target: &crate::texture::RenderTarget,
+        canvas: &mut quad_gl::sprite_batcher::SpriteBatcher,
+    ) {
+        canvas.blit(Some(render_target.render_pass));
     }
 
     pub fn screen_width(&self) -> f32 {

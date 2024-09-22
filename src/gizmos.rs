@@ -68,7 +68,7 @@ pub fn draw_gizmos(camera: &quad_gl::camera::Camera) {
 
             let (proj, view) = camera.proj_view();
             ctx.canvas.set_override_matrix(proj * view);
-            ctx.canvas.blit();
+            ctx.canvas.blit(None);
             ctx.canvas.reset();
 
             ctx.lines.retain(|line| line.persist);

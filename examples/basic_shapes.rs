@@ -8,7 +8,11 @@ async fn game(ctx: macroquad::Context) {
 
     // canvas1 is a static background canvas.
     // It will be never updated.
-    canvas1.draw(Rectangle::new(100.0, 100.0), vec2(0.0, 0.0), RED);
+    canvas1.draw(
+        Rectangle::new(100.0, 100.0),
+        vec2(0.0, 0.0),
+        RED,
+    );
     canvas1.draw(Text::new("HELLO WORLD", 30), vec2(300.0, 300.0), BLACK);
 
     loop {

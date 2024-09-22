@@ -32,7 +32,7 @@ pub fn init_compat_mode(ctx: &crate::Context) {
 pub(crate) fn end_frame() {
     if CTX.with_borrow(|ctx| ctx.is_some()) {
         with_ctx(|ctx| {
-            ctx.canvas.blit();
+            ctx.canvas.blit(None);
             ctx.canvas.reset();
         });
     }

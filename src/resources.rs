@@ -255,4 +255,12 @@ impl Resources {
         let bytes = &load_file(path).await?;
         Ok(self.quad_gl.lock().unwrap().load_texture(&bytes))
     }
+
+    pub fn render_target(
+        &self,
+        width: u16,
+        height: u16,
+    ) -> Result<quad_gl::texture::RenderTarget, crate::Error> {
+        Ok(self.quad_gl.lock().unwrap().render_target(width, height))
+    }
 }
