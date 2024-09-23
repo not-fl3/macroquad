@@ -16,10 +16,12 @@ pub struct Color {
     pub a: f32,
 }
 
-/// Build a color from 4 components of 0..255 values
-/// This is a temporary solution and going to be replaced with const fn,
-/// waiting for [this issue](https://github.com/rust-lang/rust/issues/57241) to be resolved.
+/// Build a color from 4 components of 0..255 values. Use `Color::from_rgba` directly instead.
+///
+/// This was a workaround because floating point arithmetic in const was not stable yet.
+/// It should not be used anymore.
 #[macro_export]
+#[deprecated(note = "use `Color::from_rgba` instead")]
 macro_rules! color_u8 {
     ($r:expr, $g:expr, $b:expr, $a:expr) => {
         Color::new(
@@ -33,14 +35,17 @@ macro_rules! color_u8 {
 
 #[test]
 fn color_from_bytes() {
-    assert_eq!(Color::new(1.0, 0.0, 0.0, 1.0), color_u8!(255, 0, 0, 255));
+    assert_eq!(
+        Color::new(1.0, 0.0, 0.0, 1.0),
+        Color::from_rgba(255, 0, 0, 255)
+    );
     assert_eq!(
         Color::new(1.0, 0.5, 0.0, 1.0),
-        color_u8!(255, 127.5, 0, 255)
+        Color::from_rgba_f32(255.0, 127.5, 0.0, 255.0)
     );
     assert_eq!(
         Color::new(0.0, 1.0, 0.5, 1.0),
-        color_u8!(0, 255, 127.5, 255)
+        Color::from_rgba_f32(0.0, 255.0, 127.5, 255.0)
     );
 }
 
@@ -101,15 +106,19 @@ impl Color {
     }
 
     /// Build a color from 4 components between 0 and 255.
-    /// Unfortunately it can't be const fn due to [this issue](https://github.com/rust-lang/rust/issues/57241).
-    /// When const version is needed "color_u8" macro may be a workaround.
-    pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
+    /// If the values have to be floats, use `Color::from_rgba_f32` instead.
+    pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
         Color::new(
             r as f32 / 255.,
             g as f32 / 255.,
             b as f32 / 255.,
             a as f32 / 255.,
         )
+    }
+
+    /// Build a color from 4 `f32` components between 0.0 and 255.0.
+    pub const fn from_rgba_f32(r: f32, g: f32, b: f32, a: f32) -> Color {
+        Color::new(r / 255., g / 255., b / 255., a / 255.)
     }
 
     /// Build a color from a hexadecimal u32
