@@ -468,7 +468,7 @@ impl<'a> Editbox<'a> {
                         character,
                         pos + vec2(x, y + font_size as f32 - baseline),
                         text_color,
-                        &mut *font,
+                        &mut font,
                         font_size,
                     )
                     .unwrap_or(0.);

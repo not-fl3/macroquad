@@ -154,5 +154,5 @@ pub fn stop_sound(sound: &Sound) {
 
 pub fn set_sound_volume(sound: &Sound, volume: f32) {
     let ctx = &mut get_context().audio_context;
-    sound.0 .0.set_volume(&mut ctx.native_ctx, volume)
+    sound.0 .0.set_volume(&mut ctx.native_ctx, volume);
 }

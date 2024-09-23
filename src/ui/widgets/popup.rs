@@ -28,6 +28,6 @@ impl Popup {
 
 impl Ui {
     pub fn popup<F: FnOnce(&mut Ui)>(&mut self, id: Id, size: Vec2, f: F) {
-        Popup::new(id, size).ui(self, f)
+        Popup::new(id, size).ui(self, f);
     }
 }

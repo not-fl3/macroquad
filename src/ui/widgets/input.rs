@@ -109,8 +109,9 @@ impl<'a> InputText<'a> {
         }
 
         if self.numbers {
-            editbox = editbox
-                .filter(&|character| character.is_digit(10) || character == '.' || character == '-')
+            editbox = editbox.filter(&|character| {
+                character.is_digit(10) || character == '.' || character == '-'
+            });
         }
         editbox.ui(ui, data);
 
@@ -132,13 +133,13 @@ impl<'a> InputText<'a> {
 
 impl Ui {
     pub fn input_text(&mut self, id: Id, label: &str, data: &mut String) {
-        InputText::new(id).label(label).ui(self, data)
+        InputText::new(id).label(label).ui(self, data);
     }
 
     pub fn input_password(&mut self, id: Id, label: &str, data: &mut String) {
         InputText::new(id)
             .label(label)
             .password(true)
-            .ui(self, data)
+            .ui(self, data);
     }
 }

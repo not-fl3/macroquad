@@ -400,7 +400,7 @@ pub fn draw_multiline_text(
             color,
             ..Default::default()
         },
-    )
+    );
 }
 
 /// Draw multiline text with the given line distance and custom params such as font, font size and font scale.
