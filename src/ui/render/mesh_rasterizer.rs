@@ -216,7 +216,7 @@ fn get_active_draw_list<'a, 'b>(
     match command {
         DrawCommand::Clip { rect, .. } => {
             if last.clipping_zone != *rect {
-                draw_lists.push(DrawList::new())
+                draw_lists.push(DrawList::new());
             }
         }
         DrawCommand::DrawRawTexture { texture, .. } => {

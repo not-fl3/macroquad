@@ -604,7 +604,7 @@ impl Texture2D {
         match &self.texture {
             TextureHandle::Unmanaged(id) => Texture2D::unmanaged(*id),
             TextureHandle::Managed(t) => Texture2D {
-                texture: TextureHandle::ManagedWeak((**t).0),
+                texture: TextureHandle::ManagedWeak(t.0),
             },
             TextureHandle::ManagedWeak(t) => Texture2D {
                 texture: TextureHandle::ManagedWeak(*t),
@@ -749,7 +749,7 @@ impl Texture2D {
             width,
             height,
             &image.bytes,
-        )
+        );
     }
 
     /// Returns the width of this texture.

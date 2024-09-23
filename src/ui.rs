@@ -934,7 +934,7 @@ impl Ui {
     /// If you want your widget to start with its scrollbar in a particular location,
     /// consider `if ui.frame == 1 { ui.scroll_here() }`.
     pub fn scroll_here(&mut self) {
-        self.scroll_here_ratio(0.5)
+        self.scroll_here_ratio(0.5);
     }
 
     /// Scrolls the active GUI window to its GUI cursor.
@@ -1359,7 +1359,7 @@ pub(crate) mod ui_context {
         }
 
         fn set(&mut self, data: &str) {
-            miniquad::window::clipboard_set(data)
+            miniquad::window::clipboard_set(data);
         }
     }
 

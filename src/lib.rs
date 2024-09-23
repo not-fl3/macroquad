@@ -651,7 +651,7 @@ impl EventHandler for Stage {
                 character,
                 modifiers,
                 repeat,
-            })
+            });
         });
     }
 
@@ -667,7 +667,7 @@ impl EventHandler for Stage {
                 keycode,
                 modifiers,
                 repeat,
-            })
+            });
         });
         if context
             .update_on

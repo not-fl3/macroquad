@@ -55,7 +55,7 @@ fn waker() -> Waker {
         )
     }
     unsafe fn wake_by_ref(data: *const ()) {
-        wake(data)
+        wake(data);
     }
     unsafe fn drop(_data: *const ()) {
         // Nothing to do

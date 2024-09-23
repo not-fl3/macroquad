@@ -313,7 +313,7 @@ impl<'a> Drop for LogTimeGuard<'a> {
             "Time query: {}, {:.1}s",
             self.name,
             get_time() - self.start_time
-        ))
+        ));
     }
 }
 

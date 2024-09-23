@@ -70,7 +70,7 @@ impl<'a> TreeNode<'a> {
         context.window.painter.draw_element_label(
             &context.style.label_style,
             pos + vec2(10., 0.),
-            &*self.label,
+            &self.label,
             ElementState {
                 focused: context.focused,
                 ..Default::default()

@@ -155,6 +155,6 @@ impl<'a> Checkbox<'a> {
 
 impl Ui {
     pub fn checkbox(&mut self, id: Id, label: &str, data: &mut bool) {
-        Checkbox::new(id).label(label).ui(self, data)
+        Checkbox::new(id).label(label).ui(self, data);
     }
 }
