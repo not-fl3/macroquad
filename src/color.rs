@@ -221,17 +221,13 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
         }
     }
 
-    let mut h: f32;
-    let s: f32;
-    let l: f32;
-
     let Color { r, g, b, .. } = color;
 
     let max = max(max(r, g), b);
     let min = min(min(r, g), b);
 
     // Luminosity is the average of the max and min rgb color intensities.
-    l = (max + min) / 2.0;
+    let l = (max + min) / 2.0;
 
     // Saturation
     let delta: f32 = max - min;
@@ -241,18 +237,18 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
     }
 
     // it's not gray
-    if l < 0.5 {
-        s = delta / (max + min);
+    let s = if l < 0.5 {
+        delta / (max + min)
     } else {
-        s = delta / (2.0 - max - min);
-    }
+        delta / (2.0 - max - min)
+    };
 
     // Hue
     let r2 = (((max - r) / 6.0) + (delta / 2.0)) / delta;
     let g2 = (((max - g) / 6.0) + (delta / 2.0)) / delta;
     let b2 = (((max - b) / 6.0) + (delta / 2.0)) / delta;
 
-    h = match max {
+    let mut h = match max {
         x if x == r => b2 - g2,
         x if x == g => (1.0 / 3.0) + r2 - b2,
         _ => (2.0 / 3.0) + g2 - r2,

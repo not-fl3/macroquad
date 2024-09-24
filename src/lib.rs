@@ -720,7 +720,7 @@ impl EventHandler for Stage {
 
             fn maybe_unwind(unwind: bool, f: impl FnOnce() + Sized + panic::UnwindSafe) -> bool {
                 if unwind {
-                    panic::catch_unwind(|| f()).is_ok()
+                    panic::catch_unwind(f).is_ok()
                 } else {
                     f();
                     true

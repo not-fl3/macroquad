@@ -206,9 +206,9 @@ impl MagicSnapshotter {
                     ..
                 } = ctx.texture_params(texture);
                 let color_img = ctx.new_render_texture(TextureParams {
-                    width: width,
-                    height: height,
-                    format: format,
+                    width,
+                    height,
+                    format,
                     ..Default::default()
                 });
 
@@ -597,7 +597,7 @@ impl QuadGl {
             draw_calls_count: 0,
             start_time: miniquad::date::now(),
 
-            white_texture: white_texture,
+            white_texture,
             batch_vertex_buffer: Vec::with_capacity(max_vertices),
             batch_index_buffer: Vec::with_capacity(max_indices),
             max_vertices,
@@ -748,7 +748,7 @@ impl QuadGl {
                 .state
                 .snapshotter
                 .screen_texture
-                .unwrap_or_else(|| white_texture);
+                .unwrap_or(white_texture);
             bindings
                 .images
                 .resize(2 + pipeline.textures.len(), white_texture);
