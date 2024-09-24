@@ -244,9 +244,11 @@ pub fn set_camera(camera: &dyn Camera) {
     // flush previous camera draw calls
     context.perform_render_passes();
 
-    if let Some(render_pass) = camera.render_pass() {
-        context.gl.render_pass(Some(render_pass.raw_miniquad_id()));
-    }
+    context.gl.render_pass(
+        camera
+            .render_pass()
+            .map(|render_pass| render_pass.raw_miniquad_id()),
+    );
 
     context.gl.viewport(camera.viewport());
     context.gl.depth_test(camera.depth_enabled());
