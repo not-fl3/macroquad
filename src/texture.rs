@@ -514,11 +514,11 @@ pub fn draw_texture_ex(
     let mut x = x;
     let mut y = y;
     if params.flip_x {
-        x = x + w;
+        x += w;
         w = -w;
     }
     if params.flip_y {
-        y = y + h;
+        y += h;
         h = -h;
     }
 
@@ -558,7 +558,7 @@ pub fn draw_texture_ex(
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
-    context.gl.texture(Some(&texture));
+    context.gl.texture(Some(texture));
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&vertices, &indices);
 }

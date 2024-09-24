@@ -24,7 +24,7 @@ impl<'a> Slider<'a> {
         Slider {
             id: self.id,
             range: self.range,
-            label: label,
+            label,
         }
     }
 

@@ -305,7 +305,7 @@ impl<'a> Editbox<'a> {
             *context.input_focus = None;
         }
 
-        let mut state = context
+        let state = context
             .storage_any
             .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
 
@@ -350,7 +350,7 @@ impl<'a> Editbox<'a> {
                 &mut context.input.input_buffer,
                 &mut *context.clipboard,
                 &mut text_vec,
-                &mut state,
+                state,
             );
         }
         // draw rect in parent window
