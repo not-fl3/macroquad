@@ -43,7 +43,7 @@ pub struct TextDimensions {
     pub height: f32,
     /// Height offset from the baseline of the text.
     /// "draw_text(.., X, Y, ..)" will be rendered in a "Rect::new(X, Y - dimensions.offset_y, dimensions.width, dimensions.height)"
-    /// For reference check "text_dimensions" example.
+    /// For reference check "text_measures" example.
     pub offset_y: f32,
 }
 
