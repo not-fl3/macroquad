@@ -77,6 +77,13 @@ impl Font {
         self.atlas = atlas;
     }
 
+    pub(crate) fn set_characters(
+        &mut self,
+        characters: Arc<Mutex<HashMap<(char, u16), CharacterInfo>>>,
+    ) {
+        self.characters = characters;
+    }
+
     pub(crate) fn ascent(&self, font_size: f32) -> f32 {
         self.font.horizontal_line_metrics(font_size).unwrap().ascent
     }
