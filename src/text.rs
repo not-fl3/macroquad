@@ -210,7 +210,7 @@ impl Font {
     /// # use macroquad::prelude::*;
     /// # #[macroquad::main("test")]
     /// # async fn main() {
-    /// let font = Font::default();
+    /// let mut font = get_default_font();
     /// font.set_filter(FilterMode::Linear);
     /// # }
     /// ```
@@ -223,6 +223,12 @@ impl Font {
 
     //     font.font_texture
     // }
+}
+
+impl Default for Font {
+    fn default() -> Self {
+        get_default_font()
+    }
 }
 
 /// Arguments for "draw_text_ex" function such as font, font_size etc
@@ -416,11 +422,15 @@ pub fn draw_multiline_text_ex(
         Some(distance) => distance,
         None => {
             let mut font_line_distance = 0.0;
-            if let Some(font) = params.font {
-                if let Some(metrics) = font.font.horizontal_line_metrics(1.0) {
-                    font_line_distance = metrics.new_line_size;
-                }
+            let font = if let Some(font) = params.font {
+                font
+            } else {
+                &get_default_font()
+            };
+            if let Some(metrics) = font.font.horizontal_line_metrics(1.0) {
+                font_line_distance = metrics.new_line_size;
             }
+
             font_line_distance
         }
     };
@@ -469,6 +479,12 @@ impl FontsStorage {
         let default_font = Font::load_from_bytes(atlas, include_bytes!("ProggyClean.ttf")).unwrap();
         FontsStorage { default_font }
     }
+}
+
+/// Returns macroquads default font.
+pub fn get_default_font() -> Font {
+    let context = get_context();
+    context.fonts_storage.default_font.clone()
 }
 
 /// From given font size in world space gives
