@@ -2,11 +2,11 @@
 
 use crate::get_context;
 
-/// Returns current FPS
+/// Returns current Frames Per Second (FPS), rounded
 pub fn get_fps() -> i32 {
     let context = get_context();
 
-    (1. / context.frame_time) as i32
+    (1. / context.frame_time).round() as i32
 }
 
 /// Returns duration in seconds of the last frame drawn
