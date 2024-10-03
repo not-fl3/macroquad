@@ -7,7 +7,7 @@ use std::borrow::Cow;
 
 pub struct Label<'a> {
     position: Option<Vec2>,
-    _multiline: Option<f32>,
+    multiline: Option<f32>,
     size: Option<Vec2>,
     label: Cow<'a, str>,
 }
@@ -19,7 +19,7 @@ impl<'a> Label<'a> {
     {
         Label {
             position: None,
-            _multiline: None,
+            multiline: None,
             size: None,
             label: label.into(),
         }
@@ -27,7 +27,7 @@ impl<'a> Label<'a> {
 
     pub fn multiline(self, line_height: f32) -> Self {
         Label {
-            _multiline: Some(line_height),
+            multiline: Some(line_height),
             ..self
         }
     }
@@ -55,23 +55,54 @@ impl<'a> Label<'a> {
             )
         });
 
-        let pos = context
+        let mut pos = context
             .window
             .cursor
             .fit(size, self.position.map_or(Layout::Vertical, Layout::Free));
 
-        context.window.painter.draw_element_content(
-            &context.style.label_style,
-            pos,
-            size,
-            &UiContent::Label(self.label),
-            ElementState {
-                focused: context.focused,
-                hovered: false,
-                clicked: false,
-                selected: false,
-            },
-        );
+        if let Some(line_height) = self.multiline {
+            let lines = self.label.lines();
+            let last_line_index = lines.clone().count() - 1;
+            for (n, line) in lines.enumerate() {
+                // need to recaclulate size for each line
+                let size = context.window.painter.content_with_margins_size(
+                    &context.style.label_style,
+                    &UiContent::Label(line.into()),
+                );
+                context.window.painter.draw_element_content(
+                    &context.style.label_style,
+                    pos,
+                    size,
+                    &UiContent::Label(line.into()),
+                    ElementState {
+                        focused: context.focused,
+                        hovered: false,
+                        clicked: false,
+                        selected: false,
+                    },
+                );
+
+                pos.y += line_height;
+                // only move window cursor if Layout::Vertical and this is not the last line
+                if n != last_line_index && self.position.is_none() {
+                    context.window.cursor.y += line_height;
+                    context.window.cursor.max_row_y = size.y + context.window.cursor.margin;
+                }
+            }
+        } else {
+            context.window.painter.draw_element_content(
+                &context.style.label_style,
+                pos,
+                size,
+                &UiContent::Label(self.label),
+                ElementState {
+                    focused: context.focused,
+                    hovered: false,
+                    clicked: false,
+                    selected: false,
+                },
+            );
+        }
     }
 }
 
