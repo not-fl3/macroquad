@@ -666,8 +666,6 @@ impl Texture2D {
 
         let ctx = get_context();
 
-        t.set_filter(ctx.default_filter_mode);
-
         t
     }
 
@@ -703,6 +701,7 @@ impl Texture2D {
         let ctx = get_context();
         let texture = ctx.textures.store_texture(texture);
         let texture = Texture2D { texture };
+        texture.set_filter(ctx.default_filter_mode);
 
         ctx.texture_batcher.add_unbatched(&texture);
 
