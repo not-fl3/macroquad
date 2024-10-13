@@ -662,11 +662,7 @@ impl Texture2D {
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        let t = Self::from_rgba8(width, height, &bytes);
-
-        let ctx = get_context();
-
-        t
+        Self::from_rgba8(width, height, &bytes)
     }
 
     /// Creates a Texture2D from an [Image].
