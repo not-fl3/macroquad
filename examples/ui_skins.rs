@@ -5,9 +5,12 @@ use macroquad::ui::{hash, root_ui, widgets, Skin};
 #[macroquad::main("UI showcase")]
 async fn main() {
     let skin1 = {
+        let font = load_ttf_font("examples/ui_assets/HTOWERT.TTF")
+            .await
+            .unwrap();
         let label_style = root_ui()
             .style_builder()
-            .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 120, 255))
             .font_size(30)
@@ -51,7 +54,7 @@ async fn main() {
                 )
                 .unwrap(),
             )
-            .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
             .font_size(40)
@@ -60,7 +63,7 @@ async fn main() {
         let editbox_style = root_ui()
             .style_builder()
             .background_margin(RectOffset::new(0., 0., 0., 0.))
-            .font(include_bytes!("../examples/ui_assets/HTOWERT.TTF"))
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .color_selected(Color::from_rgba(190, 190, 190, 255))
@@ -77,9 +80,12 @@ async fn main() {
     };
 
     let skin2 = {
+        let font = load_ttf_font("examples/ui_assets/MinimalPixel v2.ttf")
+            .await
+            .unwrap();
         let label_style = root_ui()
             .style_builder()
-            .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
@@ -122,7 +128,7 @@ async fn main() {
                 )
                 .unwrap(),
             )
-            .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(180, 180, 100, 255))
             .font_size(40)
@@ -163,7 +169,7 @@ async fn main() {
                 .unwrap(),
             )
             .background_margin(RectOffset::new(2., 2., 2., 2.))
-            .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .font_size(25)
@@ -179,7 +185,7 @@ async fn main() {
                 .unwrap(),
             )
             .background_margin(RectOffset::new(4., 25., 6., 6.))
-            .font(include_bytes!("../examples/ui_assets/MinimalPixel v2.ttf"))
+            .with_font(&font)
             .unwrap()
             .text_color(Color::from_rgba(120, 120, 120, 255))
             .color(Color::from_rgba(210, 210, 210, 255))

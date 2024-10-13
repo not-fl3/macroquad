@@ -66,6 +66,19 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
             }
         }
     }
+
+    let is_pub = if let TokenTree::Ident(ident) = source.peek().unwrap() {
+        if ident.to_string() == "pub" {
+            // skip 'pub'
+            let _ = source.next().unwrap();
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
     if let TokenTree::Ident(ident) = source.next().unwrap() {
         assert_eq!(format!("{}", ident), "async");
 
@@ -117,10 +130,11 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     let crate_name = crate_rename.unwrap_or_else(|| "macroquad".to_string());
     let mut prelude: TokenStream = format!(
         "
-    fn main() {{
+    {pub_main} fn main() {{
         {crate_name}::Window::{method}({ident}, {main});
     }}
     ",
+        pub_main = if is_pub { "pub" } else { "" },
         crate_name = crate_name,
         method = method,
         ident = ident,
@@ -282,19 +296,24 @@ pub fn capability_trait_macro(input: proc_macro::TokenStream) -> proc_macro::Tok
         trait_decl.push_str(&format!(
             "fn {} {} -> {};",
             fn_name,
-            fn_args_decl.replace("node : HandleUntyped", "&self"),
+            fn_args_decl
+                .replace("node : HandleUntyped", "&self")
+                .replace("node: HandleUntyped", "&self"),
             fn_res
         ));
 
         let args = fn_args_impl
             .replace("node : HandleUntyped", "")
+            .replace("node: HandleUntyped", "")
             .replace("(", "")
             .replace(")", "");
 
         trait_impl.push_str(&format!(
             "fn {} {} -> {} {{",
             fn_name,
-            fn_args_decl.replace("node : HandleUntyped", "&self"),
+            fn_args_decl
+                .replace("node : HandleUntyped", "&self")
+                .replace("node: HandleUntyped", "&self"),
             fn_res
         ));
         trait_impl.push_str(&format!(

@@ -2,11 +2,13 @@
 
 use miniquad::*;
 
-pub use miniquad::{FilterMode, TextureId as MiniquadTexture};
+pub use miniquad::{FilterMode, TextureId as MiniquadTexture, UniformDesc};
 
-use crate::{color::Color, logging::warn, telemetry, texture::Texture2D, Error};
+use crate::{color::Color, logging::warn, telemetry, texture::Texture2D, tobytes::ToBytes, Error};
 
 use std::collections::BTreeMap;
+
+pub(crate) use crate::models::Vertex;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DrawMode {
@@ -18,11 +20,10 @@ pub enum DrawMode {
 pub struct GlPipeline(usize);
 
 struct DrawCall {
-    vertices: Vec<Vertex>,
-    indices: Vec<u16>,
-
     vertices_count: usize,
     indices_count: usize,
+    vertices_start: usize,
+    indices_start: usize,
 
     clip: Option<(i32, i32, i32, i32)>,
     viewport: Option<(i32, i32, i32, i32)>,
@@ -37,60 +38,6 @@ struct DrawCall {
     capture: bool,
 }
 
-#[repr(C)]
-#[derive(Debug, Clone, Copy, Default)]
-pub struct Vertex {
-    pos: [f32; 3],
-    uv: [f32; 2],
-    color: [u8; 4],
-}
-
-pub type VertexInterop = ([f32; 3], [f32; 2], [f32; 4]);
-
-impl Into<VertexInterop> for Vertex {
-    fn into(self) -> VertexInterop {
-        (
-            self.pos,
-            self.uv,
-            [
-                self.color[0] as f32 / 255.0,
-                self.color[1] as f32 / 255.0,
-                self.color[2] as f32 / 255.0,
-                self.color[3] as f32 / 255.0,
-            ],
-        )
-    }
-}
-impl Into<Vertex> for VertexInterop {
-    fn into(self) -> Vertex {
-        Vertex {
-            pos: self.0,
-            uv: self.1,
-            color: [
-                ((self.2)[0] * 255.) as u8,
-                ((self.2)[1] * 255.) as u8,
-                ((self.2)[2] * 255.) as u8,
-                ((self.2)[3] * 255.) as u8,
-            ],
-        }
-    }
-}
-
-impl Vertex {
-    pub fn new(x: f32, y: f32, z: f32, u: f32, v: f32, color: Color) -> Vertex {
-        Vertex {
-            pos: [x, y, z],
-            uv: [u, v],
-            color: [
-                (color.r * 255.) as u8,
-                (color.g * 255.) as u8,
-                (color.b * 255.) as u8,
-                (color.a * 255.) as u8,
-            ],
-        }
-    }
-}
-
 impl DrawCall {
     fn new(
         texture: Option<miniquad::TextureId>,
@@ -99,15 +46,10 @@ impl DrawCall {
         pipeline: GlPipeline,
         uniforms: Option<Vec<u8>>,
         render_pass: Option<RenderPass>,
-        max_vertices: usize,
-        max_indices: usize,
     ) -> DrawCall {
         DrawCall {
-            vertices: vec![
-                Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0));
-                max_vertices
-            ],
-            indices: vec![0; max_indices],
+            vertices_start: 0,
+            indices_start: 0,
             vertices_count: 0,
             indices_count: 0,
             viewport: None,
@@ -120,14 +62,6 @@ impl DrawCall {
             render_pass,
             capture: false,
         }
-    }
-
-    fn vertices(&self) -> &[Vertex] {
-        &self.vertices[0..self.vertices_count]
-    }
-
-    fn indices(&self) -> &[u16] {
-        &self.indices[0..self.indices_count]
     }
 }
 
@@ -198,10 +132,6 @@ mod snapshotter_shader {
             uniforms: UniformBlockLayout { uniforms: vec![] },
         }
     }
-
-    #[repr(C)]
-    #[derive(Debug)]
-    pub struct Uniforms {}
 }
 
 impl MagicSnapshotter {
@@ -276,9 +206,9 @@ impl MagicSnapshotter {
                     ..
                 } = ctx.texture_params(texture);
                 let color_img = ctx.new_render_texture(TextureParams {
-                    width: width,
-                    height: height,
-                    format: format,
+                    width,
+                    height,
+                    format,
                     ..Default::default()
                 });
 
@@ -350,6 +280,7 @@ struct Uniform {
     name: String,
     uniform_type: UniformType,
     byte_offset: usize,
+    byte_size: usize,
 }
 
 #[derive(Clone)]
@@ -387,6 +318,10 @@ impl PipelineExt {
             );
             return;
         }
+        if uniform_byte_size != uniform_meta.byte_size {
+            warn!("set_uniform do not support uniform arrays");
+            return;
+        }
         macro_rules! transmute_uniform {
             ($uniform_size:expr, $byte_offset:expr, $n:expr) => {
                 if $uniform_size == $n {
@@ -403,6 +338,35 @@ impl PipelineExt {
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 12);
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 16);
         transmute_uniform!(uniform_byte_size, uniform_byte_offset, 64);
+    }
+
+    fn set_uniform_array<T: ToBytes>(&mut self, name: &str, uniform: &[T]) {
+        let uniform_meta = self.uniforms.iter().find(
+            |Uniform {
+                 name: uniform_name, ..
+             }| uniform_name == name,
+        );
+        if uniform_meta.is_none() {
+            warn!("Trying to set non-existing uniform: {}", name);
+            return;
+        }
+        let uniform_meta = uniform_meta.unwrap();
+        let uniform_byte_size = uniform_meta.byte_size;
+        let uniform_byte_offset = uniform_meta.byte_offset;
+
+        let data = uniform.to_bytes();
+        if data.len() != uniform_byte_size {
+            warn!(
+                "Trying to set uniform {} sized {} bytes value of {} bytes",
+                name,
+                uniform_byte_size,
+                std::mem::size_of::<T>()
+            );
+            return;
+        }
+        for i in 0..uniform_byte_size {
+            self.uniforms_data[uniform_byte_offset + i] = data[i];
+        }
     }
 }
 
@@ -513,7 +477,7 @@ impl PipelinesStorage {
         shader: ShaderId,
         params: PipelineParams,
         wants_screen_texture: bool,
-        mut uniforms: Vec<(String, UniformType)>,
+        mut uniforms: Vec<UniformDesc>,
         textures: Vec<String>,
     ) -> GlPipeline {
         let pipeline = ctx.new_pipeline(
@@ -522,6 +486,7 @@ impl PipelinesStorage {
                 VertexAttribute::new("position", VertexFormat::Float3),
                 VertexAttribute::new("texcoord", VertexFormat::Float2),
                 VertexAttribute::new("color0", VertexFormat::Byte4),
+                VertexAttribute::new("normal", VertexFormat::Float4),
             ],
             shader,
             params,
@@ -536,19 +501,20 @@ impl PipelinesStorage {
         let mut max_offset = 0;
 
         for (name, kind) in shader::uniforms().into_iter().rev() {
-            uniforms.insert(0, (name.to_owned(), kind));
+            uniforms.insert(0, UniformDesc::new(name, kind));
         }
 
         let uniforms = uniforms
             .iter()
             .scan(0, |offset, uniform| {
-                let uniform_byte_size = uniform.1.size();
+                let byte_size = uniform.uniform_type.size() * uniform.array_count;
                 let uniform = Uniform {
-                    name: uniform.0.clone(),
-                    uniform_type: uniform.1,
+                    name: uniform.name.clone(),
+                    uniform_type: uniform.uniform_type,
+                    byte_size,
                     byte_offset: *offset,
                 };
-                *offset += uniform_byte_size;
+                *offset += byte_size;
                 max_offset = *offset;
 
                 Some(uniform)
@@ -598,10 +564,17 @@ pub struct QuadGl {
     pub(crate) white_texture: miniquad::TextureId,
     max_vertices: usize,
     max_indices: usize,
+
+    batch_vertex_buffer: Vec<Vertex>,
+    batch_index_buffer: Vec<u16>,
 }
 
 impl QuadGl {
-    pub fn new(ctx: &mut dyn miniquad::RenderingBackend) -> QuadGl {
+    pub fn new(
+        ctx: &mut dyn miniquad::RenderingBackend,
+        max_vertices: usize,
+        max_indices: usize,
+    ) -> QuadGl {
         let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
 
         QuadGl {
@@ -624,9 +597,11 @@ impl QuadGl {
             draw_calls_count: 0,
             start_time: miniquad::date::now(),
 
-            white_texture: white_texture,
-            max_vertices: 10000,
-            max_indices: 5000,
+            white_texture,
+            batch_vertex_buffer: Vec::with_capacity(max_vertices),
+            batch_index_buffer: Vec::with_capacity(max_indices),
+            max_vertices,
+            max_indices,
         }
     }
 
@@ -635,16 +610,13 @@ impl QuadGl {
         ctx: &mut dyn miniquad::RenderingBackend,
         shader: miniquad::ShaderSource,
         params: PipelineParams,
-        uniforms: Vec<(String, UniformType)>,
+        uniforms: Vec<UniformDesc>,
         textures: Vec<String>,
     ) -> Result<GlPipeline, Error> {
         let mut shader_meta: ShaderMeta = shader::meta();
 
         for uniform in &uniforms {
-            shader_meta
-                .uniforms
-                .uniforms
-                .push(UniformDesc::new(&uniform.0, uniform.1));
+            shader_meta.uniforms.uniforms.push(uniform.clone());
         }
 
         for texture in &textures {
@@ -665,7 +637,7 @@ impl QuadGl {
             ShaderSource::Glsl { fragment, .. } => fragment,
             ShaderSource::Msl { program } => program,
         };
-        let wants_screen_texture = source.find("_ScreenTexture").is_some();
+        let wants_screen_texture = source.contains("_ScreenTexture");
         let shader = ctx.new_shader(shader, shader_meta)?;
         Ok(self.pipelines.make_pipeline(
             ctx,
@@ -758,16 +730,25 @@ impl QuadGl {
 
             ctx.buffer_update(
                 bindings.vertex_buffers[0],
-                BufferSource::slice(dc.vertices()),
+                BufferSource::slice(
+                    &self.batch_vertex_buffer
+                        [dc.vertices_start..(dc.vertices_start + dc.vertices_count)],
+                ),
             );
-            ctx.buffer_update(bindings.index_buffer, BufferSource::slice(dc.indices()));
+            ctx.buffer_update(
+                bindings.index_buffer,
+                BufferSource::slice(
+                    &self.batch_index_buffer
+                        [dc.indices_start..(dc.indices_start + dc.indices_count)],
+                ),
+            );
 
             bindings.images[0] = dc.texture.unwrap_or(white_texture);
             bindings.images[1] = self
                 .state
                 .snapshotter
                 .screen_texture
-                .unwrap_or_else(|| white_texture);
+                .unwrap_or(white_texture);
             bindings
                 .images
                 .resize(2 + pipeline.textures.len(), white_texture);
@@ -812,9 +793,13 @@ impl QuadGl {
 
             dc.vertices_count = 0;
             dc.indices_count = 0;
+            dc.vertices_start = 0;
+            dc.indices_start = 0;
         }
 
         self.draw_calls_count = 0;
+        self.batch_index_buffer.clear();
+        self.batch_vertex_buffer.clear();
     }
 
     pub(crate) fn capture(&mut self, capture: bool) {
@@ -890,7 +875,7 @@ impl QuadGl {
         self.state.draw_mode = mode;
     }
 
-    pub fn geometry(&mut self, vertices: &[impl Into<VertexInterop> + Copy], indices: &[u16]) {
+    pub fn geometry(&mut self, vertices: &[Vertex], indices: &[u16]) {
         if vertices.len() >= self.max_vertices || indices.len() >= self.max_indices {
             warn!("geometry() exceeded max drawcall size, clamping");
         }
@@ -934,17 +919,15 @@ impl QuadGl {
 
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(
-                    self.state.texture.clone(),
+                    self.state.texture,
                     self.state.model(),
                     self.state.draw_mode,
                     pip,
                     uniforms.clone(),
                     self.state.render_pass,
-                    self.max_vertices,
-                    self.max_indices,
                 ));
             }
-            self.draw_calls[self.draw_calls_count].texture = self.state.texture.clone();
+            self.draw_calls[self.draw_calls_count].texture = self.state.texture;
             self.draw_calls[self.draw_calls_count].uniforms = uniforms;
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
@@ -954,22 +937,22 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].pipeline = pip;
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
             self.draw_calls[self.draw_calls_count].capture = self.state.capture;
+            self.draw_calls[self.draw_calls_count].indices_start = self.batch_index_buffer.len();
+            self.draw_calls[self.draw_calls_count].vertices_start = self.batch_vertex_buffer.len();
 
             self.draw_calls_count += 1;
             self.state.break_batching = false;
         };
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
-        for i in 0..vertices.len() {
-            dc.vertices[dc.vertices_count + i] = vertices[i].into().into();
-        }
+        self.batch_vertex_buffer.extend(vertices);
+        self.batch_index_buffer
+            .extend(indices.iter().map(|x| *x + dc.vertices_count as u16));
 
-        for i in 0..indices.len() {
-            dc.indices[dc.indices_count + i] = indices[i] + dc.vertices_count as u16;
-        }
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();
-        dc.texture = self.state.texture.clone();
+
+        dc.texture = self.state.texture;
     }
 
     pub fn delete_pipeline(&mut self, pipeline: GlPipeline) {
@@ -982,6 +965,18 @@ impl QuadGl {
         self.pipelines
             .get_quad_pipeline_mut(pipeline)
             .set_uniform(name, uniform);
+    }
+    pub fn set_uniform_array<T: ToBytes>(
+        &mut self,
+        pipeline: GlPipeline,
+        name: &str,
+        uniform: &[T],
+    ) {
+        self.state.break_batching = true;
+
+        self.pipelines
+            .get_quad_pipeline_mut(pipeline)
+            .set_uniform_array(name, uniform);
     }
 
     pub fn set_texture(&mut self, pipeline: GlPipeline, name: &str, texture: Texture2D) {
@@ -1011,13 +1006,17 @@ impl QuadGl {
     ) {
         self.max_vertices = max_vertices;
         self.max_indices = max_indices;
+        self.draw_calls_count = 0;
 
         for draw_call in &mut self.draw_calls {
-            draw_call.vertices =
-                vec![Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0)); max_vertices];
-            draw_call.indices = vec![0; max_indices];
+            draw_call.indices_start = 0;
+            draw_call.vertices_start = 0;
         }
         for binding in &mut self.draw_calls_bindings {
+            ctx.delete_buffer(binding.index_buffer);
+            for vertex_buffer in &binding.vertex_buffers {
+                ctx.delete_buffer(*vertex_buffer);
+            }
             let vertex_buffer = ctx.new_buffer(
                 BufferType::VertexBuffer,
                 BufferUsage::Stream,
@@ -1044,6 +1043,7 @@ mod shader {
     attribute vec3 position;
     attribute vec2 texcoord;
     attribute vec4 color0;
+    attribute vec4 normal;
 
     varying lowp vec2 uv;
     varying lowp vec4 color;

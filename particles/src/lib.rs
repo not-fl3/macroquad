@@ -195,19 +195,25 @@ pub struct EmitterConfig {
     pub linear_accel: f32,
 
     // Initial rotation for each emitted particle.
+    #[cfg_attr(feature = "nanoserde", nserde(default = "0.0"))]
     pub initial_rotation: f32,
     /// Initial rotation randomness.
-    /// Each particle will spawned with "initial_rotation = initial_rotation - initial_rotation * rand::gen_range(0.0, initial_rotation_randomness)".
+    /// Each particle will spawned with "initial_rotation = initial_rotation - initial_rotation * rand::gen_range(0.0, initial_rotation_randomness)"
+    #[cfg_attr(feature = "nanoserde", nserde(default = "0.0"))]
     pub initial_rotation_randomness: f32,
     // Initial rotational speed
+    #[cfg_attr(feature = "nanoserde", nserde(default = "0.0"))]
     pub initial_angular_velocity: f32,
     /// Initial angular velocity randomness.
     /// Each particle will spawned with "initial_angular_velocity = initial_angular_velocity - initial_angular_velocity * rand::gen_range(0.0, initial_angular_velocity_randomness)".
+    #[cfg_attr(feature = "nanoserde", nserde(default = "0.0"))]
     pub initial_angular_velocity_randomness: f32,
-    /// Angular velocity acceleration applied to each particle .
+    /// Angular velocity acceleration applied to each particle .'
+    #[cfg_attr(feature = "nanoserde", nserde(default = "0.0"))]
     pub angular_accel: f32,
     /// Angluar velocity damping
     /// Each frame angular velocity will be transformed "angular_velocity *= (1.0 - angular_damping)".
+    #[cfg_attr(feature = "nanoserde", nserde(default = "0.0"))]
     pub angular_damping: f32,
     /// Each particle is a "size x size" square.
     pub size: f32,

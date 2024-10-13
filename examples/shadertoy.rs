@@ -337,7 +337,7 @@ async fn main() {
         if need_update {
             let uniforms = uniforms
                 .iter()
-                .map(|(name, uniform)| (name.clone(), uniform.uniform_type()))
+                .map(|(name, uniform)| UniformDesc::new(name, uniform.uniform_type()))
                 .collect::<Vec<_>>();
 
             match load_material(

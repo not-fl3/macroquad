@@ -24,7 +24,7 @@ impl<'a> Slider<'a> {
         Slider {
             id: self.id,
             range: self.range,
-            label: label,
+            label,
         }
     }
 
@@ -162,6 +162,6 @@ impl<'a> Slider<'a> {
 
 impl Ui {
     pub fn slider(&mut self, id: Id, label: &str, range: Range<f32>, data: &mut f32) {
-        Slider::new(id, range).label(label).ui(self, data)
+        Slider::new(id, range).label(label).ui(self, data);
     }
 }

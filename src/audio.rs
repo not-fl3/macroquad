@@ -1,12 +1,14 @@
 //! Loading and playing sounds.
 
+#![allow(dead_code)]
+
 use crate::{file::load_file, get_context, Error};
 use std::sync::Arc;
 
-#[cfg(all(feature = "audio"))]
+#[cfg(feature = "audio")]
 use quad_snd::{AudioContext as QuadSndContext, Sound as QuadSndSound};
 
-#[cfg(all(feature = "audio"))]
+#[cfg(feature = "audio")]
 pub use quad_snd::PlaySoundParams;
 
 #[cfg(not(feature = "audio"))]
@@ -92,7 +94,7 @@ impl Drop for QuadSndSoundGuarded {
 }
 
 #[derive(Clone)]
-pub struct Sound(Arc<QuadSndSound>);
+pub struct Sound(Arc<QuadSndSoundGuarded>);
 
 impl std::fmt::Debug for Sound {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -125,13 +127,13 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, Error> {
         crate::window::next_frame().await;
     }
 
-    Ok(Sound(Arc::new(sound)))
+    Ok(Sound(Arc::new(QuadSndSoundGuarded(sound))))
 }
 
 pub fn play_sound_once(sound: &Sound) {
     let ctx = &mut get_context().audio_context;
 
-    sound.0.play(
+    sound.0 .0.play(
         &mut ctx.native_ctx,
         PlaySoundParams {
             looped: false,
@@ -142,15 +144,15 @@ pub fn play_sound_once(sound: &Sound) {
 
 pub fn play_sound(sound: &Sound, params: PlaySoundParams) {
     let ctx = &mut get_context().audio_context;
-    sound.0.play(&mut ctx.native_ctx, params);
+    sound.0 .0.play(&mut ctx.native_ctx, params);
 }
 
 pub fn stop_sound(sound: &Sound) {
     let ctx = &mut get_context().audio_context;
-    sound.0.stop(&mut ctx.native_ctx);
+    sound.0 .0.stop(&mut ctx.native_ctx);
 }
 
 pub fn set_sound_volume(sound: &Sound, volume: f32) {
     let ctx = &mut get_context().audio_context;
-    sound.0.set_volume(&mut ctx.native_ctx, volume)
+    sound.0 .0.set_volume(&mut ctx.native_ctx, volume);
 }

@@ -239,6 +239,6 @@ impl Ui {
     ) {
         let range = range.into();
 
-        Drag::new(id).label(label).range(range).ui(self, data)
+        Drag::new(id).label(label).range(range).ui(self, data);
     }
 }

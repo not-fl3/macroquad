@@ -8,6 +8,7 @@ use crate::math::{Rect, Vec2};
 #[derive(Clone, Debug)]
 pub struct Scroll {
     pub scroll: Vec2,
+    #[allow(dead_code)]
     pub dragging_x: bool,
     pub dragging_y: bool,
     pub rect: Rect,
@@ -87,7 +88,7 @@ impl Cursor {
 
     pub fn current_position(&self) -> Vec2 {
         Vec2::new(self.x, self.y)
-            + Vec2::new(self.area.x as f32, self.area.y as f32)
+            + Vec2::new(self.area.x, self.area.y)
             + self.scroll.scroll
             + Vec2::new(self.ident, 0.)
     }
@@ -106,7 +107,7 @@ impl Cursor {
             Layout::Horizontal => {
                 self.max_row_y = self.max_row_y.max(size.y);
 
-                if self.x + size.x < self.area.w as f32 - self.margin * 2. {
+                if self.x + size.x < self.area.w - self.margin * 2. {
                     res = Vec2::new(self.x, self.y);
                 } else {
                     self.x = self.margin + 1.; // +1. is a hack to make next vertical thing correctly jump to the next row
@@ -134,8 +135,6 @@ impl Cursor {
             .inner_rect
             .combine_with(Rect::new(res.x, res.y, size.x, size.y));
 
-        res + Vec2::new(self.area.x as f32, self.area.y as f32)
-            + self.scroll.scroll
-            + Vec2::new(self.ident, 0.)
+        res + Vec2::new(self.area.x, self.area.y) + self.scroll.scroll + Vec2::new(self.ident, 0.)
     }
 }

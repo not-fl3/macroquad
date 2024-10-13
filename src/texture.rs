@@ -5,17 +5,13 @@ use crate::{
     text::atlas::SpriteKey, Error,
 };
 
+pub use crate::quad_gl::FilterMode;
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
-
-pub use crate::quad_gl::FilterMode;
-
-use slotmap::SlotMap;
+use slotmap::{TextureIdSlotMap, TextureSlotId};
 use std::sync::Arc;
 
-slotmap::new_key_type! {
-    pub(crate) struct TextureSlotId;
-}
+mod slotmap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct TextureSlotGuarded(pub TextureSlotId);
@@ -30,13 +26,13 @@ pub(crate) enum TextureHandle {
 }
 
 pub(crate) struct TexturesContext {
-    textures: SlotMap<crate::texture::TextureSlotId, miniquad::TextureId>,
+    textures: TextureIdSlotMap,
     removed: Vec<TextureSlotId>,
 }
 impl TexturesContext {
     pub fn new() -> TexturesContext {
         TexturesContext {
-            textures: SlotMap::with_key(),
+            textures: TextureIdSlotMap::new(),
             removed: Vec::with_capacity(200),
         }
     }
@@ -47,7 +43,7 @@ impl TexturesContext {
         TextureHandle::Managed(Arc::new(TextureSlotGuarded(self.textures.insert(texture))))
     }
     pub fn texture(&self, texture: TextureSlotId) -> Option<miniquad::TextureId> {
-        self.textures.get(texture).copied()
+        self.textures.get(texture)
     }
     // fn remove(&mut self, texture: TextureSlotId) {
     //     self.textures.remove(texture);
@@ -57,7 +53,7 @@ impl TexturesContext {
     }
     pub fn garbage_collect(&mut self, ctx: &mut miniquad::Context) {
         for texture in self.removed.drain(0..) {
-            if let Some(texture) = self.textures.get(texture).copied() {
+            if let Some(texture) = self.textures.get(texture) {
                 ctx.delete_texture(texture);
             }
             self.textures.remove(texture);
@@ -450,17 +446,6 @@ pub struct RenderPass {
 }
 
 impl RenderPass {
-    fn new(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> RenderPass {
-        let render_pass = get_quad_context().new_render_pass(
-            color_texture.raw_miniquad_id(),
-            depth_texture.as_ref().map(|t| t.raw_miniquad_id()),
-        );
-        RenderPass {
-            color_texture,
-            depth_texture: depth_texture.map(|t| t.clone()),
-            render_pass: Arc::new(render_pass),
-        }
-    }
     /// Returns the miniquad handle for this render pass.
     pub fn raw_miniquad_id(&self) -> miniquad::RenderPass {
         *self.render_pass
@@ -482,24 +467,55 @@ pub struct RenderTarget {
     pub render_pass: RenderPass,
 }
 
-fn render_pass(color_texture: Texture2D, depth_texture: Option<Texture2D>) -> RenderPass {
-    RenderPass::new(color_texture, depth_texture)
-}
-
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     let context = get_context();
-
     let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
         width,
         height,
         ..Default::default()
     });
-
+    let render_pass = get_quad_context().new_render_pass_mrt(&[texture_id], None, None);
     let texture = Texture2D {
         texture: context.textures.store_texture(texture_id),
     };
+    let render_pass = RenderPass {
+        color_texture: texture.clone(),
+        depth_texture: None,
+        render_pass: Arc::new(render_pass),
+    };
+    RenderTarget {
+        texture,
+        render_pass,
+    }
+}
 
-    let render_pass = render_pass(texture.clone(), None);
+pub fn render_target_msaa(width: u32, height: u32, sample_count: i32) -> RenderTarget {
+    let context = get_context();
+
+    let color_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        sample_count,
+        ..Default::default()
+    });
+    let color_resolve_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
+        width,
+        height,
+        ..Default::default()
+    });
+    let render_pass = get_quad_context().new_render_pass_mrt(
+        &[color_texture],
+        Some(&[color_resolve_texture]),
+        None,
+    );
+    let texture = Texture2D {
+        texture: context.textures.store_texture(color_resolve_texture),
+    };
+    let render_pass = RenderPass {
+        color_texture: texture.clone(),
+        depth_texture: None,
+        render_pass: Arc::new(render_pass),
+    };
 
     RenderTarget {
         texture,
@@ -597,11 +613,11 @@ pub fn draw_texture_ex(
     let mut x = x;
     let mut y = y;
     if params.flip_x {
-        x = x + w;
+        x += w;
         w = -w;
     }
     if params.flip_y {
-        y = y + h;
+        y += h;
         h = -h;
     }
 
@@ -641,7 +657,7 @@ pub fn draw_texture_ex(
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
-    context.gl.texture(Some(&texture));
+    context.gl.texture(Some(texture));
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&vertices, &indices);
 }
@@ -687,10 +703,10 @@ impl Texture2D {
         match &self.texture {
             TextureHandle::Unmanaged(id) => Texture2D::unmanaged(*id),
             TextureHandle::Managed(t) => Texture2D {
-                texture: TextureHandle::ManagedWeak((**t).0),
+                texture: TextureHandle::ManagedWeak(t.0),
             },
             TextureHandle::ManagedWeak(t) => Texture2D {
-                texture: TextureHandle::ManagedWeak(t.clone()),
+                texture: TextureHandle::ManagedWeak(*t),
             },
         }
     }
@@ -731,10 +747,7 @@ impl Texture2D {
     ///     );
     /// # }
     /// ```
-    pub fn from_file_with_format<'a>(
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Texture2D {
+    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Texture2D {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
@@ -748,7 +761,11 @@ impl Texture2D {
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        Self::from_rgba8(width, height, &bytes)
+        let t = Self::from_rgba8(width, height, &bytes);
+
+        let ctx = get_context();
+
+        t
     }
 
     /// Creates a Texture2D from an [Image].
@@ -783,6 +800,7 @@ impl Texture2D {
         let ctx = get_context();
         let texture = ctx.textures.store_texture(texture);
         let texture = Texture2D { texture };
+        texture.set_filter(ctx.default_filter_mode);
 
         ctx.texture_batcher.add_unbatched(&texture);
 
@@ -805,8 +823,8 @@ impl Texture2D {
         let ctx = get_quad_context();
         let (texture_width, texture_height) = ctx.texture_size(self.raw_miniquad_id());
 
-        assert_eq!(texture_width, width as u32);
-        assert_eq!(texture_height, height as u32);
+        assert_eq!(texture_width, width);
+        assert_eq!(texture_height, height);
 
         ctx.texture_update(self.raw_miniquad_id(), bytes);
     }
@@ -829,7 +847,7 @@ impl Texture2D {
             width,
             height,
             image.bytes(),
-        )
+        );
     }
 
     /// Returns the width of this texture.
@@ -986,4 +1004,10 @@ pub unsafe fn reset_textures_atlas() {
     let context = get_context();
     context.fonts_storage = crate::text::FontsStorage::new(&mut *context.quad_context);
     context.texture_batcher = Batcher::new(&mut *context.quad_context);
+}
+
+pub fn set_default_filter_mode(filter: FilterMode) {
+    let context = get_context();
+
+    context.default_filter_mode = filter;
 }

@@ -86,7 +86,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
             &context.style.label_style,
             pos,
             vec2(combobox_area_w, size.y),
-            &UiContent::Label((&*self.variants[*data]).into()),
+            &UiContent::Label(self.variants[*data].into()),
             ElementState {
                 focused: context.focused,
                 hovered,

@@ -2,43 +2,15 @@
 
 use crate::{
     color::Color,
-    math::{Rect, RectOffset, Vec2},
+    math::{vec2, vec3, Rect, RectOffset, Vec2},
     texture::Texture2D,
     ui::render::DrawCommand,
 };
 
+pub use crate::models::Vertex;
+
 const MAX_VERTICES: usize = 8000;
 const MAX_INDICES: usize = 4000;
-
-#[derive(Debug, Clone, Copy)]
-#[repr(C)]
-pub struct Vertex {
-    pub pos: [f32; 3],
-    pub uv: [f32; 2],
-    pub color: [f32; 4],
-}
-
-pub type VertexInterop = ([f32; 3], [f32; 2], [f32; 4]);
-
-impl From<Vertex> for VertexInterop {
-    fn from(value: Vertex) -> Self {
-        (
-            [value.pos[0], value.pos[1], value.pos[2]],
-            [value.uv[0], value.uv[1]],
-            value.color,
-        )
-    }
-}
-
-impl Vertex {
-    pub fn new(x: f32, y: f32, u: f32, v: f32, color: Color) -> Vertex {
-        Vertex {
-            pos: [x, y, 0.],
-            uv: [u, v],
-            color: [color.r, color.g, color.b, color.a],
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct DrawList {
@@ -128,12 +100,13 @@ impl DrawList {
         let vs = [src.y, src.y + top0, src.y + src.h - bottom0, src.y + src.h];
 
         let mut n = 0;
-        let mut vertices = [Vertex::new(0.0, 0.0, 0.0, 0.0, Color::new(0.0, 0.0, 0.0, 0.0)); 16];
+        let mut vertices =
+            [Vertex::new(0.0, 0.0, 0.0, 0.0, 0.0, Color::new(0.0, 0.0, 0.0, 0.0)); 16];
 
         for (x, u) in xs.iter().zip(us.iter()) {
             for (y, v) in ys.iter().zip(vs.iter()) {
-                vertices[n].pos = [*x, *y, 0.];
-                vertices[n].uv = [*u, *v];
+                vertices[n].position = vec3(*x, *y, 0.);
+                vertices[n].uv = vec2(*u, *v);
                 vertices[n].color = color.into();
                 n += 1;
             }
@@ -167,10 +140,10 @@ impl DrawList {
 
         #[rustfmt::skip]
         let vertices = [
-            Vertex::new(x    , y    , src.x        , src.y        , color),
-            Vertex::new(x + w, y    , src.x + src.w, src.y        , color),
-            Vertex::new(x + w, y + h, src.x + src.w, src.y + src.h, color),
-            Vertex::new(x    , y + h, src.x        , src.y + src.h, color),
+            Vertex::new(x    , y    , 0.0, src.x        , src.y        , color),
+            Vertex::new(x + w, y    , 0.0, src.x + src.w, src.y        , color),
+            Vertex::new(x + w, y + h, 0.0, src.x + src.w, src.y + src.h, color),
+            Vertex::new(x    , y + h, 0.0, src.x        , src.y + src.h, color),
         ];
         let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
@@ -182,9 +155,9 @@ impl DrawList {
 
     fn draw_triangle(&mut self, p0: Vec2, p1: Vec2, p2: Vec2, source: Rect, color: Color) {
         let vertices = [
-            Vertex::new(p0.x, p0.y, source.x, source.y, color),
-            Vertex::new(p1.x, p1.y, source.x, source.y, color),
-            Vertex::new(p2.x, p2.y, source.x, source.y, color),
+            Vertex::new(p0.x, p0.y, 0.0, source.x, source.y, color),
+            Vertex::new(p1.x, p1.y, 0.0, source.x, source.y, color),
+            Vertex::new(p2.x, p2.y, 0.0, source.x, source.y, color),
         ];
         let indices: [u16; 3] = [0, 1, 2];
 
@@ -217,10 +190,10 @@ impl DrawList {
         let ty = ny / tlen;
 
         let vertices = &[
-            Vertex::new(x1 + tx, y1 + ty, source.x, source.y, color),
-            Vertex::new(x1 - tx, y1 - ty, source.x, source.y, color),
-            Vertex::new(x2 + tx, y2 + ty, source.x, source.y, color),
-            Vertex::new(x2 - tx, y2 - ty, source.x, source.y, color),
+            Vertex::new(x1 + tx, y1 + ty, 0.0, source.x, source.y, color),
+            Vertex::new(x1 - tx, y1 - ty, 0.0, source.x, source.y, color),
+            Vertex::new(x2 + tx, y2 + ty, 0.0, source.x, source.y, color),
+            Vertex::new(x2 - tx, y2 - ty, 0.0, source.x, source.y, color),
         ];
         let indices = &[0, 1, 2, 2, 1, 3];
 
@@ -243,7 +216,7 @@ fn get_active_draw_list<'a, 'b>(
     match command {
         DrawCommand::Clip { rect, .. } => {
             if last.clipping_zone != *rect {
-                draw_lists.push(DrawList::new())
+                draw_lists.push(DrawList::new());
             }
         }
         DrawCommand::DrawRawTexture { texture, .. } => {

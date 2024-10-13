@@ -33,7 +33,7 @@ impl Circle {
 
     /// Checks whether the `Circle` contains a `Point`
     pub fn contains(&self, pos: &Vec2) -> bool {
-        return pos.distance(vec2(self.x, self.y)) < self.r;
+        pos.distance(vec2(self.x, self.y)) < self.r
     }
 
     /// Checks whether the `Circle` overlaps a `Circle`
@@ -54,7 +54,7 @@ impl Circle {
         let lhs = dist_x - rect.w / 2.0;
         let rhs = dist_y - rect.h / 2.0;
         let dist_sq = (lhs * lhs) + (rhs * rhs);
-        return dist_sq <= self.r * self.r;
+        dist_sq <= self.r * self.r
     }
 
     /// Translate `Circle` origin by `offset` vector

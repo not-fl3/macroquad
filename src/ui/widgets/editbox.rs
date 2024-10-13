@@ -13,6 +13,7 @@ pub struct Editbox<'a> {
     filter: Option<&'a dyn Fn(char) -> bool>,
     pos: Option<Vec2>,
     password: bool,
+    margin: Option<Vec2>,
 }
 
 mod text_editor;
@@ -31,6 +32,7 @@ impl<'a> Editbox<'a> {
             multiline: true,
             pos: None,
             password: false,
+            margin: None,
         }
     }
 
@@ -65,6 +67,14 @@ impl<'a> Editbox<'a> {
             size: self.size,
             password: self.password,
             filter: Some(filter),
+            margin: self.margin,
+        }
+    }
+
+    pub fn margin(self, margin: Vec2) -> Self {
+        Editbox {
+            margin: Some(margin),
+            ..self
         }
     }
 
@@ -72,7 +82,7 @@ impl<'a> Editbox<'a> {
         &self,
         input_buffer: &mut Vec<InputCharacter>,
         clipboard: &mut dyn crate::ui::ClipboardObject,
-        text: &mut String,
+        text: &mut Vec<char>,
         state: &mut EditboxState,
     ) {
         for character in input_buffer.drain(0..) {
@@ -139,7 +149,7 @@ impl<'a> Editbox<'a> {
                                     }
                                 }
                             } else {
-                                state.insert_string(text, clipboard);
+                                state.insert_string(text, clipboard.chars().collect());
                             }
                         }
                     }
@@ -203,6 +213,7 @@ impl<'a> Editbox<'a> {
                 }
                 InputCharacter {
                     key: Key::KeyCode(Home),
+                    modifier_ctrl: false,
                     modifier_shift,
                     ..
                 } => {
@@ -210,12 +221,31 @@ impl<'a> Editbox<'a> {
                     state.move_cursor(text, -to_line_begin, modifier_shift);
                 }
                 InputCharacter {
+                    key: Key::KeyCode(Home),
+                    modifier_ctrl: true,
+                    modifier_shift,
+                    ..
+                } => {
+                    let to_text_being = state.cursor as i32;
+                    state.move_cursor(text, -to_text_being, modifier_shift);
+                }
+                InputCharacter {
                     key: Key::KeyCode(End),
+                    modifier_ctrl: false,
                     modifier_shift,
                     ..
                 } => {
                     let to_line_end = state.find_line_end(text) as i32;
                     state.move_cursor(text, to_line_end, modifier_shift);
+                }
+                InputCharacter {
+                    key: Key::KeyCode(End),
+                    modifier_ctrl: true,
+                    modifier_shift,
+                    ..
+                } => {
+                    let to_text_end = (text.len() as u32 - state.cursor) as i32;
+                    state.move_cursor(text, to_text_end, modifier_shift);
                 }
                 InputCharacter {
                     key: Key::KeyCode(Up),
@@ -251,6 +281,7 @@ impl<'a> Editbox<'a> {
     }
 
     pub fn ui(self, ui: &mut Ui, text: &mut String) -> bool {
+        let mut text_vec = text.chars().collect::<Vec<_>>();
         let time = ui.time;
 
         let context = ui.get_active_window_context();
@@ -274,23 +305,23 @@ impl<'a> Editbox<'a> {
             *context.input_focus = None;
         }
 
-        let mut state = context
+        let state = context
             .storage_any
             .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
 
-        // if text changed outside the selection range should be clamped
-        state.clamp_selection(text);
+        // if text changed outside, than the selection range should be clamped
+        state.clamp_selection(&text_vec);
 
         if self.select_all {
-            state.select_all(text);
+            state.select_all(&text_vec);
         }
 
-        if let Some(selected) = state.selected_text(text) {
-            *context.clipboard_selection = selected.to_owned();
+        if let Some(selected) = state.selected_text(&text_vec) {
+            *context.clipboard_selection = selected.iter().collect();
         }
         // in case the string was updated outside of editbox
-        if state.cursor > text.len() as u32 {
-            state.cursor = text.len() as u32;
+        if state.cursor > text_vec.len() as u32 {
+            state.cursor = text_vec.len() as u32;
         }
 
         let input_focused =
@@ -318,8 +349,8 @@ impl<'a> Editbox<'a> {
             self.apply_keyboard_input(
                 &mut context.input.input_buffer,
                 &mut *context.clipboard,
-                text,
-                &mut state,
+                &mut text_vec,
+                state,
             );
         }
         // draw rect in parent window
@@ -357,10 +388,13 @@ impl<'a> Editbox<'a> {
 
         let line_height = context.style.editbox_style.font_size as f32;
 
-        let size = vec2(150., line_height * text.split('\n').count() as f32);
+        let size = vec2(
+            150.,
+            line_height * text_vec.iter().filter(|c| **c == '\n').count() as f32,
+        );
 
-        // TODO: this is very weird hardcoded text margin
-        let pos = context.window.cursor.fit(size, Layout::Free(vec2(2., 2.)));
+        let margin = self.margin.unwrap_or(vec2(2., 2.));
+        let pos = context.window.cursor.fit(size, Layout::Free(margin));
 
         context.window.painter.clip(parent_rect);
 
@@ -376,7 +410,12 @@ impl<'a> Editbox<'a> {
         let mut y = 0.;
         let mut clicked = false;
 
-        for (n, character) in text.chars().chain(std::iter::once(' ')).enumerate() {
+        for (n, character) in text_vec
+            .iter()
+            .copied()
+            .chain(std::iter::once(' '))
+            .enumerate()
+        {
             let character = if character != '\n' && self.password {
                 '*'
             } else {
@@ -429,7 +468,7 @@ impl<'a> Editbox<'a> {
                         character,
                         pos + vec2(x, y + font_size as f32 - baseline),
                         text_color,
-                        &mut *font,
+                        &mut font,
                         font_size,
                     )
                     .unwrap_or(0.);
@@ -439,12 +478,12 @@ impl<'a> Editbox<'a> {
                 let cursor_on_current_line =
                     (context.input.mouse_position.y - (pos.y + y + line_height / 2.)).abs()
                         < line_height / 2. + 0.1;
-                let line_end = character == '\n' || n == text.len();
+                let line_end = character == '\n' || n == text_vec.len();
                 let cursor_after_line_end = context.input.mouse_position.x > (pos.x + x);
                 let clickable_character = character != '\n';
                 let cursor_on_character =
                     (context.input.mouse_position.x - (pos.x + x)).abs() < advance / 2.;
-                let last_character = n == text.len();
+                let last_character = n == text_vec.len();
                 let cursor_below_line =
                     (context.input.mouse_position.y - (pos.y + y + line_height)) > 0.;
 
@@ -455,9 +494,9 @@ impl<'a> Editbox<'a> {
                     clicked = true;
 
                     if context.input.click_down() {
-                        state.click_down(time, text, n as u32);
+                        state.click_down(time, &text_vec, n as u32);
                     } else {
-                        state.click_move(text, n as u32);
+                        state.click_move(&text_vec, n as u32);
                     }
                 }
             }
@@ -470,7 +509,7 @@ impl<'a> Editbox<'a> {
         }
 
         if context.input.click_up() && input_focused {
-            state.click_up(text);
+            state.click_up(&text_vec);
         }
 
         let context = ui.get_active_window_context();
@@ -479,6 +518,7 @@ impl<'a> Editbox<'a> {
 
         ui.end_window();
 
+        *text = text_vec.iter().collect();
         edited
     }
 }

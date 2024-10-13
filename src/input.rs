@@ -72,9 +72,7 @@ pub fn mouse_delta_position() -> Vec2 {
     let last_position = context.last_mouse_position.unwrap_or(current_position);
 
     // Calculate the delta
-    let delta = last_position - current_position;
-
-    delta
+    last_position - current_position
 }
 
 /// This is set to true by default, meaning touches will raise mouse events in addition to raising touch events.

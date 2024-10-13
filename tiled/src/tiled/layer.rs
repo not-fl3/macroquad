@@ -1,6 +1,5 @@
+use super::Property;
 use nanoserde::DeJson;
-
-use std::collections::HashMap;
 
 /// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-chunk
 #[derive(Clone, Debug, Default, DeJson)]
@@ -18,6 +17,7 @@ pub struct Chunk {
     pub y: i32,
 }
 
+/// https://doc.mapeditor.org/en/stable/reference/json-map-format/#json-layer
 #[derive(Clone, Debug, Default, DeJson)]
 #[nserde(default)]
 pub struct Layer {
@@ -25,7 +25,7 @@ pub struct Layer {
     pub chunks: Option<Vec<Chunk>>,
     pub name: String,
     pub opacity: f32,
-    pub properties: Option<HashMap<String, String>>,
+    pub properties: Vec<Property>,
     pub visible: bool,
     pub width: u32,
     pub height: u32,
@@ -50,15 +50,6 @@ pub struct Layer {
 
     /// for type = "imagelayer"
     pub image: Option<String>,
-}
-
-#[derive(Clone, Debug, Default, DeJson)]
-#[nserde(default)]
-pub struct Property {
-    pub name: String,
-    #[nserde(rename = "type")]
-    pub ty: String,
-    pub value: String,
 }
 
 #[derive(Clone, Debug, Default, DeJson)]

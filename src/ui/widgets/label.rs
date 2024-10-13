@@ -77,7 +77,7 @@ impl<'a> Label<'a> {
 
 impl Ui {
     pub fn label<P: Into<Option<Vec2>>>(&mut self, position: P, label: &str) {
-        Label::new(label).position(position).ui(self)
+        Label::new(label).position(position).ui(self);
     }
 
     pub fn calc_size(&mut self, label: &str) -> Vec2 {

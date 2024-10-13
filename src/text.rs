@@ -34,6 +34,19 @@ pub struct Font {
     characters: Arc<Mutex<HashMap<(char, u16), CharacterInfo>>>,
 }
 
+/// World space dimensions of the text, measured by "measure_text" function
+#[derive(Debug, Default, Clone, Copy)]
+pub struct TextDimensions {
+    /// Distance from very left to very right of the rasterized text
+    pub width: f32,
+    /// Distance from the bottom to the top of the text.
+    pub height: f32,
+    /// Height offset from the baseline of the text.
+    /// "draw_text(.., X, Y, ..)" will be rendered in a "Rect::new(X, Y - dimensions.offset_y, dimensions.width, dimensions.height)"
+    /// For reference check "text_measures" example.
+    pub offset_y: f32,
+}
+
 #[allow(dead_code)]
 fn require_fn_to_be_send() {
     fn require_send<T: Send>() {}
@@ -52,12 +65,23 @@ impl Font {
     pub(crate) fn load_from_bytes(atlas: Arc<Mutex<Atlas>>, bytes: &[u8]) -> Result<Font, Error> {
         Ok(Font {
             font: Arc::new(fontdue::Font::from_bytes(
-                &bytes[..],
+                bytes,
                 fontdue::FontSettings::default(),
             )?),
             characters: Arc::new(Mutex::new(HashMap::new())),
             atlas,
         })
+    }
+
+    pub(crate) fn set_atlas(&mut self, atlas: Arc<Mutex<Atlas>>) {
+        self.atlas = atlas;
+    }
+
+    pub(crate) fn set_characters(
+        &mut self,
+        characters: Arc<Mutex<HashMap<(char, u16), CharacterInfo>>>,
+    ) {
+        self.characters = characters;
     }
 
     pub(crate) fn ascent(&self, font_size: f32) -> f32 {
@@ -72,12 +96,7 @@ impl Font {
     }
 
     pub(crate) fn cache_glyph(&self, character: char, size: u16) {
-        if self
-            .characters
-            .lock()
-            .unwrap()
-            .contains_key(&(character, size))
-        {
+        if self.contains(character, size) {
             return;
         }
 
@@ -125,6 +144,13 @@ impl Font {
             .get(&(character, size))
             .cloned()
     }
+    /// Returns whether the character has been cached
+    pub(crate) fn contains(&self, character: char, size: u16) -> bool {
+        self.characters
+            .lock()
+            .unwrap()
+            .contains_key(&(character, size))
+    }
 
     pub(crate) fn measure_text(
         &self,
@@ -136,44 +162,28 @@ impl Font {
         let dpi_scaling = miniquad::window::dpi_scale();
         let font_size = (font_size as f32 * dpi_scaling).ceil() as u16;
 
+        let mut width = 0.0;
+        let mut min_y = f32::MAX;
+        let mut max_y = f32::MIN;
+
         for character in text.chars() {
-            if self
-                .characters
-                .lock()
-                .unwrap()
-                .contains_key(&(character, font_size))
-                == false
-            {
+            if !self.contains(character, font_size) {
                 self.cache_glyph(character, font_size);
             }
+
+            let font_data = &self.characters.lock().unwrap()[&(character, font_size)];
+            let offset_y = font_data.offset_y as f32 * font_scale_y;
+
+            let atlas = self.atlas.lock().unwrap();
+            let glyph = atlas.get(font_data.sprite).unwrap().rect;
+            width += font_data.advance * font_scale_x;
+            min_y = min_y.min(offset_y);
+            max_y = max_y.max(glyph.h * font_scale_y + offset_y);
         }
 
-        let mut width = 0.;
-        let mut min_y = f32::MAX;
-        let mut max_y = -f32::MAX;
-
-        let atlas = self.atlas.lock().unwrap();
-
-        for character in text.chars() {
-            if let Some(font_data) = self.characters.lock().unwrap().get(&(character, font_size)) {
-                let glyph = atlas.get(font_data.sprite).unwrap().rect;
-                width += font_data.advance * font_scale_x;
-
-                if min_y > font_data.offset_y as f32 * font_scale_y {
-                    min_y = font_data.offset_y as f32 * font_scale_y;
-                }
-                if max_y < glyph.h as f32 * font_scale_y + font_data.offset_y as f32 * font_scale_y
-                {
-                    max_y =
-                        glyph.h as f32 * font_scale_y + font_data.offset_y as f32 * font_scale_y;
-                }
-            }
-        }
-
-        let height = max_y - min_y;
         TextDimensions {
             width: width / dpi_scaling,
-            height: height / dpi_scaling,
+            height: (max_y - min_y) / dpi_scaling,
             offset_y: max_y / dpi_scaling,
         }
     }
@@ -273,15 +283,20 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
         miniquad::FilterMode::Linear,
     )));
 
-    let font = Font::load_from_bytes(atlas.clone(), bytes)?;
+    let mut font = Font::load_from_bytes(atlas.clone(), bytes)?;
 
     font.populate_font_cache(&Font::ascii_character_list(), 15);
+
+    let ctx = get_context();
+
+    font.set_filter(ctx.default_filter_mode);
 
     Ok(font)
 }
 
 /// Draw text with given font_size
-pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
+/// Returns text size
+pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) -> TextDimensions {
     draw_text_ex(
         text,
         x,
@@ -295,54 +310,57 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) {
     )
 }
 
-/// Draw text with custom params such as font, font size and font scale.
-pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
+/// Draw text with custom params such as font, font size and font scale
+/// Returns text size
+pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) -> TextDimensions {
+    if text.is_empty() {
+        return TextDimensions::default();
+    }
+
     let font = params
         .font
         .unwrap_or(&get_context().fonts_storage.default_font);
 
-    let font_scale_x = params.font_scale * params.font_scale_aspect;
-    let font_scale_y = params.font_scale;
     let dpi_scaling = miniquad::window::dpi_scale();
 
+    let rot = params.rotation;
+    let font_scale_x = params.font_scale * params.font_scale_aspect;
+    let font_scale_y = params.font_scale;
     let font_size = (params.font_size as f32 * dpi_scaling).ceil() as u16;
 
-    let mut total_width = 0.;
+    let mut total_width = 0.0;
+    let mut max_offset_y = f32::MIN;
+    let mut min_offset_y = f32::MAX;
+
     for character in text.chars() {
-        if !font
-            .characters
-            .lock()
-            .unwrap()
-            .contains_key(&(character, font_size))
-        {
+        if !font.contains(character, font_size) {
             font.cache_glyph(character, font_size);
         }
-        let mut atlas = font.atlas.lock().unwrap();
-        let font_data = &font.characters.lock().unwrap()[&(character, font_size)];
-        let glyph = atlas.get(font_data.sprite).unwrap().rect;
-        let angle_rad = params.rotation;
-        let left_coord = (font_data.offset_x as f32 * font_scale_x + total_width) * angle_rad.cos()
-            + (glyph.h as f32 * font_scale_y + font_data.offset_y as f32 * font_scale_y)
-                * angle_rad.sin();
-        let top_coord = (font_data.offset_x as f32 * font_scale_x + total_width) * angle_rad.sin()
-            + (0.0 - glyph.h as f32 * font_scale_y - font_data.offset_y as f32 * font_scale_y)
-                * angle_rad.cos();
 
-        total_width += font_data.advance * font_scale_x;
+        let char_data = &font.characters.lock().unwrap()[&(character, font_size)];
+        let offset_x = char_data.offset_x as f32 * font_scale_x;
+        let offset_y = char_data.offset_y as f32 * font_scale_y;
+
+        let mut atlas = font.atlas.lock().unwrap();
+        let glyph = atlas.get(char_data.sprite).unwrap().rect;
+        let glyph_scaled_h = glyph.h * font_scale_y;
+
+        min_offset_y = min_offset_y.min(offset_y);
+        max_offset_y = max_offset_y.max(glyph_scaled_h + offset_y);
+
+        let rot_cos = rot.cos();
+        let rot_sin = rot.sin();
+        let dest_x = (offset_x + total_width) * rot_cos + (glyph_scaled_h + offset_y) * rot_sin;
+        let dest_y = (offset_x + total_width) * rot_sin + (-glyph_scaled_h - offset_y) * rot_cos;
 
         let dest = Rect::new(
-            left_coord / dpi_scaling as f32 + x,
-            top_coord / dpi_scaling as f32 + y,
-            glyph.w as f32 / dpi_scaling as f32 * font_scale_x,
-            glyph.h as f32 / dpi_scaling as f32 * font_scale_y,
+            dest_x / dpi_scaling + x,
+            dest_y / dpi_scaling + y,
+            glyph.w / dpi_scaling * font_scale_x,
+            glyph.h / dpi_scaling * font_scale_y,
         );
 
-        let source = Rect::new(
-            glyph.x as f32,
-            glyph.y as f32,
-            glyph.w as f32,
-            glyph.h as f32,
-        );
+        total_width += char_data.advance * font_scale_x;
 
         crate::texture::draw_texture_ex(
             &crate::texture::Texture2D {
@@ -353,12 +371,70 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) {
             params.color,
             crate::texture::DrawTextureParams {
                 dest_size: Some(vec2(dest.w, dest.h)),
-                source: Some(source),
-                rotation: angle_rad,
-                pivot: Option::Some(vec2(dest.x, dest.y)),
+                source: Some(glyph),
+                rotation: rot,
+                pivot: Some(vec2(dest.x, dest.y)),
                 ..Default::default()
             },
         );
+    }
+
+    TextDimensions {
+        width: total_width / dpi_scaling,
+        height: (max_offset_y - min_offset_y) / dpi_scaling,
+        offset_y: max_offset_y / dpi_scaling,
+    }
+}
+
+/// Draw multiline text with the given font_size, line_distance_factor and color.
+/// If no line distance but a custom font is given, the fonts line gap will be used as line distance factor if it exists.
+pub fn draw_multiline_text(
+    text: &str,
+    x: f32,
+    y: f32,
+    font_size: f32,
+    line_distance_factor: Option<f32>,
+    color: Color,
+) {
+    draw_multiline_text_ex(
+        text,
+        x,
+        y,
+        line_distance_factor,
+        TextParams {
+            font_size: font_size as u16,
+            font_scale: 1.0,
+            color,
+            ..Default::default()
+        },
+    );
+}
+
+/// Draw multiline text with the given line distance and custom params such as font, font size and font scale.
+/// If no line distance but a custom font is given, the fonts newline size will be used as line distance factor if it exists.
+pub fn draw_multiline_text_ex(
+    text: &str,
+    x: f32,
+    mut y: f32,
+    line_distance_factor: Option<f32>,
+    params: TextParams,
+) {
+    let line_distance = match line_distance_factor {
+        Some(distance) => distance,
+        None => {
+            let mut font_line_distance = 0.0;
+            if let Some(font) = params.font {
+                if let Some(metrics) = font.font.horizontal_line_metrics(1.0) {
+                    font_line_distance = metrics.new_line_size;
+                }
+            }
+            font_line_distance
+        }
+    };
+
+    for line in text.lines() {
+        draw_text_ex(line, x, y, params.clone());
+        y += line_distance * params.font_size as f32 * params.font_scale;
     }
 }
 
@@ -376,19 +452,6 @@ pub fn get_text_center(
     let y_center = measure.width / 2.0 * rotation.sin() - measure.height / 2.0 * rotation.cos();
 
     crate::Vec2::new(x_center, y_center)
-}
-
-/// World space dimensions of the text, measured by "measure_text" function
-#[derive(Debug, Clone, Copy)]
-pub struct TextDimensions {
-    /// Distance from very left to very right of the rasterized text
-    pub width: f32,
-    /// Distance from the bottom to the top of the text.
-    pub height: f32,
-    /// Height offset from the baseline of the text.
-    /// "draw_text(.., X, Y, ..)" will be rendered in a "Rect::new(X, Y - dimensions.offset_y, dimensions.width, dimensions.height)"
-    /// For reference check "text_dimensions" example.
-    pub offset_y: f32,
 }
 
 pub fn measure_text(

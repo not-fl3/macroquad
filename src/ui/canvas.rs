@@ -16,7 +16,7 @@ impl<'a> DrawCanvas<'a> {
     pub fn cursor(&self) -> Vec2 {
         let cursor = &self.context.window.cursor;
         Vec2::new(cursor.x, cursor.y)
-            + Vec2::new(cursor.area.x as f32, cursor.area.y as f32)
+            + Vec2::new(cursor.area.x, cursor.area.y)
             + cursor.scroll.scroll
     }
 

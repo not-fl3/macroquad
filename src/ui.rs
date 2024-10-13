@@ -934,7 +934,7 @@ impl Ui {
     /// If you want your widget to start with its scrollbar in a particular location,
     /// consider `if ui.frame == 1 { ui.scroll_here() }`.
     pub fn scroll_here(&mut self) {
-        self.scroll_here_ratio(0.5)
+        self.scroll_here_ratio(0.5);
     }
 
     /// Scrolls the active GUI window to its GUI cursor.
@@ -984,7 +984,7 @@ impl Ui {
                 return true;
             }
         }
-        for window in &self.modal {
+        if let Some(window) = &self.modal {
             if window.was_active {
                 if window.full_rect().contains(mouse_position) {
                     return true;
@@ -1080,7 +1080,7 @@ impl Ui {
             window.childs.clear();
         }
 
-        for window in &mut self.modal {
+        if let Some(window) = &mut self.modal {
             window.painter.clear();
             window.cursor.reset();
             window.was_active = window.active;
@@ -1338,7 +1338,7 @@ pub(crate) mod ui_context {
                         .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
                 );
                 quad_gl.draw_mode(DrawMode::Triangles);
-                quad_gl.geometry(&draw_command.vertices, &draw_command.indices);
+                quad_gl.geometry(&draw_command.vertices[..], &draw_command.indices);
             }
             quad_gl.texture(None);
 
@@ -1359,7 +1359,7 @@ pub(crate) mod ui_context {
         }
 
         fn set(&mut self, data: &str) {
-            miniquad::window::clipboard_set(data)
+            miniquad::window::clipboard_set(data);
         }
     }
 

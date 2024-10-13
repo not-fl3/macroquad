@@ -234,43 +234,6 @@ pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: C
     context.gl.geometry(&vertices, &indices);
 }
 
-/// Draw polygin lines `from` degrees `to` degrees,
-/// centered at `[x, y]` with a given number of `sides`, `radius`, line `thickness`, and `color`.
-fn draw_poly_lines_from_to(
-    x: f32,
-    y: f32,
-    sides: u8,
-    radius: f32,
-    from: f32,
-    to: f32,
-    thickness: f32,
-    color: Color,
-) {
-    fn midpoint(x1: f32, y1: f32, x2: f32, y2: f32) -> (f32, f32) {
-        return ((x1 + x2) / 2., (y1 + y2) / 2.);
-    }
-
-    let rot = from.to_radians();
-    let part = to.to_radians();
-
-    for i in 0..sides {
-        let angle = i as f32 / sides as f32 * std::f32::consts::PI * 2. + rot;
-        let p0 = vec2(x + radius * angle.cos(), y + radius * angle.sin());
-
-        let angle = (i + 1) as f32 / sides as f32 * std::f32::consts::PI * 2. + rot;
-        if angle > part + rot {
-            continue;
-        }
-        let p1 = vec2(x + radius * angle.cos(), y + radius * angle.sin());
-
-        let (mx, my) = midpoint(p0.x, p0.y, p1.x, p1.y);
-        let v = (vec2(x, y) - vec2(mx, my)).normalize() * (thickness / 2.);
-        let p0 = p0 + v;
-        let p1 = p1 + v;
-        draw_line(p0.x, p0.y, p1.x, p1.y, thickness, color);
-    }
-}
-
 /// Draws a regular polygon outline centered at `[x, y]` with a given number of `sides`, `radius`,
 /// clockwise `rotation` (in degrees), line `thickness`, and `color`.
 pub fn draw_poly_lines(
@@ -282,16 +245,7 @@ pub fn draw_poly_lines(
     thickness: f32,
     color: Color,
 ) {
-    draw_poly_lines_from_to(
-        x,
-        y,
-        sides,
-        radius,
-        rotation,
-        rotation + 360.,
-        thickness,
-        color,
-    );
+    draw_arc(x, y, sides, radius, rotation, thickness, 360.0, color);
 }
 
 /// Draws a solid circle centered at `[x, y]` with a given radius `r` and `color`.
@@ -421,5 +375,38 @@ pub fn draw_arc(
     arc: f32,
     color: Color,
 ) {
-    draw_poly_lines_from_to(x, y, sides, radius, rotation, arc, thickness, color)
+    let rot = rotation.to_radians();
+    let part = arc.to_radians();
+
+    let sides = (sides as f32 * part / std::f32::consts::TAU)
+        .ceil()
+        .max(1.0);
+    let span = part / sides;
+    let sides = sides as usize;
+
+    let context = get_context();
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+
+    let mut verticies = Vec::<Vertex>::with_capacity(sides * 2);
+    let mut indicies = Vec::<u16>::with_capacity(sides * 2);
+
+    for i in 0..sides {
+        let start_angle = i as f32 * span + rot;
+        let end_angle = start_angle + span;
+
+        indicies.extend([0, 1, 2, 2, 1, 3].map(|k| k + (verticies.len() as u16)));
+
+        for (angle, radius) in [
+            (start_angle, radius),
+            (start_angle, radius + thickness),
+            (end_angle, radius),
+            (end_angle, radius + thickness),
+        ] {
+            let point = Vec2::new(x, y) + radius * Vec2::from_angle(angle);
+            verticies.push(Vertex::new(point.x, point.y, 0., 0., 0., color));
+        }
+    }
+
+    context.gl.geometry(&verticies, &indicies);
 }

@@ -3,22 +3,38 @@
 use crate::{color::Color, get_context};
 
 use crate::{quad_gl::DrawMode, texture::Texture2D};
-use glam::{vec2, vec3, Quat, Vec2, Vec3};
+use glam::{vec2, vec3, vec4, Quat, Vec2, Vec3, Vec4};
 
+#[repr(C)]
 #[derive(Clone, Debug, Copy)]
 pub struct Vertex {
     pub position: Vec3,
     pub uv: Vec2,
-    pub color: Color,
+    pub color: [u8; 4],
+    /// Normal is not used by macroquad and is completely optional.
+    /// Might be usefull for custom shaders.
+    /// While normal is not used by macroquad, it is completely safe to use it
+    /// to pass arbitary user data, hence Vec4.
+    pub normal: Vec4,
 }
 
-impl From<Vertex> for crate::quad_gl::VertexInterop {
-    fn from(vertex: Vertex) -> crate::quad_gl::VertexInterop {
-        (
-            vertex.position.into(),
-            vertex.uv.into(),
-            vertex.color.into(),
-        )
+impl Vertex {
+    pub fn new(x: f32, y: f32, z: f32, u: f32, v: f32, color: Color) -> Vertex {
+        Vertex {
+            position: vec3(x, y, z),
+            uv: vec2(u, v),
+            color: color.into(),
+            normal: vec4(0.0, 0.0, 0.0, 0.0),
+        }
+    }
+
+    pub fn new2(position: Vec3, uv: Vec2, color: Color) -> Vertex {
+        Vertex {
+            position,
+            uv,
+            color: color.into(),
+            normal: vec4(0.0, 0.0, 0.0, 0.0),
+        }
     }
 }
 
@@ -36,49 +52,23 @@ pub fn draw_mesh(mesh: &Mesh) {
     context.gl.geometry(&mesh.vertices[..], &mesh.indices[..]);
 }
 
-fn draw_quad(vertices: [(Vec3, Vec2, Color); 4]) {
+fn draw_quad(vertices: [Vertex; 4]) {
     let context = get_context();
     let indices = [0, 1, 2, 0, 2, 3];
-    let quad = [
-        (
-            [vertices[0].0.x, vertices[0].0.y, vertices[0].0.z],
-            [vertices[0].1.x, vertices[0].1.y],
-            vertices[0].2.into(),
-        ),
-        (
-            [vertices[1].0.x, vertices[1].0.y, vertices[1].0.z],
-            [vertices[1].1.x, vertices[1].1.y],
-            vertices[1].2.into(),
-        ),
-        (
-            [vertices[2].0.x, vertices[2].0.y, vertices[2].0.z],
-            [vertices[2].1.x, vertices[2].1.y],
-            vertices[2].2.into(),
-        ),
-        (
-            [vertices[3].0.x, vertices[3].0.y, vertices[3].0.z],
-            [vertices[3].1.x, vertices[3].1.y],
-            vertices[3].2.into(),
-        ),
-    ];
-
     context.gl.draw_mode(DrawMode::Triangles);
-    context.gl.geometry(&quad[..], &indices);
+    context.gl.geometry(&vertices, &indices);
 }
 
 pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
     let context = get_context();
-    let uv = [0., 0.];
-    let color: [f32; 4] = color.into();
+    let uv = vec2(0., 0.);
     let indices = [0, 1];
 
-    let line = [
-        ([start.x, start.y, start.z], uv, color),
-        ([end.x, end.y, end.z], uv, color),
-    ];
+    let line = [Vertex::new2(start, uv, color), Vertex::new2(end, uv, color)];
+
     context.gl.texture(None);
     context.gl.draw_mode(DrawMode::Lines);
-    context.gl.geometry(&line[..], &indices);
+    context.gl.geometry(&line, &indices);
 }
 
 /// Draw a grid centered at (0, 0, 0)
@@ -127,26 +117,10 @@ pub fn draw_grid_ex(
 }
 
 pub fn draw_plane(center: Vec3, size: Vec2, texture: Option<&Texture2D>, color: Color) {
-    let v1 = (
-        (center + vec3(-size.x, 0., -size.y)).into(),
-        vec2(0., 0.),
-        color,
-    );
-    let v2 = (
-        (center + vec3(-size.x, 0., size.y)).into(),
-        vec2(0., 1.),
-        color,
-    );
-    let v3 = (
-        (center + vec3(size.x, 0., size.y)).into(),
-        vec2(1., 1.),
-        color,
-    );
-    let v4 = (
-        (center + vec3(size.x, 0., -size.y)).into(),
-        vec2(1., 0.),
-        color,
-    );
+    let v1 = Vertex::new2(center + vec3(-size.x, 0., -size.y), vec2(0., 0.), color);
+    let v2 = Vertex::new2(center + vec3(-size.x, 0., size.y), vec2(0., 1.), color);
+    let v3 = Vertex::new2(center + vec3(size.x, 0., size.y), vec2(1., 1.), color);
+    let v4 = Vertex::new2(center + vec3(size.x, 0., -size.y), vec2(1., 0.), color);
 
     {
         let context = get_context();
@@ -181,10 +155,10 @@ pub fn draw_affine_parallelogram(
     texture: Option<&Texture2D>,
     color: Color,
 ) {
-    let v1 = (offset.into(), vec2(0., 0.), color);
-    let v2 = ((offset + e1).into(), vec2(0., 1.), color);
-    let v3 = ((offset + e1 + e2).into(), vec2(1., 1.), color);
-    let v4 = ((offset + e2).into(), vec2(1., 0.), color);
+    let v1 = Vertex::new2(offset, vec2(0., 0.), color);
+    let v2 = Vertex::new2(offset + e1, vec2(0., 1.), color);
+    let v3 = Vertex::new2(offset + e1 + e2, vec2(1., 1.), color);
+    let v4 = Vertex::new2(offset + e2, vec2(1., 0.), color);
 
     {
         let context = get_context();
@@ -227,19 +201,18 @@ pub fn draw_affine_parallelepiped(
     texture: Option<&Texture2D>,
     color: Color,
 ) {
-    let texture_base = texture.into();
-    draw_affine_parallelogram(offset, e1, e2, texture_base, color);
-    draw_affine_parallelogram(offset, e1, e3, texture_base, color);
-    draw_affine_parallelogram(offset, e2, e3, texture_base, color);
+    draw_affine_parallelogram(offset, e1, e2, texture, color);
+    draw_affine_parallelogram(offset, e1, e3, texture, color);
+    draw_affine_parallelogram(offset, e2, e3, texture, color);
 
-    draw_affine_parallelogram(offset + e1, e2, e3, texture_base, color);
-    draw_affine_parallelogram(offset + e2, e1, e3, texture_base, color);
-    draw_affine_parallelogram(offset + e3, e1, e2, texture_base, color);
+    draw_affine_parallelogram(offset + e1, e2, e3, texture, color);
+    draw_affine_parallelogram(offset + e2, e1, e3, texture, color);
+    draw_affine_parallelogram(offset + e3, e1, e2, texture, color);
 }
 
 pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color: Color) {
     let context = get_context();
-    context.gl.texture(texture.into());
+    context.gl.texture(texture);
 
     let (x, y, z) = (position.x, position.y, position.z);
     let (width, height, length) = (size.x, size.y, size.z);
@@ -257,10 +230,10 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color:
     let tl_uv = vec2(0., 1.);
 
     draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
+        Vertex::new2(bl_pos, bl_uv, color),
+        Vertex::new2(br_pos, br_uv, color),
+        Vertex::new2(tr_pos, tr_uv, color),
+        Vertex::new2(tl_pos, tl_uv, color),
     ]);
 
     // Back face
@@ -276,10 +249,10 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color:
     let tl_uv = vec2(0., 1.);
 
     draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
+        Vertex::new2(bl_pos, bl_uv, color),
+        Vertex::new2(br_pos, br_uv, color),
+        Vertex::new2(tr_pos, tr_uv, color),
+        Vertex::new2(tl_pos, tl_uv, color),
     ]);
 
     // Top face
@@ -295,10 +268,10 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color:
     let tl_uv = vec2(1., 1.);
 
     draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
+        Vertex::new2(bl_pos, bl_uv, color),
+        Vertex::new2(br_pos, br_uv, color),
+        Vertex::new2(tr_pos, tr_uv, color),
+        Vertex::new2(tl_pos, tl_uv, color),
     ]);
 
     // Bottom face
@@ -314,10 +287,10 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color:
     let tl_uv = vec2(1., 1.);
 
     draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
+        Vertex::new2(bl_pos, bl_uv, color),
+        Vertex::new2(br_pos, br_uv, color),
+        Vertex::new2(tr_pos, tr_uv, color),
+        Vertex::new2(tl_pos, tl_uv, color),
     ]);
 
     // Right face
@@ -333,10 +306,10 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color:
     let tl_uv = vec2(1., 1.);
 
     draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
+        Vertex::new2(bl_pos, bl_uv, color),
+        Vertex::new2(br_pos, br_uv, color),
+        Vertex::new2(tr_pos, tr_uv, color),
+        Vertex::new2(tl_pos, tl_uv, color),
     ]);
 
     // Left face
@@ -352,10 +325,10 @@ pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color:
     let tl_uv = vec2(1., 1.);
 
     draw_quad([
-        (bl_pos, bl_uv, color),
-        (br_pos, br_uv, color),
-        (tr_pos, tr_uv, color),
-        (tl_pos, tl_uv, color),
+        Vertex::new2(bl_pos, bl_uv, color),
+        Vertex::new2(br_pos, br_uv, color),
+        Vertex::new2(tr_pos, tr_uv, color),
+        Vertex::new2(tl_pos, tl_uv, color),
     ]);
 }
 
@@ -494,10 +467,9 @@ pub fn draw_sphere_ex(
     let rings = params.rings;
     let slices = params.slices;
 
-    let color: [f32; 4] = color.into();
     let scale = vec3(radius, radius, radius);
 
-    context.gl.texture(texture.into());
+    context.gl.texture(texture);
     context.gl.draw_mode(params.draw_mode);
 
     for i in 0..rings + 1 {
@@ -516,25 +488,25 @@ pub fn draw_sphere_ex(
                 (pi34 + (PI / (rings + 1.)) * i).sin(),
                 (pi34 + (PI / (rings + 1.)) * i).cos() * (j * pi2 / slices).cos(),
             );
-            let uv1 = [i / rings, j / slices];
+            let uv1 = vec2(i / rings, j / slices);
             let v2 = vec3(
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).cos() * ((j + 1.) * pi2 / slices).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).cos() * ((j + 1.) * pi2 / slices).cos(),
             );
-            let uv2 = [(i + 1.) / rings, (j + 1.) / slices];
+            let uv2 = vec2((i + 1.) / rings, (j + 1.) / slices);
             let v3 = vec3(
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).cos() * (j * pi2 / slices).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).cos() * (j * pi2 / slices).cos(),
             );
-            let uv3 = [(i + 1.) / rings, j / slices];
+            let uv3 = vec2((i + 1.) / rings, j / slices);
 
             context.gl.geometry(
                 &[
-                    ((v1 * scale + center).into(), uv1, color),
-                    ((v2 * scale + center).into(), uv2, color),
-                    ((v3 * scale + center).into(), uv3, color),
+                    Vertex::new2(v1 * scale + center, uv1, color),
+                    Vertex::new2(v2 * scale + center, uv2, color),
+                    Vertex::new2(v3 * scale + center, uv3, color),
                 ],
                 &[0, 1, 2],
             );
@@ -544,25 +516,25 @@ pub fn draw_sphere_ex(
                 (pi34 + (PI / (rings + 1.)) * i).sin(),
                 (pi34 + (PI / (rings + 1.)) * i).cos() * (j * pi2 / slices).cos(),
             );
-            let uv1 = [i / rings, j / slices];
+            let uv1 = vec2(i / rings, j / slices);
             let v2 = vec3(
                 (pi34 + (PI / (rings + 1.)) * (i)).cos() * ((j + 1.) * pi2 / slices).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i)).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i)).cos() * ((j + 1.) * pi2 / slices).cos(),
             );
-            let uv2 = [i / rings, (j + 1.) / slices];
+            let uv2 = vec2(i / rings, (j + 1.) / slices);
             let v3 = vec3(
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).cos() * ((j + 1.) * pi2 / slices).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).sin(),
                 (pi34 + (PI / (rings + 1.)) * (i + 1.)).cos() * ((j + 1.) * pi2 / slices).cos(),
             );
-            let uv3 = [(i + 1.) / rings, (j + 1.) / slices];
+            let uv3 = vec2((i + 1.) / rings, (j + 1.) / slices);
 
             context.gl.geometry(
                 &[
-                    ((v1 * scale + center).into(), uv1, color),
-                    ((v2 * scale + center).into(), uv2, color),
-                    ((v3 * scale + center).into(), uv3, color),
+                    Vertex::new2(v1 * scale + center, uv1, color),
+                    Vertex::new2(v2 * scale + center, uv2, color),
+                    Vertex::new2(v3 * scale + center, uv3, color),
                 ],
                 &[0, 1, 2],
             );
@@ -641,9 +613,7 @@ pub fn draw_cylinder_ex(
 
     let sides = params.sides;
 
-    let color: [f32; 4] = color.into();
-
-    context.gl.texture(texture.into());
+    context.gl.texture(texture);
     context.gl.draw_mode(params.draw_mode);
 
     use std::f32::consts::PI;
@@ -672,9 +642,9 @@ pub fn draw_cylinder_ex(
 
         context.gl.geometry(
             &[
-                ((v1 + position).into(), [0.0, 0.0], color),
-                ((v2 + position).into(), [1.0, 0.0], color),
-                ((v3 + position).into(), [1.0, 1.0], color),
+                Vertex::new2(v1 + position, vec2(0.0, 0.0), color),
+                Vertex::new2(v2 + position, vec2(1.0, 0.0), color),
+                Vertex::new2(v3 + position, vec2(1.0, 1.0), color),
             ],
             &[0, 1, 2],
         );
@@ -700,9 +670,9 @@ pub fn draw_cylinder_ex(
 
         context.gl.geometry(
             &[
-                ((v1 + position).into(), [0.0, 0.0], color),
-                ((v2 + position).into(), [1.0, 0.0], color),
-                ((v3 + position).into(), [1.0, 1.0], color),
+                Vertex::new2(v1 + position, vec2(0.0, 0.0), color),
+                Vertex::new2(v2 + position, vec2(1.0, 0.0), color),
+                Vertex::new2(v3 + position, vec2(1.0, 1.0), color),
             ],
             &[0, 1, 2],
         );
@@ -725,9 +695,9 @@ pub fn draw_cylinder_ex(
 
         context.gl.geometry(
             &[
-                ((v1 + position).into(), [0.0, 0.0], color),
-                ((v2 + position).into(), [1.0, 0.0], color),
-                ((v3 + position).into(), [1.0, 1.0], color),
+                Vertex::new2(v1 + position, vec2(0.0, 0.0), color),
+                Vertex::new2(v2 + position, vec2(1.0, 0.0), color),
+                Vertex::new2(v3 + position, vec2(1.0, 1.0), color),
             ],
             &[0, 1, 2],
         );
@@ -750,9 +720,9 @@ pub fn draw_cylinder_ex(
 
         context.gl.geometry(
             &[
-                ((v1 + position).into(), [0.0, 0.0], color),
-                ((v2 + position).into(), [1.0, 0.0], color),
-                ((v3 + position).into(), [1.0, 1.0], color),
+                Vertex::new2(v1 + position, vec2(0.0, 0.0), color),
+                Vertex::new2(v2 + position, vec2(1.0, 0.0), color),
+                Vertex::new2(v3 + position, vec2(1.0, 1.0), color),
             ],
             &[0, 1, 2],
         );

@@ -191,7 +191,7 @@ impl Painter {
 
         let size = match content {
             UiContent::Label(label) => {
-                let text_measures = self.label_size(&*label, None, font, font_size);
+                let text_measures = self.label_size(label, None, font, font_size);
                 (text_measures.width, font_size as f32)
             }
             UiContent::Texture(texture) => (texture.width(), texture.height()),
@@ -278,7 +278,7 @@ impl Painter {
                     element_size.y / 2. - text_measures.height / 2. + text_measures.offset_y;
 
                 self.draw_label(
-                    &*data,
+                    data,
                     element_pos + Vec2::new(left_coord, top_coord),
                     Some(text_color),
                     font,
@@ -412,7 +412,7 @@ impl Painter {
         self.add_command(DrawCommand::DrawRawTexture {
             rect,
             texture: texture.clone(),
-        })
+        });
     }
 
     pub fn draw_rect<S, T>(&mut self, rect: Rect, stroke: S, fill: T)
@@ -438,7 +438,7 @@ impl Painter {
             source,
             stroke: stroke.into(),
             fill: fill.into(),
-        })
+        });
     }
 
     pub fn draw_sprite(
@@ -470,7 +470,7 @@ impl Painter {
                 top: margin.top / h as f32,
                 bottom: margin.bottom / h as f32,
             }),
-        })
+        });
     }
 
     #[allow(dead_code)]
@@ -497,7 +497,7 @@ impl Painter {
             p2,
             source,
             color: color.into(),
-        })
+        });
     }
 
     pub fn draw_line<T: Into<Color>>(&mut self, start: Vec2, end: Vec2, color: T) {
@@ -556,6 +556,7 @@ impl Default for Alignment {
 #[derive(Clone, Debug)]
 pub struct LabelParams {
     pub color: Color,
+    #[allow(dead_code)]
     pub alignment: Alignment,
 }
 

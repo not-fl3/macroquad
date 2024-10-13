@@ -1,7 +1,7 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, Error};
-use miniquad::{PipelineParams, UniformType};
+use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, tobytes::ToBytes, Error};
+use miniquad::{PipelineParams, UniformDesc};
 use std::sync::Arc;
 
 #[derive(PartialEq)]
@@ -33,6 +33,12 @@ impl Material {
         get_context().gl.set_uniform(self.pipeline.0, name, uniform);
     }
 
+    pub fn set_uniform_array<T: ToBytes>(&self, name: &str, uniform: &[T]) {
+        get_context()
+            .gl
+            .set_uniform_array(self.pipeline.0, name, uniform);
+    }
+
     pub fn set_texture(&self, name: &str, texture: Texture2D) {
         get_context().gl.set_texture(self.pipeline.0, name, texture);
     }
@@ -41,26 +47,17 @@ impl Material {
 /// Params used for material loading.
 /// It is not possible to change material params at runtime, so this
 /// struct is used only once - at "load_material".
+#[derive(Default)]
 pub struct MaterialParams {
     /// miniquad pipeline configuration for this material.
     /// Things like blending, culling, depth dest
     pub pipeline_params: PipelineParams,
 
     /// List of custom uniforms used in this material
-    pub uniforms: Vec<(String, UniformType)>,
+    pub uniforms: Vec<UniformDesc>,
 
     /// List of textures used in this material
     pub textures: Vec<String>,
-}
-
-impl Default for MaterialParams {
-    fn default() -> Self {
-        MaterialParams {
-            pipeline_params: Default::default(),
-            uniforms: vec![],
-            textures: vec![],
-        }
-    }
 }
 
 pub fn load_material(
