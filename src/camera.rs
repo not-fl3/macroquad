@@ -135,9 +135,24 @@ impl Camera2D {
     ///
     /// Point is a screen space position, often mouse x and y.
     pub fn screen_to_world(&self, point: Vec2) -> Vec2 {
+        let dims = self
+            .viewport()
+            .map(|(vx, vy, vw, vh)| Rect {
+                x: vx as f32,
+                y: screen_height() - (vy + vh) as f32,
+                w: vw as f32,
+                h: vh as f32,
+            })
+            .unwrap_or(Rect {
+                x: 0.0,
+                y: 0.0,
+                w: screen_width(),
+                h: screen_height(),
+            });
+
         let point = vec2(
-            point.x / screen_width() * 2. - 1.,
-            1. - point.y / screen_height() * 2.,
+            (point.x - dims.x) / dims.w * 2. - 1.,
+            1. - (point.y - dims.y) / dims.h * 2.,
         );
         let inv_mat = self.matrix().inverse();
         let transform = inv_mat.transform_point3(vec3(point.x, point.y, 0.));
