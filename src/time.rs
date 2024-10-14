@@ -1,4 +1,4 @@
-//! Cross platform system time access and FPS counters.
+//! Cross-platform system time access and FPS counters.
 
 use crate::get_context;
 
@@ -9,7 +9,7 @@ pub fn get_fps() -> i32 {
     (1. / context.frame_time) as i32
 }
 
-/// Returns duration in seconds of the last frame drawn
+/// Returns duration in seconds of the last frame drawn, the "delta time."
 pub fn get_frame_time() -> f32 {
     let context = get_context();
 
@@ -23,7 +23,7 @@ pub fn get_frame_time() -> f32 {
 /// Returns elapsed wall-clock time in seconds since start
 ///
 /// Note that as real world time progresses during computation,
-/// the value returned will change. Therefore if you want
+/// the value returned will change. Therefore, if you want
 /// your game logic update to happen at the same *in-game* time
 /// for all game objects, you should call this function once
 /// save the value and reuse it throughout your code.
