@@ -15,7 +15,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(id: Id, position: Vec2, size: Vec2) -> Window {
+    pub const fn new(id: Id, position: Vec2, size: Vec2) -> Window {
         Window {
             id,
             position,

@@ -15,7 +15,7 @@ pub struct InputText<'a> {
 }
 
 impl<'a> InputText<'a> {
-    pub fn new(id: Id) -> InputText<'a> {
+    pub const fn new(id: Id) -> InputText<'a> {
         InputText {
             id,
             size: None,
@@ -28,7 +28,7 @@ impl<'a> InputText<'a> {
         }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> InputText<'b> {
+    pub const fn label<'b>(self, label: &'b str) -> InputText<'b> {
         InputText {
             id: self.id,
             size: self.size,
@@ -41,36 +41,36 @@ impl<'a> InputText<'a> {
         }
     }
 
-    pub fn size(self, size: Vec2) -> Self {
+    pub const fn size(self, size: Vec2) -> Self {
         Self {
             size: Some(size),
             ..self
         }
     }
 
-    pub fn position(self, pos: Vec2) -> Self {
+    pub const fn position(self, pos: Vec2) -> Self {
         Self {
             pos: Some(pos),
             ..self
         }
     }
 
-    pub fn password(self, password: bool) -> Self {
+    pub const fn password(self, password: bool) -> Self {
         Self { password, ..self }
     }
 
-    pub fn ratio(self, ratio: f32) -> Self {
+    pub const fn ratio(self, ratio: f32) -> Self {
         Self { ratio, ..self }
     }
 
-    pub fn filter_numbers(self) -> Self {
+    pub const fn filter_numbers(self) -> Self {
         Self {
             numbers: true,
             ..self
         }
     }
 
-    pub fn margin(self, margin: Vec2) -> Self {
+    pub const fn margin(self, margin: Vec2) -> Self {
         Self {
             margin: Some(margin),
             ..self

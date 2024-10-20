@@ -8,15 +8,15 @@ pub struct Circle {
 }
 
 impl Circle {
-    pub fn new(x: f32, y: f32, r: f32) -> Self {
+    pub const fn new(x: f32, y: f32, r: f32) -> Self {
         Circle { x, y, r }
     }
 
-    pub fn point(&self) -> Vec2 {
+    pub const fn point(&self) -> Vec2 {
         vec2(self.x, self.y)
     }
 
-    pub fn radius(&self) -> f32 {
+    pub const fn radius(&self) -> f32 {
         self.r
     }
 

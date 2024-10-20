@@ -39,7 +39,7 @@ struct DrawCall {
 }
 
 impl DrawCall {
-    fn new(
+    const fn new(
         texture: Option<miniquad::TextureId>,
         model: glam::Mat4,
         draw_mode: DrawMode,
@@ -534,7 +534,7 @@ impl PipelinesStorage {
         GlPipeline(id)
     }
 
-    fn get(&self, draw_mode: DrawMode, depth_enabled: bool) -> GlPipeline {
+    const fn get(&self, draw_mode: DrawMode, depth_enabled: bool) -> GlPipeline {
         match (draw_mode, depth_enabled) {
             (DrawMode::Triangles, false) => Self::TRIANGLES_PIPELINE,
             (DrawMode::Triangles, true) => Self::TRIANGLES_DEPTH_PIPELINE,
@@ -814,11 +814,11 @@ impl QuadGl {
         crate::get_context().projection_matrix()
     }
 
-    pub fn get_active_render_pass(&self) -> Option<RenderPass> {
+    pub const fn get_active_render_pass(&self) -> Option<RenderPass> {
         self.state.render_pass
     }
 
-    pub fn is_depth_test_enabled(&self) -> bool {
+    pub const fn is_depth_test_enabled(&self) -> bool {
         self.state.depth_test_enable
     }
 
