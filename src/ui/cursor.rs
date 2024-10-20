@@ -54,7 +54,7 @@ pub struct Cursor {
 }
 
 impl Cursor {
-    pub fn new(area: Rect, margin: f32) -> Cursor {
+    pub const fn new(area: Rect, margin: f32) -> Cursor {
         Cursor {
             margin,
             x: margin,

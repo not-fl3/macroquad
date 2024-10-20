@@ -23,7 +23,7 @@ impl<'a> TreeNode<'a> {
         }
     }
 
-    pub fn init_unfolded(mut self) -> TreeNode<'a> {
+    pub const fn init_unfolded(mut self) -> TreeNode<'a> {
         self.init_unfolded = true;
         self
     }

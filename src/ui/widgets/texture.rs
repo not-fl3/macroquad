@@ -12,7 +12,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new(texture: Texture2D) -> Texture {
+    pub const fn new(texture: Texture2D) -> Texture {
         Texture {
             position: None,
             w: 100.,

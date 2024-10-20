@@ -48,7 +48,7 @@ impl TexturesContext {
     // fn remove(&mut self, texture: TextureSlotId) {
     //     self.textures.remove(texture);
     // }
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.textures.len()
     }
     pub fn garbage_collect(&mut self, ctx: &mut miniquad::Context) {
@@ -86,7 +86,7 @@ impl Image {
     /// # use macroquad::prelude::*;
     /// let image = Image::empty();
     /// ```
-    pub fn empty() -> Image {
+    pub const fn empty() -> Image {
         Image {
             width: 0,
             height: 0,
@@ -157,12 +157,12 @@ impl Image {
     }
 
     /// Returns the width of this image.
-    pub fn width(&self) -> usize {
+    pub const fn width(&self) -> usize {
         self.width as usize
     }
 
     /// Returns the height of this image.
-    pub fn height(&self) -> usize {
+    pub const fn height(&self) -> usize {
         self.height as usize
     }
 
@@ -611,7 +611,7 @@ impl Texture2D {
             },
         }
     }
-    pub(crate) fn unmanaged(texture: miniquad::TextureId) -> Texture2D {
+    pub(crate) const fn unmanaged(texture: miniquad::TextureId) -> Texture2D {
         Texture2D {
             texture: TextureHandle::Unmanaged(texture),
         }
@@ -672,7 +672,7 @@ impl Texture2D {
 
     /// Creates a Texture2D from a miniquad
     /// [Texture](https://docs.rs/miniquad/0.3.0-alpha/miniquad/graphics/struct.Texture.html)
-    pub fn from_miniquad_texture(texture: miniquad::TextureId) -> Texture2D {
+    pub const fn from_miniquad_texture(texture: miniquad::TextureId) -> Texture2D {
         Texture2D {
             texture: TextureHandle::Unmanaged(texture),
         }

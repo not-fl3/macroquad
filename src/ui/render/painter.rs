@@ -135,7 +135,7 @@ impl DrawCommand {
         }
     }
 
-    pub(crate) fn estimate_triangles_budget(&self) -> (usize, usize) {
+    pub(crate) const fn estimate_triangles_budget(&self) -> (usize, usize) {
         match self {
             DrawCommand::DrawCharacter { .. } => (10, 10),
             DrawCommand::DrawRawTexture { .. } => (10, 10),
@@ -154,7 +154,7 @@ pub(crate) struct Painter {
 }
 
 impl Painter {
-    pub fn new(font_atlas: Arc<Mutex<Atlas>>) -> Painter {
+    pub const fn new(font_atlas: Arc<Mutex<Atlas>>) -> Painter {
         Painter {
             commands: vec![],
             clipping_zone: None,

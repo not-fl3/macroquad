@@ -17,17 +17,17 @@ impl Rect {
     ///   * `y` - y-coordinate of the top-left corner.
     ///   * `w` - width of the `Rect`, going to the right.
     ///   * `h` - height of the `Rect`, going down.
-    pub fn new(x: f32, y: f32, w: f32, h: f32) -> Rect {
+    pub const fn new(x: f32, y: f32, w: f32, h: f32) -> Rect {
         Rect { x, y, w, h }
     }
 
     /// Returns the top-left corner of the `Rect`.
-    pub fn point(&self) -> Vec2 {
+    pub const fn point(&self) -> Vec2 {
         vec2(self.x, self.y)
     }
 
     /// Returns the size (width and height) of the `Rect`.
-    pub fn size(&self) -> Vec2 {
+    pub const fn size(&self) -> Vec2 {
         vec2(self.w, self.h)
     }
 
@@ -37,7 +37,7 @@ impl Rect {
     }
 
     /// Returns the left edge of the `Rect`
-    pub fn left(&self) -> f32 {
+    pub const fn left(&self) -> f32 {
         self.x
     }
 
@@ -47,7 +47,7 @@ impl Rect {
     }
 
     /// Returns the top edge of the `Rect`
-    pub fn top(&self) -> f32 {
+    pub const fn top(&self) -> f32 {
         self.y
     }
 
@@ -128,7 +128,7 @@ pub struct RectOffset {
 }
 
 impl RectOffset {
-    pub fn new(left: f32, right: f32, top: f32, bottom: f32) -> RectOffset {
+    pub const fn new(left: f32, right: f32, top: f32, bottom: f32) -> RectOffset {
         RectOffset {
             left,
             right,

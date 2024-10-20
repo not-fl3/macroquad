@@ -64,7 +64,7 @@ impl<T: 'static> Clone for Handle<T> {
 impl<T: 'static> Copy for Handle<T> {}
 
 impl<T> Handle<T> {
-    pub fn null() -> Handle<T> {
+    pub const fn null() -> Handle<T> {
         Handle {
             id: None,
             _marker: PhantomData,
@@ -75,7 +75,7 @@ impl<T> Handle<T> {
         HandleUntyped(self.id.unwrap())
     }
 
-    pub fn as_trait<T1: ?Sized>(&self) {}
+    pub const fn as_trait<T1: ?Sized>(&self) {}
 }
 
 pub(crate) struct Lens<T> {
@@ -127,7 +127,7 @@ pub struct RefMut<T: 'static> {
 }
 
 impl<T: 'static> RefMut<T> {
-    pub fn handle(&self) -> Handle<T> {
+    pub const fn handle(&self) -> Handle<T> {
         Handle {
             id: self.handle.id,
             _marker: PhantomData,
@@ -190,7 +190,7 @@ pub struct RefMutAny<'a> {
 }
 
 impl<'a> RefMutAny<'a> {
-    pub fn handle<T>(&self) -> Handle<T> {
+    pub const fn handle<T>(&self) -> Handle<T> {
         Handle {
             id: Some(self.handle.0),
             _marker: PhantomData,
@@ -700,6 +700,6 @@ pub(crate) fn in_fixed_update() -> bool {
     unsafe { get_scene() }.in_fixed_update
 }
 
-pub(crate) fn fixed_frame_time() -> f32 {
+pub(crate) const fn fixed_frame_time() -> f32 {
     CONST_FPS as _
 }

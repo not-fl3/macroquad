@@ -105,7 +105,7 @@ impl<T: scene::Node + 'static> StateMachine<T> {
         }
     }
 
-    pub fn state(&self) -> usize {
+    pub const fn state(&self) -> usize {
         match self {
             StateMachine::Ready(state_machine) => state_machine.state(),
             StateMachine::InUse {
@@ -178,7 +178,7 @@ impl<T: 'static> StateMachineOwned<T> {
         self.next_state = Some(state);
     }
 
-    pub fn state(&self) -> usize {
+    pub const fn state(&self) -> usize {
         self.current_state
     }
 

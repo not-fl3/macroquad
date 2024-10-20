@@ -36,25 +36,25 @@ impl<'a> Editbox<'a> {
         }
     }
 
-    pub fn multiline(self, multiline: bool) -> Self {
+    pub const fn multiline(self, multiline: bool) -> Self {
         Editbox { multiline, ..self }
     }
 
-    pub fn select_all(self) -> Self {
+    pub const fn select_all(self) -> Self {
         Editbox {
             select_all: true,
             ..self
         }
     }
 
-    pub fn position(self, pos: Vec2) -> Self {
+    pub const fn position(self, pos: Vec2) -> Self {
         Editbox {
             pos: Some(pos),
             ..self
         }
     }
 
-    pub fn password(self, password: bool) -> Self {
+    pub const fn password(self, password: bool) -> Self {
         Editbox { password, ..self }
     }
 
@@ -71,7 +71,7 @@ impl<'a> Editbox<'a> {
         }
     }
 
-    pub fn margin(self, margin: Vec2) -> Self {
+    pub const fn margin(self, margin: Vec2) -> Self {
         Editbox {
             margin: Some(margin),
             ..self

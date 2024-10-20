@@ -10,7 +10,7 @@ pub struct Popup {
 }
 
 impl Popup {
-    pub fn new(id: Id, size: Vec2) -> Popup {
+    pub const fn new(id: Id, size: Vec2) -> Popup {
         Popup { id, size }
     }
 

@@ -349,7 +349,7 @@ impl Style {
         self.color
     }
 
-    pub(crate) fn background_sprite(&self, element_state: ElementState) -> Option<SpriteKey> {
+    pub(crate) const fn background_sprite(&self, element_state: ElementState) -> Option<SpriteKey> {
         let ElementState {
             clicked, hovered, ..
         } = element_state;
