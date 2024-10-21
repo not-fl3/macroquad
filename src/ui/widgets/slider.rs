@@ -12,7 +12,7 @@ pub struct Slider<'a> {
 }
 
 impl<'a> Slider<'a> {
-    pub fn new(id: Id, range: Range<f32>) -> Slider<'a> {
+    pub const fn new(id: Id, range: Range<f32>) -> Slider<'a> {
         Slider {
             id,
             range,
@@ -20,7 +20,7 @@ impl<'a> Slider<'a> {
         }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> Slider<'b> {
+    pub const fn label<'b>(self, label: &'b str) -> Slider<'b> {
         Slider {
             id: self.id,
             range: self.range,

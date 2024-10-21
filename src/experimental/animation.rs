@@ -121,7 +121,7 @@ impl AnimatedSprite {
     }
 
     /// Currently chosen animation
-    pub fn current_animation(&self) -> usize {
+    pub const fn current_animation(&self) -> usize {
         self.current_animation
     }
 

@@ -15,7 +15,7 @@ pub struct Group {
 }
 
 impl Group {
-    pub fn new(id: Id, size: Vec2) -> Group {
+    pub const fn new(id: Id, size: Vec2) -> Group {
         Group {
             id,
             size,
@@ -27,26 +27,26 @@ impl Group {
         }
     }
 
-    pub fn position(self, position: Vec2) -> Group {
+    pub const fn position(self, position: Vec2) -> Group {
         Group {
             position: Some(position),
             ..self
         }
     }
 
-    pub fn layout(self, layout: Layout) -> Group {
+    pub const fn layout(self, layout: Layout) -> Group {
         Group { layout, ..self }
     }
 
-    pub fn draggable(self, draggable: bool) -> Group {
+    pub const fn draggable(self, draggable: bool) -> Group {
         Group { draggable, ..self }
     }
 
-    pub fn hoverable(self, hoverable: bool) -> Group {
+    pub const fn hoverable(self, hoverable: bool) -> Group {
         Group { hoverable, ..self }
     }
 
-    pub fn highlight(self, highlight: bool) -> Group {
+    pub const fn highlight(self, highlight: bool) -> Group {
         Group { highlight, ..self }
     }
 

@@ -21,7 +21,7 @@ pub struct DrawList {
 }
 
 impl DrawList {
-    pub fn new() -> DrawList {
+    pub const fn new() -> DrawList {
         DrawList {
             vertices: vec![],
             indices: vec![],

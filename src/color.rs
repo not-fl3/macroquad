@@ -132,12 +132,12 @@ impl Color {
     }
 
     /// Create a vec4 of red, green, blue, and alpha components.
-    pub fn to_vec(&self) -> glam::Vec4 {
+    pub const fn to_vec(&self) -> glam::Vec4 {
         glam::Vec4::new(self.r, self.g, self.b, self.a)
     }
 
     /// Create a color from a vec4 of red, green, blue, and alpha components.
-    pub fn from_vec(vec: glam::Vec4) -> Self {
+    pub const fn from_vec(vec: glam::Vec4) -> Self {
         Self::new(vec.x, vec.y, vec.z, vec.w)
     }
 }

@@ -192,11 +192,11 @@ impl Window {
         );
     }
 
-    pub fn top_level(&self) -> bool {
+    pub const fn top_level(&self) -> bool {
         self.parent.is_none()
     }
 
-    pub fn full_rect(&self) -> Rect {
+    pub const fn full_rect(&self) -> Rect {
         Rect::new(self.position.x, self.position.y, self.size.x, self.size.y)
     }
 
@@ -215,7 +215,7 @@ impl Window {
         self.cursor.area.y = position.y + self.title_height + self.window_margin.top;
     }
 
-    pub fn title_rect(&self) -> Rect {
+    pub const fn title_rect(&self) -> Rect {
         Rect::new(
             self.position.x,
             self.position.y,
@@ -267,7 +267,7 @@ pub(crate) struct TabSelector {
 }
 
 impl TabSelector {
-    fn new() -> Self {
+    const fn new() -> Self {
         TabSelector {
             counter: 0,
             wants: None,
@@ -970,7 +970,7 @@ impl Ui {
         )
     }
 
-    pub fn is_mouse_captured(&self) -> bool {
+    pub const fn is_mouse_captured(&self) -> bool {
         self.input.cursor_grabbed
     }
 
@@ -998,7 +998,7 @@ impl Ui {
         self.active_window.map_or(false, |wnd| self.is_focused(wnd))
     }
 
-    pub fn is_dragging(&self) -> bool {
+    pub const fn is_dragging(&self) -> bool {
         self.dragging.is_some()
     }
 

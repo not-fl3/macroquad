@@ -62,7 +62,7 @@ impl TextureIdSlotMap {
     }
 
     /// Returns the number of elements in the slot map.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.num_elems as usize
     }
 

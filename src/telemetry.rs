@@ -145,7 +145,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    fn new() -> Frame {
+    const fn new() -> Frame {
         Frame {
             full_frame_time: 0.0,
             zones: vec![],

@@ -33,11 +33,11 @@ enum CoroutineState {
 }
 
 impl CoroutineState {
-    pub fn is_value(&self) -> bool {
+    pub const fn is_value(&self) -> bool {
         matches!(self, CoroutineState::Value(_))
     }
 
-    pub fn is_nothing(&self) -> bool {
+    pub const fn is_nothing(&self) -> bool {
         matches!(self, CoroutineState::Nothing)
     }
 
@@ -256,7 +256,7 @@ impl Future for TimerDelayFuture {
     }
 }
 
-pub fn wait_seconds(time: f32) -> TimerDelayFuture {
+pub const fn wait_seconds(time: f32) -> TimerDelayFuture {
     TimerDelayFuture {
         remaining_time: time,
     }

@@ -189,7 +189,7 @@ impl EditboxState {
             None
         }
     }
-    pub fn in_selected_range(&self, cursor: u32) -> bool {
+    pub const fn in_selected_range(&self, cursor: u32) -> bool {
         match self.selection {
             Some((start, end)) if start < end => cursor >= start && cursor < end,
             Some((end, start)) => cursor >= start && cursor < end,
@@ -218,7 +218,7 @@ impl EditboxState {
         cursor_tmp - self.cursor
     }
 
-    pub fn word_delimiter(character: char) -> bool {
+    pub const fn word_delimiter(character: char) -> bool {
         character == ' '
             || character == '('
             || character == ')'

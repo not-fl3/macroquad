@@ -11,7 +11,7 @@ pub struct ComboBox<'a, 'b, 'c> {
 }
 
 impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
-    pub fn new(id: Id, variants: &'b [&'c str]) -> ComboBox<'a, 'b, 'c> {
+    pub const fn new(id: Id, variants: &'b [&'c str]) -> ComboBox<'a, 'b, 'c> {
         ComboBox {
             id,
             label: "",
@@ -20,7 +20,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
         }
     }
 
-    pub fn label<'x>(self, label: &'x str) -> ComboBox<'x, 'b, 'c> {
+    pub const fn label<'x>(self, label: &'x str) -> ComboBox<'x, 'b, 'c> {
         ComboBox {
             id: self.id,
             variants: self.variants,
@@ -29,7 +29,7 @@ impl<'a, 'b, 'c> ComboBox<'a, 'b, 'c> {
         }
     }
 
-    pub fn ratio(self, ratio: f32) -> Self {
+    pub const fn ratio(self, ratio: f32) -> Self {
         Self { ratio, ..self }
     }
     pub fn ui(self, ui: &mut Ui, data: &mut usize) -> usize {

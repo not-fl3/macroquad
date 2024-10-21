@@ -79,11 +79,11 @@ impl Atlas {
         self.sprites.get(&key).cloned()
     }
 
-    pub fn width(&self) -> u16 {
+    pub const fn width(&self) -> u16 {
         self.image.width() as u16
     }
 
-    pub fn height(&self) -> u16 {
+    pub const fn height(&self) -> u16 {
         self.image.height() as u16
     }
 
