@@ -1,6 +1,11 @@
 //! Cross platform system time access and FPS counters.
 
-use crate::get_context;
+use crate::{get_context, text::draw_text};
+
+/// Draws the current FPS on the screen. For extra customization, please use `draw_text` instead.
+pub fn draw_fps() {
+    draw_text(&format!("FPS: {}", get_fps()), 0., 16., 32., crate::WHITE);
+}
 
 /// Returns current FPS
 pub fn get_fps() -> i32 {
