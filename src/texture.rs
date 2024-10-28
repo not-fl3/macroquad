@@ -387,11 +387,13 @@ pub struct RenderTarget {
     pub render_pass: RenderPass,
 }
 
+/// A shortcut to create a render target with sample_count: 1 and no depth buffer
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
     render_target_ex(width, height, RenderTargetParams::default())
 }
 
-pub fn render_target_msaa(width: u32, height: u32, sample_count: i32) -> RenderTarget {
+/// A shortcut to create a render target with no depth buffer and `sample_count: 4`
+pub fn render_target_msaa(width: u32, height: u32) -> RenderTarget {
     render_target_ex(
         width,
         height,
