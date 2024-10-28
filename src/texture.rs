@@ -396,7 +396,7 @@ pub fn render_target_msaa(width: u32, height: u32, sample_count: i32) -> RenderT
         width,
         height,
         RenderTargetParams {
-            sample_count,
+            sample_count: 4,
             ..Default::default()
         },
     )
