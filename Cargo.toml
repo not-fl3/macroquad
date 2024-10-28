@@ -27,7 +27,7 @@ opt-level = 3
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.4.6", features = ["log-impl"] }
+miniquad = { version = "=0.4.7", features = ["log-impl"] }
 quad-rand = "0.2.2"
 glam = { version = "0.27", features = ["scalar-math"] }
 image = { version = "0.24", default-features = false, features = ["png", "tga"] }
