@@ -276,6 +276,7 @@ pub fn set_default_camera() {
     context.perform_render_passes();
 
     context.gl.render_pass(None);
+    context.gl.viewport(None);
     context.gl.depth_test(false);
     context.camera_matrix = None;
 }
