@@ -40,6 +40,7 @@ use miniquad::*;
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
+use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 
 mod exec;
@@ -494,16 +495,8 @@ fn get_quad_context() -> &'static mut dyn miniquad::RenderingBackend {
     unsafe { &mut *CONTEXT.as_mut().unwrap().quad_context }
 }
 
-static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
-
-struct Stage {}
-
-impl Drop for Stage {
-    fn drop(&mut self) {
-        unsafe {
-            MAIN_FUTURE.take();
-        }
-    }
+struct Stage {
+    main_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
 }
 
 impl EventHandler for Stage {
@@ -727,26 +720,25 @@ impl EventHandler for Stage {
                 }
             }
 
-            let result = maybe_unwind(get_context().unwind, || {
-                if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
-                    let _z = telemetry::ZoneGuard::new("Event::draw user code");
+            let result = maybe_unwind(
+                get_context().unwind,
+                AssertUnwindSafe(|| {
+                    if let Some(future) = &mut self.main_future {
+                        let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
-                    if exec::resume(future).is_some() {
-                        unsafe {
-                            MAIN_FUTURE = None;
+                        if exec::resume(future).is_some() {
+                            self.main_future = None;
+                            miniquad::window::quit();
+                            return;
                         }
-                        miniquad::window::quit();
-                        return;
+                        get_context().coroutines_context.update();
                     }
-                    get_context().coroutines_context.update();
-                }
-            });
+                }),
+            );
 
             if result == false {
                 if let Some(recovery_future) = get_context().recovery_future.take() {
-                    unsafe {
-                        MAIN_FUTURE = Some(recovery_future);
-                    }
+                    self.main_future = Some(recovery_future);
                 }
             }
 
@@ -882,9 +874,6 @@ impl Window {
         } = config.into();
         miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
-            unsafe {
-                MAIN_FUTURE = Some(Box::pin(future));
-            }
             let context = Context::new(
                 update_on.unwrap_or_default(),
                 default_filter_mode,
@@ -893,7 +882,9 @@ impl Window {
             );
             unsafe { CONTEXT = Some(context) };
 
-            Box::new(Stage {})
+            Box::new(Stage {
+                main_future: Some(Box::pin(future)),
+            })
         });
     }
 }
