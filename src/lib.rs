@@ -496,7 +496,7 @@ fn get_quad_context() -> &'static mut dyn miniquad::RenderingBackend {
 }
 
 struct Stage {
-    main_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
+    main_future: Pin<Box<dyn Future<Output = ()>>>,
 }
 
 impl EventHandler for Stage {
@@ -723,22 +723,20 @@ impl EventHandler for Stage {
             let result = maybe_unwind(
                 get_context().unwind,
                 AssertUnwindSafe(|| {
-                    if let Some(future) = &mut self.main_future {
-                        let _z = telemetry::ZoneGuard::new("Event::draw user code");
+                    let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
-                        if exec::resume(future).is_some() {
-                            self.main_future = None;
-                            miniquad::window::quit();
-                            return;
-                        }
-                        get_context().coroutines_context.update();
+                    if exec::resume(&mut self.main_future).is_some() {
+                        self.main_future = Box::pin(async move {});
+                        miniquad::window::quit();
+                        return;
                     }
+                    get_context().coroutines_context.update();
                 }),
             );
 
             if result == false {
                 if let Some(recovery_future) = get_context().recovery_future.take() {
-                    self.main_future = Some(recovery_future);
+                    self.main_future = recovery_future;
                 }
             }
 
@@ -883,7 +881,7 @@ impl Window {
             unsafe { CONTEXT = Some(context) };
 
             Box::new(Stage {
-                main_future: Some(Box::pin(future)),
+                main_future: Box::pin(future),
             })
         });
     }
