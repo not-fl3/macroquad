@@ -156,7 +156,7 @@ impl MiniquadInputEvent {
 }
 
 struct Stage {
-    main_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
+    main_future: Pin<Box<dyn Future<Output = ()>>>,
     quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
     quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
     ui: Arc<Mutex<quad_gl::ui::Ui>>,
@@ -321,18 +321,16 @@ impl EventHandler for Stage {
     fn draw(&mut self) {
         self.time.lock().unwrap().update();
         //let result = maybe_unwind(get_context().unwind, || {
-        if let Some(future) = self.main_future.as_mut() {
-            let _z = telemetry::ZoneGuard::new("user code");
+        let _z = telemetry::ZoneGuard::new("user code");
 
-            if exec::resume(future).is_some() {
-                self.main_future = None;
-                miniquad::window::quit();
-                return;
-            }
-
-            self.input.lock().unwrap().end_frame();
-            compat::end_frame();
+        if exec::resume(&mut self.main_future).is_some() {
+            self.main_future = Box::pin(std::future::ready(()));
+            miniquad::window::quit();
+            return;
         }
+
+        self.input.lock().unwrap().end_frame();
+        compat::end_frame();
     }
 
     fn window_restored_event(&mut self) {
@@ -479,7 +477,7 @@ pub fn start<F: Fn(Context) -> Fut + 'static, Fut: Future<Output = ()> + 'static
             quad_gl: ctx.quad_gl.clone(),
             ui: ctx.ui.clone(),
             time: ctx.time.clone(),
-            main_future: Some(Box::pin(future(ctx))),
+            main_future: Box::pin(future(ctx)),
         })
     });
 }
