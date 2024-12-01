@@ -13,6 +13,7 @@ pub struct InputCharacter {
     pub key: Key,
     pub modifier_shift: bool,
     pub modifier_ctrl: bool,
+    pub modifier_cmd: bool,
 }
 
 #[derive(Default, Clone)]
@@ -24,7 +25,9 @@ pub struct Input {
     pub(crate) mouse_wheel: Vec2,
     pub(crate) input_buffer: Vec<InputCharacter>,
     pub(crate) modifier_ctrl: bool,
+    pub(crate) modifier_cmd: bool,
     pub(crate) escape: bool,
+    pub(crate) quit: bool,
     pub(crate) enter: bool,
     pub(crate) cursor_grabbed: bool,
     pub(crate) window_active: bool,
