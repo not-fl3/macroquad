@@ -7,11 +7,6 @@ pub use miniquad;
 
 pub use miniquad::conf::Conf;
 
-/// Block execution until the next frame.
-pub fn next_frame() -> crate::exec::FrameFuture {
-    crate::exec::FrameFuture::default()
-}
-
 #[doc(hidden)]
 pub fn gl_set_drawcall_buffer_capacity(_max_vertices: usize, _max_indices: usize) {
     // let context = get_context();

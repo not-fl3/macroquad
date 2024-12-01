@@ -1,15 +1,18 @@
 //! miniquad-0.4 emulation
 
-pub use crate::window::next_frame;
 pub use quad_gl::color::*;
 
 use std::{
     cell::RefCell,
     sync::{Arc, Mutex},
+    task::Waker,
 };
+
+use crate::exec::FrameFuture;
 
 pub struct CompatContext {
     quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
+    frame_wakers: Arc<Mutex<Vec<Waker>>>,
     canvas: quad_gl::sprite_batcher::SpriteBatcher,
 }
 
@@ -17,15 +20,26 @@ thread_local! {
     pub static CTX: RefCell<Option<CompatContext>> = { RefCell::new(None) };
 }
 
-fn with_ctx<F: Fn(&mut CompatContext)>(f: F) {
-    CTX.with_borrow_mut(|v| f(v.as_mut().unwrap()));
+pub fn next_frame() -> FrameFuture {
+    with_ctx(|ctx| FrameFuture {
+        frame_wakers: Some(ctx.frame_wakers.clone()),
+    })
+}
+
+fn with_ctx<T, F: Fn(&mut CompatContext) -> T>(f: F) -> T {
+    CTX.with_borrow_mut(|v| f(v.as_mut().unwrap()))
 }
 pub fn init_compat_mode(ctx: &crate::Context) {
     let canvas = ctx.new_canvas();
     let quad_ctx = ctx.quad_ctx.clone();
+    let frame_wakers = ctx.frame_wakers.clone();
 
     CTX.with_borrow_mut(|v| {
-        *v = Some(CompatContext { quad_ctx, canvas });
+        *v = Some(CompatContext {
+            quad_ctx,
+            canvas,
+            frame_wakers,
+        });
     });
 }
 
