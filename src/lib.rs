@@ -36,11 +36,13 @@
 //! }
 //!```
 #![allow(warnings)]
+use exec::{Executor, FrameFuture};
 use miniquad::*;
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::Pin;
+use std::task::Waker;
 
 mod exec;
 mod time;
@@ -156,7 +158,7 @@ impl MiniquadInputEvent {
 }
 
 struct Stage {
-    main_future: Option<Pin<Box<dyn Future<Output = ()>>>>,
+    ex: Executor<'static>,
     quad_ctx: Arc<Mutex<Box<miniquad::Context>>>,
     quad_gl: Arc<Mutex<quad_gl::QuadGl>>,
     ui: Arc<Mutex<quad_gl::ui::Ui>>,
@@ -321,18 +323,25 @@ impl EventHandler for Stage {
     fn draw(&mut self) {
         self.time.lock().unwrap().update();
         //let result = maybe_unwind(get_context().unwind, || {
-        if let Some(future) = self.main_future.as_mut() {
-            let _z = telemetry::ZoneGuard::new("user code");
+        let _z = telemetry::ZoneGuard::new("user code");
 
-            if exec::resume(future).is_some() {
-                self.main_future = None;
-                miniquad::window::quit();
-                return;
-            }
+        eprintln!("frame start");
 
-            self.input.lock().unwrap().end_frame();
-            compat::end_frame();
+        for waker in self.ex.frame_wakers.lock().unwrap().drain(..) {
+            waker.wake();
         }
+
+        while self.ex.tick() {}
+
+        eprintln!("frame end");
+
+        if self.ex.is_empty() {
+            miniquad::window::quit();
+            return;
+        }
+
+        self.input.lock().unwrap().end_frame();
+        compat::end_frame();
     }
 
     fn window_restored_event(&mut self) {
@@ -361,6 +370,7 @@ pub struct Context {
     pub input: Arc<Mutex<input::InputContext>>,
     time: Arc<Mutex<time::Time>>,
     ui: Arc<Mutex<quad_gl::ui::Ui>>,
+    frame_wakers: Arc<Mutex<Vec<Waker>>>,
 }
 
 impl Context {
@@ -379,6 +389,7 @@ impl Context {
             input: Arc::new(Mutex::new(input::InputContext::new())),
             ui: Arc::new(Mutex::new(ui)),
             time: Arc::new(Mutex::new(time)),
+            frame_wakers: Default::default(),
         }
     }
 
@@ -462,6 +473,12 @@ impl Context {
     pub fn root_ui<'a>(&'a self) -> impl std::ops::DerefMut<Target = quad_gl::ui::Ui> + 'a {
         self.ui.lock().unwrap()
     }
+
+    pub fn next_frame(&self) -> FrameFuture {
+        FrameFuture {
+            frame_wakers: Some(self.frame_wakers.clone()),
+        }
+    }
 }
 
 pub fn start<F: Fn(Context) -> Fut + 'static, Fut: Future<Output = ()> + 'static>(
@@ -479,7 +496,13 @@ pub fn start<F: Fn(Context) -> Fut + 'static, Fut: Future<Output = ()> + 'static
             quad_gl: ctx.quad_gl.clone(),
             ui: ctx.ui.clone(),
             time: ctx.time.clone(),
-            main_future: Some(Box::pin(future(ctx))),
+            ex: {
+                let ex = Executor::new(ctx.frame_wakers.clone());
+                // TODO: should we wait for coroutines to finish even if the main task finished?
+                // Right now we do, but this is not how macroquad worked previously.
+                ex.spawn(future(ctx));
+                ex
+            },
         })
     });
 }

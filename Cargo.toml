@@ -42,6 +42,7 @@ quad-gl = { git = "https://github.com/not-fl3/quad-gl", branch = "v0.4" }
 
 [dev-dependencies]
 dolly = "*"
+tokio = { version = "1.41.1", features = ["fs", "rt"] }
 
 #[patch."https://github.com/not-fl3/quad-gl"]
 #quad-gl = { path = '../quad-gl' }

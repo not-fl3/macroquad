@@ -1,7 +1,4 @@
-pub use crate::{
-    math::{vec2, vec3, Vec3},
-    window::next_frame,
-};
+pub use crate::math::{vec2, vec3, Vec3};
 pub use quad_gl::{
     color::*,
     draw_calls_batcher::{DrawCallsBatcher, DrawMode, Vertex},
