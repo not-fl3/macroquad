@@ -198,10 +198,7 @@ async fn main() {
 
                     ui.input_text(hash!(), "<- input text 1", &mut data0);
                     ui.input_text(hash!(), "<- input text 2", &mut data1);
-                    ui.label(
-                        None,
-                        &format!("Text entered: \"{data0}\" and \"{data1}\""),
-                    );
+                    ui.label(None, &format!("Text entered: \"{data0}\" and \"{data1}\""));
 
                     ui.separator();
                 });
