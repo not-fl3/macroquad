@@ -931,7 +931,7 @@ pub fn build_textures_atlas() {
 
     let texture = context.texture_batcher.atlas.texture();
     let (w, h) = get_quad_context().texture_size(texture);
-    crate::telemetry::log_string(&format!("Atlas: {} {}", w, h));
+    crate::telemetry::log_string(&format!("Atlas: {w} {h}"));
 }
 
 #[doc(hidden)]
