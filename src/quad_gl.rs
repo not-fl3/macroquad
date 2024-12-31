@@ -149,7 +149,7 @@ impl MagicSnapshotter {
                 },
                 snapshotter_shader::meta(),
             )
-            .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to load shader: {e}"));
 
         let pipeline = ctx.new_pipeline(
             &[BufferLayout::default()],
@@ -396,7 +396,7 @@ impl PipelinesStorage {
                 },
                 shader::meta(),
             )
-            .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to load shader: {e}"));
 
         let params = PipelineParams {
             color_blend: Some(BlendState::new(

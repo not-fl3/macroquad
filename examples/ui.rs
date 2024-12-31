@@ -156,11 +156,11 @@ async fn main() {
             .ui(&mut *root_ui(), |ui| {
                 for i in 0..30 {
                     Group::new(hash!("shop", i), Vec2::new(300., 80.)).ui(ui, |ui| {
-                        ui.label(Vec2::new(10., 10.), &format!("Item N {}", i));
+                        ui.label(Vec2::new(10., 10.), &format!("Item N {i}"));
                         ui.label(Vec2::new(260., 40.), "10/10");
                         ui.label(Vec2::new(200., 58.), &format!("{} kr", 800));
                         if ui.button(Vec2::new(260., 55.), "buy") {
-                            data.inventory.push(format!("Item {}", i));
+                            data.inventory.push(format!("Item {i}"));
                         }
                     });
                 }
@@ -198,10 +198,7 @@ async fn main() {
 
                     ui.input_text(hash!(), "<- input text 1", &mut data0);
                     ui.input_text(hash!(), "<- input text 2", &mut data1);
-                    ui.label(
-                        None,
-                        &format!("Text entered: \"{}\" and \"{}\"", data0, data1),
-                    );
+                    ui.label(None, &format!("Text entered: \"{data0}\" and \"{data1}\""));
 
                     ui.separator();
                 });
