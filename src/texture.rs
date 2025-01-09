@@ -64,13 +64,28 @@ impl TexturesContext {
 /// Image, data stored in CPU memory
 #[derive(Clone)]
 pub struct Image {
+    // FIXME(0.5): remove all the deprecation notes once the `Image` fields are private
+    #[deprecated(
+        since = "0.4.14",
+        note = "this will be made private, use `Image::bytes`, `Image::bytes_mut` or `Image::bytes_vec_mut` for reading and writing instead"
+    )]
     pub bytes: Vec<u8>,
+    #[deprecated(
+        since = "0.4.14",
+        note = "this will be made private, use `Image::width` or `Image::width_mut` for reading and writing instead"
+    )]
     pub width: u16,
+    #[deprecated(
+        since = "0.4.14",
+        note = "this will be made private, use `Image::height` or `Image::height_mut` for reading and writing instead"
+    )]
     pub height: u16,
 }
 
 impl std::fmt::Debug for Image {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // FIXME(0.5): remove this once the `Image` fields are private
+        #[allow(deprecated)]
         f.debug_struct("Image")
             .field("width", &self.width)
             .field("height", &self.height)
@@ -79,6 +94,8 @@ impl std::fmt::Debug for Image {
     }
 }
 
+// FIXME(0.5): remove this once the `Image` fields are private
+#[allow(deprecated)]
 impl Image {
     /// Creates an empty Image.
     ///
@@ -91,6 +108,20 @@ impl Image {
             width: 0,
             height: 0,
             bytes: vec![],
+        }
+    }
+
+    /// Creates an image from the provided parts.
+    ///
+    /// # Panics
+    /// Panics if the width and height do not match the amount of bytes given.
+    pub fn from_parts(width: u16, height: u16, bytes: Vec<u8>) -> Image {
+        assert_eq!(width as usize * height as usize * 4, bytes.len());
+
+        Image {
+            width,
+            height,
+            bytes,
         }
     }
 
@@ -157,13 +188,52 @@ impl Image {
     }
 
     /// Returns the width of this image.
+    // FIXME(0.5): change the argument type to u16
     pub const fn width(&self) -> usize {
         self.width as usize
     }
 
     /// Returns the height of this image.
+    // FIXME(0.5): change the argument type to u16
     pub const fn height(&self) -> usize {
         self.height as usize
+    }
+
+    /// Returns the bytes of this image as an immutable slice.
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    /// Returns the bytes of this image as a mutable slice.
+    pub fn bytes_mut(&mut self) -> &mut [u8] {
+        &mut self.bytes
+    }
+
+    /// Allows changing the width of this image unsafely.
+    ///
+    /// # Safety
+    /// Increasing the width without properly filling the new pixels can cause Undefined Behaviour.
+    pub unsafe fn width_mut(&mut self) -> &mut u16 {
+        &mut self.width
+    }
+
+    /// Allows changing the height of this image unsafely.
+    ///
+    /// # Safety
+    /// Increasing the height without properly filling the new pixels can cause Undefined Behaviour.
+    pub unsafe fn height_mut(&mut self) -> &mut u16 {
+        &mut self.height
+    }
+
+    /// Allows changing the bytes of this image unsafely.
+    ///
+    /// If you do not intend to change the amount of the bytes,
+    /// use `Image::bytes_mut` instead, which is safe.
+    ///
+    /// # Safety
+    /// Removing bytes and not changing width and height accordingly can cause Undefined Behaviour.
+    pub unsafe fn bytes_vec_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.bytes
     }
 
     /// Returns this image's data as a slice of 4-byte arrays.
