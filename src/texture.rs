@@ -281,12 +281,10 @@ impl Image {
     /// Panics if the given pixel coordinates are not inside the image.
     // FIXME: change the argument type to u16
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
-        let x = x as u16;
-        let y = y as u16;
-        assert!(x < self.width);
-        assert!(y < self.height);
+        assert!(x < self.width as u32);
+        assert!(y < self.height as u32);
 
-        let width = self.width;
+        let width = self.width as u32;
 
         self.get_image_data_mut()[(y * width + x) as usize] = color.into();
     }
