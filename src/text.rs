@@ -158,6 +158,7 @@ impl Font {
         font_size: u16,
         font_scale_x: f32,
         font_scale_y: f32,
+        mut glyph_callback: impl FnMut(f32),
     ) -> TextDimensions {
         let dpi_scaling = miniquad::window::dpi_scale();
         let font_size = (font_size as f32 * dpi_scaling).ceil() as u16;
@@ -176,7 +177,9 @@ impl Font {
 
             let atlas = self.atlas.lock().unwrap();
             let glyph = atlas.get(font_data.sprite).unwrap().rect;
-            width += font_data.advance * font_scale_x;
+            let advance = font_data.advance * font_scale_x;
+            glyph_callback(advance);
+            width += advance;
             min_y = min_y.min(offset_y);
             max_y = max_y.max(glyph.h * font_scale_y + offset_y);
         }
@@ -462,7 +465,77 @@ pub fn measure_text(
 ) -> TextDimensions {
     let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
 
-    font.measure_text(text, font_size, font_scale, font_scale)
+    font.measure_text(text, font_size, font_scale, font_scale, |_| {})
+}
+
+/// Converts word breaks to newlines wherever the text would otherwise exceed the given length.
+pub fn wrap_text(
+    text: &str,
+    font: Option<&Font>,
+    font_size: u16,
+    font_scale: f32,
+    maximum_line_length: f32,
+) -> String {
+    let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
+
+    // This is always a bit too much memory, but it saves a lot of reallocations.
+    let mut new_text =
+        String::with_capacity(text.len() + text.chars().filter(|c| c.is_whitespace()).count());
+
+    let mut current_word_start = 0usize;
+    let mut current_word_end = 0usize;
+    let mut characters = text.char_indices();
+    let mut total_width = 0.0;
+    let mut word_width = 0.0;
+
+    font.measure_text(text, font_size, font_scale, font_scale, |mut width| {
+        // It's impossible this is called more often than the text has characters.
+        let (idx, c) = characters.next().unwrap();
+        let mut keep_char = true;
+
+        if c.is_whitespace() {
+            new_text.push_str(&text[current_word_start..idx + c.len_utf8()]);
+            current_word_start = idx + c.len_utf8();
+            word_width = 0.0;
+            keep_char = false;
+
+            // If we would wrap, ignore the whitespace.
+            if total_width + width > maximum_line_length {
+                width = 0.0;
+            }
+        }
+
+        // If a single word expands past the length limit, just break it up.
+        if word_width + width > maximum_line_length {
+            new_text.push_str(&text[current_word_start..current_word_end]);
+            new_text.push('\n');
+            current_word_start = current_word_end;
+            total_width = 0.0;
+            word_width = 0.0;
+        }
+
+        current_word_end = idx + c.len_utf8();
+        if keep_char {
+            word_width += width;
+        }
+
+        if c == '\n' {
+            total_width = 0.0;
+            word_width = 0.0;
+            return;
+        }
+
+        total_width += width;
+
+        if total_width > maximum_line_length {
+            new_text.push('\n');
+            total_width = word_width;
+        }
+    });
+
+    new_text.push_str(&text[current_word_start..current_word_end]);
+
+    new_text
 }
 
 pub(crate) struct FontsStorage {
