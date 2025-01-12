@@ -80,7 +80,11 @@ pub fn main(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     if let TokenTree::Ident(ident) = source.next().unwrap() {
-        assert_eq!(format!("{}", ident), "async");
+        assert_eq!(
+            format!("{}", ident),
+            "async",
+            "[macroquad::main] is allowed only for async functions"
+        );
 
         modified.extend(std::iter::once(TokenTree::Ident(ident)));
     } else {
