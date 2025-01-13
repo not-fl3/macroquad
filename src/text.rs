@@ -398,7 +398,7 @@ pub fn draw_multiline_text(
     font_size: f32,
     line_distance_factor: Option<f32>,
     color: Color,
-) {
+) -> TextDimensions {
     draw_multiline_text_ex(
         text,
         x,
@@ -410,7 +410,7 @@ pub fn draw_multiline_text(
             color,
             ..Default::default()
         },
-    );
+    )
 }
 
 /// Draw multiline text with the given line distance and custom params such as font, font size and font scale.
@@ -421,7 +421,7 @@ pub fn draw_multiline_text_ex(
     mut y: f32,
     line_distance_factor: Option<f32>,
     params: TextParams,
-) {
+) -> TextDimensions {
     let line_distance = match line_distance_factor {
         Some(distance) => distance,
         None => {
@@ -435,10 +435,25 @@ pub fn draw_multiline_text_ex(
         }
     };
 
+    let mut dimensions = TextDimensions::default();
+    let y_step = line_distance * params.font_size as f32 * params.font_scale;
+
     for line in text.lines() {
-        draw_text_ex(line, x, y, params.clone());
-        y += line_distance * params.font_size as f32 * params.font_scale;
+        // Trailing whitespace has a size, but isn't shown in any way.
+        let line = line.trim_end();
+
+        let line_dimensions = draw_text_ex(line, x, y, params.clone());
+
+        y += y_step;
+
+        dimensions.width = f32::max(dimensions.width, line_dimensions.width);
+        dimensions.height += y_step;
+        if dimensions.offset_y == 0.0 {
+            dimensions.offset_y = line_dimensions.offset_y;
+        }
     }
+
+    dimensions
 }
 
 /// Get the text center.
@@ -466,6 +481,41 @@ pub fn measure_text(
     let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
 
     font.measure_text(text, font_size, font_scale, font_scale, |_| {})
+}
+
+pub fn measure_multiline_text(
+    text: &str,
+    font: Option<&Font>,
+    font_size: u16,
+    font_scale: f32,
+    line_distance_factor: Option<f32>,
+) -> TextDimensions {
+    let font = font.unwrap_or_else(|| &get_context().fonts_storage.default_font);
+    let line_distance = match line_distance_factor {
+        Some(distance) => distance,
+        None => match font.font.horizontal_line_metrics(1.0) {
+            Some(metrics) => metrics.new_line_size,
+            None => 1.0,
+        },
+    };
+
+    let mut dimensions = TextDimensions::default();
+    let y_step = line_distance * font_size as f32 * font_scale;
+
+    for line in text.lines() {
+        // Trailing whitespace has a size, but isn't shown in any way.
+        let line = line.trim_end();
+
+        let line_dimensions = font.measure_text(line, font_size, font_scale, font_scale, |_| {});
+
+        dimensions.width = f32::max(dimensions.width, line_dimensions.width);
+        dimensions.height += y_step;
+        if dimensions.offset_y == 0.0 {
+            dimensions.offset_y = line_dimensions.offset_y;
+        }
+    }
+
+    dimensions
 }
 
 /// Converts word breaks to newlines wherever the text would otherwise exceed the given length.
