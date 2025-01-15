@@ -1,5 +1,6 @@
 //! Color types and helpers.
 
+use std::ops::{Add, Div, Mul, Sub};
 pub use colors::*;
 
 /// A color represented by 4 floats: red, green, blue and alpha.
@@ -65,7 +66,6 @@ impl Into<Color> for [u8; 4] {
         )
     }
 }
-
 impl Into<[f32; 4]> for Color {
     fn into(self) -> [f32; 4] {
         [self.r, self.g, self.b, self.a]
@@ -262,4 +262,47 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
     }
 
     (h, s, l)
+}
+
+impl Mul<f32> for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: f32) -> Color {
+        Color::new(self.r * rhs, self.g * rhs, self.b * rhs, self.a)
+    }
+}
+impl Mul<f64> for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: f64) -> Color {
+        Color::new(self.r * rhs as f32, self.g * rhs as f32, self.b * rhs as f32, self.a)
+    }
+}
+impl Add<Color> for Color {
+    type Output = Color;
+
+    fn add(self, rhs: Color) -> Color {
+        Color::new(self.r + rhs.r, self.g + rhs.g, self.b + rhs.b, self.a + rhs.a)
+    }
+}
+impl Sub<Color> for Color {
+    type Output = Color;
+
+    fn sub(self, rhs: Color) -> Color {
+        Color::new(self.r - rhs.r, self.g - rhs.g, self.b - rhs.b, self.a - rhs.a)
+    }
+}
+impl Mul<Color> for Color {
+    type Output = Color;
+
+    fn mul(self, rhs: Color) -> Color {
+        Color::new(self.r * rhs.r, self.g * rhs.g, self.b * rhs.b, self.a * rhs.a)
+    }
+}
+impl Div<Color> for Color {
+    type Output = Color;
+
+    fn div(self, rhs: Color) -> Color {
+        Color::new(self.r / rhs.r, self.g / rhs.g, self.b / rhs.b, self.a / rhs.a)
+    }
 }
