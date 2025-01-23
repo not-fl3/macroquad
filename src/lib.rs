@@ -229,6 +229,8 @@ struct Context {
     textures: crate::texture::TexturesContext,
 
     update_on: conf::UpdateTrigger,
+
+    dropped_files: Vec<DroppedFile>,
 }
 
 #[derive(Clone)]
@@ -367,6 +369,8 @@ impl Context {
             default_filter_mode,
             textures: crate::texture::TexturesContext::new(),
             update_on,
+
+            dropped_files: Vec::new(),
         }
     }
 
@@ -383,6 +387,11 @@ impl Context {
                 .texture(*texture)
                 .unwrap_or(self.gl.white_texture),
         }
+    }
+
+    /// Returns the files which have been dropped onto the window.
+    pub fn dropped_files(&mut self) -> Vec<DroppedFile> {
+        std::mem::take(&mut self.dropped_files)
     }
 
     fn begin_frame(&mut self) {
@@ -441,6 +450,8 @@ impl Context {
                 touch.phase = input::TouchPhase::Stationary;
             }
         }
+
+        self.dropped_files.clear();
     }
 
     pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
@@ -700,6 +711,16 @@ impl EventHandler for Stage {
         }
     }
 
+    fn files_dropped_event(&mut self) {
+        let context = get_context();
+        for i in 0..miniquad::window::dropped_file_count() {
+            context.dropped_files.push(DroppedFile {
+                path: miniquad::window::dropped_file_path(i),
+                bytes: miniquad::window::dropped_file_bytes(i),
+            });
+        }
+    }
+
     fn draw(&mut self) {
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
@@ -885,4 +906,10 @@ impl Window {
             })
         });
     }
+}
+
+/// Information about a dropped file.
+pub struct DroppedFile {
+    pub path: Option<std::path::PathBuf>,
+    pub bytes: Option<Vec<u8>>,
 }
