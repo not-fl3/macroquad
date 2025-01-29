@@ -140,6 +140,10 @@ impl Color {
     pub const fn from_vec(vec: glam::Vec4) -> Self {
         Self::new(vec.x, vec.y, vec.z, vec.w)
     }
+
+    pub const fn with_alpha(&self, alpha: f32) -> Color {
+        Color::new(self.r, self.g, self.b, alpha)
+    }
 }
 
 pub mod colors {
