@@ -948,4 +948,5 @@ pub fn set_default_filter_mode(filter: FilterMode) {
     let context = get_context();
 
     context.default_filter_mode = filter;
+    context.texture_batcher.atlas.set_filter(filter);
 }
