@@ -64,6 +64,7 @@ impl<'a> Checkbox<'a> {
 
         let pos = self
             .pos
+            .map(|pos| pos + context.window.cursor.fit(size, Layout::Vertical))
             .unwrap_or_else(|| context.window.cursor.fit(size, Layout::Vertical));
 
         let whole_area = Vec2::new(
