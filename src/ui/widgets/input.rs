@@ -92,6 +92,7 @@ impl<'a> InputText<'a> {
 
         let pos = self
             .pos
+            .map(|pos| pos + context.window.cursor.fit(size, Layout::Vertical))
             .unwrap_or_else(|| context.window.cursor.fit(size, Layout::Vertical));
 
         let editbox_area_w = if self.label.is_empty() {
