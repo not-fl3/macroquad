@@ -116,6 +116,27 @@ pub fn draw_grid_ex(
     }
 }
 
+pub fn draw_billboard(center: Vec3, size: Vec2, texture: Option<&Texture2D>, color: Color, look_at: &Vec3) {
+    let forward = (center - *look_at).normalize();
+    let up = vec3(0.0, 1.0, 0.0);
+    let right = up.cross(forward).normalize();
+    let up = forward.cross(right).normalize();
+    
+    let half_w = size.x * 0.5;
+    let half_h = size.y * 0.5;
+    
+    let v1 = Vertex::new2(center + (-right * half_w + up * half_h), vec2(0., 0.), color);
+    let v2 = Vertex::new2(center + (-right * half_w - up * half_h), vec2(0., 1.), color);
+    let v3 = Vertex::new2(center + (right * half_w - up * half_h), vec2(1., 1.), color);
+    let v4 = Vertex::new2(center + (right * half_w + up * half_h), vec2(1., 0.), color);
+    
+    {
+        let context = get_context();
+        context.gl.texture(texture);
+    }
+    draw_quad([v1, v2, v3, v4]);
+}
+
 pub fn draw_plane(center: Vec3, size: Vec2, texture: Option<&Texture2D>, color: Color) {
     let v1 = Vertex::new2(center + vec3(-size.x, 0., -size.y), vec2(0., 0.), color);
     let v2 = Vertex::new2(center + vec3(-size.x, 0., size.y), vec2(0., 1.), color);
