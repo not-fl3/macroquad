@@ -198,6 +198,11 @@ pub struct Camera3D {
     ///
     /// Useful for things like splitscreen.
     pub viewport: Option<(i32, i32, i32, i32)>,
+
+    /// Camera near plane
+    pub z_near: f32,
+    /// Camera far plane
+    pub z_far: f32,
 }
 
 impl Default for Camera3D {
@@ -211,13 +216,10 @@ impl Default for Camera3D {
             projection: Projection::Perspective,
             render_target: None,
             viewport: None,
+            z_near: 0.01,
+            z_far: 10000.0,
         }
     }
-}
-
-impl Camera3D {
-    const Z_NEAR: f32 = 0.01;
-    const Z_FAR: f32 = 10000.0;
 }
 
 impl Camera for Camera3D {
@@ -226,14 +228,14 @@ impl Camera for Camera3D {
 
         match self.projection {
             Projection::Perspective => {
-                Mat4::perspective_rh_gl(self.fovy, aspect, Self::Z_NEAR, Self::Z_FAR)
+                Mat4::perspective_rh_gl(self.fovy, aspect, self.z_near, self.z_far)
                     * Mat4::look_at_rh(self.position, self.target, self.up)
             }
             Projection::Orthographics => {
                 let top = self.fovy / 2.0;
                 let right = top * aspect;
 
-                Mat4::orthographic_rh_gl(-right, right, -top, top, Self::Z_NEAR, Self::Z_FAR)
+                Mat4::orthographic_rh_gl(-right, right, -top, top, self.z_near, self.z_far)
                     * Mat4::look_at_rh(self.position, self.target, self.up)
             }
         }
