@@ -193,6 +193,7 @@ impl<'a> Editbox<'a> {
                     key: Key::KeyCode(Right),
                     modifier_shift,
                     modifier_ctrl,
+                    modifier_cmd,
                 } => {
                     if modifier_ctrl {
                         state.move_cursor_next_word(text, modifier_shift);
@@ -204,6 +205,7 @@ impl<'a> Editbox<'a> {
                     key: Key::KeyCode(Left),
                     modifier_shift,
                     modifier_ctrl,
+                    modifier_cmd,
                 } => {
                     if modifier_ctrl {
                         state.move_cursor_prev_word(text, modifier_shift);
