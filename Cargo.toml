@@ -1,6 +1,6 @@
 [package]
 name = "macroquad"
-version = "0.4.13"
+version = "0.4.14"
 authors = ["not-fl3 <not.fl3@gmail.com>"]
 edition = "2021"
 homepage = "https://github.com/not-fl3/macroquad"
@@ -27,7 +27,7 @@ opt-level = 3
 all-features = true
 
 [dependencies]
-miniquad = { version = "=0.4.7", features = ["log-impl"] }
+miniquad = { version = "=0.4.8", features = ["log-impl"] }
 quad-rand = "0.2.3"
 glam = { version = "0.27", features = ["scalar-math"] }
 image = { version = "0.24", default-features = false, features = ["png", "tga"] }
