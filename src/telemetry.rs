@@ -1,4 +1,4 @@
-use crate::{get_context, get_quad_context, time::get_time};
+use crate::{get_context, get_context_mut, get_quad_context, time::get_time};
 
 use std::collections::HashMap;
 
@@ -96,14 +96,14 @@ pub fn end_gpu_query() {
 #[doc(hidden)]
 pub fn pause_gl_capture() {
     if get_profiler().capture {
-        crate::get_context().gl.capture(false);
+        get_context_mut().gl.capture(false);
     }
 }
 
 /// Workaround to stop gl capture on debug rendering
 pub fn resume_gl_capture() {
     if get_profiler().capture {
-        crate::get_context().gl.capture(false);
+        get_context_mut().gl.capture(false);
     }
 }
 
@@ -126,13 +126,13 @@ pub(crate) fn reset() {
 
     if profiler.capture {
         profiler.capture = false;
-        crate::get_context().gl.capture(false);
+        get_context_mut().gl.capture(false);
     }
 
     if profiler.capture_request {
         profiler.drawcalls.clear();
         profiler.capture = true;
-        crate::get_context().gl.capture(true);
+        get_context_mut().gl.capture(true);
         profiler.capture_request = false;
     }
 }

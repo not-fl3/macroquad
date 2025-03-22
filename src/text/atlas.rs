@@ -1,4 +1,4 @@
-use crate::{get_context, get_quad_context, math::Rect, texture::Image, Color};
+use crate::{get_context_mut, get_quad_context, math::Rect, texture::Image, Color};
 
 use std::collections::HashMap;
 
@@ -29,7 +29,7 @@ pub struct Atlas {
 
 impl Drop for Atlas {
     fn drop(&mut self) {
-        let ctx = &mut get_context().quad_context;
+        let ctx = &mut get_context_mut().quad_context;
         ctx.delete_texture(self.texture);
     }
 }

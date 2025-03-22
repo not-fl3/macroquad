@@ -490,7 +490,11 @@ pub mod test {
     pub static ONCE: std::sync::Once = std::sync::Once::new();
 }
 
-fn get_context() -> &'static mut Context {
+fn get_context() -> &'static Context {
+    unsafe { CONTEXT.as_ref().unwrap_or_else(|| panic!()) }
+}
+
+fn get_context_mut() -> &'static mut Context {
     thread_assert::same_thread();
 
     unsafe { CONTEXT.as_mut().unwrap_or_else(|| panic!()) }
@@ -513,8 +517,8 @@ struct Stage {
 impl EventHandler for Stage {
     fn resize_event(&mut self, width: f32, height: f32) {
         let _z = telemetry::ZoneGuard::new("Event::resize_event");
-        get_context().screen_width = width;
-        get_context().screen_height = height;
+        get_context_mut().screen_width = width;
+        get_context_mut().screen_height = height;
 
         if miniquad::window::blocking_event_loop() {
             miniquad::window::schedule_update();
@@ -522,7 +526,7 @@ impl EventHandler for Stage {
     }
 
     fn raw_mouse_motion(&mut self, x: f32, y: f32) {
-        let context = get_context();
+        let context = get_context_mut();
 
         if context.cursor_grabbed {
             context.mouse_position += Vec2::new(x, y);
@@ -539,7 +543,7 @@ impl EventHandler for Stage {
     }
 
     fn mouse_motion_event(&mut self, x: f32, y: f32) {
-        let context = get_context();
+        let context = get_context_mut();
 
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
@@ -556,7 +560,7 @@ impl EventHandler for Stage {
     }
 
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
-        let context = get_context();
+        let context = get_context_mut();
 
         context.mouse_wheel.x = x;
         context.mouse_wheel.y = y;
@@ -572,7 +576,7 @@ impl EventHandler for Stage {
     }
 
     fn mouse_button_down_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
+        let context = get_context_mut();
 
         context.mouse_down.insert(btn);
         context.mouse_pressed.insert(btn);
@@ -592,7 +596,7 @@ impl EventHandler for Stage {
     }
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
-        let context = get_context();
+        let context = get_context_mut();
 
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
@@ -611,7 +615,7 @@ impl EventHandler for Stage {
     }
 
     fn touch_event(&mut self, phase: TouchPhase, id: u64, x: f32, y: f32) {
-        let context = get_context();
+        let context = get_context_mut();
 
         context.touches.insert(
             id,
@@ -645,7 +649,7 @@ impl EventHandler for Stage {
     }
 
     fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
-        let context = get_context();
+        let context = get_context_mut();
 
         context.chars_pressed_queue.push(character);
         context.chars_pressed_ui_queue.push(character);
@@ -660,7 +664,7 @@ impl EventHandler for Stage {
     }
 
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
-        let context = get_context();
+        let context = get_context_mut();
         context.keys_down.insert(keycode);
         if repeat == false {
             context.keys_pressed.insert(keycode);
@@ -684,7 +688,7 @@ impl EventHandler for Stage {
     }
 
     fn key_up_event(&mut self, keycode: KeyCode, modifiers: KeyMods) {
-        let context = get_context();
+        let context = get_context_mut();
         context.keys_down.remove(&keycode);
         context.keys_released.insert(keycode);
 
@@ -712,7 +716,7 @@ impl EventHandler for Stage {
     }
 
     fn files_dropped_event(&mut self) {
-        let context = get_context();
+        let context = get_context_mut();
         for i in 0..miniquad::window::dropped_file_count() {
             context.dropped_files.push(DroppedFile {
                 path: miniquad::window::dropped_file_path(i),
@@ -729,7 +733,7 @@ impl EventHandler for Stage {
 
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw begin_frame");
-                get_context().begin_frame();
+                get_context_mut().begin_frame();
             }
 
             fn maybe_unwind(unwind: bool, f: impl FnOnce() + Sized + panic::UnwindSafe) -> bool {
@@ -751,22 +755,22 @@ impl EventHandler for Stage {
                         miniquad::window::quit();
                         return;
                     }
-                    get_context().coroutines_context.update();
+                    get_context_mut().coroutines_context.update();
                 }),
             );
 
             if result == false {
-                if let Some(recovery_future) = get_context().recovery_future.take() {
+                if let Some(recovery_future) = get_context_mut().recovery_future.take() {
                     self.main_future = recovery_future;
                 }
             }
 
             {
                 let _z = telemetry::ZoneGuard::new("Event::draw end_frame");
-                get_context().end_frame();
+                get_context_mut().end_frame();
             }
-            get_context().frame_time = date::now() - get_context().last_frame_time;
-            get_context().last_frame_time = date::now();
+            get_context_mut().frame_time = date::now() - get_context().last_frame_time;
+            get_context_mut().last_frame_time = date::now();
 
             #[cfg(any(target_arch = "wasm32", target_os = "linux"))]
             {
@@ -797,7 +801,7 @@ impl EventHandler for Stage {
     }
 
     fn quit_requested_event(&mut self) {
-        let context = get_context();
+        let context = get_context_mut();
         if context.prevent_quit_event {
             miniquad::window::cancel_quit();
             context.quit_requested = true;

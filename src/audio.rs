@@ -2,7 +2,7 @@
 
 #![allow(dead_code)]
 
-use crate::{file::load_file, get_context, Error};
+use crate::{file::load_file, get_context, get_context_mut, Error};
 use std::sync::Arc;
 
 #[cfg(feature = "audio")]
@@ -117,7 +117,7 @@ pub async fn load_sound(path: &str) -> Result<Sound, Error> {
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, Error> {
     let sound = {
-        let ctx = &mut get_context().audio_context;
+        let ctx = &mut get_context_mut().audio_context;
         QuadSndSound::load(&mut ctx.native_ctx, data)
     };
 
@@ -131,7 +131,7 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, Error> {
 }
 
 pub fn play_sound_once(sound: &Sound) {
-    let ctx = &mut get_context().audio_context;
+    let ctx = &mut get_context_mut().audio_context;
 
     sound.0 .0.play(
         &mut ctx.native_ctx,
@@ -143,16 +143,16 @@ pub fn play_sound_once(sound: &Sound) {
 }
 
 pub fn play_sound(sound: &Sound, params: PlaySoundParams) {
-    let ctx = &mut get_context().audio_context;
+    let ctx = &mut get_context_mut().audio_context;
     sound.0 .0.play(&mut ctx.native_ctx, params);
 }
 
 pub fn stop_sound(sound: &Sound) {
-    let ctx = &mut get_context().audio_context;
+    let ctx = &mut get_context_mut().audio_context;
     sound.0 .0.stop(&mut ctx.native_ctx);
 }
 
 pub fn set_sound_volume(sound: &Sound, volume: f32) {
-    let ctx = &mut get_context().audio_context;
+    let ctx = &mut get_context_mut().audio_context;
     sound.0 .0.set_volume(&mut ctx.native_ctx, volume);
 }

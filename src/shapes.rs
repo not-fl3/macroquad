@@ -1,13 +1,13 @@
 //! 2D shapes rendering.
 
-use crate::{color::Color, get_context};
+use crate::{color::Color, get_context_mut};
 
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, vec3, vec4, Mat4, Vec2};
 
 /// Draws a solid triangle between points `v1`, `v2`, and `v3` with a given `color`.
 pub fn draw_triangle(v1: Vec2, v2: Vec2, v3: Vec2, color: Color) {
-    let context = get_context();
+    let context = get_context_mut();
 
     let vertices = [
         Vertex::new(v1.x, v1.y, 0., 0., 0., color),
@@ -32,7 +32,7 @@ pub fn draw_triangle_lines(v1: Vec2, v2: Vec2, v3: Vec2, thickness: f32, color: 
 /// Draws a solid rectangle with its top-left corner at `[x, y]` with size `[w, h]` (width going to
 /// the right, height going down), with a given `color`.
 pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
-    let context = get_context();
+    let context = get_context_mut();
 
     #[rustfmt::skip]
     let vertices = [
@@ -51,7 +51,7 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 /// Draws a rectangle outline with its top-left corner at `[x, y]` with size `[w, h]` (width going to
 /// the right, height going down), with a given line `thickness` and `color`.
 pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
-    let context = get_context();
+    let context = get_context_mut();
     let t = thickness / 2.;
 
     #[rustfmt::skip]
@@ -83,7 +83,7 @@ pub fn draw_rectangle_lines_ex(
     thickness: f32,
     params: DrawRectangleParams,
 ) {
-    let context = get_context();
+    let context = get_context_mut();
     let tx = thickness / w;
     let ty = thickness / h;
 
@@ -160,7 +160,7 @@ impl Default for DrawRectangleParams {
 /// Draws a solid rectangle with its position at `[x, y]` with size `[w, h]`,
 /// with parameters.
 pub fn draw_rectangle_ex(x: f32, y: f32, w: f32, h: f32, params: DrawRectangleParams) {
-    let context = get_context();
+    let context = get_context_mut();
     let transform_matrix = Mat4::from_translation(vec3(x, y, 0.0))
         * Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), params.rotation)
         * Mat4::from_scale(vec3(w, h, 1.0));
@@ -209,7 +209,7 @@ pub fn draw_hexagon(
 /// Draws a solid regular polygon centered at `[x, y]` with a given number of `sides`, `radius`,
 /// clockwise `rotation` (in degrees) and `color`.
 pub fn draw_poly(x: f32, y: f32, sides: u8, radius: f32, rotation: f32, color: Color) {
-    let context = get_context();
+    let context = get_context_mut();
 
     let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
     let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
@@ -262,7 +262,7 @@ pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
 /// clockwise `rotation` (in degrees) and `color`.
 pub fn draw_ellipse(x: f32, y: f32, w: f32, h: f32, rotation: f32, color: Color) {
     let sides = 20;
-    let context = get_context();
+    let context = get_context_mut();
 
     let mut vertices = Vec::<Vertex>::with_capacity(sides as usize + 2);
     let mut indices = Vec::<u16>::with_capacity(sides as usize * 3);
@@ -334,7 +334,7 @@ pub fn draw_ellipse_lines(
 
 /// Draws a line between points `[x1, y1]` and `[x2, y2]` with a given `thickness` and `color`.
 pub fn draw_line(x1: f32, y1: f32, x2: f32, y2: f32, thickness: f32, color: Color) {
-    let context = get_context();
+    let context = get_context_mut();
     let dx = x2 - x1;
     let dy = y2 - y1;
 
@@ -384,7 +384,7 @@ pub fn draw_arc(
     let span = part / sides;
     let sides = sides as usize;
 
-    let context = get_context();
+    let context = get_context_mut();
     context.gl.texture(None);
     context.gl.draw_mode(DrawMode::Triangles);
 

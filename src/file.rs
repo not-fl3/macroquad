@@ -72,5 +72,5 @@ pub async fn load_string(path: &str) -> Result<String, Error> {
 /// But right now to resolve this situation and keep pathes consistent across platforms
 /// `set_pc_assets_folder("assets");`call before first `load_file`/`load_texture` will allow using same pathes on PC and Android.
 pub fn set_pc_assets_folder(path: &str) {
-    crate::get_context().pc_assets_folder = Some(path.to_string());
+    crate::get_context_mut().pc_assets_folder = Some(path.to_string());
 }

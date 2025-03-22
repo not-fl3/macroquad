@@ -5,7 +5,7 @@ use std::collections::HashSet;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
 use crate::Vec2;
-use crate::{get_context, DroppedFile};
+use crate::{get_context, get_context_mut, DroppedFile};
 pub use miniquad::{KeyCode, MouseButton};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -37,7 +37,7 @@ pub struct Touch {
 
 /// Constrain mouse to window
 pub fn set_cursor_grab(grab: bool) {
-    let context = get_context();
+    let context = get_context_mut();
     context.cursor_grabbed = grab;
     miniquad::window::set_cursor_grab(grab);
 }
@@ -84,7 +84,7 @@ pub fn is_simulating_mouse_with_touch() -> bool {
 /// This is set to true by default, meaning touches will raise mouse events in addition to raising touch events.
 /// If set to false, touches won't affect mouse events.
 pub fn simulate_mouse_with_touch(option: bool) {
-    get_context().simulate_mouse_with_touch = option;
+    get_context_mut().simulate_mouse_with_touch = option;
 }
 
 /// Return touches with positions in pixels.
@@ -135,13 +135,13 @@ pub fn is_key_released(key_code: KeyCode) -> bool {
 /// Return the last pressed char.
 /// Each "get_char_pressed" call will consume a character from the input queue.
 pub fn get_char_pressed() -> Option<char> {
-    let context = get_context();
+    let context = get_context_mut();
 
     context.chars_pressed_queue.pop()
 }
 
 pub(crate) fn get_char_pressed_ui() -> Option<char> {
-    let context = get_context();
+    let context = get_context_mut();
 
     context.chars_pressed_ui_queue.pop()
 }
@@ -170,7 +170,7 @@ pub fn get_keys_released() -> HashSet<KeyCode> {
 
 /// Clears input queue
 pub fn clear_input_queue() {
-    let context = get_context();
+    let context = get_context_mut();
     context.chars_pressed_queue.clear();
     context.chars_pressed_ui_queue.clear();
 }
@@ -204,7 +204,7 @@ fn convert_to_local(pixel_pos: Vec2) -> Vec2 {
 
 /// Prevents quit
 pub fn prevent_quit() {
-    get_context().prevent_quit_event = true;
+    get_context_mut().prevent_quit_event = true;
 }
 
 /// Detect if quit has been requested
@@ -214,18 +214,18 @@ pub fn is_quit_requested() -> bool {
 
 /// Gets the files which have been dropped on the window.
 pub fn get_dropped_files() -> Vec<DroppedFile> {
-    get_context().dropped_files()
+    get_context_mut().dropped_files()
 }
 
 /// Functions for advanced input processing.
 ///
 /// Functions in this module should be used by external tools that uses miniquad system, like different UI libraries. User shouldn't use this function.
 pub mod utils {
-    use crate::get_context;
+    use crate::get_context_mut;
 
     /// Register input subscriber. Returns subscriber identifier that must be used in `repeat_all_miniquad_input`.
     pub fn register_input_subscriber() -> usize {
-        let context = get_context();
+        let context = get_context_mut();
 
         context.input_events.push(vec![]);
 
@@ -234,7 +234,7 @@ pub mod utils {
 
     /// Repeats all events that came since last call of this function with current value of `subscriber`. This function must be called at each frame.
     pub fn repeat_all_miniquad_input<T: miniquad::EventHandler>(t: &mut T, subscriber: usize) {
-        let context = get_context();
+        let context = get_context_mut();
 
         for event in &context.input_events[subscriber] {
             event.repeat(t);

@@ -1,7 +1,7 @@
 //! 2D and 3D camera.
 
 use crate::{
-    get_context,
+    get_context_mut,
     math::Rect,
     prelude::RenderPass,
     texture::RenderTarget,
@@ -256,7 +256,7 @@ impl Camera for Camera3D {
 
 /// Set active 2D or 3D camera.
 pub fn set_camera(camera: &dyn Camera) {
-    let context = get_context();
+    let context = get_context_mut();
 
     // flush previous camera draw calls
     context.perform_render_passes();
@@ -272,7 +272,7 @@ pub fn set_camera(camera: &dyn Camera) {
 
 /// Reset default 2D camera mode.
 pub fn set_default_camera() {
-    let context = get_context();
+    let context = get_context_mut();
 
     // flush previous camera draw calls
     context.perform_render_passes();
@@ -290,7 +290,7 @@ pub(crate) struct CameraState {
 }
 
 pub fn push_camera_state() {
-    let context = get_context();
+    let context = get_context_mut();
 
     let camera_state = CameraState {
         render_pass: context.gl.get_active_render_pass(),
@@ -301,7 +301,7 @@ pub fn push_camera_state() {
 }
 
 pub fn pop_camera_state() {
-    let context = get_context();
+    let context = get_context_mut();
 
     if let Some(camera_state) = context.camera_stack.pop() {
         context.perform_render_passes();

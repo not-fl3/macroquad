@@ -1,7 +1,7 @@
 //! Loading and rendering textures. Also render textures, per-pixel image manipulations.
 
 use crate::{
-    color::Color, file::load_file, get_context, get_quad_context, math::Rect,
+    color::Color, file::load_file, get_context, get_context_mut, get_quad_context, math::Rect,
     text::atlas::SpriteKey, Error,
 };
 
@@ -405,7 +405,7 @@ pub fn render_target_msaa(width: u32, height: u32) -> RenderTarget {
 }
 
 pub fn render_target_ex(width: u32, height: u32, params: RenderTargetParams) -> RenderTarget {
-    let context = get_context();
+    let context = get_context_mut();
 
     let color_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
         width,
@@ -511,7 +511,7 @@ pub fn draw_texture_ex(
     color: Color,
     params: DrawTextureParams,
 ) {
-    let context = get_context();
+    let context = get_context_mut();
 
     let [mut width, mut height] = texture.size().to_array();
 
@@ -606,7 +606,7 @@ pub fn get_screen_data() -> Image {
         crate::window::get_internal_gl().flush();
     }
 
-    let context = get_context();
+    let context = get_context_mut();
 
     let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
         width: context.screen_width as _,
@@ -631,7 +631,7 @@ pub struct Texture2D {
 
 impl Drop for TextureSlotGuarded {
     fn drop(&mut self) {
-        let ctx = get_context();
+        let ctx = get_context_mut();
         ctx.textures.schedule_removed(self.0);
     }
 }
@@ -731,7 +731,7 @@ impl Texture2D {
     /// ```
     pub fn from_rgba8(width: u16, height: u16, bytes: &[u8]) -> Texture2D {
         let texture = get_quad_context().new_texture_from_rgba8(width, height, bytes);
-        let ctx = get_context();
+        let ctx = get_context_mut();
         let texture = ctx.textures.store_texture(texture);
         let texture = Texture2D { texture };
         texture.set_filter(ctx.default_filter_mode);
@@ -920,7 +920,7 @@ impl Batcher {
 /// NOTE: the GPU memory and texture itself in Texture2D will still be allocated
 /// and Texture->Image conversions will work with Texture2D content, not the atlas
 pub fn build_textures_atlas() {
-    let context = get_context();
+    let context = get_context_mut();
 
     for texture in context.texture_batcher.unbatched.drain(0..) {
         let sprite: Image = texture.get_texture_data();
@@ -939,13 +939,13 @@ pub fn build_textures_atlas() {
 /// Fonts store their characters as ID's in the atlas.
 /// There fore resetting the atlas will render all fonts unusable.
 pub unsafe fn reset_textures_atlas() {
-    let context = get_context();
+    let context = get_context_mut();
     context.fonts_storage = crate::text::FontsStorage::new(&mut *context.quad_context);
     context.texture_batcher = Batcher::new(&mut *context.quad_context);
 }
 
 pub fn set_default_filter_mode(filter: FilterMode) {
-    let context = get_context();
+    let context = get_context_mut();
 
     context.default_filter_mode = filter;
     context.texture_batcher.atlas.set_filter(filter);
