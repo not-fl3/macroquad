@@ -1,6 +1,6 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, tobytes::ToBytes, Error};
+use crate::{get_context_mut, quad_gl::GlPipeline, texture::Texture2D, tobytes::ToBytes, Error};
 use miniquad::{PipelineParams, UniformDesc};
 use std::sync::Arc;
 
@@ -9,7 +9,7 @@ struct GlPipelineGuarded(GlPipeline);
 
 impl Drop for GlPipelineGuarded {
     fn drop(&mut self) {
-        get_context().gl.delete_pipeline(self.0);
+        get_context_mut().gl.delete_pipeline(self.0);
     }
 }
 
@@ -30,17 +30,21 @@ impl Material {
     /// "name" should be from "uniforms" list used for material creation.
     /// Otherwise uniform value would be silently ignored.
     pub fn set_uniform<T>(&self, name: &str, uniform: T) {
-        get_context().gl.set_uniform(self.pipeline.0, name, uniform);
+        get_context_mut()
+            .gl
+            .set_uniform(self.pipeline.0, name, uniform);
     }
 
     pub fn set_uniform_array<T: ToBytes>(&self, name: &str, uniform: &[T]) {
-        get_context()
+        get_context_mut()
             .gl
             .set_uniform_array(self.pipeline.0, name, uniform);
     }
 
     pub fn set_texture(&self, name: &str, texture: Texture2D) {
-        get_context().gl.set_texture(self.pipeline.0, name, texture);
+        get_context_mut()
+            .gl
+            .set_texture(self.pipeline.0, name, texture);
     }
 }
 
@@ -64,7 +68,7 @@ pub fn load_material(
     shader: crate::ShaderSource,
     params: MaterialParams,
 ) -> Result<Material, Error> {
-    let context = &mut get_context();
+    let context = &mut get_context_mut();
 
     let pipeline = context.gl.make_pipeline(
         &mut *context.quad_context,
@@ -81,12 +85,12 @@ pub fn load_material(
 
 /// All following macroquad rendering calls will use the given material.
 pub fn gl_use_material(material: &Material) {
-    get_context().gl.pipeline(Some(material.pipeline.0));
+    get_context_mut().gl.pipeline(Some(material.pipeline.0));
 }
 
 /// Use default macroquad material.
 pub fn gl_use_default_material() {
-    get_context().gl.pipeline(None);
+    get_context_mut().gl.pipeline(None);
 }
 
 #[doc(hidden)]
