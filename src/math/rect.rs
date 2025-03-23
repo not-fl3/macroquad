@@ -3,9 +3,13 @@ use glam::*;
 /// A 2D rectangle, defined by its top-left corner, width and height.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Rect {
+    /// The x-coordinate of the top-left corner.
     pub x: f32,
+    /// The y-coordinate of the top-left corner.
     pub y: f32,
+    /// The width of the `Rect`, going to the right.
     pub w: f32,
+    /// The height of the `Rect`, going down.
     pub h: f32,
 }
 
@@ -32,53 +36,53 @@ impl Rect {
     }
 
     /// Returns the center position of the `Rect`.
-    pub fn center(&self) -> Vec2 {
+    pub const fn center(&self) -> Vec2 {
         vec2(self.x + self.w * 0.5f32, self.y + self.h * 0.5f32)
     }
 
-    /// Returns the left edge of the `Rect`
+    /// Returns the left edge of the `Rect`.
     pub const fn left(&self) -> f32 {
         self.x
     }
 
-    /// Returns the right edge of the `Rect`
-    pub fn right(&self) -> f32 {
+    /// Returns the right edge of the `Rect`.
+    pub const fn right(&self) -> f32 {
         self.x + self.w
     }
 
-    /// Returns the top edge of the `Rect`
+    /// Returns the top edge of the `Rect`.
     pub const fn top(&self) -> f32 {
         self.y
     }
 
-    /// Returns the bottom edge of the `Rect`
-    pub fn bottom(&self) -> f32 {
+    /// Returns the bottom edge of the `Rect`.
+    pub const fn bottom(&self) -> f32 {
         self.y + self.h
     }
 
-    /// Moves the `Rect`'s origin to (x, y)
-    pub fn move_to(&mut self, destination: Vec2) {
+    /// Moves the `Rect`'s origin to (x, y).
+    pub const fn move_to(&mut self, destination: Vec2) {
         self.x = destination.x;
         self.y = destination.y;
     }
 
     /// Scales the `Rect` by a factor of (sx, sy),
-    /// growing towards the bottom-left
-    pub fn scale(&mut self, sx: f32, sy: f32) {
+    /// growing towards the bottom-left.
+    pub const fn scale(&mut self, sx: f32, sy: f32) {
         self.w *= sx;
         self.h *= sy;
     }
 
-    /// Checks whether the `Rect` contains a `Point`
-    pub fn contains(&self, point: Vec2) -> bool {
+    /// Checks whether the `Rect` contains a `Point`.
+    pub const fn contains(&self, point: Vec2) -> bool {
         point.x >= self.left()
-            && point.x < self.right()
-            && point.y < self.bottom()
+            && point.x <= self.right()
+            && point.y <= self.bottom()
             && point.y >= self.top()
     }
 
-    /// Checks whether the `Rect` overlaps another `Rect`
-    pub fn overlaps(&self, other: &Rect) -> bool {
+    /// Checks whether the `Rect` overlaps another `Rect`.
+    pub const fn overlaps(&self, other: &Rect) -> bool {
         self.left() <= other.right()
             && self.right() >= other.left()
             && self.top() <= other.bottom()
@@ -86,7 +90,7 @@ impl Rect {
     }
 
     /// Returns a new `Rect` that includes all points of these two `Rect`s.
-    pub fn combine_with(self, other: Rect) -> Rect {
+    pub const fn combine_with(self, other: Rect) -> Rect {
         let x = f32::min(self.x, other.x);
         let y = f32::min(self.y, other.y);
         let w = f32::max(self.right(), other.right()) - x;
@@ -94,8 +98,8 @@ impl Rect {
         Rect { x, y, w, h }
     }
 
-    /// Returns an intersection rect there is any intersection
-    pub fn intersect(&self, other: Rect) -> Option<Rect> {
+    /// Returns an intersection rect there is any intersection.
+    pub const fn intersect(&self, other: Rect) -> Option<Rect> {
         let left = self.x.max(other.x);
         let top = self.y.max(other.y);
         let right = self.right().min(other.right());
@@ -113,8 +117,8 @@ impl Rect {
         })
     }
 
-    /// Translate rect origin be `offset` vector
-    pub fn offset(self, offset: Vec2) -> Rect {
+    /// Translate rect origin be `offset` vector.
+    pub const fn offset(self, offset: Vec2) -> Rect {
         Rect::new(self.x + offset.x, self.y + offset.y, self.w, self.h)
     }
 }
@@ -136,4 +140,14 @@ impl RectOffset {
             bottom,
         }
     }
+}
+
+#[test]
+fn rect_contains_border() {
+    let rect = Rect::new(1.0, 1.0, 2.0, 2.0);
+    assert!(rect.contains(vec2(1.0, 1.0)));
+    assert!(rect.contains(vec2(3.0, 1.0)));
+    assert!(rect.contains(vec2(1.0, 3.0)));
+    assert!(rect.contains(vec2(3.0, 3.0)));
+    assert!(rect.contains(vec2(2.0, 2.0)));
 }
