@@ -6,19 +6,20 @@ pub use colors::*;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Color {
-    /// Red channel value from 0.0 to 1.0
+    /// Red channel value from 0.0 to 1.0.
     pub r: f32,
-    /// Green channel value from 0.0 to 1.0
+    /// Green channel value from 0.0 to 1.0.
     pub g: f32,
-    /// Blue channel value from 0.0 to 1.0
+    /// Blue channel value from 0.0 to 1.0.
     pub b: f32,
-    /// Alpha channel value from 0.0 to 1.0
+    /// Alpha channel value from 0.0 to 1.0.
     pub a: f32,
 }
 
-/// Build a color from 4 components of 0..255 values
-/// This is a temporary solution and going to be replaced with const fn,
-/// waiting for [this issue](https://github.com/rust-lang/rust/issues/57241) to be resolved.
+/// Build a color from 4 components of 0..255 values.
+/// This was a temporary solution because [Color::from_rgba] was not a const fn due to
+/// [this issue](https://github.com/rust-lang/rust/issues/57241) waiting to be resolved.
+/// It is not needed anymore.
 #[macro_export]
 macro_rules! color_u8 {
     ($r:expr, $g:expr, $b:expr, $a:expr) => {
@@ -101,8 +102,6 @@ impl Color {
     }
 
     /// Build a color from 4 components between 0 and 255.
-    /// Unfortunately it can't be const fn due to [this issue](https://github.com/rust-lang/rust/issues/57241).
-    /// When const version is needed "color_u8" macro may be a workaround.
     pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
         Color::new(
             r as f32 / 255.,
@@ -112,7 +111,7 @@ impl Color {
         )
     }
 
-    /// Build a color from a hexadecimal u32
+    /// Build a color from a hexadecimal u32.
     ///
     /// # Example
     ///
@@ -141,6 +140,7 @@ impl Color {
         Self::new(vec.x, vec.y, vec.z, vec.w)
     }
 
+    /// Create a copy of the current color, but with a different alpha value.
     pub const fn with_alpha(&self, alpha: f32) -> Color {
         Color::new(self.r, self.g, self.b, alpha)
     }
