@@ -491,6 +491,12 @@ pub fn get_default_font() -> Font {
     context.fonts_storage.default_font.clone()
 }
 
+/// Replaces macroquads default font with `font`.
+pub fn set_default_font(font: Font) {
+    let context = get_context();
+    context.fonts_storage.default_font = font;
+}
+
 /// From given font size in world space gives
 /// (font_size, font_scale and font_aspect) params to make rasterized font
 /// looks good in currently active camera
