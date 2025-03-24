@@ -10,6 +10,7 @@ pub use miniquad;
 pub use miniquad::conf::Conf;
 
 /// Block execution until the next frame.
+#[must_use = "use `next_frame().await` to advance to the next frame"]
 pub fn next_frame() -> crate::exec::FrameFuture {
     crate::thread_assert::same_thread();
     crate::exec::FrameFuture::default()
