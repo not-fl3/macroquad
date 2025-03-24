@@ -1,6 +1,6 @@
 //! 3D shapes and models, loading 3d models from files, drawing 3D primitives.
 
-use crate::{color::Color, get_context};
+use crate::{color::Color, get_context_mut};
 
 use crate::{quad_gl::DrawMode, texture::Texture2D};
 use glam::{vec2, vec3, vec4, Quat, Vec2, Vec3, Vec4};
@@ -45,7 +45,7 @@ pub struct Mesh {
 }
 
 pub fn draw_mesh(mesh: &Mesh) {
-    let context = get_context();
+    let context = get_context_mut();
 
     context.gl.texture(mesh.texture.as_ref());
     context.gl.draw_mode(DrawMode::Triangles);
@@ -53,14 +53,14 @@ pub fn draw_mesh(mesh: &Mesh) {
 }
 
 fn draw_quad(vertices: [Vertex; 4]) {
-    let context = get_context();
+    let context = get_context_mut();
     let indices = [0, 1, 2, 0, 2, 3];
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&vertices, &indices);
 }
 
 pub fn draw_line_3d(start: Vec3, end: Vec3, color: Color) {
-    let context = get_context();
+    let context = get_context_mut();
     let uv = vec2(0., 0.);
     let indices = [0, 1];
 
@@ -123,7 +123,7 @@ pub fn draw_plane(center: Vec3, size: Vec2, texture: Option<&Texture2D>, color: 
     let v4 = Vertex::new2(center + vec3(size.x, 0., -size.y), vec2(1., 0.), color);
 
     {
-        let context = get_context();
+        let context = get_context_mut();
         context.gl.texture(texture);
     }
     draw_quad([v1, v2, v3, v4]);
@@ -161,7 +161,7 @@ pub fn draw_affine_parallelogram(
     let v4 = Vertex::new2(offset + e2, vec2(1., 0.), color);
 
     {
-        let context = get_context();
+        let context = get_context_mut();
         context.gl.texture(texture);
     }
     draw_quad([v1, v2, v3, v4]);
@@ -211,7 +211,7 @@ pub fn draw_affine_parallelepiped(
 }
 
 pub fn draw_cube(position: Vec3, size: Vec3, texture: Option<&Texture2D>, color: Color) {
-    let context = get_context();
+    let context = get_context_mut();
     context.gl.texture(texture);
 
     let (x, y, z) = (position.x, position.y, position.z);
@@ -462,7 +462,7 @@ pub fn draw_sphere_ex(
     color: Color,
     params: DrawSphereParams,
 ) {
-    let context = get_context();
+    let context = get_context_mut();
 
     let rings = params.rings;
     let slices = params.slices;
@@ -609,7 +609,7 @@ pub fn draw_cylinder_ex(
     color: Color,
     params: DrawCylinderParams,
 ) {
-    let context = get_context();
+    let context = get_context_mut();
 
     let sides = params.sides;
 
