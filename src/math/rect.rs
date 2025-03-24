@@ -98,7 +98,7 @@ impl Rect {
         Rect { x, y, w, h }
     }
 
-    /// Returns an intersection rect there is any intersection.
+    /// Returns an intersection rect if there is any intersection.
     pub const fn intersect(&self, other: Rect) -> Option<Rect> {
         let left = self.x.max(other.x);
         let top = self.y.max(other.y);
@@ -117,7 +117,7 @@ impl Rect {
         })
     }
 
-    /// Translate rect origin be `offset` vector.
+    /// Translate rect origin by `offset` vector.
     pub const fn offset(self, offset: Vec2) -> Rect {
         Rect::new(self.x + offset.x, self.y + offset.y, self.w, self.h)
     }
