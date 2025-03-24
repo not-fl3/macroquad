@@ -23,7 +23,7 @@ impl<'a> TreeNode<'a> {
         }
     }
 
-    pub fn init_unfolded(mut self) -> TreeNode<'a> {
+    pub const fn init_unfolded(mut self) -> TreeNode<'a> {
         self.init_unfolded = true;
         self
     }
@@ -70,7 +70,7 @@ impl<'a> TreeNode<'a> {
         context.window.painter.draw_element_label(
             &context.style.label_style,
             pos + vec2(10., 0.),
-            &*self.label,
+            &self.label,
             ElementState {
                 focused: context.focused,
                 ..Default::default()

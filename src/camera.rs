@@ -135,9 +135,24 @@ impl Camera2D {
     ///
     /// Point is a screen space position, often mouse x and y.
     pub fn screen_to_world(&self, point: Vec2) -> Vec2 {
+        let dims = self
+            .viewport()
+            .map(|(vx, vy, vw, vh)| Rect {
+                x: vx as f32,
+                y: screen_height() - (vy + vh) as f32,
+                w: vw as f32,
+                h: vh as f32,
+            })
+            .unwrap_or(Rect {
+                x: 0.0,
+                y: 0.0,
+                w: screen_width(),
+                h: screen_height(),
+            });
+
         let point = vec2(
-            point.x / screen_width() * 2. - 1.,
-            1. - point.y / screen_height() * 2.,
+            (point.x - dims.x) / dims.w * 2. - 1.,
+            1. - (point.y - dims.y) / dims.h * 2.,
         );
         let inv_mat = self.matrix().inverse();
         let transform = inv_mat.transform_point3(vec3(point.x, point.y, 0.));
@@ -183,6 +198,11 @@ pub struct Camera3D {
     ///
     /// Useful for things like splitscreen.
     pub viewport: Option<(i32, i32, i32, i32)>,
+
+    /// Camera near plane
+    pub z_near: f32,
+    /// Camera far plane
+    pub z_far: f32,
 }
 
 impl Default for Camera3D {
@@ -196,13 +216,10 @@ impl Default for Camera3D {
             projection: Projection::Perspective,
             render_target: None,
             viewport: None,
+            z_near: 0.01,
+            z_far: 10000.0,
         }
     }
-}
-
-impl Camera3D {
-    const Z_NEAR: f32 = 0.01;
-    const Z_FAR: f32 = 10000.0;
 }
 
 impl Camera for Camera3D {
@@ -211,14 +228,14 @@ impl Camera for Camera3D {
 
         match self.projection {
             Projection::Perspective => {
-                Mat4::perspective_rh_gl(self.fovy, aspect, Self::Z_NEAR, Self::Z_FAR)
+                Mat4::perspective_rh_gl(self.fovy, aspect, self.z_near, self.z_far)
                     * Mat4::look_at_rh(self.position, self.target, self.up)
             }
             Projection::Orthographics => {
                 let top = self.fovy / 2.0;
                 let right = top * aspect;
 
-                Mat4::orthographic_rh_gl(-right, right, -top, top, Self::Z_NEAR, Self::Z_FAR)
+                Mat4::orthographic_rh_gl(-right, right, -top, top, self.z_near, self.z_far)
                     * Mat4::look_at_rh(self.position, self.target, self.up)
             }
         }
@@ -244,9 +261,9 @@ pub fn set_camera(camera: &dyn Camera) {
     // flush previous camera draw calls
     context.perform_render_passes();
 
-    if let Some(render_pass) = camera.render_pass() {
-        context.gl.render_pass(Some(render_pass.raw_miniquad_id()));
-    }
+    context
+        .gl
+        .render_pass(camera.render_pass().map(|rt| rt.raw_miniquad_id()));
 
     context.gl.viewport(camera.viewport());
     context.gl.depth_test(camera.depth_enabled());
@@ -261,6 +278,7 @@ pub fn set_default_camera() {
     context.perform_render_passes();
 
     context.gl.render_pass(None);
+    context.gl.viewport(None);
     context.gl.depth_test(false);
     context.camera_matrix = None;
 }

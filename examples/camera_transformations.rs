@@ -128,14 +128,14 @@ async fn main() {
             BLACK,
         );
         draw_text(
-            format!("rotation (mouse wheel) = {} degrees", rotation).as_str(),
+            format!("rotation (mouse wheel) = {rotation} degrees").as_str(),
             10.0,
             25.0,
             15.0,
             BLACK,
         );
         draw_text(
-            format!("zoom (ctrl + mouse wheel) = {:.2}", zoom).as_str(),
+            format!("zoom (ctrl + mouse wheel) = {zoom:.2}").as_str(),
             10.0,
             40.0,
             15.0,

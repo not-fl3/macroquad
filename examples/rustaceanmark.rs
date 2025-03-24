@@ -55,7 +55,7 @@ async fn main() {
             );
         }
 
-        draw_text(format!("FPS: {}", get_fps()).as_str(), 0., 16., 32., WHITE);
+        draw_fps();
         draw_text(
             format!("Rustaceanes: {}", rustaceanes.len()).as_str(),
             0.,

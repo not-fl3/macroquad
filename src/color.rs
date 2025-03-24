@@ -6,19 +6,20 @@ pub use colors::*;
 #[repr(C)]
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Color {
-    /// Red channel value from 0.0 to 1.0
+    /// Red channel value from 0.0 to 1.0.
     pub r: f32,
-    /// Green channel value from 0.0 to 1.0
+    /// Green channel value from 0.0 to 1.0.
     pub g: f32,
-    /// Blue channel value from 0.0 to 1.0
+    /// Blue channel value from 0.0 to 1.0.
     pub b: f32,
-    /// Alpha channel value from 0.0 to 1.0
+    /// Alpha channel value from 0.0 to 1.0.
     pub a: f32,
 }
 
-/// Build a color from 4 components of 0..255 values
-/// This is a temporary solution and going to be replaced with const fn,
-/// waiting for [this issue](https://github.com/rust-lang/rust/issues/57241) to be resolved.
+/// Build a color from 4 components of 0..255 values.
+/// This was a temporary solution because [Color::from_rgba] was not a const fn due to
+/// [this issue](https://github.com/rust-lang/rust/issues/57241) waiting to be resolved.
+/// It is not needed anymore.
 #[macro_export]
 macro_rules! color_u8 {
     ($r:expr, $g:expr, $b:expr, $a:expr) => {
@@ -101,9 +102,7 @@ impl Color {
     }
 
     /// Build a color from 4 components between 0 and 255.
-    /// Unfortunately it can't be const fn due to [this issue](https://github.com/rust-lang/rust/issues/57241).
-    /// When const version is needed "color_u8" macro may be a workaround.
-    pub fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
+    pub const fn from_rgba(r: u8, g: u8, b: u8, a: u8) -> Color {
         Color::new(
             r as f32 / 255.,
             g as f32 / 255.,
@@ -112,7 +111,7 @@ impl Color {
         )
     }
 
-    /// Build a color from a hexadecimal u32
+    /// Build a color from a hexadecimal u32.
     ///
     /// # Example
     ///
@@ -125,20 +124,25 @@ impl Color {
     /// assert_eq!(light_blue.b, 0.8352941);
     /// assert_eq!(light_blue.a, 1.00);
     /// ```
-    pub fn from_hex(hex: u32) -> Color {
+    pub const fn from_hex(hex: u32) -> Color {
         let bytes: [u8; 4] = hex.to_be_bytes();
 
         Self::from_rgba(bytes[1], bytes[2], bytes[3], 255)
     }
 
     /// Create a vec4 of red, green, blue, and alpha components.
-    pub fn to_vec(&self) -> glam::Vec4 {
+    pub const fn to_vec(&self) -> glam::Vec4 {
         glam::Vec4::new(self.r, self.g, self.b, self.a)
     }
 
     /// Create a color from a vec4 of red, green, blue, and alpha components.
-    pub fn from_vec(vec: glam::Vec4) -> Self {
+    pub const fn from_vec(vec: glam::Vec4) -> Self {
         Self::new(vec.x, vec.y, vec.z, vec.w)
+    }
+
+    /// Create a copy of the current color, but with a different alpha value.
+    pub const fn with_alpha(&self, alpha: f32) -> Color {
+        Color::new(self.r, self.g, self.b, alpha)
     }
 }
 
@@ -221,17 +225,13 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
         }
     }
 
-    let mut h: f32;
-    let s: f32;
-    let l: f32;
-
     let Color { r, g, b, .. } = color;
 
     let max = max(max(r, g), b);
     let min = min(min(r, g), b);
 
     // Luminosity is the average of the max and min rgb color intensities.
-    l = (max + min) / 2.0;
+    let l = (max + min) / 2.0;
 
     // Saturation
     let delta: f32 = max - min;
@@ -241,18 +241,18 @@ pub fn rgb_to_hsl(color: Color) -> (f32, f32, f32) {
     }
 
     // it's not gray
-    if l < 0.5 {
-        s = delta / (max + min);
+    let s = if l < 0.5 {
+        delta / (max + min)
     } else {
-        s = delta / (2.0 - max - min);
-    }
+        delta / (2.0 - max - min)
+    };
 
     // Hue
     let r2 = (((max - r) / 6.0) + (delta / 2.0)) / delta;
     let g2 = (((max - g) / 6.0) + (delta / 2.0)) / delta;
     let b2 = (((max - b) / 6.0) + (delta / 2.0)) / delta;
 
-    h = match max {
+    let mut h = match max {
         x if x == r => b2 - g2,
         x if x == g => (1.0 / 3.0) + r2 - b2,
         _ => (2.0 / 3.0) + g2 - r2,

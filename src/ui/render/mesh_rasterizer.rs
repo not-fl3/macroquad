@@ -21,7 +21,7 @@ pub struct DrawList {
 }
 
 impl DrawList {
-    pub fn new() -> DrawList {
+    pub const fn new() -> DrawList {
         DrawList {
             vertices: vec![],
             indices: vec![],
@@ -216,7 +216,7 @@ fn get_active_draw_list<'a, 'b>(
     match command {
         DrawCommand::Clip { rect, .. } => {
             if last.clipping_zone != *rect {
-                draw_lists.push(DrawList::new())
+                draw_lists.push(DrawList::new());
             }
         }
         DrawCommand::DrawRawTexture { texture, .. } => {

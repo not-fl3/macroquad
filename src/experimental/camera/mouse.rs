@@ -20,7 +20,7 @@ impl Default for Camera {
 }
 
 impl Camera {
-    pub fn new(offset: Vec2, scale: f32) -> Self {
+    pub const fn new(offset: Vec2, scale: f32) -> Self {
         Self {
             offset,
             scale,

@@ -36,25 +36,25 @@ impl<'a> Editbox<'a> {
         }
     }
 
-    pub fn multiline(self, multiline: bool) -> Self {
+    pub const fn multiline(self, multiline: bool) -> Self {
         Editbox { multiline, ..self }
     }
 
-    pub fn select_all(self) -> Self {
+    pub const fn select_all(self) -> Self {
         Editbox {
             select_all: true,
             ..self
         }
     }
 
-    pub fn position(self, pos: Vec2) -> Self {
+    pub const fn position(self, pos: Vec2) -> Self {
         Editbox {
             pos: Some(pos),
             ..self
         }
     }
 
-    pub fn password(self, password: bool) -> Self {
+    pub const fn password(self, password: bool) -> Self {
         Editbox { password, ..self }
     }
 
@@ -71,7 +71,7 @@ impl<'a> Editbox<'a> {
         }
     }
 
-    pub fn margin(self, margin: Vec2) -> Self {
+    pub const fn margin(self, margin: Vec2) -> Self {
         Editbox {
             margin: Some(margin),
             ..self
@@ -305,7 +305,7 @@ impl<'a> Editbox<'a> {
             *context.input_focus = None;
         }
 
-        let mut state = context
+        let state = context
             .storage_any
             .get_or_default::<EditboxState>(hash!(self.id, "cursor"));
 
@@ -350,7 +350,7 @@ impl<'a> Editbox<'a> {
                 &mut context.input.input_buffer,
                 &mut *context.clipboard,
                 &mut text_vec,
-                &mut state,
+                state,
             );
         }
         // draw rect in parent window
@@ -468,7 +468,7 @@ impl<'a> Editbox<'a> {
                         character,
                         pos + vec2(x, y + font_size as f32 - baseline),
                         text_color,
-                        &mut *font,
+                        &mut font,
                         font_size,
                     )
                     .unwrap_or(0.);

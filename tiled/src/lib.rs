@@ -7,8 +7,9 @@ use std::collections::HashMap;
 mod error;
 mod tiled;
 
+use core::f32::consts::PI;
 pub use error::Error;
-pub use tiled::layer::Property;
+pub use tiled::{Property, PropertyVal};
 
 #[derive(Debug, Clone)]
 pub struct Object {
@@ -47,6 +48,7 @@ pub struct Tile {
     /// Whether the tile is vertically flipped
     pub flip_y: bool,
     /// Whether the tile is anti-diagonally flipped
+    /// (equivalent to a 90 degree clockwise rotation followed by a horizontal flip)
     pub flip_d: bool,
 }
 
@@ -95,8 +97,28 @@ pub struct Map {
     pub raw_tiled_map: tiled::Map,
 }
 
+pub struct TileFlippedParams {
+    flip_x: bool,
+    flip_y: bool,
+    flip_d: bool,
+}
+
+impl Default for TileFlippedParams {
+    fn default() -> Self {
+        TileFlippedParams {
+            flip_x: false,
+            flip_y: false,
+            flip_d: false,
+        }
+    }
+}
+
 impl Map {
     pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
+        self.spr_flip(tileset, sprite, dest, TileFlippedParams::default())
+    }
+
+    pub fn spr_flip(&self, tileset: &str, sprite: u32, dest: Rect, flip: TileFlippedParams) {
         if self.tilesets.contains_key(tileset) == false {
             panic!(
                 "No such tileset: {}, tilesets available: {:?}",
@@ -106,6 +128,13 @@ impl Map {
         }
         let tileset = &self.tilesets[tileset];
         let spr_rect = tileset.sprite_rect(sprite);
+
+        let rotation = if flip.flip_d {
+            // diagonal flip
+            -PI / 2.0
+        } else {
+            0.0
+        };
 
         draw_texture_ex(
             &tileset.texture,
@@ -120,6 +149,9 @@ impl Map {
                     spr_rect.w + 2.0,
                     spr_rect.h + 2.0,
                 )),
+                flip_x: flip.flip_x,
+                flip_y: flip.flip_y ^ flip.flip_d,
+                rotation: rotation,
                 ..Default::default()
             },
         );
@@ -186,7 +218,16 @@ impl Map {
 
         for (tileset, tileset_layer) in &separated_by_ts {
             for (tile, rect) in tileset_layer {
-                self.spr(tileset, tile.id, *rect);
+                self.spr_flip(
+                    tileset,
+                    tile.id,
+                    *rect,
+                    TileFlippedParams {
+                        flip_x: tile.flip_x,
+                        flip_y: tile.flip_y,
+                        flip_d: tile.flip_d,
+                    },
+                );
             }
         }
     }
@@ -399,15 +440,15 @@ pub fn load_map(
                         .iter()
                         .map(|tile| {
                             find_tileset(*tile).map(|tileset| {
+                                let flip_flags = (*tile & TILE_FLIP_FLAGS) >> 28;
+                                let tile = *tile & !TILE_FLIP_FLAGS;
+
                                 let attrs = tileset
                                     .tiles
                                     .iter()
-                                    .find(|t| t.id as u32 == *tile - tileset.firstgid)
+                                    .find(|t| t.id as u32 == tile - tileset.firstgid)
                                     .and_then(|tile| tile.ty.clone())
                                     .unwrap_or("".to_owned());
-
-                                let flip_flags = (*tile & TILE_FLIP_FLAGS) >> 28;
-                                let tile = *tile & !TILE_FLIP_FLAGS;
 
                                 Tile {
                                     id: tile - tileset.firstgid,

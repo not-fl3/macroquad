@@ -40,6 +40,7 @@ use miniquad::*;
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
+use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 
 mod exec;
@@ -228,6 +229,8 @@ struct Context {
     textures: crate::texture::TexturesContext,
 
     update_on: conf::UpdateTrigger,
+
+    dropped_files: Vec<DroppedFile>,
 }
 
 #[derive(Clone)]
@@ -299,7 +302,12 @@ impl MiniquadInputEvent {
 impl Context {
     const DEFAULT_BG_COLOR: Color = BLACK;
 
-    fn new() -> Context {
+    fn new(
+        update_on: conf::UpdateTrigger,
+        default_filter_mode: crate::FilterMode,
+        draw_call_vertex_capacity: usize,
+        draw_call_index_capacity: usize,
+    ) -> Context {
         let mut ctx: Box<dyn miniquad::RenderingBackend> =
             miniquad::window::new_rendering_backend();
         let (screen_width, screen_height) = miniquad::window::screen_size();
@@ -331,7 +339,11 @@ impl Context {
             input_events: Vec::new(),
 
             camera_matrix: None,
-            gl: QuadGl::new(&mut *ctx),
+            gl: QuadGl::new(
+                &mut *ctx,
+                draw_call_vertex_capacity,
+                draw_call_index_capacity,
+            ),
 
             ui_context: UiContext::new(&mut *ctx, screen_width, screen_height),
             fonts_storage: text::FontsStorage::new(&mut *ctx),
@@ -354,9 +366,11 @@ impl Context {
 
             quad_context: ctx,
 
-            default_filter_mode: crate::quad_gl::FilterMode::Linear,
+            default_filter_mode,
             textures: crate::texture::TexturesContext::new(),
-            update_on: Default::default(),
+            update_on,
+
+            dropped_files: Vec::new(),
         }
     }
 
@@ -373,6 +387,11 @@ impl Context {
                 .texture(*texture)
                 .unwrap_or(self.gl.white_texture),
         }
+    }
+
+    /// Returns the files which have been dropped onto the window.
+    pub fn dropped_files(&mut self) -> Vec<DroppedFile> {
+        std::mem::take(&mut self.dropped_files)
     }
 
     fn begin_frame(&mut self) {
@@ -431,6 +450,8 @@ impl Context {
                 touch.phase = input::TouchPhase::Stationary;
             }
         }
+
+        self.dropped_files.clear();
     }
 
     pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
@@ -485,16 +506,8 @@ fn get_quad_context() -> &'static mut dyn miniquad::RenderingBackend {
     unsafe { &mut *CONTEXT.as_mut().unwrap().quad_context }
 }
 
-static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
-
-struct Stage {}
-
-impl Drop for Stage {
-    fn drop(&mut self) {
-        unsafe {
-            MAIN_FUTURE.take();
-        }
-    }
+struct Stage {
+    main_future: Pin<Box<dyn Future<Output = ()>>>,
 }
 
 impl EventHandler for Stage {
@@ -642,7 +655,7 @@ impl EventHandler for Stage {
                 character,
                 modifiers,
                 repeat,
-            })
+            });
         });
     }
 
@@ -658,7 +671,7 @@ impl EventHandler for Stage {
                 keycode,
                 modifiers,
                 repeat,
-            })
+            });
         });
         if context
             .update_on
@@ -698,6 +711,16 @@ impl EventHandler for Stage {
         }
     }
 
+    fn files_dropped_event(&mut self) {
+        let context = get_context();
+        for i in 0..miniquad::window::dropped_file_count() {
+            context.dropped_files.push(DroppedFile {
+                path: miniquad::window::dropped_file_path(i),
+                bytes: miniquad::window::dropped_file_bytes(i),
+            });
+        }
+    }
+
     fn draw(&mut self) {
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
@@ -711,33 +734,30 @@ impl EventHandler for Stage {
 
             fn maybe_unwind(unwind: bool, f: impl FnOnce() + Sized + panic::UnwindSafe) -> bool {
                 if unwind {
-                    panic::catch_unwind(|| f()).is_ok()
+                    panic::catch_unwind(f).is_ok()
                 } else {
                     f();
                     true
                 }
             }
 
-            let result = maybe_unwind(get_context().unwind, || {
-                if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+            let result = maybe_unwind(
+                get_context().unwind,
+                AssertUnwindSafe(|| {
                     let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
-                    if exec::resume(future).is_some() {
-                        unsafe {
-                            MAIN_FUTURE = None;
-                        }
+                    if exec::resume(&mut self.main_future).is_some() {
+                        self.main_future = Box::pin(async move {});
                         miniquad::window::quit();
                         return;
                     }
                     get_context().coroutines_context.update();
-                }
-            });
+                }),
+            );
 
             if result == false {
                 if let Some(recovery_future) = get_context().recovery_future.take() {
-                    unsafe {
-                        MAIN_FUTURE = Some(recovery_future);
-                    }
+                    self.main_future = recovery_future;
                 }
             }
 
@@ -806,6 +826,18 @@ pub mod conf {
         /// update_on will tell macroquad when to proceed with the event loop.
         pub update_on: Option<UpdateTrigger>,
         pub default_filter_mode: crate::FilterMode,
+        /// Macroquad performs automatic and static batching for each
+        /// draw_* call. For each draw call, it pre-allocate a huge cpu/gpu
+        /// buffer to add vertices to. When it exceeds the buffer, it allocates the
+        /// new one, marking the new draw call.
+        ///
+        /// Some examples when altering those values migh be convinient:
+        /// - for huge 3d models that do not fit into a single draw call, increasing
+        ///     the buffer size might be easier than splitting the model.
+        /// - when each draw_* call got its own material,
+        ///     buffer size might be reduced to save some memory
+        pub draw_call_vertex_capacity: usize,
+        pub draw_call_index_capacity: usize,
     }
 
     impl Default for Conf {
@@ -814,6 +846,8 @@ pub mod conf {
                 miniquad_conf: miniquad::conf::Conf::default(),
                 update_on: Some(UpdateTrigger::default()),
                 default_filter_mode: crate::FilterMode::Linear,
+                draw_call_vertex_capacity: 10000,
+                draw_call_index_capacity: 5000,
             }
         }
     }
@@ -825,6 +859,8 @@ impl From<miniquad::conf::Conf> for conf::Conf {
             miniquad_conf: conf,
             update_on: None,
             default_filter_mode: crate::FilterMode::Linear,
+            draw_call_vertex_capacity: 10000,
+            draw_call_index_capacity: 5000,
         }
     }
 }
@@ -852,18 +888,35 @@ impl Window {
             miniquad_conf,
             update_on,
             default_filter_mode,
+            draw_call_vertex_capacity,
+            draw_call_index_capacity,
         } = config.into();
         miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
-            unsafe {
-                MAIN_FUTURE = Some(Box::pin(future));
-            }
-            let mut context = Context::new();
-            context.update_on = update_on.unwrap_or_default();
-            context.default_filter_mode = default_filter_mode;
+            let context = Context::new(
+                update_on.unwrap_or_default(),
+                default_filter_mode,
+                draw_call_vertex_capacity,
+                draw_call_index_capacity,
+            );
             unsafe { CONTEXT = Some(context) };
 
-            Box::new(Stage {})
+            Box::new(Stage {
+                main_future: Box::pin(async {
+                    future.await;
+                    unsafe {
+                        if let Some(ctx) = CONTEXT.as_mut() {
+                            ctx.gl.reset();
+                        }
+                    }
+                }),
+            })
         });
     }
+}
+
+/// Information about a dropped file.
+pub struct DroppedFile {
+    pub path: Option<std::path::PathBuf>,
+    pub bytes: Option<Vec<u8>>,
 }

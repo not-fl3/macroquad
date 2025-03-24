@@ -8,15 +8,15 @@ pub struct Circle {
 }
 
 impl Circle {
-    pub fn new(x: f32, y: f32, r: f32) -> Self {
+    pub const fn new(x: f32, y: f32, r: f32) -> Self {
         Circle { x, y, r }
     }
 
-    pub fn point(&self) -> Vec2 {
+    pub const fn point(&self) -> Vec2 {
         vec2(self.x, self.y)
     }
 
-    pub fn radius(&self) -> f32 {
+    pub const fn radius(&self) -> f32 {
         self.r
     }
 
@@ -33,7 +33,7 @@ impl Circle {
 
     /// Checks whether the `Circle` contains a `Point`
     pub fn contains(&self, pos: &Vec2) -> bool {
-        return pos.distance(vec2(self.x, self.y)) < self.r;
+        pos.distance(vec2(self.x, self.y)) < self.r
     }
 
     /// Checks whether the `Circle` overlaps a `Circle`
@@ -54,7 +54,7 @@ impl Circle {
         let lhs = dist_x - rect.w / 2.0;
         let rhs = dist_y - rect.h / 2.0;
         let dist_sq = (lhs * lhs) + (rhs * rhs);
-        return dist_sq <= self.r * self.r;
+        dist_sq <= self.r * self.r
     }
 
     /// Translate `Circle` origin by `offset` vector
