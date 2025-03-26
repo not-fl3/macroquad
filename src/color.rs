@@ -130,6 +130,25 @@ impl Color {
         Self::from_rgba(bytes[1], bytes[2], bytes[3], 255)
     }
 
+    /// Build a color from a hexadecimal u32 and an accompanying u8 alpha value.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use macroquad::prelude::*;
+    ///
+    /// let light_blue = Color::from_hex_alpha(0x3CA7D5, 0x80);
+    /// assert_eq!(light_blue.r, 0.23529412);
+    /// assert_eq!(light_blue.g, 0.654902);
+    /// assert_eq!(light_blue.b, 0.8352941);
+    /// assert_eq!(light_blue.a, 0.5019608);
+    /// ```
+    pub fn from_hex_alpha(hex: u32, alpha: u8) -> Color {
+        let bytes: [u8; 4] = hex.to_be_bytes();
+
+        Self::from_rgba(bytes[1], bytes[2], bytes[3], alpha)
+    }
+
     /// Create a vec4 of red, green, blue, and alpha components.
     pub const fn to_vec(&self) -> glam::Vec4 {
         glam::Vec4::new(self.r, self.g, self.b, self.a)
