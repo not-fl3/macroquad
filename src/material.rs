@@ -1,7 +1,7 @@
 //! Custom materials - shaders, uniforms.
 
 use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, tobytes::ToBytes, Error};
-use miniquad::{PipelineParams, UniformDesc};
+use miniquad::{PipelineParams, ShaderSource, UniformDesc};
 use std::sync::Arc;
 
 #[derive(PartialEq)]
@@ -60,10 +60,7 @@ pub struct MaterialParams {
     pub textures: Vec<String>,
 }
 
-pub fn load_material(
-    shader: crate::ShaderSource,
-    params: MaterialParams,
-) -> Result<Material, Error> {
+pub fn load_material(shader: ShaderSource, params: MaterialParams) -> Result<Material, Error> {
     let context = &mut get_context();
 
     let pipeline = context.gl.make_pipeline(
