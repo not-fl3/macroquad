@@ -45,31 +45,31 @@ fn color_from_bytes() {
     );
 }
 
-impl Into<[u8; 4]> for Color {
-    fn into(self) -> [u8; 4] {
+impl From<Color> for [u8; 4] {
+    fn from(val: Color) -> Self {
         [
-            (self.r * 255.) as u8,
-            (self.g * 255.) as u8,
-            (self.b * 255.) as u8,
-            (self.a * 255.) as u8,
+            (val.r * 255.) as u8,
+            (val.g * 255.) as u8,
+            (val.b * 255.) as u8,
+            (val.a * 255.) as u8,
         ]
     }
 }
 
-impl Into<Color> for [u8; 4] {
-    fn into(self) -> Color {
+impl From<[u8; 4]> for Color {
+    fn from(val: [u8; 4]) -> Self {
         Color::new(
-            self[0] as f32 / 255.,
-            self[1] as f32 / 255.,
-            self[2] as f32 / 255.,
-            self[3] as f32 / 255.,
+            val[0] as f32 / 255.,
+            val[1] as f32 / 255.,
+            val[2] as f32 / 255.,
+            val[3] as f32 / 255.,
         )
     }
 }
 
-impl Into<[f32; 4]> for Color {
-    fn into(self) -> [f32; 4] {
-        [self.r, self.g, self.b, self.a]
+impl From<Color> for [f32; 4] {
+    fn from(val: Color) -> Self {
+        [val.r, val.g, val.b, val.a]
     }
 }
 
