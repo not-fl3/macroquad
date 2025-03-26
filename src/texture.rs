@@ -94,6 +94,20 @@ impl Image {
         }
     }
 
+    /// Creates an empty Image from a width and height.
+    /// 
+    /// ```
+    /// # use macroquad::prelude::*;
+    /// let image = Image::new(32, 32);
+    /// ```
+    pub fn new(width: u16, height: u16) -> Image {
+        Image {
+            width,
+            height,
+            bytes: vec![0; width as usize * height as usize * 4]
+        }
+    }
+
     /// Creates an Image from a slice of bytes that contains an encoded image.
     ///
     /// If `format` is None, it will make an educated guess on the
