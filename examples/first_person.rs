@@ -129,7 +129,7 @@ async fn main() {
             BLACK,
         );
         draw_text(
-            format!("Press <TAB> to toggle mouse grab: {}", grabbed).as_str(),
+            format!("Press <TAB> to toggle mouse grab: {grabbed}").as_str(),
             10.0,
             48.0 + 42.0,
             30.0,

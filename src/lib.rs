@@ -40,6 +40,7 @@ use miniquad::*;
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
+use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 
 mod exec;
@@ -228,6 +229,8 @@ struct Context {
     textures: crate::texture::TexturesContext,
 
     update_on: conf::UpdateTrigger,
+
+    dropped_files: Vec<DroppedFile>,
 }
 
 #[derive(Clone)]
@@ -366,6 +369,8 @@ impl Context {
             default_filter_mode,
             textures: crate::texture::TexturesContext::new(),
             update_on,
+
+            dropped_files: Vec::new(),
         }
     }
 
@@ -382,6 +387,11 @@ impl Context {
                 .texture(*texture)
                 .unwrap_or(self.gl.white_texture),
         }
+    }
+
+    /// Returns the files which have been dropped onto the window.
+    pub fn dropped_files(&mut self) -> Vec<DroppedFile> {
+        std::mem::take(&mut self.dropped_files)
     }
 
     fn begin_frame(&mut self) {
@@ -440,6 +450,8 @@ impl Context {
                 touch.phase = input::TouchPhase::Stationary;
             }
         }
+
+        self.dropped_files.clear();
     }
 
     pub(crate) fn pixel_perfect_projection_matrix(&self) -> glam::Mat4 {
@@ -494,16 +506,8 @@ fn get_quad_context() -> &'static mut dyn miniquad::RenderingBackend {
     unsafe { &mut *CONTEXT.as_mut().unwrap().quad_context }
 }
 
-static mut MAIN_FUTURE: Option<Pin<Box<dyn Future<Output = ()>>>> = None;
-
-struct Stage {}
-
-impl Drop for Stage {
-    fn drop(&mut self) {
-        unsafe {
-            MAIN_FUTURE.take();
-        }
-    }
+struct Stage {
+    main_future: Pin<Box<dyn Future<Output = ()>>>,
 }
 
 impl EventHandler for Stage {
@@ -707,6 +711,16 @@ impl EventHandler for Stage {
         }
     }
 
+    fn files_dropped_event(&mut self) {
+        let context = get_context();
+        for i in 0..miniquad::window::dropped_file_count() {
+            context.dropped_files.push(DroppedFile {
+                path: miniquad::window::dropped_file_path(i),
+                bytes: miniquad::window::dropped_file_bytes(i),
+            });
+        }
+    }
+
     fn draw(&mut self) {
         {
             let _z = telemetry::ZoneGuard::new("Event::draw");
@@ -727,26 +741,23 @@ impl EventHandler for Stage {
                 }
             }
 
-            let result = maybe_unwind(get_context().unwind, || {
-                if let Some(future) = unsafe { MAIN_FUTURE.as_mut() } {
+            let result = maybe_unwind(
+                get_context().unwind,
+                AssertUnwindSafe(|| {
                     let _z = telemetry::ZoneGuard::new("Event::draw user code");
 
-                    if exec::resume(future).is_some() {
-                        unsafe {
-                            MAIN_FUTURE = None;
-                        }
+                    if exec::resume(&mut self.main_future).is_some() {
+                        self.main_future = Box::pin(async move {});
                         miniquad::window::quit();
                         return;
                     }
                     get_context().coroutines_context.update();
-                }
-            });
+                }),
+            );
 
             if result == false {
                 if let Some(recovery_future) = get_context().recovery_future.take() {
-                    unsafe {
-                        MAIN_FUTURE = Some(recovery_future);
-                    }
+                    self.main_future = recovery_future;
                 }
             }
 
@@ -882,9 +893,6 @@ impl Window {
         } = config.into();
         miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
-            unsafe {
-                MAIN_FUTURE = Some(Box::pin(future));
-            }
             let context = Context::new(
                 update_on.unwrap_or_default(),
                 default_filter_mode,
@@ -893,7 +901,22 @@ impl Window {
             );
             unsafe { CONTEXT = Some(context) };
 
-            Box::new(Stage {})
+            Box::new(Stage {
+                main_future: Box::pin(async {
+                    future.await;
+                    unsafe {
+                        if let Some(ctx) = CONTEXT.as_mut() {
+                            ctx.gl.reset();
+                        }
+                    }
+                }),
+            })
         });
     }
+}
+
+/// Information about a dropped file.
+pub struct DroppedFile {
+    pub path: Option<std::path::PathBuf>,
+    pub bytes: Option<Vec<u8>>,
 }

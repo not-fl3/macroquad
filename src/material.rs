@@ -153,8 +153,7 @@ pub mod shaders {
                 .iter()
                 .find(|(name, _)| name == &filename)
                 .expect(&format!(
-                    "Include file {} in not on \"includes\" list",
-                    filename
+                    "Include file {filename} in not on \"includes\" list"
                 ));
 
             let _ = res

@@ -443,6 +443,25 @@ pub struct RenderPass {
     pub(crate) render_pass: Arc<miniquad::RenderPass>,
 }
 
+#[derive(Debug, Clone)]
+pub struct RenderTargetParams {
+    /// 1 means no multi sampling.
+    /// Note that sample_count > 1 is not supported on GL2, GLES2 and WebGL1
+    pub sample_count: i32,
+
+    /// depth: true creates a depth render target attachment and allows
+    /// such a render target being used for a depth-testing cameras
+    pub depth: bool,
+}
+impl Default for RenderTargetParams {
+    fn default() -> RenderTargetParams {
+        RenderTargetParams {
+            sample_count: 1,
+            depth: false,
+        }
+    }
+}
+
 impl RenderPass {
     /// Returns the miniquad handle for this render pass.
     pub fn raw_miniquad_id(&self) -> miniquad::RenderPass {
@@ -465,56 +484,74 @@ pub struct RenderTarget {
     pub render_pass: RenderPass,
 }
 
+/// A shortcut to create a render target with sample_count: 1 and no depth buffer
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
-    let context = get_context();
-    let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
-        width,
-        height,
-        ..Default::default()
-    });
-    let render_pass = get_quad_context().new_render_pass_mrt(&[texture_id], None, None);
-    let texture = Texture2D {
-        texture: context.textures.store_texture(texture_id),
-    };
-    let render_pass = RenderPass {
-        color_texture: texture.clone(),
-        depth_texture: None,
-        render_pass: Arc::new(render_pass),
-    };
-    RenderTarget {
-        texture,
-        render_pass,
-    }
+    render_target_ex(width, height, RenderTargetParams::default())
 }
 
-pub fn render_target_msaa(width: u32, height: u32, sample_count: i32) -> RenderTarget {
+/// A shortcut to create a render target with no depth buffer and `sample_count: 4`
+pub fn render_target_msaa(width: u32, height: u32) -> RenderTarget {
+    render_target_ex(
+        width,
+        height,
+        RenderTargetParams {
+            sample_count: 4,
+            ..Default::default()
+        },
+    )
+}
+
+pub fn render_target_ex(width: u32, height: u32, params: RenderTargetParams) -> RenderTarget {
     let context = get_context();
 
     let color_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
         width,
         height,
-        sample_count,
+        sample_count: params.sample_count,
         ..Default::default()
     });
-    let color_resolve_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
-        width,
-        height,
-        ..Default::default()
-    });
-    let render_pass = get_quad_context().new_render_pass_mrt(
-        &[color_texture],
-        Some(&[color_resolve_texture]),
-        None,
-    );
-    let texture = Texture2D {
-        texture: context.textures.store_texture(color_resolve_texture),
+    let depth_texture = if params.depth {
+        Some(
+            get_quad_context().new_render_texture(miniquad::TextureParams {
+                width,
+                height,
+                format: miniquad::TextureFormat::Depth,
+                sample_count: params.sample_count,
+                ..Default::default()
+            }),
+        )
+    } else {
+        None
     };
+    let render_pass;
+    let texture;
+    if params.sample_count != 0 {
+        let color_resolve_texture =
+            get_quad_context().new_render_texture(miniquad::TextureParams {
+                width,
+                height,
+                ..Default::default()
+            });
+        render_pass = get_quad_context().new_render_pass_mrt(
+            &[color_texture],
+            Some(&[color_resolve_texture]),
+            depth_texture,
+        );
+        texture = color_resolve_texture;
+    } else {
+        render_pass = get_quad_context().new_render_pass_mrt(&[color_texture], None, depth_texture);
+        texture = color_texture;
+    }
+
+    let texture = Texture2D {
+        texture: context.textures.store_texture(texture),
+    };
+
     let render_pass = RenderPass {
         color_texture: texture.clone(),
         depth_texture: None,
         render_pass: Arc::new(render_pass),
     };
-
     RenderTarget {
         texture,
         render_pass,
@@ -987,7 +1024,7 @@ pub fn build_textures_atlas() {
 
     let texture = context.texture_batcher.atlas.texture();
     let (w, h) = get_quad_context().texture_size(texture);
-    crate::telemetry::log_string(&format!("Atlas: {} {}", w, h));
+    crate::telemetry::log_string(&format!("Atlas: {w} {h}"));
 }
 
 #[doc(hidden)]
@@ -1004,4 +1041,5 @@ pub fn set_default_filter_mode(filter: FilterMode) {
     let context = get_context();
 
     context.default_filter_mode = filter;
+    context.texture_batcher.atlas.set_filter(filter);
 }

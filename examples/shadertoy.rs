@@ -145,7 +145,7 @@ async fn main() {
                 ui.separator();
 
                 for (i, (name, uniform)) in uniforms.iter_mut().enumerate() {
-                    ui.label(None, &format!("{}", name));
+                    ui.label(None, &format!("{name}"));
                     ui.same_line(120.0);
 
                     match uniform {
@@ -356,7 +356,7 @@ async fn main() {
                     error = None;
                 }
                 Err(err) => {
-                    error = Some(format!("{:#?}", err));
+                    error = Some(format!("{err:#?}"));
                 }
             }
         }

@@ -102,10 +102,6 @@ impl Font {
 
         let (metrics, bitmap) = self.font.rasterize(character, size as f32);
 
-        if metrics.advance_height != 0.0 {
-            panic!("Vertical fonts are not supported");
-        }
-
         let (width, height) = (metrics.width as u16, metrics.height as u16);
 
         let sprite = self.atlas.lock().unwrap().new_unique_id();
@@ -217,7 +213,7 @@ impl Font {
     /// # use macroquad::prelude::*;
     /// # #[macroquad::main("test")]
     /// # async fn main() {
-    /// let font = Font::default();
+    /// let mut font = get_default_font();
     /// font.set_filter(FilterMode::Linear);
     /// # }
     /// ```
@@ -230,6 +226,12 @@ impl Font {
 
     //     font.font_texture
     // }
+}
+
+impl Default for Font {
+    fn default() -> Self {
+        get_default_font()
+    }
 }
 
 /// Arguments for "draw_text_ex" function such as font, font_size etc
@@ -411,10 +413,10 @@ pub fn draw_multiline_text(
 }
 
 /// Draw multiline text with the given line distance and custom params such as font, font size and font scale.
-/// If no line distance but a custom font is given, the fonts newline size will be used as line distance factor if it exists.
+/// If no line distance but a custom font is given, the fonts newline size will be used as line distance factor if it exists, else default to font size.
 pub fn draw_multiline_text_ex(
     text: &str,
-    x: f32,
+    mut x: f32,
     mut y: f32,
     line_distance_factor: Option<f32>,
     params: TextParams,
@@ -423,18 +425,23 @@ pub fn draw_multiline_text_ex(
         Some(distance) => distance,
         None => {
             let mut font_line_distance = 0.0;
-            if let Some(font) = params.font {
-                if let Some(metrics) = font.font.horizontal_line_metrics(1.0) {
-                    font_line_distance = metrics.new_line_size;
-                }
+            let font = if let Some(font) = params.font {
+                font
+            } else {
+                &get_default_font()
+            };
+            if let Some(metrics) = font.font.horizontal_line_metrics(1.0) {
+                font_line_distance = metrics.new_line_size;
             }
+
             font_line_distance
         }
     };
 
     for line in text.lines() {
         draw_text_ex(line, x, y, params.clone());
-        y += line_distance * params.font_size as f32 * params.font_scale;
+        x -= (line_distance * params.font_size as f32 * params.font_scale) * params.rotation.sin();
+        y += (line_distance * params.font_size as f32 * params.font_scale) * params.rotation.cos();
     }
 }
 
@@ -476,6 +483,18 @@ impl FontsStorage {
         let default_font = Font::load_from_bytes(atlas, include_bytes!("ProggyClean.ttf")).unwrap();
         FontsStorage { default_font }
     }
+}
+
+/// Returns macroquads default font.
+pub fn get_default_font() -> Font {
+    let context = get_context();
+    context.fonts_storage.default_font.clone()
+}
+
+/// Replaces macroquads default font with `font`.
+pub fn set_default_font(font: Font) {
+    let context = get_context();
+    context.fonts_storage.default_font = font;
 }
 
 /// From given font size in world space gives
