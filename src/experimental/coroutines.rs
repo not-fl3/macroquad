@@ -10,7 +10,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use crate::exec::resume;
-use crate::get_context;
+use crate::{get_context, get_context_mut};
 
 mod generational_storage;
 
@@ -115,7 +115,7 @@ impl<T: 'static + Any> Coroutine<T> {
     }
 
     pub fn retrieve(&self) -> Option<T> {
-        let context = &mut get_context().coroutines_context;
+        let context = &mut get_context_mut().coroutines_context;
 
         // () is a special case. Futures with () as a return type do not keep
         // their state after finish, so just return ()
@@ -160,7 +160,7 @@ impl<T: 'static + Any> Coroutine<T> {
     /// after set_manual_poll() coroutine will never be polled automatically
     /// so player will need to poll all its coroutines inside "update" function
     pub fn set_manual_poll(&mut self) {
-        let context = &mut get_context().coroutines_context;
+        let context = &mut get_context_mut().coroutines_context;
 
         if let Some(CoroutineState::Running(coroutine)) = context.coroutines.get_mut(self.id) {
             coroutine.manual_time = Some(0.);
@@ -172,7 +172,7 @@ impl<T: 'static + Any> Coroutine<T> {
     /// Things like `wait_for_seconds` will wait for time in this local timeline`
     /// Will panic if coroutine.manual_poll == false
     pub fn poll(&mut self, delta_time: f64) {
-        let context = &mut get_context().coroutines_context;
+        let context = &mut get_context_mut().coroutines_context;
 
         let coroutine = context.coroutines.get_mut(self.id);
 
@@ -202,7 +202,7 @@ impl<T: 'static + Any> Coroutine<T> {
 pub fn start_coroutine<T: 'static + Any>(
     future: impl Future<Output = T> + 'static + Send,
 ) -> Coroutine<T> {
-    let context = &mut get_context().coroutines_context;
+    let context = &mut get_context_mut().coroutines_context;
 
     let has_value = TypeId::of::<()>() != TypeId::of::<T>();
 
@@ -222,13 +222,13 @@ pub fn start_coroutine<T: 'static + Any>(
 }
 
 pub fn stop_all_coroutines() {
-    let context = &mut get_context().coroutines_context;
+    let context = &mut get_context_mut().coroutines_context;
 
     context.coroutines.clear();
 }
 
 pub fn stop_coroutine(coroutine: Coroutine) {
-    let context = &mut get_context().coroutines_context;
+    let context = &mut get_context_mut().coroutines_context;
 
     context.coroutines.free(coroutine.id);
 }
