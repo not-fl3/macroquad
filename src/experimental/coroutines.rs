@@ -227,7 +227,7 @@ pub fn stop_all_coroutines() {
     context.coroutines.clear();
 }
 
-pub fn stop_coroutine(coroutine: Coroutine) {
+pub fn stop_coroutine<T: 'static + Any>(coroutine: Coroutine<T>) {
     let context = &mut get_context().coroutines_context;
 
     context.coroutines.free(coroutine.id);
