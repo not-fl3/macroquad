@@ -426,10 +426,7 @@ impl Scene {
     }
 
     pub fn get<T>(&mut self, handle: Handle<T>) -> Option<RefMut<T>> {
-        if handle.id.is_none() {
-            return None;
-        }
-        let ref_mut_any = self.get_any(HandleUntyped(handle.id.unwrap()))?;
+        let ref_mut_any = self.get_any(HandleUntyped(handle.id?))?;
         Some(ref_mut_any.to_typed())
     }
 
