@@ -15,7 +15,7 @@ pub struct Window {
 }
 
 impl Window {
-    pub fn new(id: Id, position: Vec2, size: Vec2) -> Window {
+    pub const fn new(id: Id, position: Vec2, size: Vec2) -> Window {
         Window {
             id,
             position,
@@ -102,7 +102,7 @@ impl Window {
             context.window.position.x + context.window.size.x - style.title_height + 1.,
             context.window.position.y + 2.,
         );
-        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let rect = Rect::new(pos.x, pos.y, size.x, size.y);
         let (hovered, clicked) = context.register_click_intention(rect);
 
         context.window.painter.draw_element_background(

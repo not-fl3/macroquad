@@ -33,11 +33,11 @@ enum CoroutineState {
 }
 
 impl CoroutineState {
-    pub fn is_value(&self) -> bool {
+    pub const fn is_value(&self) -> bool {
         matches!(self, CoroutineState::Value(_))
     }
 
-    pub fn is_nothing(&self) -> bool {
+    pub const fn is_nothing(&self) -> bool {
         matches!(self, CoroutineState::Nothing)
     }
 
@@ -227,7 +227,7 @@ pub fn stop_all_coroutines() {
     context.coroutines.clear();
 }
 
-pub fn stop_coroutine(coroutine: Coroutine) {
+pub fn stop_coroutine<T: 'static + Any>(coroutine: Coroutine<T>) {
     let context = &mut get_context().coroutines_context;
 
     context.coroutines.free(coroutine.id);
@@ -256,7 +256,7 @@ impl Future for TimerDelayFuture {
     }
 }
 
-pub fn wait_seconds(time: f32) -> TimerDelayFuture {
+pub const fn wait_seconds(time: f32) -> TimerDelayFuture {
     TimerDelayFuture {
         remaining_time: time,
     }

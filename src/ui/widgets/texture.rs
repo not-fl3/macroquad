@@ -12,7 +12,7 @@ pub struct Texture {
 }
 
 impl Texture {
-    pub fn new(texture: Texture2D) -> Texture {
+    pub const fn new(texture: Texture2D) -> Texture {
         Texture {
             position: None,
             w: 100.,
@@ -45,7 +45,7 @@ impl Texture {
             .painter
             .draw_raw_texture(Rect::new(pos.x, pos.y, self.w, self.h), &self.texture);
 
-        let rect = Rect::new(pos.x, pos.y, size.x as f32, size.y as f32);
+        let rect = Rect::new(pos.x, pos.y, size.x, size.y);
         let hovered = rect.contains(context.input.mouse_position);
 
         context.focused && hovered && context.input.click_up

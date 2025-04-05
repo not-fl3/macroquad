@@ -20,11 +20,10 @@ pub enum DrawMode {
 pub struct GlPipeline(usize);
 
 struct DrawCall {
-    vertices: Vec<Vertex>,
-    indices: Vec<u16>,
-
     vertices_count: usize,
     indices_count: usize,
+    vertices_start: usize,
+    indices_start: usize,
 
     clip: Option<(i32, i32, i32, i32)>,
     viewport: Option<(i32, i32, i32, i32)>,
@@ -40,22 +39,17 @@ struct DrawCall {
 }
 
 impl DrawCall {
-    fn new(
+    const fn new(
         texture: Option<miniquad::TextureId>,
         model: glam::Mat4,
         draw_mode: DrawMode,
         pipeline: GlPipeline,
         uniforms: Option<Vec<u8>>,
         render_pass: Option<RenderPass>,
-        max_vertices: usize,
-        max_indices: usize,
     ) -> DrawCall {
         DrawCall {
-            vertices: vec![
-                Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0));
-                max_vertices
-            ],
-            indices: vec![0; max_indices],
+            vertices_start: 0,
+            indices_start: 0,
             vertices_count: 0,
             indices_count: 0,
             viewport: None,
@@ -68,14 +62,6 @@ impl DrawCall {
             render_pass,
             capture: false,
         }
-    }
-
-    fn vertices(&self) -> &[Vertex] {
-        &self.vertices[0..self.vertices_count]
-    }
-
-    fn indices(&self) -> &[u16] {
-        &self.indices[0..self.indices_count]
     }
 }
 
@@ -163,7 +149,7 @@ impl MagicSnapshotter {
                 },
                 snapshotter_shader::meta(),
             )
-            .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to load shader: {e}"));
 
         let pipeline = ctx.new_pipeline(
             &[BufferLayout::default()],
@@ -220,9 +206,9 @@ impl MagicSnapshotter {
                     ..
                 } = ctx.texture_params(texture);
                 let color_img = ctx.new_render_texture(TextureParams {
-                    width: width,
-                    height: height,
-                    format: format,
+                    width,
+                    height,
+                    format,
                     ..Default::default()
                 });
 
@@ -323,12 +309,12 @@ impl PipelineExt {
         let uniform_byte_size = uniform_format.size();
         let uniform_byte_offset = uniform_meta.byte_offset;
 
-        if std::mem::size_of::<T>() != uniform_byte_size {
+        if size_of::<T>() != uniform_byte_size {
             warn!(
                 "Trying to set uniform {} sized {} bytes value of {} bytes",
                 name,
                 uniform_byte_size,
-                std::mem::size_of::<T>()
+                size_of::<T>()
             );
             return;
         }
@@ -374,7 +360,7 @@ impl PipelineExt {
                 "Trying to set uniform {} sized {} bytes value of {} bytes",
                 name,
                 uniform_byte_size,
-                std::mem::size_of::<T>()
+                size_of::<T>()
             );
             return;
         }
@@ -410,7 +396,7 @@ impl PipelinesStorage {
                 },
                 shader::meta(),
             )
-            .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to load shader: {e}"));
 
         let params = PipelineParams {
             color_blend: Some(BlendState::new(
@@ -548,7 +534,7 @@ impl PipelinesStorage {
         GlPipeline(id)
     }
 
-    fn get(&self, draw_mode: DrawMode, depth_enabled: bool) -> GlPipeline {
+    const fn get(&self, draw_mode: DrawMode, depth_enabled: bool) -> GlPipeline {
         match (draw_mode, depth_enabled) {
             (DrawMode::Triangles, false) => Self::TRIANGLES_PIPELINE,
             (DrawMode::Triangles, true) => Self::TRIANGLES_DEPTH_PIPELINE,
@@ -578,10 +564,17 @@ pub struct QuadGl {
     pub(crate) white_texture: miniquad::TextureId,
     max_vertices: usize,
     max_indices: usize,
+
+    batch_vertex_buffer: Vec<Vertex>,
+    batch_index_buffer: Vec<u16>,
 }
 
 impl QuadGl {
-    pub fn new(ctx: &mut dyn miniquad::RenderingBackend) -> QuadGl {
+    pub fn new(
+        ctx: &mut dyn miniquad::RenderingBackend,
+        max_vertices: usize,
+        max_indices: usize,
+    ) -> QuadGl {
         let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
 
         QuadGl {
@@ -604,9 +597,11 @@ impl QuadGl {
             draw_calls_count: 0,
             start_time: miniquad::date::now(),
 
-            white_texture: white_texture,
-            max_vertices: 10000,
-            max_indices: 5000,
+            white_texture,
+            batch_vertex_buffer: Vec::with_capacity(max_vertices),
+            batch_index_buffer: Vec::with_capacity(max_indices),
+            max_vertices,
+            max_indices,
         }
     }
 
@@ -642,7 +637,7 @@ impl QuadGl {
             ShaderSource::Glsl { fragment, .. } => fragment,
             ShaderSource::Msl { program } => program,
         };
-        let wants_screen_texture = source.find("_ScreenTexture").is_some();
+        let wants_screen_texture = source.contains("_ScreenTexture");
         let shader = ctx.new_shader(shader, shader_meta)?;
         Ok(self.pipelines.make_pipeline(
             ctx,
@@ -735,16 +730,25 @@ impl QuadGl {
 
             ctx.buffer_update(
                 bindings.vertex_buffers[0],
-                BufferSource::slice(dc.vertices()),
+                BufferSource::slice(
+                    &self.batch_vertex_buffer
+                        [dc.vertices_start..(dc.vertices_start + dc.vertices_count)],
+                ),
             );
-            ctx.buffer_update(bindings.index_buffer, BufferSource::slice(dc.indices()));
+            ctx.buffer_update(
+                bindings.index_buffer,
+                BufferSource::slice(
+                    &self.batch_index_buffer
+                        [dc.indices_start..(dc.indices_start + dc.indices_count)],
+                ),
+            );
 
             bindings.images[0] = dc.texture.unwrap_or(white_texture);
             bindings.images[1] = self
                 .state
                 .snapshotter
                 .screen_texture
-                .unwrap_or_else(|| white_texture);
+                .unwrap_or(white_texture);
             bindings
                 .images
                 .resize(2 + pipeline.textures.len(), white_texture);
@@ -789,9 +793,13 @@ impl QuadGl {
 
             dc.vertices_count = 0;
             dc.indices_count = 0;
+            dc.vertices_start = 0;
+            dc.indices_start = 0;
         }
 
         self.draw_calls_count = 0;
+        self.batch_index_buffer.clear();
+        self.batch_vertex_buffer.clear();
     }
 
     pub(crate) fn capture(&mut self, capture: bool) {
@@ -806,11 +814,11 @@ impl QuadGl {
         crate::get_context().projection_matrix()
     }
 
-    pub fn get_active_render_pass(&self) -> Option<RenderPass> {
+    pub const fn get_active_render_pass(&self) -> Option<RenderPass> {
         self.state.render_pass
     }
 
-    pub fn is_depth_test_enabled(&self) -> bool {
+    pub const fn is_depth_test_enabled(&self) -> bool {
         self.state.depth_test_enable
     }
 
@@ -911,17 +919,15 @@ impl QuadGl {
 
             if self.draw_calls_count >= self.draw_calls.len() {
                 self.draw_calls.push(DrawCall::new(
-                    self.state.texture.clone(),
+                    self.state.texture,
                     self.state.model(),
                     self.state.draw_mode,
                     pip,
                     uniforms.clone(),
                     self.state.render_pass,
-                    self.max_vertices,
-                    self.max_indices,
                 ));
             }
-            self.draw_calls[self.draw_calls_count].texture = self.state.texture.clone();
+            self.draw_calls[self.draw_calls_count].texture = self.state.texture;
             self.draw_calls[self.draw_calls_count].uniforms = uniforms;
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
@@ -931,22 +937,22 @@ impl QuadGl {
             self.draw_calls[self.draw_calls_count].pipeline = pip;
             self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
             self.draw_calls[self.draw_calls_count].capture = self.state.capture;
+            self.draw_calls[self.draw_calls_count].indices_start = self.batch_index_buffer.len();
+            self.draw_calls[self.draw_calls_count].vertices_start = self.batch_vertex_buffer.len();
 
             self.draw_calls_count += 1;
             self.state.break_batching = false;
         };
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
-        for i in 0..vertices.len() {
-            dc.vertices[dc.vertices_count + i] = vertices[i];
-        }
+        self.batch_vertex_buffer.extend(vertices);
+        self.batch_index_buffer
+            .extend(indices.iter().map(|x| *x + dc.vertices_count as u16));
 
-        for i in 0..indices.len() {
-            dc.indices[dc.indices_count + i] = indices[i] + dc.vertices_count as u16;
-        }
         dc.vertices_count += vertices.len();
         dc.indices_count += indices.len();
-        dc.texture = self.state.texture.clone();
+
+        dc.texture = self.state.texture;
     }
 
     pub fn delete_pipeline(&mut self, pipeline: GlPipeline) {
@@ -1000,13 +1006,17 @@ impl QuadGl {
     ) {
         self.max_vertices = max_vertices;
         self.max_indices = max_indices;
+        self.draw_calls_count = 0;
 
         for draw_call in &mut self.draw_calls {
-            draw_call.vertices =
-                vec![Vertex::new(0., 0., 0., 0., 0., Color::new(0.0, 0.0, 0.0, 0.0)); max_vertices];
-            draw_call.indices = vec![0; max_indices];
+            draw_call.indices_start = 0;
+            draw_call.vertices_start = 0;
         }
         for binding in &mut self.draw_calls_bindings {
+            ctx.delete_buffer(binding.index_buffer);
+            for vertex_buffer in &binding.vertex_buffers {
+                ctx.delete_buffer(*vertex_buffer);
+            }
             let vertex_buffer = ctx.new_buffer(
                 BufferType::VertexBuffer,
                 BufferUsage::Stream,

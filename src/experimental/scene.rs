@@ -64,7 +64,7 @@ impl<T: 'static> Clone for Handle<T> {
 impl<T: 'static> Copy for Handle<T> {}
 
 impl<T> Handle<T> {
-    pub fn null() -> Handle<T> {
+    pub const fn null() -> Handle<T> {
         Handle {
             id: None,
             _marker: PhantomData,
@@ -75,7 +75,7 @@ impl<T> Handle<T> {
         HandleUntyped(self.id.unwrap())
     }
 
-    pub fn as_trait<T1: ?Sized>(&self) {}
+    pub const fn as_trait<T1: ?Sized>(&self) {}
 }
 
 pub(crate) struct Lens<T> {
@@ -127,7 +127,7 @@ pub struct RefMut<T: 'static> {
 }
 
 impl<T: 'static> RefMut<T> {
-    pub fn handle(&self) -> Handle<T> {
+    pub const fn handle(&self) -> Handle<T> {
         Handle {
             id: self.handle.id,
             _marker: PhantomData,
@@ -190,7 +190,7 @@ pub struct RefMutAny<'a> {
 }
 
 impl<'a> RefMutAny<'a> {
-    pub fn handle<T>(&self) -> Handle<T> {
+    pub const fn handle<T>(&self) -> Handle<T> {
         Handle {
             id: Some(self.handle.0),
             _marker: PhantomData,
@@ -290,13 +290,13 @@ impl Cell {
             fixed_update: (&(Node::fixed_update as fn(RefMut<T>)) as *const fn(RefMut<T>)).cast(),
             draw: (&(Node::draw as fn(RefMut<T>)) as *const fn(RefMut<T>)).cast(),
             virtual_drop: &(virtual_drop::<T> as fn(*mut ())) as *const fn(*mut ()),
-            data_len: std::mem::size_of::<T>(),
+            data_len: size_of::<T>(),
             initialized: false,
         }
     }
 
     fn update<T: Node + 'static>(&mut self, data: T) {
-        assert!(std::mem::size_of::<T>() <= self.data_len);
+        assert!(size_of::<T>() <= self.data_len);
 
         let trait_obj = &data as &dyn NodeAny;
         let (_, vtable) = unsafe { std::mem::transmute::<_, (*mut (), *mut ())>(trait_obj) };
@@ -408,10 +408,7 @@ impl Scene {
     }
 
     pub fn get<T>(&mut self, handle: Handle<T>) -> Option<RefMut<T>> {
-        if handle.id.is_none() {
-            return None;
-        }
-        let ref_mut_any = self.get_any(HandleUntyped(handle.id.unwrap()))?;
+        let ref_mut_any = self.get_any(HandleUntyped(handle.id?))?;
         Some(ref_mut_any.to_typed())
     }
 
@@ -428,7 +425,7 @@ impl Scene {
         if let Some(i) = self
             .free_nodes
             .iter()
-            .position(|free_node| free_node.data_len >= std::mem::size_of::<T>())
+            .position(|free_node| free_node.data_len >= size_of::<T>())
         {
             let mut free_node = self.free_nodes.remove(i);
 
@@ -441,7 +438,7 @@ impl Scene {
             let trait_obj = &data as &dyn NodeAny;
             let (_, vtable) = unsafe { std::mem::transmute::<_, (*mut (), *mut ())>(trait_obj) };
 
-            let ptr = self.arena.alloc(std::mem::size_of::<T>()) as *mut _ as *mut T;
+            let ptr = self.arena.alloc(size_of::<T>()) as *mut _ as *mut T;
             unsafe {
                 std::ptr::write(ptr, data);
             }
@@ -599,7 +596,7 @@ impl Iterator for MagicVecIterator {
 static mut SCENE: Option<Scene> = None;
 
 unsafe fn get_scene() -> &'static mut Scene {
-    SCENE.get_or_insert(Scene::new())
+    SCENE.get_or_insert_with(|| Scene::new())
 }
 
 pub(crate) fn allocated_memory() -> usize {
@@ -682,6 +679,6 @@ pub(crate) fn in_fixed_update() -> bool {
     unsafe { get_scene() }.in_fixed_update
 }
 
-pub(crate) fn fixed_frame_time() -> f32 {
+pub(crate) const fn fixed_frame_time() -> f32 {
     CONST_FPS as _
 }

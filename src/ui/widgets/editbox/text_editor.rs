@@ -189,7 +189,7 @@ impl EditboxState {
             None
         }
     }
-    pub fn in_selected_range(&self, cursor: u32) -> bool {
+    pub const fn in_selected_range(&self, cursor: u32) -> bool {
         match self.selection {
             Some((start, end)) if start < end => cursor >= start && cursor < end,
             Some((end, start)) => cursor >= start && cursor < end,
@@ -218,7 +218,7 @@ impl EditboxState {
         cursor_tmp - self.cursor
     }
 
-    pub fn word_delimiter(character: char) -> bool {
+    pub const fn word_delimiter(character: char) -> bool {
         character == ' '
             || character == '('
             || character == ')'
@@ -365,8 +365,8 @@ impl EditboxState {
     }
 
     pub fn select_word(&mut self, text: &Vec<char>) -> (u32, u32) {
-        let to_word_begin = self.find_word_begin(text, self.cursor) as u32;
-        let to_word_end = self.find_word_end(text, self.cursor) as u32;
+        let to_word_begin = self.find_word_begin(text, self.cursor);
+        let to_word_end = self.find_word_end(text, self.cursor);
         let new_selection = (self.cursor - to_word_begin, self.cursor + to_word_end);
 
         self.selection = Some(new_selection);
@@ -374,8 +374,8 @@ impl EditboxState {
     }
 
     pub fn select_line(&mut self, text: &Vec<char>) -> (u32, u32) {
-        let to_line_begin = self.find_line_begin(text) as u32;
-        let to_line_end = self.find_line_end(text) as u32;
+        let to_line_begin = self.find_line_begin(text);
+        let to_line_end = self.find_line_end(text);
         let new_selection = (self.cursor - to_line_begin, self.cursor + to_line_end);
 
         self.selection = Some(new_selection);

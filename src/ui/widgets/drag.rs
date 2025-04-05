@@ -45,7 +45,7 @@ pub struct Drag<'a> {
 }
 
 impl<'a> Drag<'a> {
-    pub fn new(id: Id) -> Drag<'a> {
+    pub const fn new(id: Id) -> Drag<'a> {
         Drag {
             id,
             size: None,
@@ -55,7 +55,7 @@ impl<'a> Drag<'a> {
         }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> Drag<'b> {
+    pub const fn label<'b>(self, label: &'b str) -> Drag<'b> {
         Drag {
             label,
             id: self.id,
@@ -239,6 +239,6 @@ impl Ui {
     ) {
         let range = range.into();
 
-        Drag::new(id).label(label).range(range).ui(self, data)
+        Drag::new(id).label(label).range(range).ui(self, data);
     }
 }

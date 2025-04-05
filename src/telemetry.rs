@@ -145,7 +145,7 @@ pub struct Frame {
 }
 
 impl Frame {
-    fn new() -> Frame {
+    const fn new() -> Frame {
         Frame {
             full_frame_time: 0.0,
             zones: vec![],
@@ -299,7 +299,7 @@ pub struct LogTimeGuard<'a> {
 }
 
 impl<'a> LogTimeGuard<'a> {
-    pub fn new(name: &'a str) -> LogTimeGuard {
+    pub fn new(name: &'a str) -> LogTimeGuard<'a> {
         LogTimeGuard {
             name,
             start_time: get_time(),
@@ -313,7 +313,7 @@ impl<'a> Drop for LogTimeGuard<'a> {
             "Time query: {}, {:.1}s",
             self.name,
             get_time() - self.start_time
-        ))
+        ));
     }
 }
 

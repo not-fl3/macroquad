@@ -51,10 +51,7 @@ impl<T> GenerationalStorage<T> {
             return None;
         }
 
-        if self.vec[id.id].is_none() {
-            return None;
-        }
-        let cell = self.vec[id.id].as_ref().unwrap();
+        let cell = self.vec[id.id].as_ref()?;
         if cell.generation != id.generation {
             return None;
         }
@@ -67,10 +64,7 @@ impl<T> GenerationalStorage<T> {
             return None;
         }
 
-        if self.vec[id.id].is_none() {
-            return None;
-        }
-        let cell = self.vec[id.id].as_mut().unwrap();
+        let cell = self.vec[id.id].as_mut()?;
         if cell.generation != id.generation {
             return None;
         }
@@ -79,7 +73,6 @@ impl<T> GenerationalStorage<T> {
     }
 
     /// Retains only the elements specified by the predicate, passing a mutable reference to it.
-
     /// In other words, remove all elements e such that f(&mut e) returns false. This method operates in place, visiting each element exactly once in the original order, and preserves the order of the retained elements.
     pub fn retain<F>(&mut self, mut f: F)
     where
@@ -125,6 +118,6 @@ impl<T> GenerationalStorage<T> {
     }
 
     pub(crate) fn allocated_memory(&self) -> usize {
-        self.vec.capacity() * std::mem::size_of::<GenerationalCell<T>>()
+        self.vec.capacity() * size_of::<GenerationalCell<T>>()
     }
 }

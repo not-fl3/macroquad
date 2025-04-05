@@ -2,10 +2,10 @@
 
 use std::collections::HashSet;
 
-use crate::get_context;
 use crate::prelude::screen_height;
 use crate::prelude::screen_width;
 use crate::Vec2;
+use crate::{get_context, DroppedFile};
 pub use miniquad::{KeyCode, MouseButton};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -72,9 +72,7 @@ pub fn mouse_delta_position() -> Vec2 {
     let last_position = context.last_mouse_position.unwrap_or(current_position);
 
     // Calculate the delta
-    let delta = last_position - current_position;
-
-    delta
+    last_position - current_position
 }
 
 /// This is set to true by default, meaning touches will raise mouse events in addition to raising touch events.
@@ -212,6 +210,11 @@ pub fn prevent_quit() {
 /// Detect if quit has been requested
 pub fn is_quit_requested() -> bool {
     get_context().quit_requested
+}
+
+/// Gets the files which have been dropped on the window.
+pub fn get_dropped_files() -> Vec<DroppedFile> {
+    get_context().dropped_files()
 }
 
 /// Functions for advanced input processing.

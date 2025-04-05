@@ -30,7 +30,7 @@ async fn back_to_the_future_coroutine() {
     });
     let mut i = 10;
     loop {
-        println!("{}", i);
+        println!("{i}");
         if player2.lock().unwrap().allow_movement {
             break;
         }

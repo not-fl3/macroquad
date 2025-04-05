@@ -48,7 +48,7 @@ impl TexturesContext {
     // fn remove(&mut self, texture: TextureSlotId) {
     //     self.textures.remove(texture);
     // }
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.textures.len()
     }
     pub fn garbage_collect(&mut self, ctx: &mut miniquad::Context) {
@@ -86,7 +86,7 @@ impl Image {
     /// # use macroquad::prelude::*;
     /// let image = Image::empty();
     /// ```
-    pub fn empty() -> Image {
+    pub const fn empty() -> Image {
         Image {
             width: 0,
             height: 0,
@@ -157,12 +157,12 @@ impl Image {
     }
 
     /// Returns the width of this image.
-    pub fn width(&self) -> usize {
+    pub const fn width(&self) -> usize {
         self.width as usize
     }
 
     /// Returns the height of this image.
-    pub fn height(&self) -> usize {
+    pub const fn height(&self) -> usize {
         self.height as usize
     }
 
@@ -346,6 +346,25 @@ pub struct RenderPass {
     pub(crate) render_pass: Arc<miniquad::RenderPass>,
 }
 
+#[derive(Debug, Clone)]
+pub struct RenderTargetParams {
+    /// 1 means no multi sampling.
+    /// Note that sample_count > 1 is not supported on GL2, GLES2 and WebGL1
+    pub sample_count: i32,
+
+    /// depth: true creates a depth render target attachment and allows
+    /// such a render target being used for a depth-testing cameras
+    pub depth: bool,
+}
+impl Default for RenderTargetParams {
+    fn default() -> RenderTargetParams {
+        RenderTargetParams {
+            sample_count: 1,
+            depth: false,
+        }
+    }
+}
+
 impl RenderPass {
     /// Returns the miniquad handle for this render pass.
     pub fn raw_miniquad_id(&self) -> miniquad::RenderPass {
@@ -368,56 +387,74 @@ pub struct RenderTarget {
     pub render_pass: RenderPass,
 }
 
+/// A shortcut to create a render target with sample_count: 1 and no depth buffer
 pub fn render_target(width: u32, height: u32) -> RenderTarget {
-    let context = get_context();
-    let texture_id = get_quad_context().new_render_texture(miniquad::TextureParams {
-        width,
-        height,
-        ..Default::default()
-    });
-    let render_pass = get_quad_context().new_render_pass_mrt(&[texture_id], None, None);
-    let texture = Texture2D {
-        texture: context.textures.store_texture(texture_id),
-    };
-    let render_pass = RenderPass {
-        color_texture: texture.clone(),
-        depth_texture: None,
-        render_pass: Arc::new(render_pass),
-    };
-    RenderTarget {
-        texture,
-        render_pass,
-    }
+    render_target_ex(width, height, RenderTargetParams::default())
 }
 
-pub fn render_target_msaa(width: u32, height: u32, sample_count: i32) -> RenderTarget {
+/// A shortcut to create a render target with no depth buffer and `sample_count: 4`
+pub fn render_target_msaa(width: u32, height: u32) -> RenderTarget {
+    render_target_ex(
+        width,
+        height,
+        RenderTargetParams {
+            sample_count: 4,
+            ..Default::default()
+        },
+    )
+}
+
+pub fn render_target_ex(width: u32, height: u32, params: RenderTargetParams) -> RenderTarget {
     let context = get_context();
 
     let color_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
         width,
         height,
-        sample_count,
+        sample_count: params.sample_count,
         ..Default::default()
     });
-    let color_resolve_texture = get_quad_context().new_render_texture(miniquad::TextureParams {
-        width,
-        height,
-        ..Default::default()
-    });
-    let render_pass = get_quad_context().new_render_pass_mrt(
-        &[color_texture],
-        Some(&[color_resolve_texture]),
-        None,
-    );
-    let texture = Texture2D {
-        texture: context.textures.store_texture(color_resolve_texture),
+    let depth_texture = if params.depth {
+        Some(
+            get_quad_context().new_render_texture(miniquad::TextureParams {
+                width,
+                height,
+                format: miniquad::TextureFormat::Depth,
+                sample_count: params.sample_count,
+                ..Default::default()
+            }),
+        )
+    } else {
+        None
     };
+    let render_pass;
+    let texture;
+    if params.sample_count != 0 {
+        let color_resolve_texture =
+            get_quad_context().new_render_texture(miniquad::TextureParams {
+                width,
+                height,
+                ..Default::default()
+            });
+        render_pass = get_quad_context().new_render_pass_mrt(
+            &[color_texture],
+            Some(&[color_resolve_texture]),
+            depth_texture,
+        );
+        texture = color_resolve_texture;
+    } else {
+        render_pass = get_quad_context().new_render_pass_mrt(&[color_texture], None, depth_texture);
+        texture = color_texture;
+    }
+
+    let texture = Texture2D {
+        texture: context.textures.store_texture(texture),
+    };
+
     let render_pass = RenderPass {
         color_texture: texture.clone(),
         depth_texture: None,
         render_pass: Arc::new(render_pass),
     };
-
     RenderTarget {
         texture,
         render_pass,
@@ -514,11 +551,11 @@ pub fn draw_texture_ex(
     let mut x = x;
     let mut y = y;
     if params.flip_x {
-        x = x + w;
+        x += w;
         w = -w;
     }
     if params.flip_y {
-        y = y + h;
+        y += h;
         h = -h;
     }
 
@@ -558,7 +595,7 @@ pub fn draw_texture_ex(
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
-    context.gl.texture(Some(&texture));
+    context.gl.texture(Some(texture));
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&vertices, &indices);
 }
@@ -604,14 +641,14 @@ impl Texture2D {
         match &self.texture {
             TextureHandle::Unmanaged(id) => Texture2D::unmanaged(*id),
             TextureHandle::Managed(t) => Texture2D {
-                texture: TextureHandle::ManagedWeak((**t).0),
+                texture: TextureHandle::ManagedWeak(t.0),
             },
             TextureHandle::ManagedWeak(t) => Texture2D {
-                texture: TextureHandle::ManagedWeak(t.clone()),
+                texture: TextureHandle::ManagedWeak(*t),
             },
         }
     }
-    pub(crate) fn unmanaged(texture: miniquad::TextureId) -> Texture2D {
+    pub(crate) const fn unmanaged(texture: miniquad::TextureId) -> Texture2D {
         Texture2D {
             texture: TextureHandle::Unmanaged(texture),
         }
@@ -648,10 +685,7 @@ impl Texture2D {
     ///     );
     /// # }
     /// ```
-    pub fn from_file_with_format<'a>(
-        bytes: &[u8],
-        format: Option<image::ImageFormat>,
-    ) -> Texture2D {
+    pub fn from_file_with_format(bytes: &[u8], format: Option<image::ImageFormat>) -> Texture2D {
         let img = if let Some(fmt) = format {
             image::load_from_memory_with_format(bytes, fmt)
                 .unwrap_or_else(|e| panic!("{}", e))
@@ -665,13 +699,7 @@ impl Texture2D {
         let height = img.height() as u16;
         let bytes = img.into_raw();
 
-        let t = Self::from_rgba8(width, height, &bytes);
-
-        let ctx = get_context();
-
-        t.set_filter(ctx.default_filter_mode);
-
-        t
+        Self::from_rgba8(width, height, &bytes)
     }
 
     /// Creates a Texture2D from an [Image].
@@ -681,7 +709,7 @@ impl Texture2D {
 
     /// Creates a Texture2D from a miniquad
     /// [Texture](https://docs.rs/miniquad/0.3.0-alpha/miniquad/graphics/struct.Texture.html)
-    pub fn from_miniquad_texture(texture: miniquad::TextureId) -> Texture2D {
+    pub const fn from_miniquad_texture(texture: miniquad::TextureId) -> Texture2D {
         Texture2D {
             texture: TextureHandle::Unmanaged(texture),
         }
@@ -706,6 +734,7 @@ impl Texture2D {
         let ctx = get_context();
         let texture = ctx.textures.store_texture(texture);
         let texture = Texture2D { texture };
+        texture.set_filter(ctx.default_filter_mode);
 
         ctx.texture_batcher.add_unbatched(&texture);
 
@@ -728,8 +757,8 @@ impl Texture2D {
         let ctx = get_quad_context();
         let (texture_width, texture_height) = ctx.texture_size(self.raw_miniquad_id());
 
-        assert_eq!(texture_width, width as u32);
-        assert_eq!(texture_height, height as u32);
+        assert_eq!(texture_width, width);
+        assert_eq!(texture_height, height);
 
         ctx.texture_update(self.raw_miniquad_id(), bytes);
     }
@@ -752,7 +781,7 @@ impl Texture2D {
             width,
             height,
             &image.bytes,
-        )
+        );
     }
 
     /// Returns the width of this texture.
@@ -902,7 +931,7 @@ pub fn build_textures_atlas() {
 
     let texture = context.texture_batcher.atlas.texture();
     let (w, h) = get_quad_context().texture_size(texture);
-    crate::telemetry::log_string(&format!("Atlas: {} {}", w, h));
+    crate::telemetry::log_string(&format!("Atlas: {w} {h}"));
 }
 
 #[doc(hidden)]
@@ -919,4 +948,5 @@ pub fn set_default_filter_mode(filter: FilterMode) {
     let context = get_context();
 
     context.default_filter_mode = filter;
+    context.texture_batcher.atlas.set_filter(filter);
 }

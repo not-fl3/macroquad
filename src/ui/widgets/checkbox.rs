@@ -12,7 +12,7 @@ pub struct Checkbox<'a> {
 }
 
 impl<'a> Checkbox<'a> {
-    pub fn new(id: Id) -> Checkbox<'a> {
+    pub const fn new(id: Id) -> Checkbox<'a> {
         Checkbox {
             id,
             label: "",
@@ -22,11 +22,11 @@ impl<'a> Checkbox<'a> {
         }
     }
 
-    pub fn ratio(self, ratio: f32) -> Self {
+    pub const fn ratio(self, ratio: f32) -> Self {
         Self { ratio, ..self }
     }
 
-    pub fn label<'b>(self, label: &'b str) -> Checkbox<'b> {
+    pub const fn label<'b>(self, label: &'b str) -> Checkbox<'b> {
         Checkbox {
             id: self.id,
             label,
@@ -36,14 +36,14 @@ impl<'a> Checkbox<'a> {
         }
     }
 
-    pub fn pos(self, pos: Vec2) -> Self {
+    pub const fn pos(self, pos: Vec2) -> Self {
         Self {
             pos: Some(pos),
             ..self
         }
     }
 
-    pub fn size(self, size: Vec2) -> Self {
+    pub const fn size(self, size: Vec2) -> Self {
         Self {
             size: Some(size),
             ..self
@@ -64,6 +64,7 @@ impl<'a> Checkbox<'a> {
 
         let pos = self
             .pos
+            .map(|pos| pos + context.window.cursor.fit(size, Layout::Vertical))
             .unwrap_or_else(|| context.window.cursor.fit(size, Layout::Vertical));
 
         let whole_area = Vec2::new(
@@ -155,6 +156,6 @@ impl<'a> Checkbox<'a> {
 
 impl Ui {
     pub fn checkbox(&mut self, id: Id, label: &str, data: &mut bool) {
-        Checkbox::new(id).label(label).ui(self, data)
+        Checkbox::new(id).label(label).ui(self, data);
     }
 }
