@@ -249,11 +249,17 @@ pub fn draw_poly_lines(
 }
 
 /// Draws a solid circle centered at `[x, y]` with a given radius `r` and `color`.
+///
+/// This is not a perfect circle, but only a polygon approximation.
+/// If this is an issue for you, consider using `draw_poly(x, y, 255, r, 0., color)` instead.
 pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
     draw_poly(x, y, 20, r, 0., color);
 }
 
 /// Draws a circle outline centered at `[x, y]` with a given radius, line `thickness` and `color`.
+///
+/// This is not a perfect circle, but only a polygon approximation.
+/// If this is an issue for you, consider using `draw_poly_lines(x, y, 255, r, 0., thickness, color)` instead.
 pub fn draw_circle_lines(x: f32, y: f32, r: f32, thickness: f32, color: Color) {
     draw_poly_lines(x, y, 30, r, 0., thickness, color);
 }
