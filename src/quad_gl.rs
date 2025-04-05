@@ -309,12 +309,12 @@ impl PipelineExt {
         let uniform_byte_size = uniform_format.size();
         let uniform_byte_offset = uniform_meta.byte_offset;
 
-        if std::mem::size_of::<T>() != uniform_byte_size {
+        if size_of::<T>() != uniform_byte_size {
             warn!(
                 "Trying to set uniform {} sized {} bytes value of {} bytes",
                 name,
                 uniform_byte_size,
-                std::mem::size_of::<T>()
+                size_of::<T>()
             );
             return;
         }
@@ -360,7 +360,7 @@ impl PipelineExt {
                 "Trying to set uniform {} sized {} bytes value of {} bytes",
                 name,
                 uniform_byte_size,
-                std::mem::size_of::<T>()
+                size_of::<T>()
             );
             return;
         }

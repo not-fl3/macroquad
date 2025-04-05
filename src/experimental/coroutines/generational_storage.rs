@@ -118,6 +118,6 @@ impl<T> GenerationalStorage<T> {
     }
 
     pub(crate) fn allocated_memory(&self) -> usize {
-        self.vec.capacity() * std::mem::size_of::<GenerationalCell<T>>()
+        self.vec.capacity() * size_of::<GenerationalCell<T>>()
     }
 }
