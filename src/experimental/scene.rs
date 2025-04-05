@@ -300,13 +300,13 @@ impl Cell {
             virtual_drop: unsafe {
                 std::mem::transmute(&(virtual_drop::<T> as fn(*mut ())) as *const fn(*mut ()))
             },
-            data_len: std::mem::size_of::<T>(),
+            data_len: size_of::<T>(),
             initialized: false,
         }
     }
 
     fn update<T: Node + 'static>(&mut self, data: T) {
-        assert!(std::mem::size_of::<T>() <= self.data_len);
+        assert!(size_of::<T>() <= self.data_len);
 
         let trait_obj = &data as &dyn NodeAny;
         let (_, vtable) = unsafe { std::mem::transmute::<_, (*mut (), *mut ())>(trait_obj) };
@@ -446,7 +446,7 @@ impl Scene {
         if let Some(i) = self
             .free_nodes
             .iter()
-            .position(|free_node| free_node.data_len >= std::mem::size_of::<T>())
+            .position(|free_node| free_node.data_len >= size_of::<T>())
         {
             let mut free_node = self.free_nodes.remove(i);
 
@@ -459,7 +459,7 @@ impl Scene {
             let trait_obj = &data as &dyn NodeAny;
             let (_, vtable) = unsafe { std::mem::transmute::<_, (*mut (), *mut ())>(trait_obj) };
 
-            let ptr = self.arena.alloc(std::mem::size_of::<T>()) as *mut _ as *mut T;
+            let ptr = self.arena.alloc(size_of::<T>()) as *mut _ as *mut T;
             unsafe {
                 std::ptr::write(ptr, data);
             }

@@ -5,7 +5,6 @@
 //! `Arena` is exported at the root of the crate.
 
 use std::cell::Cell;
-use std::mem::size_of;
 
 const ARENA_BLOCK: usize = 64 * 1024;
 
