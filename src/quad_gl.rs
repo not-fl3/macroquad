@@ -407,7 +407,9 @@ impl PipelinesStorage {
                         vertex: shader::CIRCLE_VERTEX,
                         fragment: shader::CIRCLE_FRAGMENT,
                     },
-                    Backend::Metal => todo!("write a metal shader for circles"),
+                    Backend::Metal => ShaderSource::Msl {
+                        program: shader::CIRCLE_METAL,
+                    },
                 },
                 shader::meta(),
             )
@@ -1164,6 +1166,48 @@ mod shader {
             gl_FragColor = color;
         } else {
             gl_FragColor = vec4(0.0);
+        }
+    }"#;
+
+    pub const CIRCLE_METAL: &str = r#"
+    #include <metal_stdlib>
+    using namespace metal;
+    
+    struct VertexIn {
+        float3 position [[attribute(0)]];
+        float2 texcoord [[attribute(1)]];
+        float4 color0 [[attribute(2)]];
+    };
+    
+    struct VertexOut {
+        float4 position [[position]];
+        float2 fragCoord;
+        float4 color;
+    };
+    
+    struct Uniforms {
+        float4x4 model;
+        float4x4 projection;
+    };
+    
+    vertex VertexOut vertexShader(VertexIn in [[stage_in]], constant Uniforms& uniforms [[buffer(0)]]) {
+        VertexOut out;
+        
+        out.position = uniforms.projection * uniforms.model * float4(in.position, 1.0);
+        out.color = in.color0 / 255.0;
+        out.fragCoord = in.texcoord;
+        
+        return out;
+    }
+    
+    fragment float4 fragmentShader(VertexOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler texSampler [[sampler(0)]]) {
+        float2 uv = in.fragCoord * 2.0 - 1.0;
+        float distance = length(uv);
+        
+        if (distance < 1.0) {
+            return in.color;
+        } else {
+            return float4(0.0, 0.0, 0.0, 0.0);
         }
     }"#;
 
