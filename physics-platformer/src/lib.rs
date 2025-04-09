@@ -142,6 +142,12 @@ impl World {
         solid
     }
 
+    pub fn set_actor_size(&mut self, actor: Actor, width: i32, height: i32) {
+        let collider = &mut self.actors[actor.0].1;
+        collider.height = height;
+        collider.width = width;
+    }
+
     pub fn set_actor_position(&mut self, actor: Actor, pos: Vec2) {
         let collider = &mut self.actors[actor.0].1;
 
