@@ -442,6 +442,10 @@ impl World {
         self.actors[actor.0].1.pos
     }
 
+    pub fn actor_size(&self, actor: Actor) -> (i32, i32) {
+        (self.actors[actor.0].1.width, self.actors[actor.0].1.height)
+    }
+
     pub fn solid_pos(&self, solid: Solid) -> Vec2 {
         self.solids[solid.0].1.pos
     }
