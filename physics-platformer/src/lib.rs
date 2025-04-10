@@ -142,6 +142,25 @@ impl World {
         solid
     }
 
+    pub fn set_actor_size(&mut self, actor: Actor, width: i32, height: i32) {
+        let collider = &mut self.actors[actor.0].1;
+
+        let height_diff = collider.height - height;
+        let width_diff = collider.width - width;
+        let new_x = collider.pos.x + width_diff as f32 / 2.0;
+        let new_y = collider.pos.y + height_diff as f32;
+
+        let pos = Vec2 { x: new_x, y: new_y };
+
+        collider.height = height;
+        collider.width = width;
+
+        // need to offset the collider based on the new size
+        collider.x_remainder = 0.0;
+        collider.y_remainder = 0.0;
+        collider.pos = pos;
+    }
+
     pub fn set_actor_position(&mut self, actor: Actor, pos: Vec2) {
         let collider = &mut self.actors[actor.0].1;
 
@@ -434,6 +453,10 @@ impl World {
 
     pub fn actor_pos(&self, actor: Actor) -> Vec2 {
         self.actors[actor.0].1.pos
+    }
+
+    pub fn actor_size(&self, actor: Actor) -> (i32, i32) {
+        (self.actors[actor.0].1.width, self.actors[actor.0].1.height)
     }
 
     pub fn solid_pos(&self, solid: Solid) -> Vec2 {
