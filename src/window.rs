@@ -88,6 +88,16 @@ pub fn set_fullscreen(fullscreen: bool) {
     miniquad::window::set_fullscreen(fullscreen);
 }
 
+/// Set the window title to the given value.
+pub fn set_screen_title(title: &str) {
+    miniquad::window::set_window_title(title);
+}
+
+/// Set the window icon to the given icon.
+pub fn set_icon(icon: Box<miniquad::conf::Icon>) {
+    miniquad::window::set_window_icon(icon);
+}
+
 /// With `set_panic_handler` set to a handler code, macroquad will use
 /// `std::panic::catch_unwind` on user code to catch some panics.
 ///
