@@ -6,6 +6,8 @@ pub enum Error {
         path: String,
     },
     ShaderError(miniquad::ShaderError),
+
+    #[cfg(feature = "image-crate")]
     ImageError(image::ImageError),
     UnknownError(&'static str),
 }
@@ -22,6 +24,7 @@ impl From<miniquad::ShaderError> for Error {
     }
 }
 
+#[cfg(feature = "image-crate")]
 impl From<image::ImageError> for Error {
     fn from(s: image::ImageError) -> Self {
         Error::ImageError(s)
