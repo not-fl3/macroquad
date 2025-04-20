@@ -150,11 +150,13 @@ impl Font {
 
     pub(crate) fn measure_text(
         &self,
-        text: &str,
+        text: impl AsRef<str>,
         font_size: u16,
         font_scale_x: f32,
         font_scale_y: f32,
     ) -> TextDimensions {
+        let text = text.as_ref();
+
         let dpi_scaling = miniquad::window::dpi_scale();
         let font_size = (font_size as f32 * dpi_scaling).ceil() as u16;
 
@@ -298,7 +300,7 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
 
 /// Draw text with given font_size
 /// Returns text size
-pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) -> TextDimensions {
+pub fn draw_text(text: impl AsRef<str>, x: f32, y: f32, font_size: f32, color: Color) -> TextDimensions {
     draw_text_ex(
         text,
         x,
@@ -314,7 +316,9 @@ pub fn draw_text(text: &str, x: f32, y: f32, font_size: f32, color: Color) -> Te
 
 /// Draw text with custom params such as font, font size and font scale
 /// Returns text size
-pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) -> TextDimensions {
+pub fn draw_text_ex(text: impl AsRef<str>, x: f32, y: f32, params: TextParams) -> TextDimensions {
+    let text = text.as_ref();
+
     if text.is_empty() {
         return TextDimensions::default();
     }
@@ -391,7 +395,7 @@ pub fn draw_text_ex(text: &str, x: f32, y: f32, params: TextParams) -> TextDimen
 /// Draw multiline text with the given font_size, line_distance_factor and color.
 /// If no line distance but a custom font is given, the fonts line gap will be used as line distance factor if it exists.
 pub fn draw_multiline_text(
-    text: &str,
+    text: impl AsRef<str>,
     x: f32,
     y: f32,
     font_size: f32,
@@ -415,12 +419,14 @@ pub fn draw_multiline_text(
 /// Draw multiline text with the given line distance and custom params such as font, font size and font scale.
 /// If no line distance but a custom font is given, the fonts newline size will be used as line distance factor if it exists, else default to font size.
 pub fn draw_multiline_text_ex(
-    text: &str,
+    text: impl AsRef<str>,
     mut x: f32,
     mut y: f32,
     line_distance_factor: Option<f32>,
     params: TextParams,
 ) {
+    let text = text.as_ref();
+
     let line_distance = match line_distance_factor {
         Some(distance) => distance,
         None => {
@@ -447,7 +453,7 @@ pub fn draw_multiline_text_ex(
 
 /// Get the text center.
 pub fn get_text_center(
-    text: &str,
+    text: impl AsRef<str>,
     font: Option<&Font>,
     font_size: u16,
     font_scale: f32,
@@ -462,7 +468,7 @@ pub fn get_text_center(
 }
 
 pub fn measure_text(
-    text: &str,
+    text: impl AsRef<str>,
     font: Option<&Font>,
     font_size: u16,
     font_scale: f32,
