@@ -300,7 +300,13 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
 
 /// Draw text with given font_size
 /// Returns text size
-pub fn draw_text(text: impl AsRef<str>, x: f32, y: f32, font_size: f32, color: Color) -> TextDimensions {
+pub fn draw_text(
+    text: impl AsRef<str>,
+    x: f32,
+    y: f32,
+    font_size: f32,
+    color: Color,
+) -> TextDimensions {
     draw_text_ex(
         text,
         x,
