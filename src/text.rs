@@ -300,7 +300,13 @@ pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
 
 /// Draw text with given font_size
 /// Returns text size
-pub fn draw_text(text: impl AsRef<str>, x: f32, y: f32, font_size: f32, color: Color) -> TextDimensions {
+pub fn draw_text(
+    text: impl AsRef<str>,
+    x: f32,
+    y: f32,
+    font_size: f32,
+    color: Color,
+) -> TextDimensions {
     draw_text_ex(
         text,
         x,
@@ -465,6 +471,15 @@ pub fn get_text_center(
     let y_center = measure.width / 2.0 * rotation.sin() - measure.height / 2.0 * rotation.cos();
 
     crate::Vec2::new(x_center, y_center)
+}
+
+pub fn measure_char(
+    chr: char,
+    font: Option<&Font>,
+    font_size: u16,
+    font_scale: f32,
+) -> TextDimensions {
+    measure_text(chr.to_string().as_str(), font, font_size, font_scale)
 }
 
 pub fn measure_text(
