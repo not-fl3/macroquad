@@ -9,6 +9,7 @@ pub struct Slider<'a> {
     id: Id,
     label: &'a str,
     range: Range<f32>,
+    label_width: Option<f32>,
 }
 
 impl<'a> Slider<'a> {
@@ -17,14 +18,21 @@ impl<'a> Slider<'a> {
             id,
             range,
             label: "",
+            label_width: None,
         }
     }
 
     pub const fn label<'b>(self, label: &'b str) -> Slider<'b> {
         Slider {
-            id: self.id,
-            range: self.range,
             label,
+            ..self
+        }
+    }
+
+    pub const fn label_width(self, width: f32) -> Self {
+        Slider {
+            label_width: Some(width),
+            ..self
         }
     }
 
@@ -38,7 +46,8 @@ impl<'a> Slider<'a> {
         let pos = context.window.cursor.fit(size, Layout::Vertical);
 
         let editbox_width = 50.;
-        let label_width = 100.;
+
+        let label_width = self.label_width.unwrap_or(100.);
         let slider_width = size.x - editbox_width - label_width;
         let margin = 5.;
 
