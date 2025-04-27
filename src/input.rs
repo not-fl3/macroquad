@@ -141,13 +141,9 @@ pub fn is_key_repeated(key_code: KeyCode) -> bool {
     // stores the amount of time each key has been pressed for
     let time_map = &mut context.keys_repeated;
 
-    time_map
-        .entry(key_code)
-        .or_insert(0.);
+    time_map.entry(key_code).or_insert(0.);
 
-    let time_pressed = time_map
-        .get_mut(&key_code)
-        .unwrap();
+    let time_pressed = time_map.get_mut(&key_code).unwrap();
 
     if is_key_down(key_code) {
         *time_pressed += 1.;
