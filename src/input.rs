@@ -8,6 +8,8 @@ use crate::Vec2;
 use crate::{get_context, DroppedFile};
 pub use miniquad::{KeyCode, MouseButton};
 
+const KEY_REPEAT_DELAY: f64 = 5.0;
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum TouchPhase {
     Started,
@@ -130,6 +132,30 @@ pub fn is_key_released(key_code: KeyCode) -> bool {
     let context = get_context();
 
     context.keys_released.contains(&key_code)
+}
+
+/// Detect if the key has been pressed for some time
+pub fn is_key_repeated(key_code: KeyCode) -> bool {
+    let context = get_context();
+
+    // stores the amount of time each key has been pressed for
+    let time_map = &mut context.keys_repeated;
+
+    time_map
+        .entry(key_code)
+        .or_insert(0.);
+
+    let time_pressed = time_map
+        .get_mut(&key_code)
+        .unwrap();
+
+    if is_key_down(key_code) {
+        *time_pressed += 1.;
+    } else {
+        *time_pressed = 0.;
+    }
+
+    *time_pressed >= KEY_REPEAT_DELAY
 }
 
 /// Return the last pressed char.
