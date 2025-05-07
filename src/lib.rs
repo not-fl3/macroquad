@@ -273,6 +273,8 @@ enum MiniquadInputEvent {
         x: f32,
         y: f32,
     },
+    WindowMinimized,
+    WindowRestored,
 }
 
 impl MiniquadInputEvent {
@@ -295,6 +297,8 @@ impl MiniquadInputEvent {
             } => t.key_down_event(*keycode, *modifiers, *repeat),
             KeyUp { keycode, modifiers } => t.key_up_event(*keycode, *modifiers),
             Touch { phase, id, x, y } => t.touch_event(*phase, *id, *x, *y),
+            WindowMinimized => t.window_minimized_event(),
+            WindowRestored => t.window_restored_event(),
         }
     }
 }
@@ -783,12 +787,19 @@ impl EventHandler for Stage {
     }
 
     fn window_restored_event(&mut self) {
+        let context = get_context();
+        
         #[cfg(target_os = "android")]
-        get_context().audio_context.resume();
+        context.audio_context.resume();
         #[cfg(target_os = "android")]
         if miniquad::window::blocking_event_loop() {
             miniquad::window::schedule_update();
         }
+        
+        context
+            .input_events
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::WindowRestored));
     }
 
     fn window_minimized_event(&mut self) {
@@ -805,6 +816,11 @@ impl EventHandler for Stage {
         for (_, touch) in context.touches.iter_mut() {
             touch.phase = input::TouchPhase::Ended;
         }
+        
+        context
+            .input_events
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::WindowMinimized));
     }
 
     fn quit_requested_event(&mut self) {
