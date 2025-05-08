@@ -114,11 +114,14 @@ impl Default for TileFlippedParams {
 }
 
 impl Map {
-    pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
-        self.spr_flip(tileset, sprite, dest, TileFlippedParams::default())
-    }
-
-    pub fn spr_flip(&self, tileset: &str, sprite: u32, dest: Rect, flip: TileFlippedParams) {
+    pub fn spr_flip_with(
+        &self,
+        tileset: &str,
+        sprite: u32,
+        dest: Rect,
+        flip: TileFlippedParams,
+        draw_func: impl FnOnce(&Texture2D, f32, f32, Color, DrawTextureParams),
+    ) {
         if self.tilesets.contains_key(tileset) == false {
             panic!(
                 "No such tileset: {}, tilesets available: {:?}",
@@ -136,7 +139,7 @@ impl Map {
             0.0
         };
 
-        draw_texture_ex(
+        draw_func(
             &tileset.texture,
             dest.x,
             dest.y,
@@ -156,11 +159,30 @@ impl Map {
             },
         );
     }
+    pub fn spr(&self, tileset: &str, sprite: u32, dest: Rect) {
+        self.spr_flip_with(
+            tileset,
+            sprite,
+            dest,
+            TileFlippedParams::default(),
+            draw_texture_ex,
+        )
+    }
 
-    pub fn spr_ex(&self, tileset: &str, source: Rect, dest: Rect) {
+    pub fn spr_flip(&self, tileset: &str, sprite: u32, dest: Rect, flip: TileFlippedParams) {
+        self.spr_flip_with(tileset, sprite, dest, flip, draw_texture_ex);
+    }
+
+    pub fn spr_ex_with(
+        &self,
+        tileset: &str,
+        source: Rect,
+        dest: Rect,
+        draw_func: impl FnOnce(&Texture2D, f32, f32, Color, DrawTextureParams),
+    ) {
         let tileset = &self.tilesets[tileset];
 
-        draw_texture_ex(
+        draw_func(
             &tileset.texture,
             dest.x,
             dest.y,
@@ -172,12 +194,20 @@ impl Map {
             },
         );
     }
+    pub fn spr_ex(&self, tileset: &str, source: Rect, dest: Rect) {
+        self.spr_ex_with(tileset, source, dest, draw_texture_ex);
+    }
 
     pub fn contains_layer(&self, layer: &str) -> bool {
         self.layers.contains_key(layer)
     }
-
-    pub fn draw_tiles(&self, layer: &str, dest: Rect, source: impl Into<Option<Rect>>) {
+    pub fn draw_tiles_with(
+        &self,
+        layer: &str,
+        dest: Rect,
+        source: impl Into<Option<Rect>>,
+        mut draw_func: impl FnMut(&Texture2D, f32, f32, Color, DrawTextureParams),
+    ) {
         assert!(self.layers.contains_key(layer), "No such layer: {}", layer);
 
         let source = source.into().unwrap_or(Rect::new(
@@ -218,7 +248,7 @@ impl Map {
 
         for (tileset, tileset_layer) in &separated_by_ts {
             for (tile, rect) in tileset_layer {
-                self.spr_flip(
+                self.spr_flip_with(
                     tileset,
                     tile.id,
                     *rect,
@@ -227,9 +257,14 @@ impl Map {
                         flip_y: tile.flip_y,
                         flip_d: tile.flip_d,
                     },
+                    &mut draw_func,
                 );
             }
         }
+    }
+
+    pub fn draw_tiles(&self, layer: &str, dest: Rect, source: impl Into<Option<Rect>>) {
+        self.draw_tiles_with(layer, dest, source, draw_texture_ex);
     }
 
     pub fn draw_imglayer(&self, layer: &str, dest: Rect, source: Option<Rect>) {
