@@ -36,7 +36,7 @@
 //! }
 //!```
 
-use miniquad::*;
+use miniquad::{date, EventHandler, FilterMode, KeyCode, KeyMods, MouseButton, TouchPhase};
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
@@ -308,7 +308,7 @@ impl Context {
 
     fn new(
         update_on: conf::UpdateTrigger,
-        default_filter_mode: crate::FilterMode,
+        default_filter_mode: FilterMode,
         draw_call_vertex_capacity: usize,
         draw_call_index_capacity: usize,
     ) -> Context {
@@ -840,7 +840,7 @@ pub mod conf {
         pub mouse_up: bool,
         pub mouse_motion: bool,
         pub mouse_wheel: bool,
-        pub specific_key: Option<Vec<crate::KeyCode>>,
+        pub specific_key: Option<Vec<miniquad::KeyCode>>,
         pub touch: bool,
     }
 
@@ -852,7 +852,7 @@ pub mod conf {
         /// zero CPU usage.
         /// update_on will tell macroquad when to proceed with the event loop.
         pub update_on: Option<UpdateTrigger>,
-        pub default_filter_mode: crate::FilterMode,
+        pub default_filter_mode: miniquad::FilterMode,
         /// Macroquad performs automatic and static batching for each
         /// draw_* call. For each draw call, it pre-allocate a huge cpu/gpu
         /// buffer to add vertices to. When it exceeds the buffer, it allocates the
@@ -872,7 +872,7 @@ pub mod conf {
             Self {
                 miniquad_conf: miniquad::conf::Conf::default(),
                 update_on: Some(UpdateTrigger::default()),
-                default_filter_mode: crate::FilterMode::Linear,
+                default_filter_mode: miniquad::FilterMode::Linear,
                 draw_call_vertex_capacity: 10000,
                 draw_call_index_capacity: 5000,
             }
@@ -885,7 +885,7 @@ impl From<miniquad::conf::Conf> for conf::Conf {
         conf::Conf {
             miniquad_conf: conf,
             update_on: None,
-            default_filter_mode: crate::FilterMode::Linear,
+            default_filter_mode: FilterMode::Linear,
             draw_call_vertex_capacity: 10000,
             draw_call_index_capacity: 5000,
         }
