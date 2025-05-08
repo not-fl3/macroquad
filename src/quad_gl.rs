@@ -323,21 +323,22 @@ impl PipelineExt {
             return;
         }
         macro_rules! transmute_uniform {
-            ($uniform_size:expr, $byte_offset:expr, $n:expr) => {
-                if $uniform_size == $n {
+            ($n:expr) => {
+                if uniform_byte_size == $n {
                     let data: [u8; $n] = unsafe { std::mem::transmute_copy(&uniform) };
 
-                    for i in 0..$uniform_size {
-                        self.uniforms_data[$byte_offset + i] = data[i];
+                    for i in 0..uniform_byte_size {
+                        self.uniforms_data[uniform_byte_offset + i] = data[i];
                     }
                 }
             };
         }
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 4);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 8);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 12);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 16);
-        transmute_uniform!(uniform_byte_size, uniform_byte_offset, 64);
+
+        transmute_uniform!(4);
+        transmute_uniform!(8);
+        transmute_uniform!(12);
+        transmute_uniform!(16);
+        transmute_uniform!(64);
     }
 
     fn set_uniform_array<T: ToBytes>(&mut self, name: &str, uniform: &[T]) {
