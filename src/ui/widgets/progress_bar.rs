@@ -28,7 +28,7 @@ impl<'a> ProgressBar<'a> {
     }
 
     pub fn ui(self, ui: &mut Ui, progress: f32, bar_text: &str) {
-        let context = ui.get_active_window_context();
+        let mut context = ui.get_active_window_context();
 
         let size = vec2(
             context.window.cursor.area.w - context.style.margin * 3. - context.window.cursor.ident,
@@ -42,6 +42,8 @@ impl<'a> ProgressBar<'a> {
 
         let bar_background = Rect::new(pos.x, pos.y, bar_width, 20.);
         let bar_progress = Rect::new(pos.x, pos.y, bar_progress_width, 20.);
+
+        context.register_click_intention(bar_background);
 
         // background bar
         context.window.painter.draw_rect(
