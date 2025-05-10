@@ -788,14 +788,14 @@ impl EventHandler for Stage {
 
     fn window_restored_event(&mut self) {
         let context = get_context();
-        
+
         #[cfg(target_os = "android")]
         context.audio_context.resume();
         #[cfg(target_os = "android")]
         if miniquad::window::blocking_event_loop() {
             miniquad::window::schedule_update();
         }
-        
+
         context
             .input_events
             .iter_mut()
@@ -816,7 +816,7 @@ impl EventHandler for Stage {
         for (_, touch) in context.touches.iter_mut() {
             touch.phase = input::TouchPhase::Ended;
         }
-        
+
         context
             .input_events
             .iter_mut()

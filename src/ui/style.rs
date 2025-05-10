@@ -379,6 +379,7 @@ pub struct Skin {
     pub scrollbar_handle_style: Style,
     pub checkbox_style: Style,
     pub group_style: Style,
+    pub progress_bar_style: Style,
 
     pub margin: f32,
     pub title_height: f32,
@@ -477,6 +478,13 @@ impl Skin {
                 color_hovered: Color::from_rgba(34, 153, 34, 68),
                 color_selected: Color::from_rgba(34, 34, 255, 255),
                 color_selected_hovered: Color::from_rgba(55, 55, 55, 68),
+                ..Style::default(default_font.clone())
+            },
+            progress_bar_style: Style {
+                margin: Some(RectOffset::new(2., 2., 2., 2.)),
+                color: Color::from_rgba(204, 204, 204, 235),
+                color_hovered: Color::from_rgba(170, 170, 170, 235),
+                text_color: Color::from_rgba(0, 0, 0, 255),
                 ..Style::default(default_font.clone())
             },
 
