@@ -1,5 +1,6 @@
 use macroquad::prelude::*;
 
+use macroquad::ui::widgets::{ProgressBar, Slider};
 use macroquad::ui::{
     hash, root_ui,
     widgets::{self, Group},
@@ -144,6 +145,7 @@ async fn main() {
 
     let mut number0 = 0.;
     let mut number1 = 0.;
+    let mut number2 = 0.;
 
     let texture: Texture2D = load_texture("examples/ferris.png").await.unwrap();
 
@@ -214,9 +216,35 @@ async fn main() {
                         .size(vec2(120., 70.))
                         .ui(ui);
                 });
-                ui.tree_node(hash!(), "sliders", |ui| {
-                    ui.slider(hash!(), "[-10 .. 10]", -10f32..10f32, &mut number0);
-                    ui.slider(hash!(), "[0 .. 100]", 0f32..100f32, &mut number1);
+                ui.tree_node(hash!(), "sliders and bars", |ui| {
+                    let range0 = -10f32..10f32;
+                    ui.slider(hash!(), "[-10 .. 10]", range0.clone(), &mut number0);
+                    let progress0 = number0.remap(range0.start, range0.end, 0., 1.);
+                    ProgressBar::new().label("first bar").ui(
+                        ui,
+                        progress0,
+                        format!("{:.0}%", progress0 * 100.).as_str(),
+                    );
+
+                    let range1 = 0f32..100f32;
+                    ui.slider(hash!(), "[0 .. 100]", range1.clone(), &mut number1);
+                    let progress1 = number1.remap(range1.start, range1.end, 0., 1.);
+                    ProgressBar::new().label("second bar").ui(
+                        ui,
+                        progress1,
+                        format!("{:.1}/{:.0}", number1, range1.end).as_str(),
+                    );
+
+                    let range2 = 0f32..1f32;
+                    Slider::new(hash!(), range2.clone())
+                        .label_width(200.)
+                        .label("slider with a long label")
+                        .ui(ui, &mut number2);
+                    let progress2 = number2;
+                    ProgressBar::new()
+                        .label("bar with a really long label")
+                        .label_width(240.)
+                        .ui(ui, progress2, "");
                 });
                 ui.tree_node(hash!(), "editbox 1", |ui| {
                     ui.label(None, "This is editbox!");

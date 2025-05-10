@@ -23,10 +23,7 @@ impl<'a> Slider<'a> {
     }
 
     pub const fn label<'b>(self, label: &'b str) -> Slider<'b> {
-        Slider {
-            label,
-            ..self
-        }
+        Slider { label, ..self }
     }
 
     pub const fn label_width(self, width: f32) -> Self {
