@@ -39,8 +39,8 @@ pub struct InternalGlContext<'a> {
 }
 
 impl<'a> InternalGlContext<'a> {
-    /// Draw all the batched stuff and reset the internal state cache
-    /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls
+    /// Draw all the batched stuff and reset the internal state cache.
+    /// May be helpful for combining macroquad's drawing with raw miniquad/opengl calls.
     pub fn flush(&mut self) {
         get_context().perform_render_passes();
     }
