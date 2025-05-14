@@ -113,7 +113,7 @@ pub fn set_fullscreen(fullscreen: bool) {
 /// after a panic in user code will happen. Macroquad will also try to catch some OS
 /// panics, but not all of them - some compatibility bugs may end up crashing the app.
 ///
-/// Withot `set_panic_handler` macroquad will not use `catch_unwind` at all,
+/// Without `set_panic_handler` macroquad will not use `catch_unwind` at all,
 /// therefore `panic_handler` is completely optional.
 /// NOTE: only with "backtrace" macroquad feature `backtrace` string will contain an
 /// actual backtrace. Otherwise only panic location and message will be available.
