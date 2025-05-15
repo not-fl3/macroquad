@@ -1,11 +1,16 @@
 use crate::math::{Mat4, Vec2, Vec3, Vec4};
 
-pub trait ToBytes {
+/// # Safety
+///
+/// Implementing this trait declares that the type in question has no padding
+/// bytes and can be safely transmuted into `[u8; N]` of the appropriate size.
+pub unsafe trait ToBytes {
     fn to_bytes(&self) -> &[u8];
 }
+
 macro_rules! impl_tobytes {
     ($t:tt) => {
-        impl ToBytes for $t {
+        unsafe impl ToBytes for $t {
             fn to_bytes(&self) -> &[u8] {
                 unsafe {
                     std::slice::from_raw_parts(self as *const _ as *const u8, size_of::<$t>())
@@ -22,13 +27,13 @@ impl_tobytes!(Vec3);
 impl_tobytes!(Vec4);
 impl_tobytes!(Mat4);
 
-impl<T: ToBytes, const N: usize> ToBytes for &[T; N] {
+unsafe impl<T: ToBytes, const N: usize> ToBytes for [T; N] {
     fn to_bytes(&self) -> &[u8] {
-        unsafe { std::slice::from_raw_parts(*self as *const _ as *const u8, size_of::<T>() * N) }
+        unsafe { std::slice::from_raw_parts(self as *const _ as *const u8, size_of::<T>() * N) }
     }
 }
 
-impl<T: ToBytes> ToBytes for &[T] {
+unsafe impl<T: ToBytes> ToBytes for [T] {
     fn to_bytes(&self) -> &[u8] {
         unsafe {
             std::slice::from_raw_parts(
