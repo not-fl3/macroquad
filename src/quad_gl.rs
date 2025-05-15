@@ -14,6 +14,7 @@ pub(crate) use crate::models::Vertex;
 pub enum DrawMode {
     Triangles,
     Lines,
+    Circle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -381,6 +382,7 @@ impl PipelinesStorage {
     const LINES_PIPELINE: GlPipeline = GlPipeline(1);
     const TRIANGLES_DEPTH_PIPELINE: GlPipeline = GlPipeline(2);
     const LINES_DEPTH_PIPELINE: GlPipeline = GlPipeline(3);
+    const CIRCLE_PIPELINE: GlPipeline = GlPipeline(4);
 
     fn new(ctx: &mut dyn RenderingBackend) -> PipelinesStorage {
         let shader = ctx
@@ -397,6 +399,21 @@ impl PipelinesStorage {
                 shader::meta(),
             )
             .unwrap_or_else(|e| panic!("Failed to load shader: {e}"));
+
+        let circle_shader = ctx
+            .new_shader(
+                match ctx.info().backend {
+                    Backend::OpenGl => ShaderSource::Glsl {
+                        vertex: shader::CIRCLE_VERTEX,
+                        fragment: shader::CIRCLE_FRAGMENT,
+                    },
+                    Backend::Metal => ShaderSource::Msl {
+                        program: shader::CIRCLE_METAL,
+                    },
+                },
+                shader::meta(),
+            )
+            .unwrap_or_else(|e| panic!("Failed to load shader: {}", e));
 
         let params = PipelineParams {
             color_blend: Some(BlendState::new(
@@ -467,6 +484,19 @@ impl PipelinesStorage {
             vec![],
         );
         assert_eq!(lines_depth_pipeline, Self::LINES_DEPTH_PIPELINE);
+
+        let circle_pipeline = storage.make_pipeline(
+            ctx,
+            circle_shader,
+            PipelineParams {
+                primitive_type: PrimitiveType::Triangles,
+                ..params
+            },
+            false,
+            vec![],
+            vec![],
+        );
+        assert_eq!(circle_pipeline, Self::CIRCLE_PIPELINE);
 
         storage
     }
@@ -540,6 +570,8 @@ impl PipelinesStorage {
             (DrawMode::Triangles, true) => Self::TRIANGLES_DEPTH_PIPELINE,
             (DrawMode::Lines, false) => Self::LINES_PIPELINE,
             (DrawMode::Lines, true) => Self::LINES_DEPTH_PIPELINE,
+            (DrawMode::Circle, false) => Self::CIRCLE_PIPELINE,
+            (DrawMode::Circle, true) => Self::CIRCLE_PIPELINE,
         }
     }
 
@@ -1107,6 +1139,78 @@ mod shader {
         return in.color * tex.sample(texSmplr, in.uv);
     }
     "#;
+
+    pub const CIRCLE_VERTEX: &str = r#"#version 100
+    attribute vec3 position;
+    attribute vec2 texcoord;
+    attribute vec4 color0;
+    varying lowp vec2 fragCoord;
+    varying lowp vec4 color;
+    uniform mat4 Model;
+    uniform mat4 Projection;
+    void main() {
+        gl_Position = Projection * Model * vec4(position, 1);
+        color = color0 / 255.0;
+        fragCoord = texcoord;
+    }"#;
+
+    pub const CIRCLE_FRAGMENT: &str = r#"#version 100
+    precision lowp float;
+    varying lowp vec4 color;
+    varying lowp vec2 fragCoord;
+    uniform sampler2D Texture;
+    void main() {
+        vec2 uv = fragCoord * 2.0 - 1.0;
+        float distance = length(uv);
+        if (distance < 1.0) {
+            gl_FragColor = color;
+        } else {
+            gl_FragColor = vec4(0.0);
+        }
+    }"#;
+
+    pub const CIRCLE_METAL: &str = r#"
+    #include <metal_stdlib>
+    using namespace metal;
+    
+    struct VertexIn {
+        float3 position [[attribute(0)]];
+        float2 texcoord [[attribute(1)]];
+        float4 color0 [[attribute(2)]];
+    };
+    
+    struct VertexOut {
+        float4 position [[position]];
+        float2 fragCoord;
+        float4 color;
+    };
+    
+    struct Uniforms {
+        float4x4 model;
+        float4x4 projection;
+    };
+    
+    vertex VertexOut vertexShader(VertexIn in [[stage_in]], constant Uniforms& uniforms [[buffer(0)]]) {
+        VertexOut out;
+        
+        out.position = uniforms.projection * uniforms.model * float4(in.position, 1.0);
+        out.color = in.color0 / 255.0;
+        out.fragCoord = in.texcoord;
+        
+        return out;
+    }
+    
+    fragment float4 fragmentShader(VertexOut in [[stage_in]], texture2d<float> tex [[texture(0)]], sampler texSampler [[sampler(0)]]) {
+        float2 uv = in.fragCoord * 2.0 - 1.0;
+        float distance = length(uv);
+        
+        if (distance < 1.0) {
+            return in.color;
+        } else {
+            return float4(0.0, 0.0, 0.0, 0.0);
+        }
+    }"#;
+
     pub fn uniforms() -> Vec<(&'static str, UniformType)> {
         vec![
             ("Projection", UniformType::Mat4),
