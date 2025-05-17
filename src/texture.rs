@@ -169,6 +169,7 @@ impl Image {
     /// Returns this image's data as a slice of 4-byte arrays.
     pub fn get_image_data(&self) -> &[[u8; 4]] {
         use std::slice;
+        assert!(self.width as usize * self.height as usize * 4 == self.bytes.len());
 
         unsafe {
             slice::from_raw_parts(
@@ -181,6 +182,7 @@ impl Image {
     /// Returns this image's data as a mutable slice of 4-byte arrays.
     pub fn get_image_data_mut(&mut self) -> &mut [[u8; 4]] {
         use std::slice;
+        assert!(self.width as usize * self.height as usize * 4 == self.bytes.len());
 
         unsafe {
             slice::from_raw_parts_mut(
