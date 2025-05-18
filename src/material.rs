@@ -60,6 +60,65 @@ pub struct MaterialParams {
     pub textures: Vec<String>,
 }
 
+/// Creates custom material
+///
+/// For OpenGL and Metal examples check examples/custom_material.rs.
+///
+/// # Default variables for OpenGL backend:
+/// ## Attributes (order doesn't matter, any could be skipped):
+/// ```glsl
+/// attribute vec3 position;
+/// attribute vec4 color0;
+/// attribute vec2 texcoord;
+/// ```
+/// ## Uniforms (order doesn't matter, any could be skipped):
+/// ```glsl
+/// uniform mat4 Model;
+/// uniform mat4 Projection;
+/// uniform float4 _Time;
+/// ```
+/// ## Textures (order doesn't matter, any could be skipped):
+/// ```glsl
+/// uniform sampler2D Texture;
+/// uniform sampler2D _ScreenTexture; // check examples/screen_texture.rs to see how it works
+/// ```
+///
+/// # Default variables for Metal backend:
+/// ## Attributes (order doesn't matter, any could be skipped, should have exact index in attribute()):
+/// ```msl
+/// struct Vertex
+/// {
+///     float3 position    [[attribute(0)]];
+///     float2 texcoord    [[attribute(1)]];
+///     float4 color0      [[attribute(2)]];
+/// };
+/// ```
+/// ## Uniforms (**order matters, all fields before needed one should present**):
+/// **All uniforms are in the same buffer, so order matters also for custom additional uniforms**
+/// ```msl
+/// struct Uniforms
+/// {
+///     float4x4 Model;
+///     float4x4 Projection;
+///     float4 _Time;
+///     ...
+///     additional uniforms
+/// };
+/// // same for vertexShader
+/// // Only buffer(0) is correct here
+/// fragment float4 fragmentShader(..., constant Uniforms& u [[buffer(0)]], ...) {...}
+/// ```
+/// ## Textures (order doesn't matter, any could be skipped, should have exact indices in `texture()` and `sampler()`):
+/// ```msl
+/// // same for vertexShader
+/// fragment float4 fragmentShader(...,
+///     texture2d<float> Texture [[texture(0)]],
+///     sampler TextureSmplr [[sampler(0)]],
+///     _ScreenTexture is not working for metal for now
+///     ...
+/// ) {...}
+/// ```
+///
 pub fn load_material(
     shader: crate::ShaderSource,
     params: MaterialParams,
