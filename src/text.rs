@@ -320,6 +320,28 @@ pub fn draw_text(
     )
 }
 
+/// draw_text() but with font (more useful than it looks)
+pub fn draw_text_pro(
+    text: &str,
+    x: f32,
+    y: f32,
+    size: u8,
+    color: Color,
+    font: &Font
+) {
+    draw_text_ex(
+        text,
+        x,
+        y,
+        TextParams {
+            font: Some(font),
+            font_size: size as u16,
+            color: color,
+            ..Default::default()
+        }
+    );
+}
+
 /// Draw text with custom params such as font, font size and font scale
 /// Returns text size
 pub fn draw_text_ex(text: impl AsRef<str>, x: f32, y: f32, params: TextParams) -> TextDimensions {
