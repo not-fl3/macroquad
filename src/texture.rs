@@ -306,19 +306,9 @@ impl Image {
     /// Saves this image as a PNG file.
     /// This method is not supported on web and will panic.
     pub fn export_png(&self, path: &str) {
-        let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
-
-        // flip the image before saving
-        for y in 0..self.height as usize {
-            for x in 0..self.width as usize * 4 {
-                bytes[y * self.width as usize * 4 + x] =
-                    self.bytes[(self.height as usize - y - 1) * self.width as usize * 4 + x];
-            }
-        }
-
         image::save_buffer(
             path,
-            &bytes[..],
+            &self.bytes,
             self.width as _,
             self.height as _,
             image::ColorType::Rgba8,
