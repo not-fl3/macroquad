@@ -1,9 +1,9 @@
 //! Loading and rendering textures. Also render textures, per-pixel image manipulations.
 
-use crate::{
-    color::Color, file::load_file, get_context, get_quad_context, math::Rect,
-    text::atlas::SpriteKey, Error,
-};
+use crate::{color::Color, get_context, get_quad_context, math::Rect, text::atlas::SpriteKey};
+
+#[cfg(feature = "image-crate")]
+use crate::{file::load_file, Error};
 
 pub use crate::quad_gl::FilterMode;
 use crate::quad_gl::{DrawMode, Vertex};
@@ -94,6 +94,7 @@ impl Image {
         }
     }
 
+    #[cfg(feature = "image-crate")]
     /// Creates an Image from a slice of bytes that contains an encoded image.
     ///
     /// If `format` is None, it will make an educated guess on the
@@ -303,6 +304,7 @@ impl Image {
         }
     }
 
+    #[cfg(feature = "image-crate")]
     /// Saves this image as a PNG file.
     /// This method is not supported on web and will panic.
     pub fn export_png(&self, path: &str) {
@@ -327,6 +329,7 @@ impl Image {
     }
 }
 
+#[cfg(feature = "image-crate")]
 /// Loads an [Image] from a file into CPU memory.
 pub async fn load_image(path: &str) -> Result<Image, Error> {
     let bytes = load_file(path).await?;
@@ -334,6 +337,7 @@ pub async fn load_image(path: &str) -> Result<Image, Error> {
     Image::from_file_with_format(&bytes, None)
 }
 
+#[cfg(feature = "image-crate")]
 /// Loads a [Texture2D] from a file into GPU memory.
 pub async fn load_texture(path: &str) -> Result<Texture2D, Error> {
     let bytes = load_file(path).await?;
@@ -671,6 +675,7 @@ impl Texture2D {
         Texture2D::unmanaged(ctx.gl.white_texture)
     }
 
+    #[cfg(feature = "image-crate")]
     /// Creates a Texture2D from a slice of bytes that contains an encoded image.
     ///
     /// If `format` is None, it will make an educated guess on the
