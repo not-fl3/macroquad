@@ -87,6 +87,18 @@ pub fn simulate_mouse_with_touch(option: bool) {
     get_context().simulate_mouse_with_touch = option;
 }
 
+/// This is set to false by default, meaning mouse events will NOT raise touch events in addition to raising mouse events.
+/// If set to true, mouse events WILL raise touch events in addition to raising mouse events.
+pub fn is_simulating_touch_with_mouse() -> bool {
+    get_context().simulate_touch_with_mouse
+}
+
+/// This is set to false by default, meaning mouse events will NOT raise touch events in addition to raising mouse events.
+/// If set to true, mouse events WILL raise touch events in addition to raising mouse events.
+pub fn simulate_touch_with_mouse(option: bool) {
+    get_context().simulate_touch_with_mouse = option;
+}
+
 /// Return touches with positions in pixels.
 pub fn touches() -> Vec<Touch> {
     get_context().touches.values().cloned().collect()
