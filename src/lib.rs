@@ -36,6 +36,7 @@
 //! }
 //!```
 
+use audio::init_sound;
 use miniquad::*;
 
 use std::collections::{HashMap, HashSet};
@@ -175,8 +176,6 @@ pub(crate) mod thread_assert {
     }
 }
 struct Context {
-    audio_context: audio::AudioContext,
-
     screen_width: f32,
     screen_height: f32,
 
@@ -354,9 +353,7 @@ impl Context {
             texture_batcher: texture::Batcher::new(&mut *ctx),
             camera_stack: vec![],
 
-            audio_context: audio::AudioContext::new(),
             coroutines_context: experimental::coroutines::CoroutinesContext::new(),
-
             pc_assets_folder: None,
 
             start_time: miniquad::date::now(),
@@ -927,6 +924,7 @@ impl Window {
                 draw_call_index_capacity,
             );
             unsafe { CONTEXT = Some(context) };
+            init_sound();
 
             Box::new(Stage {
                 main_future: Box::pin(async {
