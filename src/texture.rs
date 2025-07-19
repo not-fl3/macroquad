@@ -8,6 +8,7 @@ use crate::{
 pub use crate::quad_gl::FilterMode;
 use crate::quad_gl::{DrawMode, Vertex};
 use glam::{vec2, Vec2};
+use miniquad::conf::Icon;
 use slotmap::{TextureIdSlotMap, TextureSlotId};
 use std::sync::Arc;
 
@@ -324,6 +325,97 @@ impl Image {
             image::ColorType::Rgba8,
         )
         .unwrap();
+    }
+
+    /// Scales an image up by the given factor `n`.
+    /// Returns the new image.
+    pub fn upscale(&self, n: u16) -> Self {
+        let mut new_bytes = vec![];
+        let mut current_line_length = 0;
+
+        for pixel in self.get_image_data() {
+            // repeat n times horizontally
+            for _ in 0..n {
+                new_bytes.extend_from_slice(pixel);
+            }
+            current_line_length += 1;
+
+            if current_line_length == self.width {
+                // repeat n - 1 times vertically, because one line already exists
+                let last_line = new_bytes
+                    [(new_bytes.len() - (4 * self.width() * n as usize))..new_bytes.len()]
+                    .to_vec();
+                for _ in 0..n - 1 {
+                    new_bytes.extend_from_slice(&last_line);
+                }
+                current_line_length = 0;
+            }
+        }
+
+        Self {
+            width: self.width * n,
+            height: self.height * n,
+            bytes: new_bytes,
+        }
+    }
+
+    /// Scales an image down by the given factor `n`.
+    /// Returns the new image.
+    ///
+    /// This will panic if the image width or height are not divisible by `n`.
+    fn downscale(&self, n: u16) -> Self {
+        assert_eq!(self.width % n, 0, "image width must be a multiple of n");
+        assert_eq!(self.height % n, 0, "image height must be a multiple of n");
+
+        let mut new_bytes = vec![];
+
+        for line in 0..self.height {
+            for column in 0..self.width {
+                if line % n == 0 && column % n == 0 {
+                    let index = usize::from(self.height * line + column);
+                    new_bytes.extend(&self.bytes[(index * 4)..(index * 4 + 4)]);
+                }
+            }
+        }
+
+        Self {
+            width: self.width / n,
+            height: self.height / n,
+            bytes: new_bytes,
+        }
+    }
+
+    /// Converts this image into a miniquad icon that can be put into a [`Conf`](crate::prelude::Conf)
+    /// to use it as the window icon.
+    ///
+    /// Note that this function will panic if the image size is not one of `16x16`, `32x32` or `64x64`.
+    pub fn as_app_icon(&self) -> Icon {
+        fn image_bytes_to_array<const N: usize>(image: &Image) -> [u8; N] {
+            let mut arr = [0u8; N];
+            arr.copy_from_slice(image.bytes.as_slice());
+            arr
+        }
+
+        assert_eq!(self.width() * self.height() * 4, self.bytes.len());
+
+        match (self.width(), self.height()) {
+            (16, 16) => Icon {
+                small: image_bytes_to_array::<1024>(self),
+                medium: image_bytes_to_array::<4096>(&self.upscale(2)),
+                big: image_bytes_to_array::<16384>(&self.upscale(4)),
+            },
+            (32, 32) => Icon {
+                small: image_bytes_to_array::<1024>(&self.downscale(2)),
+                medium: image_bytes_to_array::<4096>(self),
+                big: image_bytes_to_array::<16384>(&self.upscale(2)),
+            },
+            (64, 64) => Icon {
+                small: image_bytes_to_array::<1024>(&self.downscale(4)),
+                medium: image_bytes_to_array::<4096>(&self.downscale(2)),
+                big: image_bytes_to_array::<16384>(self),
+            },
+            _ => panic!("invalid image size, must be 16x16, 32x32 or 64x64"),
+        }
     }
 }
 
