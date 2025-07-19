@@ -181,6 +181,7 @@ struct Context {
     screen_height: f32,
 
     simulate_mouse_with_touch: bool,
+    simulate_touch_with_mouse: bool,
 
     keys_down: HashSet<KeyCode>,
     keys_pressed: HashSet<KeyCode>,
@@ -321,7 +322,8 @@ impl Context {
             screen_height,
 
             simulate_mouse_with_touch: true,
-
+            simulate_touch_with_mouse: false,
+            
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
             keys_released: HashSet::new(),
@@ -554,6 +556,29 @@ impl EventHandler for Stage {
                 .for_each(|arr| arr.push(MiniquadInputEvent::MouseMotion { x, y }));
         }
 
+        // Generate touch events when simulate_touch_with_mouse is enabled
+        // Only generate move events if the left mouse button is down
+        if context.simulate_touch_with_mouse && context.mouse_down.contains(&MouseButton::Left) {
+            let id = 0; // Use a consistent ID for mouse-simulated touch
+            context.touches.insert(
+                id,
+                input::Touch {
+                    id,
+                    phase: input::TouchPhase::Moved,
+                    position: Vec2::new(x, y),
+                },
+            );
+
+            context.input_events.iter_mut().for_each(|arr| {
+                arr.push(MiniquadInputEvent::Touch {
+                    phase: TouchPhase::Moved,
+                    id,
+                    x,
+                    y,
+                })
+            });
+        }
+
         if context.update_on.mouse_motion {
             miniquad::window::schedule_update();
         }
@@ -590,6 +615,28 @@ impl EventHandler for Stage {
             context.mouse_position = Vec2::new(x, y);
         }
 
+        // Generate touch events when simulate_touch_with_mouse is enabled
+        if context.simulate_touch_with_mouse && btn == MouseButton::Left {
+            let id = 0; // Use a consistent ID for mouse-simulated touch
+            context.touches.insert(
+                id,
+                input::Touch {
+                    id,
+                    phase: input::TouchPhase::Started,
+                    position: Vec2::new(x, y),
+                },
+            );
+
+            context.input_events.iter_mut().for_each(|arr| {
+                arr.push(MiniquadInputEvent::Touch {
+                    phase: TouchPhase::Started,
+                    id,
+                    x,
+                    y,
+                })
+            });
+        }
+
         if context.update_on.mouse_down {
             miniquad::window::schedule_update();
         }
@@ -609,6 +656,29 @@ impl EventHandler for Stage {
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
         }
+
+        // Generate touch events when simulate_touch_with_mouse is enabled
+        if context.simulate_touch_with_mouse && btn == MouseButton::Left {
+            let id = 0; // Use a consistent ID for mouse-simulated touch
+            context.touches.insert(
+                id,
+                input::Touch {
+                    id,
+                    phase: input::TouchPhase::Ended,
+                    position: Vec2::new(x, y),
+                },
+            );
+
+            context.input_events.iter_mut().for_each(|arr| {
+                arr.push(MiniquadInputEvent::Touch {
+                    phase: TouchPhase::Ended,
+                    id,
+                    x,
+                    y,
+                })
+            });
+        }
+        
         if context.update_on.mouse_up {
             miniquad::window::schedule_update();
         }
