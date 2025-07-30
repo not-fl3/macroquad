@@ -473,6 +473,15 @@ pub fn get_text_center(
     crate::Vec2::new(x_center, y_center)
 }
 
+pub fn measure_char(
+    chr: char,
+    font: Option<&Font>,
+    font_size: u16,
+    font_scale: f32,
+) -> TextDimensions {
+    measure_text(chr.to_string().as_str(), font, font_size, font_scale)
+}
+
 pub fn measure_text(
     text: impl AsRef<str>,
     font: Option<&Font>,
