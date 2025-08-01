@@ -146,7 +146,7 @@ impl Image {
 
     /// Updates this image from a slice of [Color]s.
     pub fn update(&mut self, colors: &[Color]) {
-        assert!(self.width as usize * self.height as usize == colors.len());
+        assert_eq!(self.pixel_amount(), colors.len());
 
         for i in 0..colors.len() {
             self.bytes[i * 4] = (colors[i].r * 255.) as u8;
@@ -166,17 +166,24 @@ impl Image {
         self.height as usize
     }
 
+    /// Returns the amount of pixels this image has according to its dimensions.
+    pub const fn pixel_amount(&self) -> usize {
+        self.width as usize * self.height as usize
+    }
+
+    fn assert_same_size(&self, other: &Self) {
+        assert!(
+            self.width == other.width && self.height == other.height,
+            "images have different sizes"
+        );
+    }
+
     /// Returns this image's data as a slice of 4-byte arrays.
     pub fn get_image_data(&self) -> &[[u8; 4]] {
         use std::slice;
         assert!(self.width as usize * self.height as usize * 4 == self.bytes.len());
 
-        unsafe {
-            slice::from_raw_parts(
-                self.bytes.as_ptr() as *const [u8; 4],
-                self.width as usize * self.height as usize,
-            )
-        }
+        unsafe { slice::from_raw_parts(self.bytes.as_ptr() as *const [u8; 4], self.pixel_amount()) }
     }
 
     /// Returns this image's data as a mutable slice of 4-byte arrays.
@@ -185,10 +192,7 @@ impl Image {
         assert!(self.width as usize * self.height as usize * 4 == self.bytes.len());
 
         unsafe {
-            slice::from_raw_parts_mut(
-                self.bytes.as_mut_ptr() as *mut [u8; 4],
-                self.width as usize * self.height as usize,
-            )
+            slice::from_raw_parts_mut(self.bytes.as_mut_ptr() as *mut [u8; 4], self.pixel_amount())
         }
     }
 
@@ -235,10 +239,7 @@ impl Image {
     /// Blends this image with another image (of identical dimensions)
     /// Inspired by  OpenCV saturated blending
     pub fn blend(&mut self, other: &Image) {
-        assert!(
-            self.width as usize * self.height as usize
-                == other.width as usize * other.height as usize
-        );
+        self.assert_same_size(other);
 
         for i in 0..self.bytes.len() / 4 {
             let c1: Color = Color {
@@ -271,10 +272,7 @@ impl Image {
     /// overlaying a completely transparent image has no effect
     /// on the original image, though blending them would.
     pub fn overlay(&mut self, other: &Image) {
-        assert!(
-            self.width as usize * self.height as usize
-                == other.width as usize * other.height as usize
-        );
+        self.assert_same_size(other);
 
         for i in 0..self.bytes.len() / 4 {
             let c1: Color = Color {
