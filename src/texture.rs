@@ -325,6 +325,38 @@ impl Image {
         )
         .unwrap();
     }
+
+    /// Scales an image up by the given factor `n`.
+    /// Returns the new image.
+    pub fn upscale(&self, n: u16) -> Self {
+        let mut new_bytes = vec![];
+        let mut current_line_length = 0;
+
+        for pixel in self.get_image_data() {
+            // repeat n times horizontally
+            for _ in 0..n {
+                new_bytes.extend_from_slice(pixel);
+            }
+            current_line_length += 1;
+
+            if current_line_length == self.width {
+                // repeat n - 1 times vertically, because one line already exists
+                let last_line = new_bytes
+                    [(new_bytes.len() - (4 * self.width() * n as usize))..new_bytes.len()]
+                    .to_vec();
+                for _ in 0..n - 1 {
+                    new_bytes.extend_from_slice(&last_line);
+                }
+                current_line_length = 0;
+            }
+        }
+
+        Self {
+            width: self.width * n,
+            height: self.height * n,
+            bytes: new_bytes,
+        }
+    }
 }
 
 /// Loads an [Image] from a file into CPU memory.
