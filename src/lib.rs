@@ -40,6 +40,7 @@ use miniquad::*;
 
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
+use std::mem::ManuallyDrop;
 use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
 
@@ -481,8 +482,9 @@ impl Context {
     }
 }
 
+// dropping `Context` is unsound (#693)
 #[no_mangle]
-static mut CONTEXT: Option<Context> = None;
+static mut CONTEXT: Option<ManuallyDrop<Context>> = None;
 
 // This is required for #[macroquad::test]
 //
@@ -926,7 +928,7 @@ impl Window {
                 draw_call_vertex_capacity,
                 draw_call_index_capacity,
             );
-            unsafe { CONTEXT = Some(context) };
+            unsafe { CONTEXT = Some(ManuallyDrop::new(context)) };
 
             Box::new(Stage {
                 main_future: Box::pin(async {
