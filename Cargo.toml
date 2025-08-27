@@ -53,3 +53,7 @@ macroquad = { path = './' }
 #miniquad = { git = "https://github.com/not-fl3/miniquad", branch = "msaa_render_texture" }
 #quad-gl = {path = './quad-gl'}
 
+# these lints are allowed only as workarounds to suppress warnings
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(one_screenshot)'] }
+static_mut_refs = { level = "allow" }
