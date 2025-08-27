@@ -64,13 +64,28 @@ impl TexturesContext {
 /// Image, data stored in CPU memory
 #[derive(Clone)]
 pub struct Image {
+    // FIXME: remove all the deprecation notes once the `Image` fields are private
+    #[deprecated(
+        since = "0.4.14",
+        note = "this will be made private, use `Image::bytes`, `Image::bytes_mut` or `Image::bytes_vec_mut` for reading and writing instead"
+    )]
     pub bytes: Vec<u8>,
+    #[deprecated(
+        since = "0.4.14",
+        note = "this will be made private, use `Image::width` or `Image::width_mut` for reading and writing instead"
+    )]
     pub width: u16,
+    #[deprecated(
+        since = "0.4.14",
+        note = "this will be made private, use `Image::height` or `Image::height_mut` for reading and writing instead"
+    )]
     pub height: u16,
 }
 
 impl std::fmt::Debug for Image {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // FIXME: remove this once the `Image` fields are private
+        #[allow(deprecated)]
         f.debug_struct("Image")
             .field("width", &self.width)
             .field("height", &self.height)
@@ -79,6 +94,8 @@ impl std::fmt::Debug for Image {
     }
 }
 
+// FIXME: remove this once the `Image` fields are private
+#[allow(deprecated)]
 impl Image {
     /// Creates an empty Image.
     ///
@@ -106,7 +123,7 @@ impl Image {
     /// let icon = Image::from_file_with_format(
     ///     include_bytes!("../examples/rust.png"),
     ///     Some(ImageFormat::Png),
-    ///     );
+    ///  );
     /// ```
     pub fn from_file_with_format(
         bytes: &[u8],
@@ -128,15 +145,13 @@ impl Image {
         })
     }
 
-    /// Creates an Image filled with the provided [Color].
-    pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
-        let mut bytes = vec![0; width as usize * height as usize * 4];
-        for i in 0..width as usize * height as usize {
-            bytes[i * 4 + 0] = (color.r * 255.) as u8;
-            bytes[i * 4 + 1] = (color.g * 255.) as u8;
-            bytes[i * 4 + 2] = (color.b * 255.) as u8;
-            bytes[i * 4 + 3] = (color.a * 255.) as u8;
-        }
+    /// Creates an image from the provided parts.
+    ///
+    /// # Panics
+    /// Panics if the width and height do not match the amount of bytes given.
+    pub fn from_raw_parts(width: u16, height: u16, bytes: Vec<u8>) -> Image {
+        assert_eq!(width as usize * height as usize * 4, bytes.len());
+
         Image {
             width,
             height,
@@ -144,9 +159,28 @@ impl Image {
         }
     }
 
+    /// Creates an Image filled with the provided [Color].
+    pub fn filled_with_color(width: u16, height: u16, color: Color) -> Image {
+        let bytes: [u8; 4] = color.into();
+        Image {
+            width,
+            height,
+            bytes: bytes.repeat(width as usize * height as usize),
+        }
+    }
+
+    /// Creates an Image filled with the provided [Color].
+    #[deprecated(since = "0.4.14", note = "use `Image::filled_with_color` instead")]
+    pub fn gen_image_color(width: u16, height: u16, color: Color) -> Image {
+        Image::filled_with_color(width, height, color)
+    }
+
     /// Updates this image from a slice of [Color]s.
+    ///
+    /// # Panics
+    /// Panics if the amount of colors and the amount of image pixels differ.
     pub fn update(&mut self, colors: &[Color]) {
-        assert!(self.width as usize * self.height as usize == colors.len());
+        assert_eq!(self.pixel_amount(), colors.len());
 
         for i in 0..colors.len() {
             self.bytes[i * 4] = (colors[i].r * 255.) as u8;
@@ -157,13 +191,57 @@ impl Image {
     }
 
     /// Returns the width of this image.
+    // FIXME: change the argument type to u16
     pub const fn width(&self) -> usize {
         self.width as usize
     }
 
     /// Returns the height of this image.
+    // FIXME: change the argument type to u16
     pub const fn height(&self) -> usize {
         self.height as usize
+    }
+
+    /// Returns the bytes of this image as an immutable slice.
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    /// Returns the bytes of this image as a mutable slice.
+    pub fn bytes_mut(&mut self) -> &mut [u8] {
+        &mut self.bytes
+    }
+
+    /// Allows changing the width of this image unsafely.
+    ///
+    /// # Safety
+    /// Increasing the width without properly filling the new pixels can cause Undefined Behaviour.
+    pub unsafe fn width_mut(&mut self) -> &mut u16 {
+        &mut self.width
+    }
+
+    /// Allows changing the height of this image unsafely.
+    ///
+    /// # Safety
+    /// Increasing the height without properly filling the new pixels can cause Undefined Behaviour.
+    pub unsafe fn height_mut(&mut self) -> &mut u16 {
+        &mut self.height
+    }
+
+    /// Allows changing the bytes of this image unsafely.
+    ///
+    /// If you do not intend to change the amount of the bytes,
+    /// use `Image::bytes_mut` instead, which is safe.
+    ///
+    /// # Safety
+    /// Removing bytes and not changing width and height accordingly can cause Undefined Behaviour.
+    pub unsafe fn bytes_vec_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.bytes
+    }
+
+    /// Returns the amount of pixels this image has according to its dimensions.
+    pub const fn pixel_amount(&self) -> usize {
+        self.width as usize * self.height as usize
     }
 
     /// Returns this image's data as a slice of 4-byte arrays.
@@ -171,12 +249,7 @@ impl Image {
         use std::slice;
         assert!(self.width as usize * self.height as usize * 4 == self.bytes.len());
 
-        unsafe {
-            slice::from_raw_parts(
-                self.bytes.as_ptr() as *const [u8; 4],
-                self.width as usize * self.height as usize,
-            )
-        }
+        unsafe { slice::from_raw_parts(self.bytes.as_ptr() as *const [u8; 4], self.pixel_amount()) }
     }
 
     /// Returns this image's data as a mutable slice of 4-byte arrays.
@@ -185,44 +258,66 @@ impl Image {
         assert!(self.width as usize * self.height as usize * 4 == self.bytes.len());
 
         unsafe {
-            slice::from_raw_parts_mut(
-                self.bytes.as_mut_ptr() as *mut [u8; 4],
-                self.width as usize * self.height as usize,
-            )
+            slice::from_raw_parts_mut(self.bytes.as_mut_ptr() as *mut [u8; 4], self.pixel_amount())
+        }
+    }
+
+    /// Replace the bytes of this image with the bytes from `data`.
+    ///
+    /// # Panics
+    /// Panics if `data` has a different length than `self.bytes`.
+    pub fn set_image_data(&mut self, data: &[[u8; 4]]) {
+        assert_eq!(self.pixel_amount(), data.len());
+
+        for i in 0..data.len() {
+            self.bytes[i * 4] = data[i][0];
+            self.bytes[i * 4 + 1] = data[i][1];
+            self.bytes[i * 4 + 2] = data[i][2];
+            self.bytes[i * 4 + 3] = data[i][3];
         }
     }
 
     /// Modifies a pixel [Color] in this image.
+    ///
+    /// # Panics
+    /// Panics if the given pixel coordinates are not inside the image.
+    // FIXME: change the argument type to u16
     pub fn set_pixel(&mut self, x: u32, y: u32, color: Color) {
         assert!(x < self.width as u32);
         assert!(y < self.height as u32);
 
-        let width = self.width;
+        let width = self.width as u32;
 
-        self.get_image_data_mut()[(y * width as u32 + x) as usize] = color.into();
+        self.get_image_data_mut()[(y * width + x) as usize] = color.into();
     }
 
     /// Returns a pixel [Color] from this image.
+    ///
+    /// # Panics
+    /// Panics if the given pixel coordinates are not inside the image.
+    // FIXME: change the argument type to u16
     pub fn get_pixel(&self, x: u32, y: u32) -> Color {
-        self.get_image_data()[(y * self.width as u32 + x) as usize].into()
+        let x = x as u16;
+        let y = y as u16;
+        assert!(x < self.width);
+        assert!(y < self.height);
+
+        self.get_image_data()[(y * self.width + x) as usize].into()
     }
 
     /// Returns an Image from a rect inside this image.
     pub fn sub_image(&self, rect: Rect) -> Image {
         let width = rect.w as usize;
         let height = rect.h as usize;
-        let mut bytes = vec![0; width * height * 4];
+        let mut bytes = Vec::with_capacity(width * height * 4);
 
-        let x = rect.x as usize;
-        let y = rect.y as usize;
-        let mut n = 0;
-        for y in y..y + height {
-            for x in x..x + width {
-                bytes[n] = self.bytes[y * self.width as usize * 4 + x * 4 + 0];
-                bytes[n + 1] = self.bytes[y * self.width as usize * 4 + x * 4 + 1];
-                bytes[n + 2] = self.bytes[y * self.width as usize * 4 + x * 4 + 2];
-                bytes[n + 3] = self.bytes[y * self.width as usize * 4 + x * 4 + 3];
-                n += 4;
+        let rect_x = rect.x as usize;
+        let rect_y = rect.y as usize;
+
+        for y in rect_y..rect_y + height {
+            for x in rect_x..rect_x + width {
+                let b = y * self.width as usize * 4 + x * 4;
+                bytes.extend_from_slice(&self.bytes[b..b + 4]);
             }
         }
         Image {
@@ -232,28 +327,32 @@ impl Image {
         }
     }
 
-    /// Blends this image with another image (of identical dimensions)
-    /// Inspired by  OpenCV saturated blending
-    pub fn blend(&mut self, other: &Image) {
+    fn assert_same_size(&self, other: &Image) {
         assert!(
-            self.width as usize * self.height as usize
-                == other.width as usize * other.height as usize
+            self.width == other.width && self.height == other.height,
+            "images have different sizes"
         );
+    }
+
+    /// Blends this image with another image (of identical dimensions).
+    /// Inspired by OpenCV saturated blending.
+    pub fn blend(&mut self, other: &Image) {
+        self.assert_same_size(other);
 
         for i in 0..self.bytes.len() / 4 {
-            let c1: Color = Color {
+            let c1 = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
                 a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let c2: Color = Color {
+            let c2 = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
                 a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let new_color: Color = Color {
+            let new_color = Color {
                 r: f32::min(c1.r * c1.a + c2.r * c2.a, 1.),
                 g: f32::min(c1.g * c1.a + c2.g * c2.a, 1.),
                 b: f32::min(c1.b * c1.a + c2.b * c2.a, 1.),
@@ -271,25 +370,22 @@ impl Image {
     /// overlaying a completely transparent image has no effect
     /// on the original image, though blending them would.
     pub fn overlay(&mut self, other: &Image) {
-        assert!(
-            self.width as usize * self.height as usize
-                == other.width as usize * other.height as usize
-        );
+        self.assert_same_size(other);
 
         for i in 0..self.bytes.len() / 4 {
-            let c1: Color = Color {
+            let c1 = Color {
                 r: self.bytes[i * 4] as f32 / 255.,
                 g: self.bytes[i * 4 + 1] as f32 / 255.,
                 b: self.bytes[i * 4 + 2] as f32 / 255.,
                 a: self.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let c2: Color = Color {
+            let c2 = Color {
                 r: other.bytes[i * 4] as f32 / 255.,
                 g: other.bytes[i * 4 + 1] as f32 / 255.,
                 b: other.bytes[i * 4 + 2] as f32 / 255.,
                 a: other.bytes[i * 4 + 3] as f32 / 255.,
             };
-            let new_color: Color = Color {
+            let new_color = Color {
                 r: f32::min(c1.r * (1. - c2.a) + c2.r * c2.a, 1.),
                 g: f32::min(c1.g * (1. - c2.a) + c2.g * c2.a, 1.),
                 b: f32::min(c1.b * (1. - c2.a) + c2.b * c2.a, 1.),
@@ -306,21 +402,22 @@ impl Image {
     /// Saves this image as a PNG file.
     /// This method is not supported on web and will panic.
     pub fn export_png(&self, path: &str) {
-        let mut bytes = vec![0; self.width as usize * self.height as usize * 4];
+        let mut bytes = vec![0; self.pixel_amount() * 4];
+        let height = self.height as usize;
+        let width = self.width as usize;
 
         // flip the image before saving
-        for y in 0..self.height as usize {
-            for x in 0..self.width as usize * 4 {
-                bytes[y * self.width as usize * 4 + x] =
-                    self.bytes[(self.height as usize - y - 1) * self.width as usize * 4 + x];
+        for y in 0..height {
+            for x in 0..width * 4 {
+                bytes[y * width * 4 + x] = self.bytes[(height - y - 1) * width * 4 + x];
             }
         }
 
         image::save_buffer(
             path,
-            &bytes[..],
-            self.width as _,
-            self.height as _,
+            &bytes,
+            self.width as u32,
+            self.height as u32,
             image::ColorType::Rgba8,
         )
         .unwrap();
@@ -706,7 +803,7 @@ impl Texture2D {
 
     /// Creates a Texture2D from an [Image].
     pub fn from_image(image: &Image) -> Texture2D {
-        Texture2D::from_rgba8(image.width, image.height, &image.bytes)
+        Texture2D::from_rgba8(image.width() as u16, image.height() as u16, image.bytes())
     }
 
     /// Creates a Texture2D from a miniquad
@@ -748,10 +845,10 @@ impl Texture2D {
         let ctx = get_quad_context();
         let (width, height) = ctx.texture_size(self.raw_miniquad_id());
 
-        assert_eq!(width, image.width as u32);
-        assert_eq!(height, image.height as u32);
+        assert_eq!(width, image.width() as u32);
+        assert_eq!(height, image.height() as u32);
 
-        ctx.texture_update(self.raw_miniquad_id(), &image.bytes);
+        ctx.texture_update(self.raw_miniquad_id(), image.bytes());
     }
 
     // Updates the texture from an array of bytes.
@@ -782,7 +879,7 @@ impl Texture2D {
             y_offset,
             width,
             height,
-            &image.bytes,
+            image.bytes(),
         );
     }
 
@@ -882,12 +979,8 @@ impl Texture2D {
     pub fn get_texture_data(&self) -> Image {
         let ctx = get_quad_context();
         let (width, height) = ctx.texture_size(self.raw_miniquad_id());
-        let mut image = Image {
-            width: width as _,
-            height: height as _,
-            bytes: vec![0; width as usize * height as usize * 4],
-        };
-        ctx.texture_read_pixels(self.raw_miniquad_id(), &mut image.bytes);
+        let mut image = Image::filled_with_color(width as u16, height as u16, crate::color::BLANK);
+        ctx.texture_read_pixels(self.raw_miniquad_id(), image.bytes_mut());
         image
     }
 }

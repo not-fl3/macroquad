@@ -107,14 +107,14 @@ impl Font {
         let sprite = self.atlas.lock().unwrap().new_unique_id();
         self.atlas.lock().unwrap().cache_sprite(
             sprite,
-            Image {
-                bytes: bitmap
+            Image::from_raw_parts(
+                width,
+                height,
+                bitmap
                     .iter()
                     .flat_map(|coverage| vec![255, 255, 255, *coverage])
                     .collect(),
-                width,
-                height,
-            },
+            ),
         );
         let advance = metrics.advance_width;
 
