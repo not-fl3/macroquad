@@ -892,8 +892,8 @@ impl Emitter {
                 if self.cpu_counterpart[i].lived != self.cpu_counterpart[i].lifetime {
                     self.particles_spawned -= 1;
                 }
-                self.gpu_particles.remove(i);
-                self.cpu_counterpart.remove(i);
+                self.gpu_particles.swap_remove(i);
+                self.cpu_counterpart.swap_remove(i);
             }
         }
 
@@ -954,6 +954,8 @@ impl Emitter {
         };
 
         ctx.apply_pipeline(&self.pipeline);
+        let (x, y, w, h) = quad_gl.get_viewport();
+        ctx.apply_viewport(x, y, w, h);
     }
 
     pub fn end_render_pass(&mut self, quad_gl: &QuadGl, ctx: &mut dyn miniquad::RenderingBackend) {
