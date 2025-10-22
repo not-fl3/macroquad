@@ -121,6 +121,15 @@ impl Rect {
     pub const fn offset(self, offset: Vec2) -> Rect {
         Rect::new(self.x + offset.x, self.y + offset.y, self.w, self.h)
     }
+
+    /// Returns a normalized rect where width and height are guaranteed to be positive.
+    pub fn normalized(&self) -> Rect {
+        let x = self.x.min(self.x + self.w);
+        let y = self.y.min(self.y + self.h);
+        let w = self.w.abs();
+        let h = self.h.abs();
+        Rect { x, y, w, h }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
