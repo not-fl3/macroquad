@@ -28,16 +28,21 @@ pub(crate) enum TextureHandle {
 pub(crate) struct TexturesContext {
     textures: TextureIdSlotMap,
     removed: Vec<TextureSlotId>,
+    removed_render_passes: Vec<miniquad::RenderPass>,
 }
 impl TexturesContext {
     pub fn new() -> TexturesContext {
         TexturesContext {
             textures: TextureIdSlotMap::new(),
             removed: Vec::with_capacity(200),
+            removed_render_passes: Vec::with_capacity(10),
         }
     }
     fn schedule_removed(&mut self, texture: TextureSlotId) {
         self.removed.push(texture);
+    }
+    fn schedule_render_pass_removed(&mut self, pass: miniquad::RenderPass) {
+        self.removed_render_passes.push(pass);
     }
     fn store_texture(&mut self, texture: miniquad::TextureId) -> TextureHandle {
         TextureHandle::Managed(Arc::new(TextureSlotGuarded(self.textures.insert(texture))))
@@ -52,6 +57,11 @@ impl TexturesContext {
         self.textures.len()
     }
     pub fn garbage_collect(&mut self, ctx: &mut miniquad::Context) {
+        // Delete RenderPasses first, then textures (safer for attachments/FBOs)
+        for pass in self.removed_render_passes.drain(0..) {
+            ctx.delete_render_pass(pass);
+        }
+
         for texture in self.removed.drain(0..) {
             if let Some(texture) = self.textures.get(texture) {
                 ctx.delete_texture(texture);
@@ -376,9 +386,11 @@ impl RenderPass {
 
 impl Drop for RenderPass {
     fn drop(&mut self) {
+        // Safety: if strong_count < 2, this is the last strong ref.
+        // No new strong references can be created after this point.
         if Arc::strong_count(&self.render_pass) < 2 {
-            let context = get_quad_context();
-            context.delete_render_pass(*self.render_pass);
+            let ctx = get_context();
+            ctx.textures.schedule_render_pass_removed(*self.render_pass);
         }
     }
 }
