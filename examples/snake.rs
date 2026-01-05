@@ -23,7 +23,8 @@ async fn main() {
     let mut score = 0;
     let mut speed = 0.3;
     let mut last_update = get_time();
-    let mut navigation_lock = false;
+    // A queue to buffer player inputs for more responsive controls
+    let mut input_buffer: LinkedList<Point> = LinkedList::new();
     let mut game_over = false;
 
     let up = (0, -1);
@@ -33,22 +34,32 @@ async fn main() {
 
     loop {
         if !game_over {
-            if is_key_down(KeyCode::Right) && snake.dir != left && !navigation_lock {
-                snake.dir = right;
-                navigation_lock = true;
-            } else if is_key_down(KeyCode::Left) && snake.dir != right && !navigation_lock {
-                snake.dir = left;
-                navigation_lock = true;
-            } else if is_key_down(KeyCode::Up) && snake.dir != down && !navigation_lock {
-                snake.dir = up;
-                navigation_lock = true;
-            } else if is_key_down(KeyCode::Down) && snake.dir != up && !navigation_lock {
-                snake.dir = down;
-                navigation_lock = true;
+            // Get the last direction command given, or the snake's current direction if buffer is empty.
+            // This prevents adding opposite moves to the buffer.
+            let last_dir = input_buffer.back().cloned().unwrap_or(snake.dir);
+
+            // Use is_key_pressed to register input only once per press
+            if is_key_pressed(KeyCode::Right) && last_dir != left {
+                input_buffer.push_back(right);
+            } else if is_key_pressed(KeyCode::Left) && last_dir != right {
+                input_buffer.push_back(left);
+            } else if is_key_pressed(KeyCode::Up) && last_dir != down {
+                input_buffer.push_back(up);
+            } else if is_key_pressed(KeyCode::Down) && last_dir != up {
+                input_buffer.push_back(down);
             }
 
             if get_time() - last_update > speed {
                 last_update = get_time();
+
+                // Process one command from the input buffer each tick
+                if let Some(new_dir) = input_buffer.pop_front() {
+                    // Extra check to ensure the snake doesn't reverse on itself from a buffered command
+                    if new_dir.0 != -snake.dir.0 || new_dir.1 != -snake.dir.1 {
+                        snake.dir = new_dir;
+                    }
+                }
+
                 snake.body.push_front(snake.head);
                 snake.head = (snake.head.0 + snake.dir.0, snake.head.1 + snake.dir.1);
                 if snake.head == fruit {
@@ -70,7 +81,6 @@ async fn main() {
                         game_over = true;
                     }
                 }
-                navigation_lock = false;
             }
         }
         if !game_over {
@@ -156,6 +166,7 @@ async fn main() {
                 score = 0;
                 speed = 0.3;
                 last_update = get_time();
+                input_buffer.clear(); // Clear buffer on restart
                 game_over = false;
             }
         }
