@@ -240,7 +240,12 @@ impl Default for Camera3D {
 
 impl Camera for Camera3D {
     fn matrix(&self) -> Mat4 {
-        let aspect = self.aspect.unwrap_or(screen_width() / screen_height());
+        let (width, height) = if let Some(rt) = &self.render_target {
+            (rt.texture.width(), rt.texture.height())
+        } else {
+            (screen_width(), screen_height())
+        };
+        let aspect = self.aspect.unwrap_or(width / height);
 
         match self.projection {
             Projection::Perspective => {
