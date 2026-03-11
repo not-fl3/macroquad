@@ -111,7 +111,7 @@ impl Color {
         )
     }
 
-    /// Build a color from a hexadecimal u32.
+    /// Build a color from a hexadecimal u32 (`0xRRGGBB`) with alpha set to 1.0.
     ///
     /// # Example
     ///
