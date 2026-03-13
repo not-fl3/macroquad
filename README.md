@@ -28,7 +28,7 @@
 
 Macroquad is a normal rust dependency, therefore an empty macroquad project may be created with:
 
-```bash
+```sh
 # Create empty cargo project
 cargo init --bin
 ```
@@ -61,7 +61,7 @@ async fn main() {
 ```
 
 And to run it natively:
-```bash
+```sh
 cargo run
 ```
 
@@ -69,7 +69,7 @@ For more examples take a look at [Macroquad examples folder](https://github.com/
 
 ### Linux
 
-```bash
+```sh
 # ubuntu system dependencies
 apt install pkg-config libx11-dev libxi-dev libgl1-mesa-dev libasound2-dev
 
@@ -77,7 +77,7 @@ apt install pkg-config libx11-dev libxi-dev libgl1-mesa-dev libasound2-dev
 dnf install libX11-devel libXi-devel mesa-libGL-devel alsa-lib-devel
 
 # arch linux system dependencies
- pacman -S pkg-config libx11 libxi mesa-libgl alsa-lib
+pacman -S pkg-config libx11 libxi mesa-libgl alsa-lib
 ```
 
 ### Windows
@@ -149,7 +149,7 @@ basic-http-server .
 
 To run on the simulator:
 
-```
+```sh
 mkdir MyGame.app
 cargo build --target x86_64-apple-ios --release
 cp target/x86_64-apple-ios/release/mygame MyGame.app
@@ -200,7 +200,7 @@ Rust's `async/await` is used to solve just one problem - cross platform main loo
 
 
 The problem: on WASM and android it's not really easy to organize the main loop like this:
-```
+```rust
 fn main() {
     // do some initialization
 
