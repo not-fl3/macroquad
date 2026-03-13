@@ -99,7 +99,7 @@ rustup target add wasm32-unknown-unknown
 cargo build --target wasm32-unknown-unknown
 ```
 
-This will produce .wasm file in `target/debug/wasm32-unknown-unknown/CRATENAME.wasm` or in `target/release/wasm32-unknown-unknown/CRATENAME.wasm` if built with `--release`.
+This will produce .wasm file in `target/wasm32-unknown-unknown/debug/CRATENAME.wasm` or in `target/wasm32-unknown-unknown/release/CRATENAME.wasm` if built with `--release`.
 
 And then use the following .html to load it:
 
@@ -152,7 +152,7 @@ To run on the simulator:
 ```
 mkdir MyGame.app
 cargo build --target x86_64-apple-ios --release
-cp target/release/mygame MyGame.app
+cp target/x86_64-apple-ios/release/mygame MyGame.app
 # only if the game have any assets
 cp -r assets MyGame.app
 cat > MyGame.app/Info.plist << EOF
