@@ -597,7 +597,7 @@ impl EventHandler for Stage {
 
     fn mouse_button_up_event(&mut self, btn: MouseButton, x: f32, y: f32) {
         let context = get_context();
-
+        //     println!("btn = {}", btn as u32);
         context.mouse_down.remove(&btn);
         context.mouse_released.insert(btn);
 
@@ -609,6 +609,32 @@ impl EventHandler for Stage {
         if !context.cursor_grabbed {
             context.mouse_position = Vec2::new(x, y);
         }
+        if context.update_on.mouse_up {
+            miniquad::window::schedule_update();
+        }
+    }
+
+    fn mouse_leave_event(&mut self) {
+        let context = get_context();
+        context.mouse_released.extend(context.mouse_down.drain());
+    }
+
+    fn mouse_enter_event(&mut self, btn: MouseButton, x: f32, y: f32) {
+        let context = get_context();
+
+        if !context.cursor_grabbed {
+            context.mouse_position = Vec2::new(x, y);
+        }
+
+        context
+            .input_events
+            .iter_mut()
+            .for_each(|arr| arr.push(MiniquadInputEvent::MouseButtonUp { x, y, btn }));
+        if btn != MouseButton::Unknown {
+            context.mouse_down.insert(btn);
+            context.mouse_pressed.insert(btn);
+        }
+
         if context.update_on.mouse_up {
             miniquad::window::schedule_update();
         }
@@ -646,6 +672,10 @@ impl EventHandler for Stage {
             .input_events
             .iter_mut()
             .for_each(|arr| arr.push(MiniquadInputEvent::Touch { phase, id, x, y }));
+
+        if context.update_on.mouse_down {
+            miniquad::window::schedule_update();
+        }
     }
 
     fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
