@@ -104,18 +104,17 @@ pub fn draw_rectangle_lines_ex(
         transform_matrix * vec4( 1.0 - params.offset.x - tx,  0.0 - params.offset.y + ty, 0.0, 1.0),
     ];
 
-    // TODO: fix UVs
     #[rustfmt::skip]
     let vertices = [
-        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 1.0, params.color),
-        Vertex::new(v[1].x, v[1].y, v[1].z, 1.0, 0.0, params.color),
+        Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 0.0, params.color),
+        Vertex::new(v[1].x, v[1].y, v[1].z, 0.0, 1.0, params.color),
         Vertex::new(v[2].x, v[2].y, v[2].z, 1.0, 1.0, params.color),
         Vertex::new(v[3].x, v[3].y, v[3].z, 1.0, 0.0, params.color),
 
-        Vertex::new(v[4].x, v[4].y, v[4].z, 0.0, 0.0, params.color),
-        Vertex::new(v[5].x, v[5].y, v[5].z, 0.0, 0.0, params.color),
-        Vertex::new(v[6].x, v[6].y, v[6].z, 0.0, 0.0, params.color),
-        Vertex::new(v[7].x, v[7].y, v[7].z, 0.0, 0.0, params.color),
+        Vertex::new(v[4].x, v[4].y, v[4].z, tx, ty, params.color),
+        Vertex::new(v[5].x, v[5].y, v[5].z, tx, 1.0 - ty, params.color),
+        Vertex::new(v[6].x, v[6].y, v[6].z, 1.0 - tx, 1.0 - ty, params.color),
+        Vertex::new(v[7].x, v[7].y, v[7].z, 1.0 - tx, ty, params.color),
     ];
     #[rustfmt::skip]
     let indices: [u16; 24] = [
@@ -161,18 +160,22 @@ impl Default for DrawRectangleParams {
 /// with parameters.
 pub fn draw_rectangle_ex(x: f32, y: f32, w: f32, h: f32, params: DrawRectangleParams) {
     let context = get_context();
-    let transform_matrix = Mat4::from_translation(vec3(x, y, 0.0))
-        * Mat4::from_axis_angle(vec3(0.0, 0.0, 1.0), params.rotation)
-        * Mat4::from_scale(vec3(w, h, 1.0));
+    let (sin, cos) = params.rotation.sin_cos();
 
     #[rustfmt::skip]
-    let v = [
-        transform_matrix * vec4( 0.0 - params.offset.x,  0.0 - params.offset.y, 0.0, 1.0),
-        transform_matrix * vec4( 0.0 - params.offset.x,  1.0 - params.offset.y, 0.0, 1.0),
-        transform_matrix * vec4( 1.0 - params.offset.x,  1.0 - params.offset.y, 0.0, 1.0),
-        transform_matrix * vec4( 1.0 - params.offset.x,  0.0 - params.offset.y, 0.0, 1.0),
-    ];
-
+      let v = [
+          (0.0 - params.offset.x, 0.0 - params.offset.y),
+          (0.0 - params.offset.x, 1.0 - params.offset.y),
+          (1.0 - params.offset.x, 1.0 - params.offset.y),
+          (1.0 - params.offset.x, 0.0 - params.offset.y),
+      ].map(|(px, py)| {
+          vec4(
+              x + px * w * cos - py * h * sin,
+              y + px * w * sin + py * h * cos,
+              0.0,
+              1.0,
+          )
+      });
     #[rustfmt::skip]
     let vertices = [
         Vertex::new(v[0].x, v[0].y, v[0].z, 0.0, 0.0, params.color),
@@ -182,6 +185,123 @@ pub fn draw_rectangle_ex(x: f32, y: f32, w: f32, h: f32, params: DrawRectanglePa
     ];
     let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
 
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
+}
+/// Draws a rounded rectangle with its top-left corner at `[x, y]` with size `[w, h]` width going to
+/// the right, height going down), with a given number of `sides`, `radius` and `color`
+pub fn draw_rectangle_rounded(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    sides: u8,
+    radius: f32,
+    color: Color,
+) {
+    let context = get_context();
+
+    let mut vertices = Vec::<Vertex>::with_capacity(sides as usize * 4 + 1);
+    let mut indices = Vec::<u16>::with_capacity(sides as usize * 4 * 3);
+
+    let radius = radius.abs().min(w * 0.5).min(h * 0.5);
+    #[rustfmt::skip]
+    struct Corner { x: f32, y: f32, angle: f32}
+    let rx = radius / w;
+    let ry = radius / h;
+    #[rustfmt::skip]
+    let corners = [
+        Corner { x: rx, y: ry, angle: std::f32::consts::PI },
+        Corner { x: 1.0 - rx, y: ry, angle: 1.5 * std::f32::consts::PI },
+        Corner { x: 1.0 - rx, y: 1.0 - ry, angle: 0f32 },
+        Corner { x: rx, y: 1.0 - ry, angle: std::f32::consts::PI * 0.5 },
+    ];
+    vertices.push(Vertex::new(x + 0.5 * w, y + 0.5 * h, 0., 0.5, 0.5, color));
+    for i in 0..4 {
+        for j in 0..sides {
+            let angle = corners[i].angle + (j as f32 / sides as f32) * std::f32::consts::PI * 0.5;
+            let u = corners[i].x + angle.cos() * rx;
+            let v = corners[i].y + angle.sin() * ry;
+            let vertex = Vertex::new(x + u * w, y + v * h, 0., u, v, color);
+            vertices.push(vertex);
+        }
+    }
+    let vertex_count = vertices.len() as u16;
+    for i in 1..vertex_count {
+        let next = if i == vertex_count - 1 { 1 } else { i + 1 };
+        indices.extend_from_slice(&[0, i, next]);
+    }
+    assert_eq!(vertices.len(), sides as usize * 4 + 1);
+    assert_eq!(indices.len(), sides as usize * 4 * 3);
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Triangles);
+    context.gl.geometry(&vertices, &indices);
+}
+
+/// Draws a rounded rectangle with its top-left corner at `[x, y]` with size `[w, h]` width going to
+/// the right, height going down), with a given number of `sides`, `radius` and `color`,
+/// with parameters.
+pub fn draw_rectangle_rounded_ex(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    sides: u8,
+    radius: f32,
+    params: DrawRectangleParams,
+) {
+    let context = get_context();
+    let (sin, cos) = params.rotation.sin_cos();
+    let mut vertices = Vec::<Vertex>::with_capacity(sides as usize * 4 + 1);
+    let mut indices = Vec::<u16>::with_capacity(sides as usize * 4 * 3);
+
+    let radius = radius.abs().min(w * 0.5).min(h * 0.5);
+    #[rustfmt::skip]
+    struct Corner { x: f32, y: f32, angle: f32}
+    let rx = radius / w;
+    let ry = radius / h;
+    #[rustfmt::skip]
+    let corners = [
+        Corner { x: rx, y: ry, angle: std::f32::consts::PI },
+        Corner { x: 1.0 - rx, y: ry, angle: 1.5 * std::f32::consts::PI },
+        Corner { x: 1.0 - rx, y: 1.0 - ry, angle: 0f32 },
+        Corner { x: rx, y: 1.0 - ry, angle: std::f32::consts::PI * 0.5 },
+    ];
+    // center vertex
+    let px = 0.5 - params.offset.x;
+    let py = 0.5 - params.offset.y;
+    vertices.push(Vertex::new(
+        x + px * w * cos - py * h * sin,
+        y + px * w * sin + py * h * cos,
+        0.,
+        0.5,
+        0.5,
+        params.color,
+    ));
+    for i in 0..4 {
+        for j in 0..sides {
+            let angle = corners[i].angle + (j as f32 / sides as f32) * std::f32::consts::PI * 0.5;
+            let u = corners[i].x + angle.cos() * rx;
+            let v = corners[i].y + angle.sin() * ry;
+            let px = u - params.offset.x;
+            let py = v - params.offset.y;
+            vertices.push(Vertex::new(
+                x + px * w * cos - py * h * sin,
+                y + px * w * sin + py * h * cos,
+                0.,
+                u,
+                v,
+                params.color,
+            ));
+        }
+    }
+    let vertex_count = vertices.len() as u16;
+    for i in 1..vertex_count {
+        let next = if i == vertex_count - 1 { 1 } else { i + 1 };
+        indices.extend_from_slice(&[0, i, next]);
+    }
     context.gl.texture(None);
     context.gl.draw_mode(DrawMode::Triangles);
     context.gl.geometry(&vertices, &indices);
