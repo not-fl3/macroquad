@@ -110,7 +110,7 @@ impl Font {
             Image {
                 bytes: bitmap
                     .iter()
-                    .flat_map(|coverage| vec![255, 255, 255, *coverage])
+                    .flat_map(|coverage| [255, 255, 255, *coverage])
                     .collect(),
                 width,
                 height,
