@@ -342,15 +342,23 @@ pub fn draw_text_ex(text: impl AsRef<str>, x: f32, y: f32, params: TextParams) -
     let font_scale_x = params.font_scale * params.font_scale_aspect;
     let font_scale_y = params.font_scale;
     let font_size = (params.font_size as f32 * dpi_scaling).ceil() as u16;
+    let font_size_f32 = font_size as f32;
 
     let mut total_width = 0.0;
     let mut max_offset_y = f32::MIN;
     let mut min_offset_y = f32::MAX;
 
+    let mut last_character = None;
+
     for character in text.chars() {
         if !font.contains(character, font_size) {
             font.cache_glyph(character, font_size);
         }
+
+        let kerning_offset = last_character
+            .and_then(|left| font.font.horizontal_kern(left, character, font_size_f32))
+            .unwrap_or(0.0);
+        last_character = Some(character);
 
         let char_data = &font.characters.lock().unwrap()[&(character, font_size)];
         let offset_x = char_data.offset_x as f32 * font_scale_x;
@@ -369,13 +377,13 @@ pub fn draw_text_ex(text: impl AsRef<str>, x: f32, y: f32, params: TextParams) -
         let dest_y = (offset_x + total_width) * rot_sin + (-glyph_scaled_h - offset_y) * rot_cos;
 
         let dest = Rect::new(
-            dest_x / dpi_scaling + x,
+            dest_x / dpi_scaling + x + kerning_offset,
             dest_y / dpi_scaling + y,
             glyph.w / dpi_scaling * font_scale_x,
             glyph.h / dpi_scaling * font_scale_y,
         );
 
-        total_width += char_data.advance * font_scale_x;
+        total_width += char_data.advance * font_scale_x + kerning_offset;
 
         crate::texture::draw_texture_ex(
             &crate::texture::Texture2D {
