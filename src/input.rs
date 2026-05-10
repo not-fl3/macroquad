@@ -35,6 +35,12 @@ pub struct Touch {
     pub position: Vec2,
 }
 
+#[derive(Clone, Debug)]
+pub enum ImeCommit {
+    Text(String),
+    Cancel,
+}
+
 /// Constrain mouse to window
 pub fn set_cursor_grab(grab: bool) {
     let context = get_context();
@@ -144,6 +150,25 @@ pub fn get_char_pressed() -> Option<char> {
     let context = get_context();
 
     context.chars_pressed_queue.pop_front()
+}
+
+/// Return the current IME preedit text, if any.
+pub fn get_ime_preedit() -> Option<String> {
+    let context = get_context();
+    if context.ime_preedit.is_empty() {
+        None
+    } else {
+        Some(context.ime_preedit.clone())
+    }
+}
+
+/// Return the next IME commit event, if any.
+pub fn get_ime_commit() -> Option<ImeCommit> {
+    let context = get_context();
+    context.ime_commit_queue.pop().map(|entry| match entry {
+        Some(text) => ImeCommit::Text(text),
+        None => ImeCommit::Cancel,
+    })
 }
 
 pub(crate) fn get_char_pressed_ui() -> Option<char> {

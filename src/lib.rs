@@ -191,6 +191,8 @@ struct Context {
     touches: HashMap<u64, input::Touch>,
     chars_pressed_queue: VecDeque<char>,
     chars_pressed_ui_queue: VecDeque<char>,
+    ime_preedit: String,
+    ime_commit_queue: Vec<Option<String>>,
     mouse_position: Vec2,
     last_mouse_position: Option<Vec2>,
     mouse_wheel: Vec2,
@@ -334,6 +336,8 @@ impl Context {
             mouse_position: vec2(0., 0.),
             last_mouse_position: None,
             mouse_wheel: vec2(0., 0.),
+            ime_preedit: String::new(),
+            ime_commit_queue: Vec::new(),
 
             prevent_quit_event: false,
             quit_requested: false,
@@ -691,6 +695,17 @@ impl EventHandler for Stage {
                 repeat,
             });
         });
+    }
+
+    fn on_ime_preedit(&mut self, text: &str) {
+        let context = get_context();
+        context.ime_preedit = text.to_string();
+    }
+
+    fn on_ime_commit(&mut self, text: Option<&str>) {
+        let context = get_context();
+        context.ime_preedit.clear();
+        context.ime_commit_queue.push(text.map(|value| value.to_string()));
     }
 
     fn key_down_event(&mut self, keycode: KeyCode, modifiers: KeyMods, repeat: bool) {
