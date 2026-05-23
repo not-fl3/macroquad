@@ -179,6 +179,8 @@ pub fn clear_input_queue() {
     let context = get_context();
     context.chars_pressed_queue.clear();
     context.chars_pressed_ui_queue.clear();
+    context.mouse_pressed.clear();
+    context.keys_pressed.clear();
 }
 
 /// Detect if the button is being pressed
