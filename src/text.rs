@@ -377,7 +377,7 @@ pub fn draw_text_ex(text: impl AsRef<str>, x: f32, y: f32, params: TextParams) -
         let dest_y = (offset_x + total_width) * rot_sin + (-glyph_scaled_h - offset_y) * rot_cos;
 
         let dest = Rect::new(
-            dest_x / dpi_scaling + x + kerning_offset,
+            dest_x / dpi_scaling + x + kerning_offset / dpi_scaling,
             dest_y / dpi_scaling + y,
             glyph.w / dpi_scaling * font_scale_x,
             glyph.h / dpi_scaling * font_scale_y,
