@@ -802,10 +802,17 @@ impl EventHandler for Stage {
             get_context().frame_time = date::now() - get_context().last_frame_time;
             get_context().last_frame_time = date::now();
 
+            // glFinish waits until the drawing is done. See https://registry.khronos.org/OpenGL-Refpages/gl4/html/glFinish.xhtml.
+            // Some drivers do this by a busy loop which increases CPU usage to close to 100%.
+            // For discussion see https://github.com/not-fl3/macroquad/issues/275.
+            // If telemetry is enabled it kinda makes sense to call glFinish so that the telemetry
+            // timing is more representative of the time it took to draw. But for general use and
+            // in particular when double buffer is used it's not recommended to call glFinish,
+            // unless we use SyncObjects or we have to wait for other async operations to finish.
+            // See https://wikis.khronos.org/opengl/Common_Mistakes#glFinish_and_glFlush.
             #[cfg(any(target_arch = "wasm32", target_os = "linux"))]
-            {
+            if telemetry::is_enabled() {
                 let _z = telemetry::ZoneGuard::new("glFinish/glFLush");
-
                 unsafe {
                     miniquad::gl::glFlush();
                     miniquad::gl::glFinish();

@@ -72,6 +72,10 @@ pub fn disable() {
     get_profiler().enable_request = Some(false);
 }
 
+pub fn is_enabled() -> bool {
+    get_profiler().enabled
+}
+
 pub fn begin_zone(name: &str) {
     if get_profiler().enabled {
         get_profiler().begin_zone(name);
