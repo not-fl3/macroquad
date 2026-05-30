@@ -38,7 +38,7 @@
 
 use miniquad::*;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::future::Future;
 use std::panic::AssertUnwindSafe;
 use std::pin::Pin;
@@ -189,8 +189,8 @@ struct Context {
     mouse_pressed: HashSet<MouseButton>,
     mouse_released: HashSet<MouseButton>,
     touches: HashMap<u64, input::Touch>,
-    chars_pressed_queue: Vec<char>,
-    chars_pressed_ui_queue: Vec<char>,
+    chars_pressed_queue: VecDeque<char>,
+    chars_pressed_ui_queue: VecDeque<char>,
     mouse_position: Vec2,
     last_mouse_position: Option<Vec2>,
     mouse_wheel: Vec2,
@@ -325,8 +325,8 @@ impl Context {
             keys_down: HashSet::new(),
             keys_pressed: HashSet::new(),
             keys_released: HashSet::new(),
-            chars_pressed_queue: Vec::new(),
-            chars_pressed_ui_queue: Vec::new(),
+            chars_pressed_queue: VecDeque::new(),
+            chars_pressed_ui_queue: VecDeque::new(),
             mouse_down: HashSet::new(),
             mouse_pressed: HashSet::new(),
             mouse_released: HashSet::new(),
@@ -681,8 +681,8 @@ impl EventHandler for Stage {
     fn char_event(&mut self, character: char, modifiers: KeyMods, repeat: bool) {
         let context = get_context();
 
-        context.chars_pressed_queue.push(character);
-        context.chars_pressed_ui_queue.push(character);
+        context.chars_pressed_queue.push_back(character);
+        context.chars_pressed_ui_queue.push_back(character);
 
         context.input_events.iter_mut().for_each(|arr| {
             arr.push(MiniquadInputEvent::Char {

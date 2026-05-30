@@ -143,13 +143,13 @@ pub fn is_any_key_down() -> bool {
 pub fn get_char_pressed() -> Option<char> {
     let context = get_context();
 
-    context.chars_pressed_queue.pop()
+    context.chars_pressed_queue.pop_front()
 }
 
 pub(crate) fn get_char_pressed_ui() -> Option<char> {
     let context = get_context();
 
-    context.chars_pressed_ui_queue.pop()
+    context.chars_pressed_ui_queue.pop_front()
 }
 
 /// Return the last pressed key.
