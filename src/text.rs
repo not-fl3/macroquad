@@ -376,9 +376,15 @@ pub fn draw_text_ex(text: impl AsRef<str>, x: f32, y: f32, params: TextParams) -
         let dest_x = (offset_x + total_width) * rot_cos + (glyph_scaled_h + offset_y) * rot_sin;
         let dest_y = (offset_x + total_width) * rot_sin + (-glyph_scaled_h - offset_y) * rot_cos;
 
+        // Kerning shifts along the text-flow direction. At `rot = 0`
+        // text flows along +X, so the offset goes into dest.x; at
+        // 90° / 270° text flows along ±Y, so it needs to go into
+        // dest.y instead. Multiplying by (rot_cos, rot_sin) routes
+        // the offset into the correct axis for any rotation.
+        let kerning_logical = kerning_offset / dpi_scaling;
         let dest = Rect::new(
-            dest_x / dpi_scaling + x + kerning_offset / dpi_scaling,
-            dest_y / dpi_scaling + y,
+            dest_x / dpi_scaling + x + kerning_logical * rot_cos,
+            dest_y / dpi_scaling + y + kerning_logical * rot_sin,
             glyph.w / dpi_scaling * font_scale_x,
             glyph.h / dpi_scaling * font_scale_y,
         );
