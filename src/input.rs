@@ -132,7 +132,7 @@ pub fn is_key_released(key_code: KeyCode) -> bool {
     context.keys_released.contains(&key_code)
 }
 
-/// Detect if any key is being preseed
+/// Detect if any key is being pressed
 pub fn is_any_key_down() -> bool {
     let context = get_context();
     context.keys_down.len() > 0
