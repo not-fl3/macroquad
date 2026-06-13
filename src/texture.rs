@@ -442,7 +442,7 @@ pub fn render_target_ex(width: u32, height: u32, params: RenderTargetParams) -> 
     };
     let render_pass;
     let texture;
-    if params.sample_count != 0 {
+    if params.sample_count > 1 {
         let color_resolve_texture =
             get_quad_context().new_render_texture(miniquad::TextureParams {
                 width,
