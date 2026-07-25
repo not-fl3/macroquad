@@ -26,7 +26,7 @@ pub async fn load_file(path: &str) -> Result<Vec<u8>, Error> {
         exec::FileLoadingFuture { contents }
     }
 
-    #[cfg(target_os = "ios")]
+    #[cfg(any(target_os = "ios", target_os = "tvos"))]
     let _ = std::env::set_current_dir(std::env::current_exe().unwrap().parent().unwrap());
 
     #[cfg(not(target_os = "android"))]
