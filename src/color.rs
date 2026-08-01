@@ -20,6 +20,7 @@ pub struct Color {
 /// This was a temporary solution because [Color::from_rgba] was not a const fn due to
 /// [this issue](https://github.com/rust-lang/rust/issues/57241) waiting to be resolved.
 /// It is not needed anymore.
+#[doc(hidden)]
 #[macro_export]
 macro_rules! color_u8 {
     ($r:expr, $g:expr, $b:expr, $a:expr) => {
