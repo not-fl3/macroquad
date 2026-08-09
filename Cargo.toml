@@ -8,12 +8,12 @@ repository = "https://github.com/not-fl3/macroquad"
 description = """
 Simple and easy to use graphics library
 """
-readme="README.md"
+readme = "README.md"
 license = "MIT OR Apache-2.0"
 
 [features]
-audio = ["quad-snd"]
-log-rs = ["log"]
+audio = ["dep:quad-snd"]
+log-rs = ["dep:log"]
 glam-serde = ["glam/serde"]
 default = []
 
