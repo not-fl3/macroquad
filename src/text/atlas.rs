@@ -125,7 +125,8 @@ impl Atlas {
     pub fn cache_sprite(&mut self, key: SpriteKey, sprite: Image) {
         let (width, height) = (sprite.width as usize, sprite.height as usize);
 
-        let x = if self.cursor_x + (width as u16) < self.image.width {
+        let x = if self.cursor_x as u32 + width as u32 + Self::GAP as u32 <= self.image.width as u32
+        {
             if height as u16 > self.max_line_height {
                 self.max_line_height = height as u16;
             }
@@ -143,7 +144,6 @@ impl Atlas {
         // texture bounds exceeded
         if y + sprite.height > self.image.height || x + sprite.width > self.image.width {
             // reset glyph cache state
-            let sprites = self.sprites.drain().collect::<Vec<_>>();
             self.cursor_x = 0;
             self.cursor_y = 0;
             self.max_line_height = 0;
@@ -161,6 +161,25 @@ impl Atlas {
                 Image::gen_image_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
 
             // recache all previously cached symbols
+            // sprites are repacked tallest-first, ties broken by the previous
+            // rect position: repacking in `HashMap` iteration order is
+            // effectively random, which both wastes space on rows of mixed
+            // heights and makes the atlas growth nondeterministic from run to
+            // run. Ties must be broken deterministically as well — rect
+            // positions are unique and themselves a product of the previous
+            // deterministic packing, so this is a total order and the
+            // key-to-rect mapping stays identical for every atlas instance.
+            let mut sprites = self.sprites.drain().collect::<Vec<_>>();
+            sprites.sort_by(|(_, a), (_, b)| {
+                let key = |sprite: &Sprite| {
+                    (
+                        std::cmp::Reverse((sprite.rect.h as u32, sprite.rect.w as u32)),
+                        sprite.rect.y as u32,
+                        sprite.rect.x as u32,
+                    )
+                };
+                key(a).cmp(&key(b))
+            });
             for (key, sprite) in sprites {
                 let image = old_image.sub_image(sprite.rect);
                 self.cache_sprite(key, image);
@@ -188,5 +207,198 @@ impl Atlas {
                 },
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn atlas(width: u16, height: u16) -> Atlas {
+        let texture = miniquad::TextureId::from_raw_id(miniquad::RawId::OpenGl(0));
+
+        Atlas {
+            texture,
+            image: Image::gen_image_color(width, height, Color::new(0.0, 0.0, 0.0, 0.0)),
+            sprites: HashMap::new(),
+            cursor_x: 0,
+            cursor_y: 0,
+            max_line_height: 0,
+            dirty: false,
+            filter: miniquad::FilterMode::Nearest,
+            unique_id: Atlas::UNIQUENESS_OFFSET,
+        }
+    }
+
+    fn sprite(width: u16, height: u16, color: Color) -> Image {
+        Image::gen_image_color(width, height, color)
+    }
+
+    const WHITE: Color = Color::new(1.0, 1.0, 1.0, 1.0);
+
+    // A sprite that would end past the right edge, but within one `GAP` of
+    // it, used to take the "stays in the current row" branch and then blow
+    // past the texture bounds, doubling the whole atlas instead of breaking
+    // to the next row (issue #1054, bug 1).
+    #[test]
+    fn sprite_crossing_gap_at_row_edge_breaks_line_instead_of_growing() {
+        let mut atlas = atlas(64, 1024);
+
+        // 20 wide: placed at x = 2, cursor_x becomes 20 + 2 * GAP = 24
+        atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 10, WHITE));
+
+        // 39 wide: cursor_x + width == 63, which passed the old
+        // `cursor_x + width < image.width` check, yet the sprite lands at
+        // x = 26 and ends at 65, one pixel past the 64-wide texture
+        atlas.cache_sprite(SpriteKey::Id(2), sprite(39, 10, WHITE));
+
+        // the sprite must have moved to the next row, not doubled the atlas
+        assert_eq!(atlas.width(), 64);
+        assert_eq!(atlas.height(), 1024);
+        assert_eq!(
+            atlas.get(SpriteKey::Id(2)).map(|sprite| sprite.rect),
+            Some(Rect::new(2.0, 14.0, 39.0, 10.0))
+        );
+
+        std::mem::forget(atlas);
+    }
+
+    // The row-fit predicate must reject the out-of-bounds one-pixel case
+    // above without wasting a row when a sprite ends exactly at the texture
+    // edge. Its left-side GAP is already accounted for in `x`.
+    #[test]
+    fn sprite_ending_at_row_edge_stays_in_current_line() {
+        let mut storage = std::mem::ManuallyDrop::new(atlas(64, 1024));
+        let atlas = &mut *storage;
+
+        atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 10, WHITE));
+        // x = 24 + GAP = 26, and x + width == 64 exactly.
+        atlas.cache_sprite(SpriteKey::Id(2), sprite(38, 10, WHITE));
+
+        assert_eq!(atlas.width(), 64);
+        assert_eq!(atlas.height(), 1024);
+        assert_eq!(
+            atlas.get(SpriteKey::Id(2)).map(|sprite| sprite.rect),
+            Some(Rect::new(26.0, 0.0, 38.0, 10.0))
+        );
+    }
+
+    // Repacking the drained sprite cache in `HashMap` iteration order made
+    // each regrow effectively shuffle the atlas, so the same glyph set could
+    // grow to a different size on every run (issue #1054, bug 2). Sprites
+    // are now repacked tallest-first and the resulting layout is exact.
+    #[test]
+    fn regrow_repacks_deterministically_and_keeps_pixels() {
+        let mut atlas = atlas(64, 32);
+
+        let red = Color::new(1.0, 0.0, 0.0, 1.0);
+        let green = Color::new(0.0, 1.0, 0.0, 1.0);
+        let blue = Color::new(0.0, 0.0, 1.0, 1.0);
+
+        atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 10, red));
+        // ends within one `GAP` of the right edge on old code: forced a grow
+        atlas.cache_sprite(SpriteKey::Id(2), sprite(39, 10, green));
+        // 24 tall: does not fit the 32-tall atlas, forces exactly one grow
+        atlas.cache_sprite(SpriteKey::Id(3), sprite(20, 24, blue));
+
+        // the 64x32 atlas doubled once; tallest-first repacking puts the two
+        // 10-tall sprites on row 0 (wider first) and the 24-tall one after
+        // them, with no further growth
+        assert_eq!((atlas.width(), atlas.height()), (128, 64));
+        assert_eq!(
+            atlas.get(SpriteKey::Id(1)).map(|sprite| sprite.rect),
+            Some(Rect::new(45.0, 0.0, 20.0, 10.0))
+        );
+        assert_eq!(
+            atlas.get(SpriteKey::Id(2)).map(|sprite| sprite.rect),
+            Some(Rect::new(2.0, 0.0, 39.0, 10.0))
+        );
+        assert_eq!(
+            atlas.get(SpriteKey::Id(3)).map(|sprite| sprite.rect),
+            Some(Rect::new(69.0, 0.0, 20.0, 24.0))
+        );
+
+        // regrown sprites keep their pixels through the sub_image round-trip
+        assert_eq!(atlas.image.get_pixel(45, 0), red);
+        assert_eq!(atlas.image.get_pixel(2, 0), green);
+        assert_eq!(atlas.image.get_pixel(69, 0), blue);
+
+        std::mem::forget(atlas);
+    }
+
+    // Equal-size sprites must not inherit the randomized `HashMap` drain
+    // order on regrow (issue #1054, bug 2): sorting by size alone leaves
+    // same-dimension ties in arbitrary order, so which glyph ends up in
+    // which slot — and the pixels under each key — differed between atlas
+    // instances. Ties are now broken by the previous rect position, which is
+    // unique and deterministic, so independently built atlases pack the
+    // same-dimension sprites identically.
+    #[test]
+    fn same_dimension_sprites_repack_in_the_same_order_in_every_atlas() {
+        let red = Color::new(1.0, 0.0, 0.0, 1.0);
+        let green = Color::new(0.0, 1.0, 0.0, 1.0);
+        let blue = Color::new(0.0, 0.0, 1.0, 1.0);
+        let white = Color::new(1.0, 1.0, 1.0, 1.0);
+
+        let pack = |atlas: &mut Atlas| {
+            // two same-dimension sprites (20x10) next to each other
+            atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 10, red));
+            atlas.cache_sprite(SpriteKey::Id(2), sprite(20, 10, green));
+            // 24 tall: does not fit the 32-tall atlas, forces the first grow,
+            // repacking the 20x10 tie
+            atlas.cache_sprite(SpriteKey::Id(3), sprite(20, 24, blue));
+            // 60 wide x 40 tall: fits neither the row nor the 64-tall atlas,
+            // forcing a second grow whose repack hits the 20x10 tie again
+            atlas.cache_sprite(SpriteKey::Id(4), sprite(60, 40, white));
+
+            (
+                (atlas.width(), atlas.height()),
+                [
+                    atlas.get(SpriteKey::Id(1)).map(|s| s.rect),
+                    atlas.get(SpriteKey::Id(2)).map(|s| s.rect),
+                    atlas.get(SpriteKey::Id(3)).map(|s| s.rect),
+                    atlas.get(SpriteKey::Id(4)).map(|s| s.rect),
+                ],
+                [
+                    atlas.image.get_pixel(2, 0),
+                    atlas.image.get_pixel(26, 0),
+                    atlas.image.get_pixel(50, 0),
+                    atlas.image.get_pixel(74, 0),
+                ],
+            )
+        };
+
+        // independently built atlases must agree on the layout: every atlas
+        // owns a separately seeded `HashMap`, so without a deterministic
+        // tie-break the drained order of same-size sprites — and the layout
+        // with it — would differ from atlas to atlas
+        let mut first_atlas = atlas(64, 32);
+        let first = pack(&mut first_atlas);
+        for _ in 0..7 {
+            let mut other = atlas(64, 32);
+            assert_eq!(first, pack(&mut other));
+            std::mem::forget(other);
+        }
+
+        // and the layout is the exact deterministic packing: two grows to
+        // 256x128, tallest-first with rect-position tie-breaks — Id(3) and
+        // the 20x10 pair ties always resolve by the previous position, so
+        // Id(3) leads, then Id(1) before Id(2), and the 60x40 trigger is
+        // appended after the repack without growing again
+        let (size, rects, pixels) = first;
+        assert_eq!(size, (256, 128));
+        assert_eq!(
+            rects,
+            [
+                Some(Rect::new(26.0, 0.0, 20.0, 10.0)),
+                Some(Rect::new(50.0, 0.0, 20.0, 10.0)),
+                Some(Rect::new(2.0, 0.0, 20.0, 24.0)),
+                Some(Rect::new(74.0, 0.0, 60.0, 40.0)),
+            ]
+        );
+        // each key still owns its own pixels after the double repack
+        assert_eq!(pixels, [blue, red, green, white]);
+
+        std::mem::forget(first_atlas);
     }
 }
