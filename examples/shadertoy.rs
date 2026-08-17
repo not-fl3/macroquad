@@ -28,7 +28,7 @@ impl Uniform {
 fn color_picker_texture(w: usize, h: usize) -> (Texture2D, Image) {
     let ratio = 1.0 / h as f32;
 
-    let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
+    let mut image = Image::filled_with_color(w as u16, h as u16, WHITE);
     let image_data = image.get_image_data_mut();
 
     for j in 0..h {

@@ -14,7 +14,7 @@ async fn main() {
     let mut cells = vec![CellState::Dead; w * h];
     let mut buffer = vec![CellState::Dead; w * h];
 
-    let mut image = Image::gen_image_color(w as u16, h as u16, WHITE);
+    let mut image = Image::filled_with_color(w as u16, h as u16, WHITE);
 
     for cell in cells.iter_mut() {
         if rand::gen_range(0, 5) == 0 {
@@ -26,8 +26,8 @@ async fn main() {
     loop {
         clear_background(WHITE);
 
-        let w = image.width();
-        let h = image.height();
+        let w = image.width() as usize;
+        let h = image.height() as usize;
 
         for y in 0..h as i32 {
             for x in 0..w as i32 {
@@ -77,7 +77,7 @@ async fn main() {
             image.set_pixel(
                 (i % w) as u32,
                 (i / w) as u32,
-                match buffer[i as usize] {
+                match buffer[i] {
                     CellState::Alive => BLACK,
                     CellState::Dead => WHITE,
                 },
