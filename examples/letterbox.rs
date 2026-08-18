@@ -61,7 +61,6 @@ async fn main() {
             WHITE,
             DrawTextureParams {
                 dest_size: Some(vec2(VIRTUAL_WIDTH * scale, VIRTUAL_HEIGHT * scale)),
-                flip_y: true, // Must flip y otherwise 'render_target' will be upside down
                 ..Default::default()
             },
         );
