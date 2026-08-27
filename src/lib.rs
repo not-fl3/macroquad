@@ -562,8 +562,8 @@ impl EventHandler for Stage {
     fn mouse_wheel_event(&mut self, x: f32, y: f32) {
         let context = get_context();
 
-        context.mouse_wheel.x = x;
-        context.mouse_wheel.y = y;
+        context.mouse_wheel.x += x;
+        context.mouse_wheel.y += y;
 
         context
             .input_events
