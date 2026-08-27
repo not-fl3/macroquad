@@ -199,6 +199,7 @@ struct Context {
     quit_requested: bool,
 
     cursor_grabbed: bool,
+    previous_cursor_grabbed: bool,
 
     input_events: Vec<Vec<MiniquadInputEvent>>,
 
@@ -339,6 +340,7 @@ impl Context {
             quit_requested: false,
 
             cursor_grabbed: false,
+            previous_cursor_grabbed: false,
 
             input_events: Vec::new(),
 
@@ -735,8 +737,13 @@ impl EventHandler for Stage {
     fn update(&mut self) {
         let _z = telemetry::ZoneGuard::new("Event::update");
 
-        // Unless called every frame, cursor will not remain grabbed
-        miniquad::window::set_cursor_grab(get_context().cursor_grabbed);
+        // Keep the cursor grabbed by calling every frame.
+        // But only ungrab once to preserve implicit mouse grabs.
+        let context = get_context();
+        if context.cursor_grabbed || context.cursor_grabbed != context.previous_cursor_grabbed {
+            miniquad::window::set_cursor_grab(context.cursor_grabbed);
+        }
+        context.previous_cursor_grabbed = context.cursor_grabbed;
 
         #[cfg(not(target_arch = "wasm32"))]
         {
