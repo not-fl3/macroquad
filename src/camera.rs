@@ -16,7 +16,7 @@ pub trait Camera {
     fn viewport(&self) -> Option<(i32, i32, i32, i32)>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Camera2D {
     /// Rotation in degrees.
     pub rotation: f32,
@@ -183,7 +183,7 @@ pub enum Projection {
     Orthographics,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Camera3D {
     /// Camera position.
     pub position: Vec3,
