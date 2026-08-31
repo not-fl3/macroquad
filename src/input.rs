@@ -105,10 +105,23 @@ pub fn touches_local() -> Vec<Touch> {
         .collect()
 }
 
+/// Returns the x and y mouse scroll, unnormalized
 pub fn mouse_wheel() -> (f32, f32) {
     let context = get_context();
 
     (context.mouse_wheel.x, context.mouse_wheel.y)
+}
+
+/// Returns the x and y mouse scroll normalized to -1.0, 0.0, or 1.0
+pub fn mouse_wheel_normalized() -> (f32, f32) {
+    let context = get_context();
+
+    let normalize = |v: f32| if v == 0.0 { 0.0 } else { v.signum() };
+
+    (
+        normalize(context.mouse_wheel.x),
+        normalize(context.mouse_wheel.y),
+    )
 }
 
 /// Detect if the key has been pressed once
