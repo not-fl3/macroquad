@@ -262,7 +262,16 @@ pub(crate) fn render_command(draw_lists: &mut Vec<DrawList>, command: DrawComman
 
     match command {
         DrawCommand::Clip { rect, .. } => {
-            active_draw_list.clipping_zone = rect;
+            let context = crate::get_context();
+            let rect_for_dpi = rect.map(|rect| {
+                Rect::new(
+                    rect.x * context.quad_context.dpi_scale(),
+                    rect.y * context.quad_context.dpi_scale(),
+                    rect.w * context.quad_context.dpi_scale(),
+                    rect.h * context.quad_context.dpi_scale(),
+                )
+            });
+            active_draw_list.clipping_zone = rect_for_dpi;
         }
         DrawCommand::DrawRect {
             rect,
