@@ -61,6 +61,7 @@ pub mod texture;
 pub mod time;
 pub mod ui;
 pub mod window;
+pub mod misc;
 
 pub mod experimental;
 
