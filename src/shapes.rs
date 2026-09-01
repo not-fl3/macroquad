@@ -249,11 +249,20 @@ pub fn draw_poly_lines(
 }
 
 /// Draws a solid circle centered at `[x, y]` with a given radius `r` and `color`.
-///
-/// This is not a perfect circle, but only a polygon approximation.
-/// If this is an issue for you, consider using `draw_poly(x, y, 255, r, 0., color)` instead.
 pub fn draw_circle(x: f32, y: f32, r: f32, color: Color) {
-    draw_poly(x, y, 20, r, 0., color);
+    let context = get_context();
+
+    let vertices = [
+        Vertex::new(x - r, y - r, 0., 0.0, 0.0, color),
+        Vertex::new(x + r, y - r, 0., 1.0, 0.0, color),
+        Vertex::new(x + r, y + r, 0., 1.0, 1.0, color),
+        Vertex::new(x - r, y + r, 0., 0.0, 1.0, color),
+    ];
+    let indices: [u16; 6] = [0, 1, 2, 0, 2, 3];
+
+    context.gl.texture(None);
+    context.gl.draw_mode(DrawMode::Circle);
+    context.gl.geometry(&vertices, &indices);
 }
 
 /// Draws a circle outline centered at `[x, y]` with a given radius, line `thickness` and `color`.
