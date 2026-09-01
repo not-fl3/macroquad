@@ -2,8 +2,8 @@
 
 #![allow(dead_code)]
 
-use crate::{file::load_file, get_context, Error};
-use std::sync::Arc;
+use crate::{file::load_file, Error};
+use std::{cell::RefCell, sync::Arc};
 
 #[cfg(feature = "audio")]
 use quad_snd::{AudioContext as QuadSndContext, Sound as QuadSndSound};
@@ -88,8 +88,9 @@ struct QuadSndSoundGuarded(QuadSndSound);
 
 impl Drop for QuadSndSoundGuarded {
     fn drop(&mut self) {
-        let ctx = &get_context().audio_context;
-        self.0.delete(&ctx.native_ctx);
+        with_audio_context(|ctx| {
+            self.0.delete(ctx);
+        });
     }
 }
 
@@ -116,10 +117,7 @@ pub async fn load_sound(path: &str) -> Result<Sound, Error> {
 ///
 /// Attempts to automatically detect the format of the source of data.
 pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, Error> {
-    let sound = {
-        let ctx = &mut get_context().audio_context;
-        QuadSndSound::load(&mut ctx.native_ctx, data)
-    };
+    let sound = with_audio_context(|ctx| QuadSndSound::load(ctx, data));
 
     // only on wasm the sound is not ready right away
     #[cfg(target_arch = "wasm32")]
@@ -130,29 +128,52 @@ pub async fn load_sound_from_bytes(data: &[u8]) -> Result<Sound, Error> {
     Ok(Sound(Arc::new(QuadSndSoundGuarded(sound))))
 }
 
-pub fn play_sound_once(sound: &Sound) {
-    let ctx = &mut get_context().audio_context;
+thread_local! {
+    static AUDIO_CONTEXT: RefCell<Option<QuadSndContext>> = RefCell::new(None);
+}
 
-    sound.0 .0.play(
-        &mut ctx.native_ctx,
-        PlaySoundParams {
-            looped: false,
-            volume: 1.0,
-        },
-    );
+pub(crate) fn init_sound() {
+    AUDIO_CONTEXT.with_borrow_mut(|opt| *opt = Some(QuadSndContext::new()));
+}
+
+fn with_audio_context<R, F>(f: F) -> R
+where
+    F: FnOnce(&mut QuadSndContext) -> R,
+{
+    AUDIO_CONTEXT.with_borrow_mut(|opt| {
+        let ctx = opt
+            .as_mut()
+            .expect("the macroquad audiocontext is not initialized on current thread");
+        f(ctx)
+    })
+}
+
+pub fn play_sound_once(sound: &Sound) {
+    with_audio_context(|ctx| {
+        sound.0 .0.play(
+            ctx,
+            PlaySoundParams {
+                looped: false,
+                volume: 1.0,
+            },
+        );
+    });
 }
 
 pub fn play_sound(sound: &Sound, params: PlaySoundParams) {
-    let ctx = &mut get_context().audio_context;
-    sound.0 .0.play(&mut ctx.native_ctx, params);
+    with_audio_context(|ctx| {
+        sound.0 .0.play(ctx, params);
+    });
 }
 
 pub fn stop_sound(sound: &Sound) {
-    let ctx = &mut get_context().audio_context;
-    sound.0 .0.stop(&mut ctx.native_ctx);
+    with_audio_context(|ctx| {
+        sound.0 .0.stop(ctx);
+    });
 }
 
 pub fn set_sound_volume(sound: &Sound, volume: f32) {
-    let ctx = &mut get_context().audio_context;
-    sound.0 .0.set_volume(&mut ctx.native_ctx, volume);
+    with_audio_context(|ctx| {
+        sound.0 .0.set_volume(ctx, volume);
+    });
 }
