@@ -316,6 +316,10 @@ pub mod tweens {
         }
     }
 
+    #[deprecated(
+        since = "0.4.14",
+        note = "this invokes undefined behaviour, see issue #723"
+    )]
     pub fn linear<T, T1, F>(
         handle: Handle<T1>,
         lens: F,
@@ -337,6 +341,10 @@ pub mod tweens {
         }
     }
 
+    #[deprecated(
+        since = "0.4.14",
+        note = "this invokes undefined behaviour, see issue #723"
+    )]
     pub async fn follow_path<T, T1, F>(handle: Handle<T1>, mut lens: F, path: Vec<T>, time: f32)
     where
         T: Copy + Add<Output = T> + Sub<Output = T> + Mul<f32, Output = T>,
