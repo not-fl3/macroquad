@@ -107,7 +107,8 @@ impl Cursor {
             Layout::Horizontal => {
                 self.max_row_y = self.max_row_y.max(size.y);
 
-                if self.x + size.x < self.area.w - self.margin * 2. {
+                // self.x < 1.0 is a hack to not push the first item down if it is too wide to fit.
+                if self.x < 1.0 || self.x + size.x < self.area.w - self.margin * 2. {
                     res = Vec2::new(self.x, self.y);
                 } else {
                     self.x = self.margin + 1.; // +1. is a hack to make next vertical thing correctly jump to the next row
