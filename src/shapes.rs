@@ -50,9 +50,26 @@ pub fn draw_rectangle(x: f32, y: f32, w: f32, h: f32, color: Color) {
 
 /// Draws a rectangle outline with its top-left corner at `[x, y]` with size `[w, h]` (width going to
 /// the right, height going down), with a given line `thickness` and `color`.
+///
+/// # Deprecation
+/// Due to a bug, this function does not actually draw lines that are `thickness` thick, but only `thickness / 2.`.
+/// To preserve backwards compability, this function was not changed, and
+/// a new function `draw_rectangle_lines_fixed` was added, which does not contain the bug.
+///
+/// See https://github.com/not-fl3/macroquad/issues/704 for more details.
+#[deprecated(
+    since = "0.4.12",
+    note = "incorrect thickness handling, see issue #704. use `draw_rectangle_lines_fixed`"
+)]
 pub fn draw_rectangle_lines(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
+    draw_rectangle_lines_fixed(x, y, w, h, thickness / 2., color);
+}
+
+/// Draws a rectangle outline with its top-left corner at `[x, y]` with size `[w, h]` (width going to
+/// the right, height going down), with a given line `thickness` and `color`.
+pub fn draw_rectangle_lines_fixed(x: f32, y: f32, w: f32, h: f32, thickness: f32, color: Color) {
     let context = get_context();
-    let t = thickness / 2.;
+    let t = thickness;
 
     #[rustfmt::skip]
     let vertices = [
