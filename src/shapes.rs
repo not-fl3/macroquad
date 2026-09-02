@@ -386,7 +386,7 @@ pub fn draw_arc(
 
     let sides = (sides as f32 * part / std::f32::consts::TAU)
         .ceil()
-        .max(1.0);
+        .clamp(1.0, sides as f32);
     let span = part / sides;
     let sides = sides as usize;
 
