@@ -873,6 +873,10 @@ impl Texture2D {
             #[cfg(not(target_arch = "wasm32"))]
             TextureFormat::Alpha => miniquad::gl::GL_R8,
         };
+        // `glCopyTexImage2D` reads the bound framebuffer, which isn't
+        // necessarily the screen's after a render pass ends, so bind it.
+        ctx.begin_default_pass(PassAction::Nothing);
+        ctx.end_render_pass();
         unsafe {
             gl::glBindTexture(gl::GL_TEXTURE_2D, raw_id);
             gl::glCopyTexImage2D(
