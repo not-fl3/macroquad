@@ -221,19 +221,15 @@ impl Image {
     pub fn sub_image(&self, rect: Rect) -> Image {
         let width = rect.w as usize;
         let height = rect.h as usize;
-        let mut bytes = vec![0; width * height * 4];
+        let row_len = width * 4;
+        let stride = self.width as usize * 4;
+        let mut bytes = Vec::with_capacity(row_len * height);
 
         let x = rect.x as usize;
         let y = rect.y as usize;
-        let mut n = 0;
         for y in y..y + height {
-            for x in x..x + width {
-                bytes[n] = self.bytes[y * self.width as usize * 4 + x * 4 + 0];
-                bytes[n + 1] = self.bytes[y * self.width as usize * 4 + x * 4 + 1];
-                bytes[n + 2] = self.bytes[y * self.width as usize * 4 + x * 4 + 2];
-                bytes[n + 3] = self.bytes[y * self.width as usize * 4 + x * 4 + 3];
-                n += 4;
-            }
+            let start = y * stride + x * 4;
+            bytes.extend_from_slice(&self.bytes[start..start + row_len]);
         }
         Image {
             width: width as u16,
@@ -963,4 +959,29 @@ pub fn set_default_filter_mode(filter: FilterMode) {
 
     context.default_filter_mode = filter;
     context.texture_batcher.atlas.set_filter(filter);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sub_image_copies_the_pixels_inside_rect() {
+        // Each byte holds its own index, so every pixel is unique.
+        let image = Image {
+            width: 4,
+            height: 3,
+            bytes: (0..4 * 3 * 4).map(|byte| byte as u8).collect(),
+        };
+        let sub_image = image.sub_image(Rect::new(1.0, 1.0, 2.0, 2.0));
+
+        assert_eq!((sub_image.width, sub_image.height), (2, 2));
+        let pixel = |x: usize, y: usize| (y * 4 + x) * 4..(y * 4 + x) * 4 + 4;
+        let expected: Vec<u8> = [pixel(1, 1), pixel(2, 1), pixel(1, 2), pixel(2, 2)]
+            .into_iter()
+            .flatten()
+            .map(|byte| byte as u8)
+            .collect();
+        assert_eq!(sub_image.bytes, expected);
+    }
 }

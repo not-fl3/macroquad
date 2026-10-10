@@ -1,4 +1,4 @@
-use crate::{get_context, get_quad_context, math::Rect, texture::Image, Color};
+use crate::{get_context, get_quad_context, math::Rect, texture::Image};
 
 use std::collections::HashMap;
 
@@ -41,7 +41,7 @@ impl Atlas {
     const UNIQUENESS_OFFSET: u64 = 100000;
 
     pub fn new(ctx: &mut dyn miniquad::RenderingBackend, filter: miniquad::FilterMode) -> Atlas {
-        let image = Image::gen_image_color(512, 512, Color::new(0.0, 0.0, 0.0, 0.0));
+        let image = Self::transparent_image(512, 512);
         let texture = ctx.new_texture_from_rgba8(image.width, image.height, &image.bytes);
         ctx.texture_set_filter(
             texture,
@@ -123,7 +123,14 @@ impl Atlas {
     }
 
     pub fn cache_sprite(&mut self, key: SpriteKey, sprite: Image) {
-        let (width, height) = (sprite.width as usize, sprite.height as usize);
+        let area = Rect::new(0.0, 0.0, sprite.width as f32, sprite.height as f32);
+        self.cache_area(key, &sprite, area);
+    }
+
+    /// Caches `area` of `source` as the sprite for `key`. Growing the atlas
+    /// passes its old image as `source`, so sprites move straight across.
+    fn cache_area(&mut self, key: SpriteKey, source: &Image, area: Rect) {
+        let (width, height) = (area.w as usize, area.h as usize);
 
         let x = if self.cursor_x as u32 + width as u32 + Self::GAP as u32 <= self.image.width as u32
         {
@@ -142,13 +149,11 @@ impl Atlas {
         let y = self.cursor_y;
 
         // texture bounds exceeded
-        if y + sprite.height > self.image.height || x + sprite.width > self.image.width {
+        if y + height as u16 > self.image.height || x + width as u16 > self.image.width {
             // reset glyph cache state
             self.cursor_x = 0;
             self.cursor_y = 0;
             self.max_line_height = 0;
-
-            let old_image = self.image.clone();
 
             // increase font texture size
             // note: if we tried to fit gigantic texture into a small atlas,
@@ -157,8 +162,10 @@ impl Atlas {
             let new_width = self.image.width * 2;
             let new_height = self.image.height * 2;
 
-            self.image =
-                Image::gen_image_color(new_width, new_height, Color::new(0.0, 0.0, 0.0, 0.0));
+            let old_image = std::mem::replace(
+                &mut self.image,
+                Self::transparent_image(new_width, new_height),
+            );
 
             // recache all previously cached symbols
             // sprites are repacked tallest-first, ties broken by the previous
@@ -181,23 +188,20 @@ impl Atlas {
                 key(a).cmp(&key(b))
             });
             for (key, sprite) in sprites {
-                let image = old_image.sub_image(sprite.rect);
-                self.cache_sprite(key, image);
+                self.cache_area(key, &old_image, sprite.rect);
             }
 
             // cache the new sprite
-            self.cache_sprite(key, sprite);
+            self.cache_area(key, source, area);
         } else {
             self.dirty = true;
 
-            for j in 0..height {
-                for i in 0..width {
-                    self.image.set_pixel(
-                        x as u32 + i as u32,
-                        y as u32 + j as u32,
-                        sprite.get_pixel(i as u32, j as u32),
-                    );
-                }
+            let row_len = width * 4;
+            for row in 0..height {
+                let from = ((area.y as usize + row) * source.width as usize + area.x as usize) * 4;
+                let to = ((y as usize + row) * self.image.width as usize + x as usize) * 4;
+                self.image.bytes[to..to + row_len]
+                    .copy_from_slice(&source.bytes[from..from + row_len]);
             }
 
             self.sprites.insert(
@@ -208,18 +212,29 @@ impl Atlas {
             );
         }
     }
+
+    /// Zeroed by the allocator: filling a large image a pixel at a time, as
+    /// `Image::gen_image_color` does, takes milliseconds on a phone.
+    fn transparent_image(width: u16, height: u16) -> Image {
+        Image {
+            bytes: vec![0; width as usize * height as usize * 4],
+            width,
+            height,
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Color;
 
     fn atlas(width: u16, height: u16) -> Atlas {
         let texture = miniquad::TextureId::from_raw_id(miniquad::RawId::OpenGl(0));
 
         Atlas {
             texture,
-            image: Image::gen_image_color(width, height, Color::new(0.0, 0.0, 0.0, 0.0)),
+            image: Atlas::transparent_image(width, height),
             sprites: HashMap::new(),
             cursor_x: 0,
             cursor_y: 0,
@@ -318,7 +333,7 @@ mod tests {
             Some(Rect::new(69.0, 0.0, 20.0, 24.0))
         );
 
-        // regrown sprites keep their pixels through the sub_image round-trip
+        // regrown sprites keep their pixels
         assert_eq!(atlas.image.get_pixel(45, 0), red);
         assert_eq!(atlas.image.get_pixel(2, 0), green);
         assert_eq!(atlas.image.get_pixel(69, 0), blue);
@@ -400,5 +415,34 @@ mod tests {
         assert_eq!(pixels, [blue, red, green, white]);
 
         std::mem::forget(first_atlas);
+    }
+
+    // Sprites are copied a row at a time, into the atlas and from its old
+    // image into the new one as it grows, so each row has to land in its
+    // own place.
+    #[test]
+    fn regrow_moves_every_row_of_a_sprite() {
+        // each sprite's bytes count up from its own start, so a row copied
+        // from or to the wrong place shows
+        let patterned = |width: u16, height: u16, start: u8| Image {
+            width,
+            height,
+            bytes: (0..width as usize * height as usize * 4)
+                .map(|byte| (byte as u8).wrapping_add(start))
+                .collect(),
+        };
+        let first = patterned(20, 10, 0);
+        let second = patterned(30, 40, 100);
+
+        let mut storage = std::mem::ManuallyDrop::new(atlas(64, 32));
+        let atlas = &mut *storage;
+        atlas.cache_sprite(SpriteKey::Id(1), first.clone());
+        // 40 tall: does not fit the 32-tall atlas, forces a grow
+        atlas.cache_sprite(SpriteKey::Id(2), second.clone());
+
+        assert_eq!((atlas.width(), atlas.height()), (128, 64));
+        let pixels = |key| atlas.image.sub_image(atlas.get(key).unwrap().rect).bytes;
+        assert_eq!(pixels(SpriteKey::Id(1)), first.bytes);
+        assert_eq!(pixels(SpriteKey::Id(2)), second.bytes);
     }
 }
