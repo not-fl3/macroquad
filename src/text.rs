@@ -350,11 +350,13 @@ pub fn draw_text_ex(text: impl AsRef<str>, x: f32, y: f32, params: TextParams) -
 
     let mut last_character = None;
 
+    // Every glyph first, so the atlas uploads what's new once rather than
+    // once per glyph.
     for character in text.chars() {
-        if !font.contains(character, font_size) {
-            font.cache_glyph(character, font_size);
-        }
+        font.cache_glyph(character, font_size);
+    }
 
+    for character in text.chars() {
         let kerning_offset = last_character
             .and_then(|left| font.font.horizontal_kern(left, character, font_size_f32))
             .unwrap_or(0.0);

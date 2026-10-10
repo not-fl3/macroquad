@@ -1,6 +1,7 @@
 use crate::{get_context, get_quad_context, math::Rect, texture::Image, Color};
 
 use std::collections::HashMap;
+use std::ops::Range;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Sprite {
@@ -20,7 +21,8 @@ pub struct Atlas {
     cursor_y: u16,
     max_line_height: u16,
 
-    pub dirty: bool,
+    /// The rows of `image` that changed since it was last uploaded.
+    dirty_rows: Option<Range<u16>>,
 
     filter: miniquad::FilterMode,
 
@@ -54,7 +56,7 @@ impl Atlas {
             texture,
             cursor_x: 0,
             cursor_y: 0,
-            dirty: false,
+            dirty_rows: None,
             max_line_height: 0,
             sprites: HashMap::new(),
             filter,
@@ -88,8 +90,7 @@ impl Atlas {
 
     pub fn texture(&mut self) -> miniquad::TextureId {
         let ctx = get_quad_context();
-        if self.dirty {
-            self.dirty = false;
+        if let Some(rows) = self.dirty_rows.take() {
             let (texture_width, texture_height) = ctx.texture_size(self.texture);
             if texture_width != self.image.width as _ || texture_height != self.image.height as _ {
                 ctx.delete_texture(self.texture);
@@ -100,9 +101,22 @@ impl Atlas {
                     &self.image.bytes[..],
                 );
                 ctx.texture_set_filter(self.texture, self.filter, miniquad::MipmapFilterMode::None);
+            } else {
+                // Only the rows that changed, straight from the image:
+                // uploading the whole atlas for every new glyph costs a
+                // frame dearly once the atlas is large, and copying out
+                // just the new glyphs' area takes a buffer as large, which
+                // can take a millisecond to free.
+                let row_len = self.image.width as usize * 4;
+                ctx.texture_update_part(
+                    self.texture,
+                    0,
+                    rows.start as _,
+                    self.image.width as _,
+                    rows.len() as _,
+                    &self.image.bytes[rows.start as usize * row_len..rows.end as usize * row_len],
+                );
             }
-
-            ctx.texture_update(self.texture, &self.image.bytes);
         }
 
         self.texture
@@ -188,7 +202,13 @@ impl Atlas {
             // cache the new sprite
             self.cache_sprite(key, sprite);
         } else {
-            self.dirty = true;
+            if width > 0 && height > 0 {
+                let rows = y..y + height as u16;
+                self.dirty_rows = Some(match self.dirty_rows.take() {
+                    Some(dirty) => dirty.start.min(rows.start)..dirty.end.max(rows.end),
+                    None => rows,
+                });
+            }
 
             for j in 0..height {
                 for i in 0..width {
@@ -200,12 +220,8 @@ impl Atlas {
                 }
             }
 
-            self.sprites.insert(
-                key,
-                Sprite {
-                    rect: Rect::new(x as f32, y as f32, width as f32, height as f32),
-                },
-            );
+            let rect = Rect::new(x as f32, y as f32, width as f32, height as f32);
+            self.sprites.insert(key, Sprite { rect });
         }
     }
 }
@@ -224,7 +240,7 @@ mod tests {
             cursor_x: 0,
             cursor_y: 0,
             max_line_height: 0,
-            dirty: false,
+            dirty_rows: None,
             filter: miniquad::FilterMode::Nearest,
             unique_id: Atlas::UNIQUENESS_OFFSET,
         }
@@ -235,6 +251,27 @@ mod tests {
     }
 
     const WHITE: Color = Color::new(1.0, 1.0, 1.0, 1.0);
+
+    // Only what changed since the last upload is uploaded again: the
+    // rows of the sprites cached since, bounded together.
+    #[test]
+    fn caching_sprites_marks_only_their_rows_to_upload() {
+        let mut storage = std::mem::ManuallyDrop::new(atlas(64, 1024));
+        let atlas = &mut *storage;
+
+        atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 10, WHITE));
+        assert_eq!(atlas.dirty_rows, Some(0..10));
+
+        // a taller one on the same row, then one on the next row
+        atlas.cache_sprite(SpriteKey::Id(2), sprite(10, 12, WHITE));
+        atlas.cache_sprite(SpriteKey::Id(3), sprite(30, 8, WHITE));
+        assert_eq!(atlas.dirty_rows, Some(0..24));
+
+        // an empty glyph, such as a space, changes nothing
+        atlas.dirty_rows = None;
+        atlas.cache_sprite(SpriteKey::Id(4), sprite(0, 0, WHITE));
+        assert_eq!(atlas.dirty_rows, None);
+    }
 
     // A sprite that would end past the right edge, but within one `GAP` of
     // it, used to take the "stays in the current row" branch and then blow
