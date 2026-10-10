@@ -1285,68 +1285,72 @@ pub(crate) mod ui_context {
             ctx: &mut dyn miniquad::RenderingBackend,
             quad_gl: &mut QuadGl,
         ) {
-            // TODO: this belongs to new and waits for cleaning up context initialization mess
-            let material = self.material.get_or_insert_with(|| {
-                load_material(
-                    match ctx.info().backend {
-                        Backend::OpenGl => ShaderSource::Glsl {
-                            vertex: VERTEX_SHADER,
-                            fragment: FRAGMENT_SHADER,
-                        },
-                        Backend::Metal => ShaderSource::Msl {
-                            program: METAL_SHADER,
-                        },
-                    },
-                    MaterialParams {
-                        pipeline_params: PipelineParams {
-                            color_blend: Some(BlendState::new(
-                                Equation::Add,
-                                BlendFactor::Value(BlendValue::SourceAlpha),
-                                BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
-                            )),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    },
-                )
-                .unwrap()
-            });
-
             let mut ui = self.ui.borrow_mut();
             self.ui_draw_list.clear();
             ui.render(&mut self.ui_draw_list);
-            let mut ui_draw_list = vec![];
 
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
+            // The material waits for something to draw, so a game that never
+            // draws the UI never compiles its shader.
+            if !self.ui_draw_list.is_empty() {
+                // TODO: this belongs to new and waits for cleaning up context initialization mess
+                let material = self.material.get_or_insert_with(|| {
+                    load_material(
+                        match ctx.info().backend {
+                            Backend::OpenGl => ShaderSource::Glsl {
+                                vertex: VERTEX_SHADER,
+                                fragment: FRAGMENT_SHADER,
+                            },
+                            Backend::Metal => ShaderSource::Msl {
+                                program: METAL_SHADER,
+                            },
+                        },
+                        MaterialParams {
+                            pipeline_params: PipelineParams {
+                                color_blend: Some(BlendState::new(
+                                    Equation::Add,
+                                    BlendFactor::Value(BlendValue::SourceAlpha),
+                                    BlendFactor::OneMinusValue(BlendValue::SourceAlpha),
+                                )),
+                                ..Default::default()
+                            },
+                            ..Default::default()
+                        },
+                    )
+                    .unwrap()
+                });
 
-            let mut atlas = ui.atlas.lock().unwrap();
-            let font_texture = atlas.texture();
-            quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
+                let mut ui_draw_list = vec![];
 
-            gl_use_material(material);
+                std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
 
-            for draw_command in &ui_draw_list {
-                if let Some(ref texture) = draw_command.texture {
-                    quad_gl.texture(Some(texture));
-                } else {
-                    quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
+                let mut atlas = ui.atlas.lock().unwrap();
+                let font_texture = atlas.texture();
+                quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
+
+                gl_use_material(material);
+
+                for draw_command in &ui_draw_list {
+                    if let Some(ref texture) = draw_command.texture {
+                        quad_gl.texture(Some(texture));
+                    } else {
+                        quad_gl.texture(Some(&Texture2D::unmanaged(font_texture)));
+                    }
+
+                    quad_gl.scissor(
+                        draw_command.clipping_zone.map(|rect| {
+                            (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)
+                        }),
+                    );
+                    quad_gl.draw_mode(DrawMode::Triangles);
+                    quad_gl.geometry(&draw_command.vertices[..], &draw_command.indices);
                 }
 
-                quad_gl.scissor(
-                    draw_command
-                        .clipping_zone
-                        .map(|rect| (rect.x as i32, rect.y as i32, rect.w as i32, rect.h as i32)),
-                );
-                quad_gl.draw_mode(DrawMode::Triangles);
-                quad_gl.geometry(&draw_command.vertices[..], &draw_command.indices);
+                std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
             }
             quad_gl.texture(None);
 
             gl_use_default_material();
 
-            std::mem::swap(&mut ui_draw_list, &mut self.ui_draw_list);
-
-            drop(atlas);
             ui.new_frame(get_frame_time());
         }
     }
