@@ -35,7 +35,10 @@ impl Drop for Atlas {
 }
 
 impl Atlas {
-    // pixel gap between glyphs in the atlas
+    // pixel gap round each glyph in the atlas, from the other glyphs and
+    // from the image's edges: the texture clamps to its edge, so filtering
+    // at a glyph that touched it would read the glyph's own edge pixels
+    // again where it reads transparent ones everywhere else
     const GAP: u16 = 2;
     // well..
     const UNIQUENESS_OFFSET: u64 = 100000;
@@ -125,7 +128,8 @@ impl Atlas {
     pub fn cache_sprite(&mut self, key: SpriteKey, sprite: Image) {
         let (width, height) = (sprite.width as usize, sprite.height as usize);
 
-        let x = if self.cursor_x as u32 + width as u32 + Self::GAP as u32 <= self.image.width as u32
+        let x = if self.cursor_x as u32 + width as u32 + Self::GAP as u32 * 2
+            <= self.image.width as u32
         {
             if height as u16 > self.max_line_height {
                 self.max_line_height = height as u16;
@@ -139,10 +143,12 @@ impl Atlas {
             self.max_line_height = height as u16;
             Self::GAP
         };
-        let y = self.cursor_y;
+        let y = self.cursor_y + Self::GAP;
 
         // texture bounds exceeded
-        if y + sprite.height > self.image.height || x + sprite.width > self.image.width {
+        if y + sprite.height + Self::GAP > self.image.height
+            || x + sprite.width + Self::GAP > self.image.width
+        {
             // reset glyph cache state
             self.cursor_x = 0;
             self.cursor_y = 0;
@@ -257,30 +263,85 @@ mod tests {
         assert_eq!(atlas.height(), 1024);
         assert_eq!(
             atlas.get(SpriteKey::Id(2)).map(|sprite| sprite.rect),
-            Some(Rect::new(2.0, 14.0, 39.0, 10.0))
+            Some(Rect::new(2.0, 16.0, 39.0, 10.0))
         );
 
         std::mem::forget(atlas);
     }
 
-    // The row-fit predicate must reject the out-of-bounds one-pixel case
-    // above without wasting a row when a sprite ends exactly at the texture
-    // edge. Its left-side GAP is already accounted for in `x`.
+    // The row-fit predicate keeps a `GAP` between a sprite and the right
+    // edge, without wasting a row on a sprite that leaves exactly that.
+    // Its left-side GAP is already accounted for in `x`.
     #[test]
-    fn sprite_ending_at_row_edge_stays_in_current_line() {
-        let mut storage = std::mem::ManuallyDrop::new(atlas(64, 1024));
+    fn sprite_ending_a_gap_from_row_edge_stays_in_current_line() {
+        // after a 20-wide sprite, the next one lands at x = 24 + GAP = 26
+        let second_sprite_rect = |width| {
+            let mut storage = std::mem::ManuallyDrop::new(atlas(64, 1024));
+            let atlas = &mut *storage;
+            atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 10, WHITE));
+            atlas.cache_sprite(SpriteKey::Id(2), sprite(width, 10, WHITE));
+            assert_eq!((atlas.width(), atlas.height()), (64, 1024));
+            atlas.get(SpriteKey::Id(2)).map(|sprite| sprite.rect)
+        };
+
+        // x + width + GAP == 64 exactly: it stays in the row
+        assert_eq!(
+            second_sprite_rect(36),
+            Some(Rect::new(26.0, 2.0, 36.0, 10.0))
+        );
+        // x + width == 64: it would touch the edge, so it starts a row
+        assert_eq!(
+            second_sprite_rect(38),
+            Some(Rect::new(2.0, 16.0, 38.0, 10.0))
+        );
+    }
+
+    // The texture clamps to its edge, so a sprite touching it would be
+    // filtered against its own edge pixels. Every sprite keeps `GAP` from
+    // each edge of the image, and so do the sprites repacked as it grows.
+    #[test]
+    fn no_sprite_touches_the_image_edges() {
+        let mut storage = std::mem::ManuallyDrop::new(atlas(64, 32));
         let atlas = &mut *storage;
 
-        atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 10, WHITE));
-        // x = 24 + GAP = 26, and x + width == 64 exactly.
-        atlas.cache_sprite(SpriteKey::Id(2), sprite(38, 10, WHITE));
+        // 2 + 28 + GAP == 32: it fits, a `GAP` from the bottom
+        atlas.cache_sprite(SpriteKey::Id(1), sprite(20, 28, WHITE));
+        assert_eq!((atlas.width(), atlas.height()), (64, 32));
+        // 2 + 29 + GAP == 33: it would touch the bottom, so the atlas grows
+        atlas.cache_sprite(SpriteKey::Id(2), sprite(20, 29, WHITE));
+        assert_eq!((atlas.width(), atlas.height()), (128, 64));
+        for (index, size) in [(30, 12), (17, 5), (60, 9), (9, 30), (41, 3)]
+            .into_iter()
+            .enumerate()
+        {
+            atlas.cache_sprite(
+                SpriteKey::Id(3 + index as u64),
+                sprite(size.0, size.1, WHITE),
+            );
+        }
 
-        assert_eq!(atlas.width(), 64);
-        assert_eq!(atlas.height(), 1024);
-        assert_eq!(
-            atlas.get(SpriteKey::Id(2)).map(|sprite| sprite.rect),
-            Some(Rect::new(26.0, 0.0, 38.0, 10.0))
-        );
+        let gap = Atlas::GAP as f32;
+        let (width, height) = (atlas.width() as f32, atlas.height() as f32);
+        for sprite in atlas.sprites.values() {
+            let rect = sprite.rect;
+            assert!(rect.x >= gap && rect.y >= gap, "{rect:?}");
+            assert!(rect.x + rect.w + gap <= width, "{rect:?}");
+            assert!(rect.y + rect.h + gap <= height, "{rect:?}");
+        }
+
+        // so the pixels along every edge stay transparent
+        let clear = Color::new(0.0, 0.0, 0.0, 0.0);
+        let (width, height) = (atlas.width() as u32, atlas.height() as u32);
+        for offset in 0..Atlas::GAP as u32 {
+            for x in 0..width {
+                assert_eq!(atlas.image.get_pixel(x, offset), clear);
+                assert_eq!(atlas.image.get_pixel(x, height - 1 - offset), clear);
+            }
+            for y in 0..height {
+                assert_eq!(atlas.image.get_pixel(offset, y), clear);
+                assert_eq!(atlas.image.get_pixel(width - 1 - offset, y), clear);
+            }
+        }
     }
 
     // Repacking the drained sprite cache in `HashMap` iteration order made
@@ -307,21 +368,21 @@ mod tests {
         assert_eq!((atlas.width(), atlas.height()), (128, 64));
         assert_eq!(
             atlas.get(SpriteKey::Id(1)).map(|sprite| sprite.rect),
-            Some(Rect::new(45.0, 0.0, 20.0, 10.0))
+            Some(Rect::new(45.0, 2.0, 20.0, 10.0))
         );
         assert_eq!(
             atlas.get(SpriteKey::Id(2)).map(|sprite| sprite.rect),
-            Some(Rect::new(2.0, 0.0, 39.0, 10.0))
+            Some(Rect::new(2.0, 2.0, 39.0, 10.0))
         );
         assert_eq!(
             atlas.get(SpriteKey::Id(3)).map(|sprite| sprite.rect),
-            Some(Rect::new(69.0, 0.0, 20.0, 24.0))
+            Some(Rect::new(69.0, 2.0, 20.0, 24.0))
         );
 
         // regrown sprites keep their pixels through the sub_image round-trip
-        assert_eq!(atlas.image.get_pixel(45, 0), red);
-        assert_eq!(atlas.image.get_pixel(2, 0), green);
-        assert_eq!(atlas.image.get_pixel(69, 0), blue);
+        assert_eq!(atlas.image.get_pixel(45, 2), red);
+        assert_eq!(atlas.image.get_pixel(2, 2), green);
+        assert_eq!(atlas.image.get_pixel(69, 2), blue);
 
         std::mem::forget(atlas);
     }
@@ -360,10 +421,10 @@ mod tests {
                     atlas.get(SpriteKey::Id(4)).map(|s| s.rect),
                 ],
                 [
-                    atlas.image.get_pixel(2, 0),
-                    atlas.image.get_pixel(26, 0),
-                    atlas.image.get_pixel(50, 0),
-                    atlas.image.get_pixel(74, 0),
+                    atlas.image.get_pixel(2, 2),
+                    atlas.image.get_pixel(26, 2),
+                    atlas.image.get_pixel(50, 2),
+                    atlas.image.get_pixel(74, 2),
                 ],
             )
         };
@@ -390,10 +451,10 @@ mod tests {
         assert_eq!(
             rects,
             [
-                Some(Rect::new(26.0, 0.0, 20.0, 10.0)),
-                Some(Rect::new(50.0, 0.0, 20.0, 10.0)),
-                Some(Rect::new(2.0, 0.0, 20.0, 24.0)),
-                Some(Rect::new(74.0, 0.0, 60.0, 40.0)),
+                Some(Rect::new(26.0, 2.0, 20.0, 10.0)),
+                Some(Rect::new(50.0, 2.0, 20.0, 10.0)),
+                Some(Rect::new(2.0, 2.0, 20.0, 24.0)),
+                Some(Rect::new(74.0, 2.0, 60.0, 40.0)),
             ]
         );
         // each key still owns its own pixels after the double repack
