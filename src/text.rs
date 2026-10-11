@@ -284,15 +284,16 @@ pub async fn load_ttf_font(path: &str) -> Result<Font, Error> {
 /// ```ignore
 /// let font = load_ttf_font_from_bytes(include_bytes!("font.ttf"));
 /// ```
+///
+/// No glyph is cached yet: each is rasterized the first time it's drawn or
+/// measured at a size. To cache some ahead, use "populate_font_cache".
 pub fn load_ttf_font_from_bytes(bytes: &[u8]) -> Result<Font, Error> {
     let atlas = Arc::new(Mutex::new(Atlas::new(
         get_quad_context(),
         miniquad::FilterMode::Linear,
     )));
 
-    let mut font = Font::load_from_bytes(atlas.clone(), bytes)?;
-
-    font.populate_font_cache(&Font::ascii_character_list(), 15);
+    let mut font = Font::load_from_bytes(atlas, bytes)?;
 
     let ctx = get_context();
 
