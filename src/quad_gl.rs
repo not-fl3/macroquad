@@ -704,6 +704,8 @@ impl QuadGl {
         let time = (miniquad::date::now() - self.start_time) as f32;
         let time = glam::vec4(time, time.sin(), time.cos(), 0.);
 
+        let mut open: Option<Option<RenderPass>> = None;
+
         for (dc, bindings) in self.draw_calls[0..self.draw_calls_count]
             .iter_mut()
             .zip(self.draw_calls_bindings.iter_mut())
@@ -719,13 +721,22 @@ impl QuadGl {
             };
 
             if pipeline.wants_screen_texture {
+                if open.take().is_some() {
+                    ctx.end_render_pass();
+                }
                 self.state.snapshotter.snapshot(ctx, dc.render_pass);
             }
 
-            if let Some(render_pass) = dc.render_pass {
-                ctx.begin_pass(Some(render_pass), PassAction::Nothing);
-            } else {
-                ctx.begin_default_pass(PassAction::Nothing);
+            if open != Some(dc.render_pass) {
+                if open.is_some() {
+                    ctx.end_render_pass();
+                }
+                if let Some(render_pass) = dc.render_pass {
+                    ctx.begin_pass(Some(render_pass), PassAction::Nothing);
+                } else {
+                    ctx.begin_default_pass(PassAction::Nothing);
+                }
+                open = Some(dc.render_pass);
             }
 
             ctx.buffer_update(
@@ -785,9 +796,11 @@ impl QuadGl {
                 pipeline.uniforms_data.len(),
             );
             ctx.draw(0, dc.indices_count as i32, 1);
-            ctx.end_render_pass();
 
             if dc.capture {
+                if open.take().is_some() {
+                    ctx.end_render_pass();
+                }
                 telemetry::track_drawcall(&pipeline.pipeline, bindings, dc.indices_count);
             }
 
@@ -795,6 +808,10 @@ impl QuadGl {
             dc.indices_count = 0;
             dc.vertices_start = 0;
             dc.indices_start = 0;
+        }
+
+        if open.is_some() {
+            ctx.end_render_pass();
         }
 
         self.draw_calls_count = 0;

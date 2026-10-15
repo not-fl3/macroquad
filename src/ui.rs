@@ -632,7 +632,8 @@ impl InputHandler for Ui {
             self.input.enter = true;
         }
 
-        if ctrl && (key == KeyCode::C || key == KeyCode::X) {
+        let is_copy_or_cut = ctrl && (key == KeyCode::C || key == KeyCode::X);
+        if is_copy_or_cut && !self.clipboard_selection.is_empty() {
             self.clipboard.set(&self.clipboard_selection);
         }
 
