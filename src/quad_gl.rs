@@ -552,6 +552,16 @@ impl PipelinesStorage {
     }
 }
 
+/// A pipeline [`QuadGl::start_pipeline`] started, for
+/// [`QuadGl::finish_pipeline`] to finish.
+pub struct PendingPipeline {
+    pub(crate) shader: miniquad::PendingShader,
+    params: PipelineParams,
+    wants_screen_texture: bool,
+    uniforms: Vec<UniformDesc>,
+    textures: Vec<String>,
+}
+
 pub struct QuadGl {
     pipelines: PipelinesStorage,
 
@@ -613,6 +623,20 @@ impl QuadGl {
         uniforms: Vec<UniformDesc>,
         textures: Vec<String>,
     ) -> Result<GlPipeline, Error> {
+        let pipeline = self.start_pipeline(ctx, shader, params, uniforms, textures);
+        self.finish_pipeline(ctx, pipeline)
+    }
+
+    /// Starts making a pipeline as [`QuadGl::make_pipeline`] does, without
+    /// waiting for its shader to compile.
+    pub fn start_pipeline(
+        &self,
+        ctx: &mut dyn miniquad::RenderingBackend,
+        shader: miniquad::ShaderSource,
+        params: PipelineParams,
+        uniforms: Vec<UniformDesc>,
+        textures: Vec<String>,
+    ) -> PendingPipeline {
         let mut shader_meta: ShaderMeta = shader::meta();
 
         for uniform in &uniforms {
@@ -638,14 +662,30 @@ impl QuadGl {
             ShaderSource::Msl { program } => program,
         };
         let wants_screen_texture = source.contains("_ScreenTexture");
-        let shader = ctx.new_shader(shader, shader_meta)?;
-        Ok(self.pipelines.make_pipeline(
-            ctx,
-            shader,
+        PendingPipeline {
+            shader: ctx.start_shader(shader, shader_meta),
             params,
             wants_screen_texture,
             uniforms,
             textures,
+        }
+    }
+
+    /// Waits for `pipeline`'s shader to compile, if it still is, and makes
+    /// the pipeline.
+    pub fn finish_pipeline(
+        &mut self,
+        ctx: &mut dyn miniquad::RenderingBackend,
+        pipeline: PendingPipeline,
+    ) -> Result<GlPipeline, Error> {
+        let shader = ctx.finish_shader(pipeline.shader)?;
+        Ok(self.pipelines.make_pipeline(
+            ctx,
+            shader,
+            pipeline.params,
+            pipeline.wants_screen_texture,
+            pipeline.uniforms,
+            pipeline.textures,
         ))
     }
 
