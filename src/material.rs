@@ -1,6 +1,12 @@
 //! Custom materials - shaders, uniforms.
 
-use crate::{get_context, quad_gl::GlPipeline, texture::Texture2D, tobytes::ToBytes, Error};
+use crate::{
+    get_context,
+    quad_gl::{GlPipeline, PendingPipeline},
+    texture::Texture2D,
+    tobytes::ToBytes,
+    Error,
+};
 use miniquad::{PipelineParams, UniformDesc};
 use std::sync::Arc;
 
@@ -123,19 +129,50 @@ pub fn load_material(
     shader: crate::ShaderSource,
     params: MaterialParams,
 ) -> Result<Material, Error> {
+    start_material(shader, params).finish()
+}
+
+/// Starts making a material as [`load_material`] does, without waiting for
+/// its shader to compile, so the materials started before any is finished
+/// compile at once where the driver can.
+pub fn start_material(shader: crate::ShaderSource, params: MaterialParams) -> PendingMaterial {
     let context = &mut get_context();
 
-    let pipeline = context.gl.make_pipeline(
+    PendingMaterial(context.gl.start_pipeline(
         &mut *context.quad_context,
         shader,
         params.pipeline_params,
         params.uniforms,
         params.textures,
-    )?;
+    ))
+}
 
-    Ok(Material {
-        pipeline: Arc::new(GlPipelineGuarded(pipeline)),
-    })
+/// A material [`start_material`] started.
+pub struct PendingMaterial(PendingPipeline);
+
+impl PendingMaterial {
+    /// Whether its shader is still compiling, so [`PendingMaterial::finish`]
+    /// would wait for it. Only OpenGL with `KHR_parallel_shader_compile` can
+    /// tell; elsewhere, this is `false`.
+    pub fn is_compiling(&self) -> bool {
+        get_context()
+            .quad_context
+            .is_shader_compiling(&self.0.shader)
+    }
+
+    /// Waits for its shader to compile, if it still is, and makes the
+    /// material.
+    pub fn finish(self) -> Result<Material, Error> {
+        let context = &mut get_context();
+
+        let pipeline = context
+            .gl
+            .finish_pipeline(&mut *context.quad_context, self.0)?;
+
+        Ok(Material {
+            pipeline: Arc::new(GlPipelineGuarded(pipeline)),
+        })
+    }
 }
 
 /// All following macroquad rendering calls will use the given material.
