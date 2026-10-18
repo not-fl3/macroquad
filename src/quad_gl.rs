@@ -135,20 +135,24 @@ mod snapshotter_shader {
 }
 
 impl MagicSnapshotter {
-    fn new(ctx: &mut dyn RenderingBackend) -> MagicSnapshotter {
-        let shader = ctx
-            .new_shader(
-                match ctx.info().backend {
-                    Backend::OpenGl => ShaderSource::Glsl {
-                        vertex: snapshotter_shader::VERTEX,
-                        fragment: snapshotter_shader::FRAGMENT,
-                    },
-                    Backend::Metal => ShaderSource::Msl {
-                        program: snapshotter_shader::METAL,
-                    },
+    fn start_shader(ctx: &mut dyn RenderingBackend) -> PendingShader {
+        ctx.start_shader(
+            match ctx.info().backend {
+                Backend::OpenGl => ShaderSource::Glsl {
+                    vertex: snapshotter_shader::VERTEX,
+                    fragment: snapshotter_shader::FRAGMENT,
                 },
-                snapshotter_shader::meta(),
-            )
+                Backend::Metal => ShaderSource::Msl {
+                    program: snapshotter_shader::METAL,
+                },
+            },
+            snapshotter_shader::meta(),
+        )
+    }
+
+    fn new(ctx: &mut dyn RenderingBackend, shader: PendingShader) -> MagicSnapshotter {
+        let shader = ctx
+            .finish_shader(shader)
             .unwrap_or_else(|e| panic!("Failed to load shader: {e}"));
 
         let pipeline = ctx.new_pipeline(
@@ -382,20 +386,24 @@ impl PipelinesStorage {
     const TRIANGLES_DEPTH_PIPELINE: GlPipeline = GlPipeline(2);
     const LINES_DEPTH_PIPELINE: GlPipeline = GlPipeline(3);
 
-    fn new(ctx: &mut dyn RenderingBackend) -> PipelinesStorage {
-        let shader = ctx
-            .new_shader(
-                match ctx.info().backend {
-                    Backend::OpenGl => ShaderSource::Glsl {
-                        vertex: shader::VERTEX,
-                        fragment: shader::FRAGMENT,
-                    },
-                    Backend::Metal => ShaderSource::Msl {
-                        program: shader::METAL,
-                    },
+    fn start_shader(ctx: &mut dyn RenderingBackend) -> PendingShader {
+        ctx.start_shader(
+            match ctx.info().backend {
+                Backend::OpenGl => ShaderSource::Glsl {
+                    vertex: shader::VERTEX,
+                    fragment: shader::FRAGMENT,
                 },
-                shader::meta(),
-            )
+                Backend::Metal => ShaderSource::Msl {
+                    program: shader::METAL,
+                },
+            },
+            shader::meta(),
+        )
+    }
+
+    fn new(ctx: &mut dyn RenderingBackend, shader: PendingShader) -> PipelinesStorage {
+        let shader = ctx
+            .finish_shader(shader)
             .unwrap_or_else(|e| panic!("Failed to load shader: {e}"));
 
         let params = PipelineParams {
@@ -552,6 +560,16 @@ impl PipelinesStorage {
     }
 }
 
+/// A pipeline [`QuadGl::start_pipeline`] started, for
+/// [`QuadGl::finish_pipeline`] to finish.
+pub struct PendingPipeline {
+    pub(crate) shader: miniquad::PendingShader,
+    params: PipelineParams,
+    wants_screen_texture: bool,
+    uniforms: Vec<UniformDesc>,
+    textures: Vec<String>,
+}
+
 pub struct QuadGl {
     pipelines: PipelinesStorage,
 
@@ -577,8 +595,13 @@ impl QuadGl {
     ) -> QuadGl {
         let white_texture = ctx.new_texture_from_rgba8(1, 1, &[255, 255, 255, 255]);
 
+        // Both started before either is finished, so they compile at once
+        // where the driver can.
+        let pipelines_shader = PipelinesStorage::start_shader(ctx);
+        let snapshotter_shader = MagicSnapshotter::start_shader(ctx);
+
         QuadGl {
-            pipelines: PipelinesStorage::new(ctx),
+            pipelines: PipelinesStorage::new(ctx, pipelines_shader),
             state: GlState {
                 clip: None,
                 viewport: None,
@@ -588,7 +611,7 @@ impl QuadGl {
                 pipeline: None,
                 break_batching: false,
                 depth_test_enable: false,
-                snapshotter: MagicSnapshotter::new(ctx),
+                snapshotter: MagicSnapshotter::new(ctx, snapshotter_shader),
                 render_pass: None,
                 capture: false,
             },
@@ -613,6 +636,20 @@ impl QuadGl {
         uniforms: Vec<UniformDesc>,
         textures: Vec<String>,
     ) -> Result<GlPipeline, Error> {
+        let pipeline = self.start_pipeline(ctx, shader, params, uniforms, textures);
+        self.finish_pipeline(ctx, pipeline)
+    }
+
+    /// Starts making a pipeline as [`QuadGl::make_pipeline`] does, without
+    /// waiting for its shader to compile.
+    pub fn start_pipeline(
+        &self,
+        ctx: &mut dyn miniquad::RenderingBackend,
+        shader: miniquad::ShaderSource,
+        params: PipelineParams,
+        uniforms: Vec<UniformDesc>,
+        textures: Vec<String>,
+    ) -> PendingPipeline {
         let mut shader_meta: ShaderMeta = shader::meta();
 
         for uniform in &uniforms {
@@ -638,14 +675,30 @@ impl QuadGl {
             ShaderSource::Msl { program } => program,
         };
         let wants_screen_texture = source.contains("_ScreenTexture");
-        let shader = ctx.new_shader(shader, shader_meta)?;
-        Ok(self.pipelines.make_pipeline(
-            ctx,
-            shader,
+        PendingPipeline {
+            shader: ctx.start_shader(shader, shader_meta),
             params,
             wants_screen_texture,
             uniforms,
             textures,
+        }
+    }
+
+    /// Waits for `pipeline`'s shader to compile, if it still is, and makes
+    /// the pipeline.
+    pub fn finish_pipeline(
+        &mut self,
+        ctx: &mut dyn miniquad::RenderingBackend,
+        pipeline: PendingPipeline,
+    ) -> Result<GlPipeline, Error> {
+        let shader = ctx.finish_shader(pipeline.shader)?;
+        Ok(self.pipelines.make_pipeline(
+            ctx,
+            shader,
+            pipeline.params,
+            pipeline.wants_screen_texture,
+            pipeline.uniforms,
+            pipeline.textures,
         ))
     }
 
