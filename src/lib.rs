@@ -229,6 +229,7 @@ struct Context {
     textures: crate::texture::TexturesContext,
 
     update_on: conf::UpdateTrigger,
+    clear_screen: bool,
 
     dropped_files: Vec<DroppedFile>,
 }
@@ -311,6 +312,7 @@ impl Context {
         default_filter_mode: crate::FilterMode,
         draw_call_vertex_capacity: usize,
         draw_call_index_capacity: usize,
+        clear_screen: bool,
     ) -> Context {
         let mut ctx: Box<dyn miniquad::RenderingBackend> =
             miniquad::window::new_rendering_backend();
@@ -373,6 +375,7 @@ impl Context {
             default_filter_mode,
             textures: crate::texture::TexturesContext::new(),
             update_on,
+            clear_screen,
 
             dropped_files: Vec::new(),
         }
@@ -403,9 +406,10 @@ impl Context {
 
         self.ui_context.process_input();
 
-        let color = Self::DEFAULT_BG_COLOR;
-
-        get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
+        if self.clear_screen {
+            let color = Self::DEFAULT_BG_COLOR;
+            get_quad_context().clear(Some((color.r, color.g, color.b, color.a)), None, None);
+        }
         self.gl.reset();
     }
 
@@ -902,6 +906,12 @@ pub mod conf {
         ///     buffer size might be reduced to save some memory
         pub draw_call_vertex_capacity: usize,
         pub draw_call_index_capacity: usize,
+        /// Whether each frame starts by clearing the screen to black.
+        /// An app that draws its frames only into render targets can turn
+        /// it off, so that frames that leave the screen alone don't wait
+        /// for it: on Metal, drawing to the screen waits for a drawable
+        /// the display is done with.
+        pub clear_screen: bool,
     }
 
     impl Default for Conf {
@@ -912,6 +922,7 @@ pub mod conf {
                 default_filter_mode: crate::FilterMode::Linear,
                 draw_call_vertex_capacity: 10000,
                 draw_call_index_capacity: 5000,
+                clear_screen: true,
             }
         }
     }
@@ -925,6 +936,7 @@ impl From<miniquad::conf::Conf> for conf::Conf {
             default_filter_mode: crate::FilterMode::Linear,
             draw_call_vertex_capacity: 10000,
             draw_call_index_capacity: 5000,
+            clear_screen: true,
         }
     }
 }
@@ -954,6 +966,7 @@ impl Window {
             default_filter_mode,
             draw_call_vertex_capacity,
             draw_call_index_capacity,
+            clear_screen,
         } = config.into();
         miniquad::start(miniquad_conf, move || {
             thread_assert::set_thread_id();
@@ -962,6 +975,7 @@ impl Window {
                 default_filter_mode,
                 draw_call_vertex_capacity,
                 draw_call_index_capacity,
+                clear_screen,
             );
             unsafe { CONTEXT = Some(context) };
 
