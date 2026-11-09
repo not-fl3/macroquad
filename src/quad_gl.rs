@@ -259,6 +259,7 @@ struct GlState {
     clip: Option<(i32, i32, i32, i32)>,
     viewport: Option<(i32, i32, i32, i32)>,
     model_stack: Vec<glam::Mat4>,
+    cpu_model_stack: Vec<glam::Mat4>,
     pipeline: Option<GlPipeline>,
     depth_test_enable: bool,
 
@@ -272,6 +273,10 @@ struct GlState {
 impl GlState {
     fn model(&self) -> glam::Mat4 {
         *self.model_stack.last().unwrap()
+    }
+
+    fn cpu_model(&self) -> glam::Mat4 {
+        *self.cpu_model_stack.last().unwrap()
     }
 }
 
@@ -567,6 +572,8 @@ pub struct QuadGl {
 
     batch_vertex_buffer: Vec<Vertex>,
     batch_index_buffer: Vec<u16>,
+    /// Scratch for the vertices of a geometry call under a CPU model transform.
+    cpu_transformed_vertices: Vec<Vertex>,
 }
 
 impl QuadGl {
@@ -584,6 +591,7 @@ impl QuadGl {
                 viewport: None,
                 texture: None,
                 model_stack: vec![glam::Mat4::IDENTITY],
+                cpu_model_stack: vec![glam::Mat4::IDENTITY],
                 draw_mode: DrawMode::Triangles,
                 pipeline: None,
                 break_batching: false,
@@ -600,6 +608,7 @@ impl QuadGl {
             white_texture,
             batch_vertex_buffer: Vec::with_capacity(max_vertices),
             batch_index_buffer: Vec::with_capacity(max_indices),
+            cpu_transformed_vertices: Vec::new(),
             max_vertices,
             max_indices,
         }
@@ -672,6 +681,7 @@ impl QuadGl {
         self.state.clip = None;
         self.state.texture = None;
         self.state.model_stack = vec![glam::Mat4::IDENTITY];
+        self.state.cpu_model_stack = vec![glam::Mat4::IDENTITY];
 
         self.draw_calls_count = 0;
     }
@@ -862,6 +872,30 @@ impl QuadGl {
         }
     }
 
+    /// Pushes a CPU-side model transform: the vertices of the geometry drawn while it is on the
+    /// stack are moved by it on the CPU (composed with the transforms already pushed), before
+    /// the GPU model of [`QuadGl::push_model_matrix`] is applied. Unlike that GPU model, it does
+    /// not start a new draw call, so many small objects, each with its own affine transform,
+    /// batch into one draw call. Use it for many small objects; the GPU model is cheaper for
+    /// a few large ones. `matrix` must be affine (last row `0 0 0 1`): a projective transform
+    /// is not applied correctly. Normals are left as they are.
+    pub fn push_cpu_model_matrix(&mut self, matrix: glam::Mat4) {
+        debug_assert!(
+            matrix.row(3) == glam::vec4(0.0, 0.0, 0.0, 1.0),
+            "push_cpu_model_matrix needs an affine matrix (last row 0 0 0 1)"
+        );
+        self.state
+            .cpu_model_stack
+            .push(self.state.cpu_model() * matrix);
+    }
+
+    /// Pops the CPU model transform pushed by [`QuadGl::push_cpu_model_matrix`].
+    pub fn pop_cpu_model_matrix(&mut self) {
+        if self.state.cpu_model_stack.len() > 1 {
+            self.state.cpu_model_stack.pop();
+        }
+    }
+
     pub fn pipeline(&mut self, pipeline: Option<GlPipeline>) {
         if self.state.pipeline == pipeline {
             return;
@@ -882,6 +916,14 @@ impl QuadGl {
 
         let vertices = &vertices[0..self.max_vertices.min(vertices.len())];
         let indices = &indices[0..self.max_indices.min(indices.len())];
+
+        let cpu_model = self.state.cpu_model();
+        let vertices: &[Vertex] = if cpu_model == glam::Mat4::IDENTITY {
+            vertices
+        } else {
+            transform_vertices(&mut self.cpu_transformed_vertices, vertices, cpu_model);
+            &self.cpu_transformed_vertices
+        };
 
         let pip = self.state.pipeline.unwrap_or(
             self.pipelines
@@ -1125,5 +1167,58 @@ mod shader {
                     .collect(),
             },
         }
+    }
+}
+
+/// Writes `vertices` moved by the affine `matrix` into `out` (cleared first). Positions only:
+/// uv, colour and the normal slot are copied as they are.
+fn transform_vertices(out: &mut Vec<Vertex>, vertices: &[Vertex], matrix: glam::Mat4) {
+    out.clear();
+    out.extend(vertices.iter().map(|v| Vertex {
+        position: matrix.transform_point3(v.position),
+        ..*v
+    }));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::Vertex;
+
+    #[test]
+    fn transform_moves_positions_and_keeps_the_rest() {
+        let matrix = glam::Mat4::from_scale_rotation_translation(
+            glam::vec3(2.0, 1.0, 0.5),
+            glam::Quat::from_rotation_y(0.7),
+            glam::vec3(10.0, -3.0, 4.0),
+        );
+        let color = crate::color::Color::new(0.1, 0.2, 0.3, 0.4);
+        let mut input = Vertex::new(1.0, 2.0, 3.0, 0.25, 0.75, color);
+        input.normal = glam::vec4(0.0, 1.0, 0.0, 7.0);
+        let mut out = Vec::new();
+        transform_vertices(&mut out, &[input], matrix);
+
+        assert_eq!(out.len(), 1);
+        assert!(out[0]
+            .position
+            .abs_diff_eq(matrix.transform_point3(input.position), 1e-5));
+        assert_eq!(out[0].uv, input.uv);
+        assert_eq!(out[0].color, input.color);
+        assert_eq!(out[0].normal, input.normal);
+    }
+
+    #[test]
+    fn identity_is_a_no_op_on_positions() {
+        let input = Vertex::new(
+            -4.0,
+            5.5,
+            2.0,
+            0.0,
+            1.0,
+            crate::color::Color::new(1.0, 1.0, 1.0, 1.0),
+        );
+        let mut out = Vec::new();
+        transform_vertices(&mut out, &[input], glam::Mat4::IDENTITY);
+        assert_eq!(out[0].position, input.position);
     }
 }
