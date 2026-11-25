@@ -36,6 +36,9 @@ struct DrawCall {
     uniforms: Option<Vec<u8>>,
     render_pass: Option<RenderPass>,
     capture: bool,
+    /// The vertex and index buffers it draws from, if they're the caller's,
+    /// as [`QuadGl::draw_buffers`] draws, rather than the batch's.
+    buffers: Option<(BufferId, BufferId)>,
 }
 
 impl DrawCall {
@@ -61,6 +64,7 @@ impl DrawCall {
             uniforms,
             render_pass,
             capture: false,
+            buffers: None,
         }
     }
 }
@@ -567,6 +571,9 @@ pub struct QuadGl {
 
     batch_vertex_buffer: Vec<Vertex>,
     batch_index_buffer: Vec<u16>,
+    /// The bindings of draw calls from the caller's buffers, made with the
+    /// first of them.
+    buffers_bindings: Option<Bindings>,
 }
 
 impl QuadGl {
@@ -600,6 +607,7 @@ impl QuadGl {
             white_texture,
             batch_vertex_buffer: Vec::with_capacity(max_vertices),
             batch_index_buffer: Vec::with_capacity(max_indices),
+            buffers_bindings: None,
             max_vertices,
             max_indices,
         }
@@ -679,7 +687,11 @@ impl QuadGl {
     pub fn draw(&mut self, ctx: &mut dyn miniquad::RenderingBackend, projection: glam::Mat4) {
         let white_texture = self.white_texture;
 
-        for _ in 0..self.draw_calls.len() - self.draw_calls_bindings.len() {
+        let batched = self.draw_calls[0..self.draw_calls_count]
+            .iter()
+            .filter(|dc| dc.buffers.is_none())
+            .count();
+        for _ in self.draw_calls_bindings.len()..batched {
             let vertex_buffer = ctx.new_buffer(
                 BufferType::VertexBuffer,
                 BufferUsage::Stream,
@@ -698,16 +710,13 @@ impl QuadGl {
 
             self.draw_calls_bindings.push(bindings);
         }
-        assert_eq!(self.draw_calls_bindings.len(), self.draw_calls.len());
 
         let (screen_width, screen_height) = miniquad::window::screen_size();
         let time = (miniquad::date::now() - self.start_time) as f32;
         let time = glam::vec4(time, time.sin(), time.cos(), 0.);
 
-        for (dc, bindings) in self.draw_calls[0..self.draw_calls_count]
-            .iter_mut()
-            .zip(self.draw_calls_bindings.iter_mut())
-        {
+        let mut batch_bindings = self.draw_calls_bindings.iter_mut();
+        for dc in self.draw_calls[0..self.draw_calls_count].iter_mut() {
             let pipeline = self.pipelines.get_quad_pipeline_mut(dc.pipeline);
 
             let (width, height) = if let Some(render_pass) = dc.render_pass {
@@ -728,20 +737,38 @@ impl QuadGl {
                 ctx.begin_default_pass(PassAction::Nothing);
             }
 
-            ctx.buffer_update(
-                bindings.vertex_buffers[0],
-                BufferSource::slice(
-                    &self.batch_vertex_buffer
-                        [dc.vertices_start..(dc.vertices_start + dc.vertices_count)],
-                ),
-            );
-            ctx.buffer_update(
-                bindings.index_buffer,
-                BufferSource::slice(
-                    &self.batch_index_buffer
-                        [dc.indices_start..(dc.indices_start + dc.indices_count)],
-                ),
-            );
+            let bindings = match dc.buffers {
+                Some((vertex_buffer, index_buffer)) => {
+                    let bindings = self.buffers_bindings.get_or_insert_with(|| Bindings {
+                        vertex_buffers: vec![vertex_buffer],
+                        index_buffer,
+                        images: vec![white_texture, white_texture],
+                    });
+                    bindings.vertex_buffers[0] = vertex_buffer;
+                    bindings.index_buffer = index_buffer;
+                    bindings
+                }
+                None => {
+                    let bindings = batch_bindings
+                        .next()
+                        .expect("a binding for each batched draw call");
+                    ctx.buffer_update(
+                        bindings.vertex_buffers[0],
+                        BufferSource::slice(
+                            &self.batch_vertex_buffer
+                                [dc.vertices_start..(dc.vertices_start + dc.vertices_count)],
+                        ),
+                    );
+                    ctx.buffer_update(
+                        bindings.index_buffer,
+                        BufferSource::slice(
+                            &self.batch_index_buffer
+                                [dc.indices_start..(dc.indices_start + dc.indices_count)],
+                        ),
+                    );
+                    bindings
+                }
+            };
 
             bindings.images[0] = dc.texture.unwrap_or(white_texture);
             bindings.images[1] = self
@@ -883,10 +910,7 @@ impl QuadGl {
         let vertices = &vertices[0..self.max_vertices.min(vertices.len())];
         let indices = &indices[0..self.max_indices.min(indices.len())];
 
-        let pip = self.state.pipeline.unwrap_or(
-            self.pipelines
-                .get(self.state.draw_mode, self.state.depth_test_enable),
-        );
+        let pip = self.current_pipeline();
 
         let previous_dc_ix = if self.draw_calls_count == 0 {
             None
@@ -906,42 +930,10 @@ impl QuadGl {
                 || draw_call.vertices_count >= self.max_vertices - vertices.len()
                 || draw_call.indices_count >= self.max_indices - indices.len()
                 || draw_call.capture != self.state.capture
+                || draw_call.buffers.is_some()
                 || self.state.break_batching
         }) {
-            let uniforms = self.state.pipeline.map_or(None, |pipeline| {
-                Some(
-                    self.pipelines
-                        .get_quad_pipeline_mut(pipeline)
-                        .uniforms_data
-                        .clone(),
-                )
-            });
-
-            if self.draw_calls_count >= self.draw_calls.len() {
-                self.draw_calls.push(DrawCall::new(
-                    self.state.texture,
-                    self.state.model(),
-                    self.state.draw_mode,
-                    pip,
-                    uniforms.clone(),
-                    self.state.render_pass,
-                ));
-            }
-            self.draw_calls[self.draw_calls_count].texture = self.state.texture;
-            self.draw_calls[self.draw_calls_count].uniforms = uniforms;
-            self.draw_calls[self.draw_calls_count].vertices_count = 0;
-            self.draw_calls[self.draw_calls_count].indices_count = 0;
-            self.draw_calls[self.draw_calls_count].clip = self.state.clip;
-            self.draw_calls[self.draw_calls_count].viewport = self.state.viewport;
-            self.draw_calls[self.draw_calls_count].model = self.state.model();
-            self.draw_calls[self.draw_calls_count].pipeline = pip;
-            self.draw_calls[self.draw_calls_count].render_pass = self.state.render_pass;
-            self.draw_calls[self.draw_calls_count].capture = self.state.capture;
-            self.draw_calls[self.draw_calls_count].indices_start = self.batch_index_buffer.len();
-            self.draw_calls[self.draw_calls_count].vertices_start = self.batch_vertex_buffer.len();
-
-            self.draw_calls_count += 1;
-            self.state.break_batching = false;
+            self.start_draw_call(pip, None);
         };
         let dc = &mut self.draw_calls[self.draw_calls_count - 1];
 
@@ -953,6 +945,73 @@ impl QuadGl {
         dc.indices_count += indices.len();
 
         dc.texture = self.state.texture;
+    }
+
+    /// Draws the first `indices` indices of `index_buffer`, which index
+    /// `vertex_buffer`, as [`QuadGl::geometry`] would draw them, in the order
+    /// it's called among them. The buffers are read as the draw call is sent,
+    /// at the next flush, so their contents shouldn't change until then.
+    ///
+    /// Geometry drawn every frame without changing is drawn this way from
+    /// buffers it's uploaded to once, rather than copied into the batch and
+    /// uploaded again for each draw.
+    pub fn draw_buffers(
+        &mut self,
+        vertex_buffer: BufferId,
+        index_buffer: BufferId,
+        indices: usize,
+    ) {
+        let pip = self.current_pipeline();
+        self.start_draw_call(pip, Some((vertex_buffer, index_buffer)));
+        self.draw_calls[self.draw_calls_count - 1].indices_count = indices;
+    }
+
+    fn current_pipeline(&self) -> GlPipeline {
+        self.state.pipeline.unwrap_or(
+            self.pipelines
+                .get(self.state.draw_mode, self.state.depth_test_enable),
+        )
+    }
+
+    /// Starts a draw call with what's in use now, empty, drawing from the
+    /// batch or from `buffers`.
+    fn start_draw_call(&mut self, pip: GlPipeline, buffers: Option<(BufferId, BufferId)>) {
+        let uniforms = self.state.pipeline.map_or(None, |pipeline| {
+            Some(
+                self.pipelines
+                    .get_quad_pipeline_mut(pipeline)
+                    .uniforms_data
+                    .clone(),
+            )
+        });
+
+        if self.draw_calls_count >= self.draw_calls.len() {
+            self.draw_calls.push(DrawCall::new(
+                self.state.texture,
+                self.state.model(),
+                self.state.draw_mode,
+                pip,
+                uniforms.clone(),
+                self.state.render_pass,
+            ));
+        }
+        let dc = &mut self.draw_calls[self.draw_calls_count];
+        dc.texture = self.state.texture;
+        dc.uniforms = uniforms;
+        dc.vertices_count = 0;
+        dc.indices_count = 0;
+        dc.clip = self.state.clip;
+        dc.viewport = self.state.viewport;
+        dc.model = self.state.model();
+        dc.pipeline = pip;
+        dc.render_pass = self.state.render_pass;
+        dc.capture = self.state.capture;
+        dc.indices_start = self.batch_index_buffer.len();
+        dc.vertices_start = self.batch_vertex_buffer.len();
+        dc.buffers = buffers;
+
+        self.draw_calls_count += 1;
+        self.state.break_batching = false;
     }
 
     pub fn delete_pipeline(&mut self, pipeline: GlPipeline) {
