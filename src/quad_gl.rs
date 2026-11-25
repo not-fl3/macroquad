@@ -34,6 +34,9 @@ struct DrawCall {
     draw_mode: DrawMode,
     pipeline: GlPipeline,
     uniforms: Option<Vec<u8>>,
+    /// Its pipeline's textures as they were when it was queued, in the
+    /// pipeline's order.
+    textures: Vec<Option<MiniquadTexture>>,
     render_pass: Option<RenderPass>,
     capture: bool,
 }
@@ -59,6 +62,7 @@ impl DrawCall {
             draw_mode,
             pipeline,
             uniforms,
+            textures: Vec::new(),
             render_pass,
             capture: false,
         }
@@ -543,6 +547,10 @@ impl PipelinesStorage {
         }
     }
 
+    fn get_quad_pipeline(&self, pip: GlPipeline) -> &PipelineExt {
+        self.pipelines[pip.0].as_ref().unwrap()
+    }
+
     fn get_quad_pipeline_mut(&mut self, pip: GlPipeline) -> &mut PipelineExt {
         self.pipelines[pip.0].as_mut().unwrap()
     }
@@ -749,15 +757,12 @@ impl QuadGl {
                 .snapshotter
                 .screen_texture
                 .unwrap_or(white_texture);
-            bindings
-                .images
-                .resize(2 + pipeline.textures.len(), white_texture);
-
-            for (pos, name) in pipeline.textures.iter().enumerate() {
-                if let Some(texture) = pipeline.textures_data.get(name).copied() {
-                    bindings.images[2 + pos] = texture;
-                }
-            }
+            bindings.images.truncate(2);
+            bindings.images.extend(
+                dc.textures
+                    .iter()
+                    .map(|texture| texture.unwrap_or(white_texture)),
+            );
 
             ctx.apply_pipeline(&pipeline.pipeline);
             if let Some((x, y, w, h)) = dc.viewport {
@@ -929,6 +934,15 @@ impl QuadGl {
             }
             self.draw_calls[self.draw_calls_count].texture = self.state.texture;
             self.draw_calls[self.draw_calls_count].uniforms = uniforms;
+            let pipeline = self.pipelines.get_quad_pipeline(pip);
+            let textures = &mut self.draw_calls[self.draw_calls_count].textures;
+            textures.clear();
+            textures.extend(
+                pipeline
+                    .textures
+                    .iter()
+                    .map(|name| pipeline.textures_data.get(name).copied()),
+            );
             self.draw_calls[self.draw_calls_count].vertices_count = 0;
             self.draw_calls[self.draw_calls_count].indices_count = 0;
             self.draw_calls[self.draw_calls_count].clip = self.state.clip;
@@ -992,10 +1006,14 @@ impl QuadGl {
                 )
             });
         let quad_texture = texture.raw_miniquad_id();
-        *pipeline
-            .textures_data
-            .entry(name.to_owned())
-            .or_insert(quad_texture) = quad_texture;
+        match pipeline.textures_data.get_mut(name) {
+            Some(bound) if *bound == quad_texture => return,
+            Some(bound) => *bound = quad_texture,
+            None => {
+                pipeline.textures_data.insert(name.to_owned(), quad_texture);
+            }
+        }
+        self.state.break_batching = true;
     }
 
     pub(crate) fn update_drawcall_capacity(
