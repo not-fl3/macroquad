@@ -772,10 +772,10 @@ impl QuadGl {
             }
             ctx.apply_bindings(bindings);
 
-            if let Some(ref uniforms) = dc.uniforms {
-                for i in 0..uniforms.len() {
-                    pipeline.uniforms_data[i] = uniforms[i];
-                }
+            // Draw with the uniforms the draw call was queued with, and leave
+            // the material's own as they were last set, for the draws to come.
+            if let Some(uniforms) = dc.uniforms.as_mut() {
+                std::mem::swap(&mut pipeline.uniforms_data, uniforms);
             }
             pipeline.set_uniform("Projection", projection);
             pipeline.set_uniform("Model", dc.model);
@@ -784,6 +784,9 @@ impl QuadGl {
                 pipeline.uniforms_data.as_ptr(),
                 pipeline.uniforms_data.len(),
             );
+            if let Some(uniforms) = dc.uniforms.as_mut() {
+                std::mem::swap(&mut pipeline.uniforms_data, uniforms);
+            }
             ctx.draw(0, dc.indices_count as i32, 1);
             ctx.end_render_pass();
 
